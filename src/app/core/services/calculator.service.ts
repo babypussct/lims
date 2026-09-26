@@ -5,49 +5,14 @@ import { InventoryItem } from '../models/inventory.model';
 import { Recipe } from '../models/recipe.model';
 import { SafetyConfig } from '../models/config.model';
 import { getStandardizedAmount } from '../../shared/utils/utils';
-
-// Helper object exposed to the Formula Evaluator as 'Chem'
-const ChemHelper = {
-  dilute: (cStock: number, cTarget: number, vTarget: number) => {
-    if (cStock === 0) return 0;
-    return (cTarget * vTarget) / cStock;
-  },
-  molarMass: (molarity: number, mw: number, volMl: number) => {
-    return molarity * mw * (volMl / 1000);
-  },
-  max: Math.max,
-  min: Math.min,
-  round: (num: number, decimals = 2) => {
-    const f = Math.pow(10, decimals);
-    return Math.round(num * f) / f;
-  }
-};
+import { evaluateSafeFormula, SAFE_CHEM_HELPERS } from './safe-formula-evaluator';
 
 @Injectable({ providedIn: 'root' })
 export class CalculatorService {
-
-  private isFormulaSafe(formula: string): boolean {
-    if (!formula || formula.length > 500) return false;
-    const expression = formula.replace(/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'/g, '0');
-    if (/[`;{}\[\]]/.test(expression)) return false;
-    if (/(^|[^=!<>])=([^=])/g.test(expression)) return false;
-    if (/\b(?:globalThis|window|document|self|navigator|location|fetch|XMLHttpRequest|WebSocket|localStorage|sessionStorage|indexedDB|alert|confirm|prompt|eval|Function|constructor|prototype|__proto__|import|require|process|class|function|new|this)\b/i.test(expression)) {
-      return false;
-    }
-    const propertyAccesses = expression.match(/\b[A-Za-z_$][A-Za-z0-9_$]*\s*\./g) || [];
-    return propertyAccesses.every(access => /^(Math|Chem)\s*\.$/.test(access.trim()));
-  }
-
-  // Formula evaluator restricted to arithmetic, conditions, Math and Chem helpers.
-  private evalFormula(formula: string, context: Record<string, number | boolean>): number | boolean | null {
+  // Formula evaluator uses a parser with an explicit grammar and helper allow-list.
+  private evalFormula(formula: string, context: Record<string, any>): number | boolean | string | null {
     if (!formula) return 0;
-    if (!this.isFormulaSafe(formula)) return null;
-    try {
-      const keys = [...Object.keys(context), 'Math', 'Chem'];
-      const values = [...Object.values(context), Math, ChemHelper];
-      const func = new Function(...keys, `"use strict"; return (${formula});`);
-      return func(...values);
-    } catch (e) { return null; }
+    return evaluateSafeFormula(formula, context);
   }
 
   /**
@@ -97,7 +62,7 @@ export class CalculatorService {
       const matches = formula.match(identifierRegex);
       if (matches) {
         matches.forEach(match => {
-          if (isNaN(parseFloat(match)) && !knownGlobals.includes(match) && typeof Math[match as keyof typeof Math] !== 'function' && !(match in ChemHelper)) {
+          if (isNaN(parseFloat(match)) && !knownGlobals.includes(match) && typeof Math[match as keyof typeof Math] !== 'function' && !(match in SAFE_CHEM_HELPERS)) {
             allIdentifiers.add(match);
           }
         });
@@ -148,7 +113,7 @@ export class CalculatorService {
       // Formula Check
       let baseQty = 0;
       let validationError: string | undefined = undefined;
-      let formulaResult: number | boolean | null = null;
+      let formulaResult: number | boolean | string | null = null;
       
       try { formulaResult = this.evalFormula(item.formula, ctx); } catch (e) { }
       

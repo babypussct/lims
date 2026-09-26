@@ -12,18 +12,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="LIMS NAFIQPM6">
-  <script>
-    // Apply the saved theme before Angular and CSS render to avoid a light-mode flash.
-    (function () {
-      try {
-        if (localStorage.getItem('darkMode') === 'true') {
-          document.documentElement.classList.add('dark');
-          document.documentElement.style.colorScheme = 'dark';
-          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#111322');
-        }
-      } catch (_) {}
-    })();
-  </script>
+  <script src="app-preflight.js"></script>
   
   <title>NAFIQPM6 | LIMS Cloud | Hệ thống quản lý phòng thí nghiệm</title>
   
@@ -100,49 +89,6 @@
   <link rel="manifest" href="manifest.webmanifest">
 </head>
 <body class="antialiased text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-950 h-full overflow-hidden transition-colors duration-300">
-  <script>
-    // Handle the legacy client-side Drive OAuth response BEFORE Angular bootstraps.
-    // Firebase Google login now uses signInWithRedirect/getRedirectResult and
-    // must not expose or parse an ID token in this page.
-    (function() {
-      var h = window.location.hash || '';
-      var handled = false;
-
-      if (h.charAt(1) !== '/') {
-        var params = new URLSearchParams(h.substring(1));
-        var idToken = params.get('id_token');
-        var token = params.get('access_token');
-        var exp = params.get('expires_in');
-        var oauthError = params.get('error');
-
-        // Reject old manual-login responses instead of trusting an ID token
-        // supplied through the application URL.
-        if (idToken) {
-          sessionStorage.removeItem('__gd_token');
-          sessionStorage.removeItem('__gd_expiry');
-          sessionStorage.removeItem('__google_id_token');
-          sessionStorage.setItem('__google_redirect_error', 'legacy_google_redirect');
-          handled = true;
-        } else if (token) {
-          // Google Drive client-side fallback (kept separate from Firebase login).
-          sessionStorage.setItem('__gd_token', token);
-          sessionStorage.setItem('__gd_expiry', '' + (Date.now() + (parseInt(exp || '3600') - 300) * 1000));
-          handled = true;
-        } else if (oauthError) {
-          sessionStorage.setItem('__google_redirect_error', oauthError);
-          handled = true;
-        }
-      }
-
-      // Restore route if any auth was handled
-      if (handled) {
-        var route = sessionStorage.getItem('__gd_route') || '#/';
-        sessionStorage.removeItem('__gd_route');
-        var safeRoute = route.indexOf('#/') === 0 ? route : '#/';
-        window.location.replace(window.location.pathname + safeRoute);
-      }
-    })();
-  </script>
   <app-root></app-root>
   <!-- Dedicated Container for Direct Printing -->
   <div id="print-container"></div>

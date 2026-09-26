@@ -760,6 +760,23 @@ service cloud.firestore {
         data.get('requestId', '').size() <= 300 && data.get('targetType', '') == 'REQUEST';
     }
 
+    function validPublicTraceabilityProjection(appId, requestId, data) {
+      let logId = data.get('logId', '');
+      let logPath = /databases/$(database)/documents/artifacts/$(appId)/logs/$(logId);
+      let requestPath = /databases/$(database)/documents/artifacts/$(appId)/requests/$(requestId);
+      return data.keys().hasOnly(['requestId', 'logId', 'status', 'updatedAt']) &&
+        data.keys().hasAll(['requestId', 'logId', 'status', 'updatedAt']) &&
+        data.requestId == requestId &&
+        logId is string && logId.size() > 0 && logId.size() <= 300 &&
+        data.status is string && ['approved', 'completed', 'pending', 'rejected', 'draft'].hasAny([data.status]) &&
+        data.updatedAt == request.time &&
+        existsAfter(logPath) &&
+        canReadPublicTraceability(getAfter(logPath).data) &&
+        getAfter(logPath).data.get('requestId', '') == requestId &&
+        existsAfter(requestPath) &&
+        getAfter(requestPath).data.get('status', '') == data.status;
+    }
+
     function canGetGlobalLog(appId, data) {
       return canReadPublicTraceability(data) ||
         canReadActivityAudience(appId, data) ||
@@ -1246,6 +1263,21 @@ service cloud.firestore {
     match /artifacts/{appId}/monthly_stats/{docId} {
       allow read: if hasPermission(appId, 'report_view') || hasPermission(appId, 'sop_view') || canUpdateStats(appId);
       allow write: if canUpdateStats(appId);
+    }
+    match /artifacts/{appId}/stats_reconciliation/{docId} {
+      allow create: if canUpdateStats(appId) &&
+        request.resource.data.get('status', '') == 'pending' &&
+        request.resource.data.get('createdByUid', '') == request.auth.uid;
+      allow read: if isManager(appId) || canUpdateStats(appId);
+      allow update: if (isManager(appId) || canUpdateStats(appId)) &&
+        resource.data.get('status', '') == 'pending' &&
+        request.resource.data.get('status', '') == 'resolved' &&
+        request.resource.data.get('resolvedByUid', '') == request.auth.uid &&
+        request.resource.data.resolvedAt == request.time &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'status', 'resolvedAt', 'resolvedByUid'
+        ]);
+      allow delete: if isManager(appId);
     }
     match /artifacts/{appId}/notifications/{docId} {
       allow read: if isSignedIn() && resource.data.recipientUid == request.auth.uid;
@@ -1990,8 +2022,7 @@ service cloud.firestore {
 
     // MODULE YEU CAU KIEM NGHIEM VA KET QUA (REQUESTS)
     match /artifacts/{appId}/requests/{reqId} {
-      allow get: if true; // Public read cho phep truy xuat ket qua/QR code khong can dang nhap
-      allow list: if canUseSopWorkspace(appId) ||
+      allow get, list: if canUseSopWorkspace(appId) ||
         (isActiveUser(appId) && hasPermission(appId, 'report_view'));
       allow create: if validRequestCreate(appId, request.resource.data);
       allow update: if (
@@ -2004,6 +2035,15 @@ service cloud.firestore {
         allow read: if canUseSopWorkspace(appId);
         allow write: if canEditResults(appId);
       }
+    }
+    match /artifacts/{appId}/public_traceability/{requestId} {
+      // Anonymous traceability can resolve a known request id to one explicitly
+      // public BUSINESS log. Collection queries are forbidden to prevent enumeration.
+      allow get: if true;
+      allow list: if false;
+      allow create, update: if canCreateAuditLog(appId) &&
+        validPublicTraceabilityProjection(appId, requestId, request.resource.data);
+      allow delete: if false;
     }
     match /artifacts/{appId}/daily_checklists/{analysisDate} {
       allow read: if isSignedIn();

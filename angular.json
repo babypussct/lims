@@ -36,6 +36,16 @@
                 "glob": "pdf.worker.min.mjs",
                 "input": "node_modules/pdfjs-dist/legacy/build",
                 "output": "/assets/pdfjs"
+              },
+              {
+                "glob": "firebase-app-compat.js",
+                "input": "node_modules/firebase",
+                "output": "/vendor/firebase"
+              },
+              {
+                "glob": "firebase-messaging-compat.js",
+                "input": "node_modules/firebase",
+                "output": "/vendor/firebase"
               }
             ],
             "styles": [

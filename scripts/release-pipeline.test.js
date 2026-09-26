@@ -1,5 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const { readFileSync } = require('node:fs');
 
 const {
   selectReleaseVersion,
@@ -13,6 +14,18 @@ const notes = {
   improvements: ['Cải tiến'],
   fixes: ['Sửa lỗi']
 };
+
+test('release verification includes the credential-aware browser UI audit and names reachability accurately', () => {
+  const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
+  assert.match(pkg.scripts['release:verify'], /npm run test:ui-zero-jump/);
+  assert.match(pkg.scripts.test, /test:reachability-audit/);
+  assert.equal(pkg.scripts['test:coverage-audit'], 'npm run test:reachability-audit');
+
+  const uiAudit = readFileSync('scripts/ui-zero-jump-audit.js', 'utf8');
+  assert.match(uiAudit, /LIMS_UI_AUDIT_ENV_FILE/);
+  assert.match(uiAudit, /LIMS_ADMIN_USERNAME/);
+  assert.doesNotMatch(uiAudit, /\/Users\/otada\/\.codex\/secrets/);
+});
 
 test('re-running sync for the same prepared release does not bump again', () => {
   const result = selectReleaseVersion({

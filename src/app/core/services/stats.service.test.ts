@@ -58,3 +58,23 @@ test('monthly aggregate reads are available to dashboard SOP viewers as well as 
 
   assert.match(rangeLoader, /!this\.auth\.canViewReports\(\) && !this\.auth\.canViewSop\(\)/);
 });
+
+test('backfill uses the canonical request count resolver instead of coupling sample fallback to n_qc', () => {
+  assert.match(source, /resolveRequestStatsCounts\(\{/);
+  assert.doesNotMatch(source, /if \(req\['inputs'\]\?\.\['n_qc'\]\)[\s\S]{0,120}else if \(req\['sampleList'\]/);
+});
+
+test('backfill and reconciliation share the approved/completed counted-status policy', () => {
+  assert.match(source, /isRequestCountedInStats\(req\['status'\]\)/);
+  assert.doesNotMatch(source, /\['approved', 'completed', 'draft'\]/);
+  assert.match(source, /reconcilePendingStats/);
+  assert.match(source, /rebuildStatsDays/);
+  assert.match(source, /buildStatsProjectionForDays/);
+});
+
+test('stats projection failures create a durable reconciliation item', () => {
+  assert.match(source, /incrementStatsWithReconciliation/);
+  assert.match(source, /stats_reconciliation/);
+  assert.match(source, /status: 'pending'/);
+  assert.match(source, /createdAt: serverTimestamp\(\)/);
+});

@@ -12,7 +12,7 @@ import { ToastService } from '../../core/services/toast.service';
 import { GoogleDriveService } from '../../core/services/google-drive.service';
 import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
 import { resolveConfigKey, ANGULAR_SOP_CONFIG } from '../results/config/sop-configs';
-import { getSafeGoogleUrl, formatSampleList } from '../../shared/utils/utils';
+import { getSafeGooglePreviewUrl, getSafeGoogleUrl, formatSampleList } from '../../shared/utils/utils';
 import { ensureQrious } from '../../shared/utils/external-script-loader';
 import { resolveCompoundDisplayName, isCompoundAssigned } from '../results/shared/compound-id-resolver';
 import { MasterTargetService } from '../targets/master-target.service';
@@ -1534,27 +1534,6 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
   }
 
   private getGoogleDrivePreviewUrl(url: string | null | undefined): string {
-    if (!url) return '';
-    const fileDMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-    if (fileDMatch && fileDMatch[1]) {
-      return `https://drive.google.com/file/d/${fileDMatch[1]}/preview`;
-    }
-    const docDMatch = url.match(/\/document\/d\/([a-zA-Z0-9_-]+)/);
-    if (docDMatch && docDMatch[1]) {
-      return `https://docs.google.com/document/d/${docDMatch[1]}/preview`;
-    }
-    try {
-      const urlObj = new URL(url);
-      const id = urlObj.searchParams.get('id');
-      if (id) {
-        return `https://drive.google.com/file/d/${id}/preview`;
-      }
-    } catch (e) {
-      const idMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-      if (idMatch && idMatch[1]) {
-        return `https://drive.google.com/file/d/${idMatch[1]}/preview`;
-      }
-    }
-    return url;
+    return getSafeGooglePreviewUrl(url);
   }
 }

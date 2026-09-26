@@ -4,6 +4,7 @@ import {
   doc,
   serverTimestamp,
   setDoc,
+  writeBatch as createWriteBatch,
   type DocumentData,
   type DocumentReference,
   type Transaction,
@@ -117,7 +118,16 @@ export class ActivityEventService {
   }
 
   async write(event: ActivityEventRecord): Promise<void> {
-    await setDoc(this.createRef(event.id || event.eventId), sanitizeForFirebase(event));
+    const ref = this.createRef(event.id || event.eventId);
+    if (!event.publicTraceable || !event.requestId) {
+      await setDoc(ref, sanitizeForFirebase(event));
+      return;
+    }
+
+    const batch = createWriteBatch(this.fb.db);
+    batch.set(ref, sanitizeForFirebase(event));
+    this.setPublicTraceabilityProjection(batch, event);
+    await batch.commit();
   }
 
   setInTransaction(
@@ -126,6 +136,7 @@ export class ActivityEventService {
     event: ActivityEventRecord
   ): void {
     transaction.set(ref, sanitizeForFirebase(event));
+    this.setPublicTraceabilityProjection(transaction, event);
   }
 
   setInBatch(
@@ -134,6 +145,39 @@ export class ActivityEventService {
     event: ActivityEventRecord
   ): void {
     batch.set(ref, sanitizeForFirebase(event));
+    this.setPublicTraceabilityProjection(batch, event);
+  }
+
+  updatePublicTraceabilityStatusInTransaction(
+    transaction: Transaction,
+    requestId: string,
+    status: string
+  ): void {
+    const normalizedRequestId = normalizeOptionalText(requestId, 300);
+    const normalizedStatus = normalizeOptionalText(status, 40);
+    if (!normalizedRequestId || !normalizedStatus) return;
+    transaction.update(this.publicTraceabilityRef(normalizedRequestId), {
+      status: normalizedStatus,
+      updatedAt: serverTimestamp()
+    });
+  }
+
+  private setPublicTraceabilityProjection(
+    writer: Pick<Transaction, 'set'> | Pick<WriteBatch, 'set'>,
+    event: ActivityEventRecord
+  ): void {
+    if (event.publicTraceable !== true || !event.requestId || !event.eventId) return;
+    const status = 'approved';
+    (writer as any).set(this.publicTraceabilityRef(event.requestId), {
+      requestId: event.requestId,
+      logId: event.eventId,
+      status,
+      updatedAt: serverTimestamp()
+    });
+  }
+
+  private publicTraceabilityRef(requestId: string): DocumentReference<DocumentData> {
+    return doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'public_traceability', requestId);
   }
 }
 

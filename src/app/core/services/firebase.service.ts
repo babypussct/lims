@@ -2,10 +2,10 @@ import { collectExportPages } from './export-history';
 import { getDocsFromServer, startAfter, QueryDocumentSnapshot } from 'firebase/firestore';
 import { Injectable, inject } from '@angular/core';
 import { initializeApp, FirebaseApp } from 'firebase/app';
-import { 
-  getFirestore, Firestore, collection, getDocs, query, limit, 
-  doc, writeBatch, deleteDoc, setDoc, initializeFirestore, 
-  persistentLocalCache, persistentMultipleTabManager, updateDoc,
+import {
+  getFirestore, Firestore, collection, getDocs, query, limit,
+  doc, writeBatch, deleteDoc, setDoc, initializeFirestore,
+  memoryLocalCache, updateDoc,
   getCountFromServer, where, orderBy, writeBatch as batchWrite,
   Timestamp, serverTimestamp, clearIndexedDbPersistence, terminate
 } from 'firebase/firestore';
@@ -13,7 +13,7 @@ import type { Messaging } from 'firebase/messaging';
 import { Observable, forkJoin, from, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { HealthCheckItem } from '../models/config.model';
-import type { UserProfile } from './auth.service'; 
+import type { UserProfile } from './auth.service';
 import { environment } from '../../../environments/environment';
 import { getAuth } from 'firebase/auth';
 import { FirestoreReadMonitor } from './firestore-read-monitor.service';
@@ -38,11 +38,11 @@ export class FirebaseService {
 
   constructor() {
     this.app = initializeApp(environment.firebase);
-    
+
     this.db = initializeFirestore(this.app, {
-      localCache: persistentLocalCache({
-        tabManager: persistentMultipleTabManager()
-      }),
+      // Laboratory documents are never persisted in browser IndexedDB. Auth
+      // persistence remains configurable, while Firestore data dies with the tab.
+      localCache: memoryLocalCache(),
       // Firebase 10.14 already auto-detects when long-polling is required.
       // Forcing it for every browser can leave Chromium/Edge sessions behind
       // certain Windows network stacks waiting on a realtime WebChannel even
@@ -109,27 +109,27 @@ export class FirebaseService {
 
   setAppId(id: string) {
     localStorage.setItem(this.APP_ID_KEY, id);
-    window.location.reload(); 
+    window.location.reload();
   }
 
   // --- System Health ---
   checkSystemHealth(): Observable<HealthCheckItem[]> {
     const collections = [
-        'inventory', 
-        'sops', 
-        'requests', 
-        'logs', 
-        'stats', 
-        'users', 
-        'config', 
-        'recipes', 
+        'inventory',
+        'sops',
+        'requests',
+        'logs',
+        'monthly_stats',
+        'users',
+        'config',
+        'recipes',
         'reference_standards'
     ];
 
     const checks$ = collections.map(colName => {
       const path = `artifacts/${this.APP_ID}/${colName}`;
       const colRef = collection(this.db, path);
-      
+
       return from(getDocs(query(colRef, limit(1)))).pipe(
         map(() => ({
           collection: colName,
@@ -241,17 +241,17 @@ export class FirebaseService {
   // This is document-count telemetry, not Firebase Cloud Storage access.
   async getFirestoreDataEstimate(): Promise<{ totalDocs: number, estimatedSizeKB: number, details: any }> {
     const collections = [
-        'inventory', 
-        'sops', 
-        'requests', 
-        'logs', 
-        'stats', 
-        'users', 
-        'config', 
-        'recipes', 
+        'inventory',
+        'sops',
+        'requests',
+        'logs',
+        'monthly_stats',
+        'users',
+        'config',
+        'recipes',
         'reference_standards'
     ];
-    
+
     let totalDocs = 0;
     const details: any = {};
 
@@ -264,8 +264,12 @@ export class FirebaseService {
         const count = countSnap.data().count;
         details[col] = { count, sizeKB: parseFloat((count * 1.2).toFixed(2)) }; // ~1.2KB/doc estimate
         totalDocs += count;
-      } catch(e) {
-        details[col] = { count: 0, sizeKB: 0 };
+      } catch(e: any) {
+        details[col] = {
+          count: null,
+          sizeKB: null,
+          error: typeof e?.code === 'string' ? e.code : 'unavailable'
+        };
       }
     }
 
@@ -281,7 +285,7 @@ export class FirebaseService {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysOld);
     const cutoff = Timestamp.fromDate(cutoffDate);
-    
+
     const colRef = collection(this.db, `artifacts/${this.APP_ID}/${collectionName}`);
     return collectExportPages<any, QueryDocumentSnapshot>(async cursor => {
       const snap = await getDocsFromServer(query(colRef, where('timestamp', '<', cutoff),
@@ -299,15 +303,15 @@ export class FirebaseService {
       { id: "methanol", name: "Methanol (HPLC)", stock: 15000, unit: "ml", category: "reagent", threshold: 1000 },
       { id: "formic_acid", name: "Formic Acid 98%", stock: 500, unit: "ml", category: "reagent", threshold: 50 }
     ];
-    
+
     const batch = writeBatch(this.db);
-    
+
     for(const item of inventory) {
         const ref = doc(this.db, `artifacts/${this.APP_ID}/inventory`, item.id);
         batch.set(ref, { ...item, lastUpdated: new Date() });
     }
-    
-    
+
+
     await batch.commit();
   }
 
@@ -368,7 +372,17 @@ export class FirebaseService {
           window.location.reload();
       } catch (e) {
           console.error("Failed to purge system cache", e);
-          window.location.reload(); 
+          window.location.reload();
       }
+  }
+
+  /**
+   * Remove any historical persistent Firestore cache before a shared-device
+   * session hands the browser to the next user. The caller must reload/leave
+   * the app afterwards because terminating Firestore is irreversible in-page.
+   */
+  async clearPersistentCacheForSharedDevice(): Promise<void> {
+      await terminate(this.db);
+      await clearIndexedDbPersistence(this.db);
   }
 }

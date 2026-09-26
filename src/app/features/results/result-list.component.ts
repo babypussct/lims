@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, signal, computed, OnInit, O
 import { CommonModule } from '@angular/common';
 import { StateService } from '../../core/services/state.service';
 import { Router, RouterModule } from '@angular/router';
-import { formatSampleList, getSafeGoogleUrl } from '../../shared/utils/utils';
+import { formatSampleList, getSafeGooglePreviewUrl, getSafeGoogleUrl } from '../../shared/utils/utils';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
 import { DateRangeFilterComponent } from '../../shared/components/date-range-filter/date-range-filter.component';
 import { ResultService } from './services/result.service';
@@ -758,28 +758,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
   }
 
   getGoogleDrivePreviewUrl(url: string | null | undefined): string {
-    if (!url) return '';
-    const fileDMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-    if (fileDMatch && fileDMatch[1]) {
-      return `https://drive.google.com/file/d/${fileDMatch[1]}/preview`;
-    }
-    const docDMatch = url.match(/\/document\/d\/([a-zA-Z0-9_-]+)/);
-    if (docDMatch && docDMatch[1]) {
-      return `https://docs.google.com/document/d/${docDMatch[1]}/preview`;
-    }
-    try {
-      const urlObj = new URL(url);
-      const id = urlObj.searchParams.get('id');
-      if (id) {
-        return `https://drive.google.com/file/d/${id}/preview`;
-      }
-    } catch (e) {
-      const idMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-      if (idMatch && idMatch[1]) {
-        return `https://drive.google.com/file/d/${idMatch[1]}/preview`;
-      }
-    }
-    return url;
+    return getSafeGooglePreviewUrl(url);
   }
 
   asReport(val: unknown): any {

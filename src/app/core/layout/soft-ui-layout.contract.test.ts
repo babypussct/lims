@@ -241,19 +241,13 @@ describe('Soft UI application layout contract', () => {
     assert.doesNotMatch(production, /rounded-\[(?:2(?:\.\d+)?|3(?:\.\d+)?|4(?:\.\d+)?)rem\]/);
   });
 
-  it('keeps workflow controls on the Soft UI fuchsia primary instead of the Mosaic indigo primary', () => {
-    const workflowSources = [
-      readProductionTree('../../features/auth/'),
-      readProductionTree('../../features/preparation/'),
-      readProductionTree('../../features/requests/'),
-      readProductionTree('../../features/sop/'),
-      readProductionTree('../../features/standards/'),
-      readProductionTree('../../features/traceability/'),
-      readProductionTree('../../features/results/sops/'),
-    ].join('\n');
+  it('keeps the documented indigo primary as the design authority for new workflow controls', () => {
+    const design = read('../../../../DESIGN.md');
+    const conventions = read('../../../../UI_CONVENTIONS.md');
 
-    assert.match(workflowSources, /fuchsia-\d{2,3}/);
-    assert.doesNotMatch(workflowSources, /indigo-\d{2,3}/);
+    assert.match(design, /Primary action:\s*`indigo-600`/);
+    assert.match(design, /Không dùng fuchsia\/pink làm màu điều hướng hoặc CTA chính cho UI mới/);
+    assert.match(conventions, /Primary action[^\n]*`indigo-600`[^\n]*`indigo-700`/);
   });
 
   it('covers every existing LIMS feature area with the Soft UI design system', () => {
@@ -268,10 +262,9 @@ describe('Soft UI application layout contract', () => {
       const source = readProductionTree(`../../features/${featureArea}/`);
       assert.match(
         source,
-        /soft-ui-|bg-gradient-soft|fuchsia-\d{2,3}|<app-page-header\b|<app-toolbar\b|<app-ui-button\b|<app-modal-shell\b/,
+        /soft-ui-|bg-gradient-soft|fuchsia-\d{2,3}|indigo-\d{2,3}|<app-page-header\b|<app-toolbar\b|<app-ui-button\b|<app-modal-shell\b/,
         `Feature area ${featureArea} must remain mapped to Soft UI`,
       );
-      assert.doesNotMatch(source, /indigo-\d{2,3}/);
       assert.doesNotMatch(source, /mosaic-/);
     }
   });

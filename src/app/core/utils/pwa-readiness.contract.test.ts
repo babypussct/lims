@@ -67,6 +67,27 @@ test('push notification cold launches convert internal routes to PWA hash URLs',
   assert.match(api, /fcmOptions:\s*\{\s*link:\s*pwaLaunchUrl\(input\.actionUrl\)\s*\}/);
 });
 
+test('messaging worker imports only self-hosted Firebase runtime assets', () => {
+  const worker = read('public/firebase-messaging-sw.js');
+  const angular = read('angular.json');
+
+  assert.match(worker, /importScripts\('\.\/vendor\/firebase\/firebase-app-compat\.js'\)/);
+  assert.match(worker, /importScripts\('\.\/vendor\/firebase\/firebase-messaging-compat\.js'\)/);
+  assert.doesNotMatch(worker, /gstatic\.com|https:\/\//);
+  assert.match(angular, /"glob": "firebase-app-compat\.js"/);
+  assert.match(angular, /"glob": "firebase-messaging-compat\.js"/);
+});
+
+test('preflight behavior is externalized so CSP can reject inline JavaScript', () => {
+  const index = read('src/index.html');
+  const preflight = read('public/app-preflight.js');
+
+  assert.match(index, /<script src="app-preflight\.js"><\/script>/);
+  assert.doesNotMatch(index, /<script>([\s\S]*?)<\/script>/);
+  assert.match(preflight, /legacy_google_redirect/);
+  assert.match(preflight, /localStorage\.getItem\('darkMode'\)/);
+});
+
 test('offline policy intentionally caches the application shell but not mutable backend data', () => {
   const config = JSON.parse(read('ngsw-config.json')) as {
     assetGroups?: { name?: string; installMode?: string }[];

@@ -1,4 +1,5 @@
 export type DeviceMode = 'shared' | 'personal';
+export type FirestoreCacheMode = 'memory';
 
 export const DEVICE_MODE_STORAGE_KEY = 'lims_device_mode';
 export const LEGACY_SHARED_DEVICE_KEY = 'lims_shared_device';
@@ -7,6 +8,15 @@ export const LEGACY_REMEMBER_SESSION_KEY = 'lims_remember_session';
 export interface StorageLike {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
+}
+
+/**
+ * Firestore documents may contain cross-user laboratory data, so the browser
+ * cache is always memory-only. Device mode still controls Firebase Auth
+ * persistence independently.
+ */
+export function resolveFirestoreCacheMode(_deviceMode: DeviceMode): FirestoreCacheMode {
+  return 'memory';
 }
 
 /**

@@ -8,37 +8,18 @@
  * Response: { sessionId: string, nonce: string, expiresAt: number }
  */
 import type { VercelRequest, VercelResponse } from '../_lib/vercel-types.js';
-import { cert, getApps, initializeApp } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { randomBytes } from 'node:crypto';
-
-function initAdmin() {
-  if (getApps().length > 0) return;
-  const serviceAccountJson = process.env['FIREBASE_SERVICE_ACCOUNT'];
-  if (!serviceAccountJson) throw new Error('FIREBASE_SERVICE_ACCOUNT is not configured.');
-  let serviceAccount: any;
-  try {
-    serviceAccount = JSON.parse(serviceAccountJson);
-  } catch (e: any) {
-    throw new Error(`FIREBASE_SERVICE_ACCOUNT JSON parse error: ${e.message}`);
-  }
-  if (serviceAccount?.private_key) {
-    serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
-  }
-  initializeApp({ credential: cert(serviceAccount) });
-}
+import { enforceQrRateLimit, QrRateLimitError } from '../_lib/qr-rate-limit.js';
+import { initializeFirebaseAdminIfNeeded } from '../_lib/firebase-admin.js';
+import { createQrPollToken, hashQrPollToken } from '../_lib/qr-session-auth.js';
 
 const SESSION_TTL_MS = 5 * 60 * 1000; // 5 phút
+const RATE_LIMIT_WINDOW_MS = 5 * 60 * 1000;
+const CREATE_RATE_LIMIT = 30;
 const APP_ID = process.env['VITE_APP_ID'] || process.env['APP_ID'] || 'lims-cloud-fixed';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // CORS: cho phép tất cả origins vì create là public endpoint,
-  // bảo mật thực sự là nonce một lần dùng bên trong.
-  const origin = req.headers['origin'] as string | undefined;
-  res.setHeader('Access-Control-Allow-Origin', origin || '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
   if (req.method === 'OPTIONS') {
     return res.status(204).end();
   }
@@ -48,11 +29,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    initAdmin();
+    initializeFirebaseAdminIfNeeded();
     const db = getFirestore();
+
+    await enforceQrRateLimit({
+      db,
+      appId: APP_ID,
+      scope: 'create',
+      headers: req.headers,
+      limit: CREATE_RATE_LIMIT,
+      windowMs: RATE_LIMIT_WINDOW_MS,
+    });
 
     const sessionId = 'qr_' + randomBytes(16).toString('hex');
     const nonce = randomBytes(24).toString('base64url');
+    const pollToken = createQrPollToken();
     const expiresAt = Date.now() + SESSION_TTL_MS;
 
     await db
@@ -61,13 +52,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .set({
         status: 'waiting',
         nonce,
+        pollTokenHash: hashQrPollToken(pollToken),
         expiresAt,
         createdAt: FieldValue.serverTimestamp(),
         uid: null,
       });
 
-    return res.status(200).json({ sessionId, nonce, expiresAt });
+    return res.status(200).json({ sessionId, nonce, pollToken, expiresAt });
   } catch (err: any) {
+    if (err instanceof QrRateLimitError) {
+      res.setHeader('Retry-After', String(err.retryAfterSeconds));
+      return res.status(429).json({ error: 'Too many QR session requests. Please retry later.' });
+    }
     console.error('[QR Create] Error:', err);
     return res.status(500).json({ error: 'Failed to create QR session' });
   }

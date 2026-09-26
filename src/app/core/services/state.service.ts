@@ -33,6 +33,7 @@ import { resolveMetadataSyncToast } from './notification-policy';
 import { ActivityEventService } from './activity-event.service';
 import { NotificationService } from './notification.service';
 import { isFeatureEnabledForUser, normalizeFeatureCanaryUids, resolveActivityFeedEnabled } from './feature-rollout';
+import { resolveRequestStatsCounts } from './request-stats.utils';
 
 export interface DirectBatchPlanItem {
   sop: Sop;
@@ -95,6 +96,7 @@ export class StateService implements OnDestroy {
   private readonly APPROVED_REQUEST_HISTORY_MAX_PAGES = 1000;
   private readonly APPROVED_REQUEST_HISTORY_CACHE_TTL_MS = 30_000;
   private readonly REPORT_COLLECTION_PAGE_SIZE = 250;
+  private readonly USER_DIRECTORY_PAGE_SIZE = 100;
   private readonly MAX_DIRECT_REQUEST_PAYLOAD_BYTES = 900_000;
   private approvedRecentRequests = new Map<string, Request>();
   private approvedHistoryRequests = new Map<string, Request>();
@@ -280,7 +282,7 @@ export class StateService implements OnDestroy {
     protectedAdmin: boolean;
   }>>(new Map());
 
-  systemVersion = signal<string>('v26.09.25-b02');
+  systemVersion = signal<string>('v26.09.26-b01');
   maintenanceMode = signal<boolean>(false);
   maintenanceMessage = signal<string>('Hệ thống đang được bảo trì. Vui lòng quay lại sau ít phút.');
   maintenanceScheduledTime = signal<string | null>(null);
@@ -928,66 +930,78 @@ export class StateService implements OnDestroy {
     if (this.usersInfoSub || !this.auth.currentUser()) return;
     const initGeneration = this.initGeneration;
     const isCurrentInit = () => initGeneration === this.initGeneration;
-
-    // Avatar rendering only needs a bounded directory. An unbounded listener here
-    // re-read every user profile on each reconnect and was a major Spark amplifier.
     const usersPath = `artifacts/${this.fb.APP_ID}/users`;
-    let isFirstUsersSnapshot = true;
-    const usersSub = onSnapshot(
-      query(collection(this.fb.db, `artifacts/${this.fb.APP_ID}/users`), limit(100)),
-      (s) => {
-        this.readMonitor.record(
-          'onSnapshot',
-          usersPath,
-          isFirstUsersSnapshot
-            ? s.size
-            : s.docChanges().filter(change => change.type !== 'removed').length,
-          { phase: isFirstUsersSnapshot ? 'initial' : 'delta', fromCache: s.metadata.fromCache }
-        );
-        isFirstUsersSnapshot = false;
-        const cacheMap = new Map<string, {
-          avatarStyle: string | null;
-          photoURL: string;
-          protectedAdmin: boolean;
-        }>();
-        const uidCacheMap = new Map<string, {
-          displayName: string;
-          avatarStyle: string | null;
-          photoURL: string;
-          protectedAdmin: boolean;
-        }>();
-        s.forEach(d => {
-            const data = d.data();
-            if (data['displayName']) {
-                const avatarStyle = typeof data['avatarStyle'] === 'string' && data['avatarStyle'].trim()
-                  ? data['avatarStyle'].trim()
-                  : null;
-                const photoURL = data['photoURL'] || '';
-                const protectedAdmin = data['protectedAdmin'] === true;
-                cacheMap.set(data['displayName'], { avatarStyle, photoURL, protectedAdmin });
-                uidCacheMap.set(d.id, {
-                  displayName: data['displayName'],
-                  avatarStyle,
-                  photoURL,
-                  protectedAdmin,
-                });
-            }
-        });
-        if (!isCurrentInit()) return;
-        this.usersInfoCache.set(cacheMap);
-        this.usersInfoByUidCache.set(uidCacheMap);
-      }, (error: any) => {
-      if (!isCurrentInit()) return;
-      console.warn('Users Cache listener error:', error.message);
-      if (error.code === 'permission-denied') this.permissionError.set(true);
-      }
-    );
-
+    let cancelled = false;
     this.usersInfoSub = () => {
-      usersSub();
+      cancelled = true;
       this.usersInfoSub = undefined;
     };
     this.listeners.push(this.usersInfoSub);
+
+    // Load the complete directory in bounded pages. This removes the 100-user
+    // correctness cap without keeping an unbounded live listener that re-reads
+    // the whole directory on every reconnect.
+    void (async () => {
+      const cacheMap = new Map<string, {
+        avatarStyle: string | null;
+        photoURL: string;
+        protectedAdmin: boolean;
+      }>();
+      const uidCacheMap = new Map<string, {
+        displayName: string;
+        avatarStyle: string | null;
+        photoURL: string;
+        protectedAdmin: boolean;
+      }>();
+      let cursor: QueryDocumentSnapshot | undefined;
+
+      try {
+        do {
+          const constraints: QueryConstraint[] = [
+            orderBy(documentId()),
+            limit(this.USER_DIRECTORY_PAGE_SIZE)
+          ];
+          const pageQuery = cursor
+            ? query(collection(this.fb.db, usersPath), orderBy(documentId()), startAfter(cursor), limit(this.USER_DIRECTORY_PAGE_SIZE))
+            : query(collection(this.fb.db, usersPath), ...constraints);
+          const snapshot = await getDocs(pageQuery);
+          this.readMonitor.record('getDocs', usersPath, snapshot.size, {
+            phase: 'page',
+            fromCache: snapshot.metadata.fromCache
+          });
+
+          for (const userDoc of snapshot.docs) {
+            const data = userDoc.data();
+            if (!data['displayName']) continue;
+            const avatarStyle = typeof data['avatarStyle'] === 'string' && data['avatarStyle'].trim()
+              ? data['avatarStyle'].trim()
+              : null;
+            const photoURL = data['photoURL'] || '';
+            const protectedAdmin = data['protectedAdmin'] === true;
+            cacheMap.set(data['displayName'], { avatarStyle, photoURL, protectedAdmin });
+            uidCacheMap.set(userDoc.id, {
+              displayName: data['displayName'],
+              avatarStyle,
+              photoURL,
+              protectedAdmin,
+            });
+          }
+
+          if (cancelled || !isCurrentInit()) return;
+          cursor = snapshot.size === this.USER_DIRECTORY_PAGE_SIZE
+            ? snapshot.docs[snapshot.docs.length - 1]
+            : undefined;
+        } while (cursor);
+
+        if (cancelled || !isCurrentInit()) return;
+        this.usersInfoCache.set(cacheMap);
+        this.usersInfoByUidCache.set(uidCacheMap);
+      } catch (error: any) {
+        if (cancelled || !isCurrentInit()) return;
+        console.warn('Users Cache load error:', error.message);
+        if (error.code === 'permission-denied') this.permissionError.set(true);
+      }
+    })();
   }
 
   // ─── CONFIG: Version-based Caching (Optimized for Spark Plan) ───────────
@@ -1836,10 +1850,12 @@ export class StateService implements OnDestroy {
         this.toast.show(`Duyệt thành công và đã đưa vào hàng đợi in: "${sop.name}"`, 'success');
       }
 
-      let samples = 1; let qcs = 0;
-      if (formInputs?.['n_sample']) samples = Number(formInputs['n_sample']);
-      if (formInputs?.['n_qc']) qcs = Number(formInputs['n_qc']);
-      this.statsService.incrementStats(this.getStatsDateForRequest({ analysisDate: formInputs?.analysisDate }, new Date()), sop.id, sop.name, samples, 1, qcs).catch(e => console.error(e));
+      const { samples, qcs } = resolveRequestStatsCounts({ sampleList: formInputs?.sampleList, inputs: formInputs });
+      void this.statsService.incrementStatsWithReconciliation(
+        this.getStatsDateForRequest({ analysisDate: formInputs?.analysisDate }, new Date()),
+        sop.id, sop.name, samples, 1, qcs, false,
+        { requestId: reqRef.id, operation: 'direct-approve' }
+      );
 
       return { logId: logRef.id, printJobId: printJobRef.id };
 
@@ -2050,10 +2066,12 @@ export class StateService implements OnDestroy {
       );
 
       prepared.forEach(item => {
-        let samples = 1; let qcs = 0;
-        if (item.formInputs?.['n_sample']) samples = Number(item.formInputs['n_sample']);
-        if (item.formInputs?.['n_qc']) qcs = Number(item.formInputs['n_qc']);
-        this.statsService.incrementStats(this.getStatsDateForRequest({ analysisDate: item.formInputs?.analysisDate }, new Date()), item.sop.id, item.sop.name, samples, 1, qcs).catch(e => console.error(e));
+        const { samples, qcs } = resolveRequestStatsCounts({ sampleList: item.formInputs?.sampleList, inputs: item.formInputs });
+        void this.statsService.incrementStatsWithReconciliation(
+          this.getStatsDateForRequest({ analysisDate: item.formInputs?.analysisDate }, new Date()),
+          item.sop.id, item.sop.name, samples, 1, qcs, false,
+          { requestId: item.requestRef.id, operation: 'direct-batch-approve' }
+        );
       });
 
       return prepared.map(item => ({
@@ -2215,11 +2233,11 @@ export class StateService implements OnDestroy {
         'approveRequest'
       );
 
-      let samples = 1; let qcs = 0;
-      if (req.sampleList && req.sampleList.length > 0) samples = req.sampleList.length;
-      else if (req.inputs?.['n_sample']) samples = Number(req.inputs['n_sample']);
-      if (req.inputs?.['n_qc']) qcs = Number(req.inputs['n_qc']);
-      this.statsService.incrementStats(this.getStatsDateForRequest(req, new Date()), req.sopId, req.sopName, samples, 1, qcs).catch(e => console.error(e));
+      const { samples, qcs } = resolveRequestStatsCounts(req);
+      void this.statsService.incrementStatsWithReconciliation(
+        this.getStatsDateForRequest(req, new Date()), req.sopId, req.sopName, samples, 1, qcs, false,
+        { requestId: req.id, operation: 'approve-request' }
+      );
 
       this.toast.show(`Duyệt thành công yêu cầu "${req.sopName}"`, 'success');
     } catch (e: any) {
@@ -2236,7 +2254,11 @@ export class StateService implements OnDestroy {
       await runTransaction(this.fb.db, async (transaction) => {
         const invRefs: DocumentReference[] = []; const existingItems: RequestItem[] = [];
         const readPromises = req.items.map(item => { const ref = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', item.name); return transaction.get(ref); });
-        const invSnaps = await Promise.all(readPromises);
+        const publicTraceabilityRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'public_traceability', req.id);
+        const [invSnaps, publicTraceabilitySnap] = await Promise.all([
+          Promise.all(readPromises),
+          transaction.get(publicTraceabilityRef)
+        ]);
         for (let i = 0; i < invSnaps.length; i++) { if (invSnaps[i].exists()) { invRefs.push(invSnaps[i].ref); existingItems.push(req.items[i]); } }
         for (let i = 0; i < existingItems.length; i++) { transaction.update(invRefs[i], { stock: increment(existingItems[i].amount), lastUpdated: serverTimestamp() }); }
 
@@ -2267,6 +2289,9 @@ export class StateService implements OnDestroy {
           }
         });
         this.activityEvents.setInTransaction(transaction, activityRef, activityEvent);
+        if (publicTraceabilitySnap.exists()) {
+          this.activityEvents.updatePublicTraceabilityStatusInTransaction(transaction, req.id, targetStatus);
+        }
       });
       await this.dispatchActivityNotificationIfEnabled(activityRef.id);
       await this.dailyChecklistMaterializer.deleteEntryBestEffort(
@@ -2275,12 +2300,12 @@ export class StateService implements OnDestroy {
         'revokeApproval'
       );
 
-      let samples = 1; let qcs = 0;
-      if (req.sampleList && req.sampleList.length > 0) samples = req.sampleList.length;
-      else if (req.inputs?.['n_sample']) samples = Number(req.inputs['n_sample']);
-      if (req.inputs?.['n_qc']) qcs = Number(req.inputs['n_qc']);
+      const { samples, qcs } = resolveRequestStatsCounts(req);
       const reqDate = this.getStatsDateForRequest(req, new Date());
-      this.statsService.incrementStats(reqDate, req.sopId, req.sopName, samples, 1, qcs, true).catch(e => console.error(e));
+      void this.statsService.incrementStatsWithReconciliation(
+        reqDate, req.sopId, req.sopName, samples, 1, qcs, true,
+        { requestId: req.id, operation: 'revoke-approval' }
+      );
 
       this.toast.show(targetStatus === 'rejected' ? 'Đã hủy và từ chối yêu cầu thành công!' : 'Đã hoàn tác yêu cầu thành công!', 'success');
     } catch (e: any) {
@@ -2456,29 +2481,25 @@ export class StateService implements OnDestroy {
         'updateApprovedRequest'
       );
 
-      let oldSamples = 1; let oldQcs = 0;
-      if (req.sampleList && req.sampleList.length > 0) oldSamples = req.sampleList.length;
-      else if (req.inputs?.['n_sample']) oldSamples = Number(req.inputs['n_sample']);
-      if (req.inputs?.['n_qc']) oldQcs = Number(req.inputs['n_qc']);
-
-      let newSamples = 1; let newQcs = 0;
-      if (formInputs.sampleList && formInputs.sampleList.length > 0) newSamples = formInputs.sampleList.length;
-      else if (formInputs['n_sample']) newSamples = Number(formInputs['n_sample']);
-      if (formInputs['n_qc']) newQcs = Number(formInputs['n_qc']);
+      const { samples: oldSamples, qcs: oldQcs } = resolveRequestStatsCounts(req);
+      const { samples: newSamples, qcs: newQcs } = resolveRequestStatsCounts({
+        sampleList: formInputs.sampleList,
+        inputs: formInputs
+      });
 
       const oldStatsDate = this.getStatsDateForRequest(req, new Date());
       const newStatsDate = this.getStatsDateForRequest({ analysisDate: formInputs.analysisDate }, new Date());
       if (oldStatsDate.toDateString() !== newStatsDate.toDateString()) {
-        this.statsService.incrementStats(oldStatsDate, req.sopId, req.sopName, oldSamples, 1, oldQcs, true).catch(e => console.error(e));
-        this.statsService.incrementStats(newStatsDate, sop.id, sop.name, newSamples, 1, newQcs).catch(e => console.error(e));
+        void this.statsService.incrementStatsWithReconciliation(oldStatsDate, req.sopId, req.sopName, oldSamples, 1, oldQcs, true, { requestId: req.id, operation: 'edit-approved-old-date' });
+        void this.statsService.incrementStatsWithReconciliation(newStatsDate, sop.id, sop.name, newSamples, 1, newQcs, false, { requestId: req.id, operation: 'edit-approved-new-date' });
       } else {
         const sampleDelta = newSamples - oldSamples;
         const qcDelta = newQcs - oldQcs;
         if (sampleDelta !== 0) {
-          this.statsService.incrementStats(oldStatsDate, sop.id, sop.name, Math.abs(sampleDelta), 0, 0, sampleDelta < 0).catch(e => console.error(e));
+          void this.statsService.incrementStatsWithReconciliation(oldStatsDate, sop.id, sop.name, Math.abs(sampleDelta), 0, 0, sampleDelta < 0, { requestId: req.id, operation: 'edit-approved-sample-delta' });
         }
         if (qcDelta !== 0) {
-          this.statsService.incrementStats(oldStatsDate, sop.id, sop.name, 0, 0, Math.abs(qcDelta), qcDelta < 0).catch(e => console.error(e));
+          void this.statsService.incrementStatsWithReconciliation(oldStatsDate, sop.id, sop.name, 0, 0, Math.abs(qcDelta), qcDelta < 0, { requestId: req.id, operation: 'edit-approved-qc-delta' });
         }
       }
 

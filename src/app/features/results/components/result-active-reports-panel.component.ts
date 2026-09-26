@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { AppUiProgressComponent } from '../../../shared/components/ui/progress/progress.component';
 import { AppUiTimelineComponent } from '../../../shared/components/ui/timeline/timeline.component';
 import { TimelineItem } from '../../../shared/components/ui/timeline/timeline.model';
+import { getSafeGoogleUrl } from '../../../shared/utils/report-url';
 
 export interface ReportProgress {
   total: number;
@@ -86,8 +87,7 @@ export class ResultActiveReportsPanelComponent {
 
   /** Trả về URL Google Docs ở chế độ xem trước */
   getDocsPreviewUrl(url: string): string {
-    if (!url) return '';
-    return url.replace(/\/edit.*$/, '/preview');
+    return getSafeGoogleUrl(url, 'doc');
   }
 
   getRecentHistory(): any[] {

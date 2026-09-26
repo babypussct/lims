@@ -601,6 +601,7 @@ export class LoginComponent implements OnInit, OnDestroy {
   @ViewChild('qrCanvas') qrCanvas!: ElementRef;
   qrStatus = signal<'waiting' | 'scanned' | 'approved' | 'expired'>('waiting');
   currentSessionId: string | null = null;
+  private currentPollToken: string | null = null;
   private pollInterval: any = null;
   private expiryTimer: any;
 
@@ -636,8 +637,12 @@ export class LoginComponent implements OnInit, OnDestroy {
               throw new Error(`Không thể tạo phiên đăng nhập (mã lỗi ${createRes.status}).`);
           }
 
-          const { sessionId, nonce, expiresAt } = await createRes.json();
+          const { sessionId, nonce, pollToken, expiresAt } = await createRes.json();
+          if (typeof pollToken !== 'string' || !pollToken) {
+              throw new Error('Máy chủ không cấp capability cho phiên QR.');
+          }
           this.currentSessionId = sessionId;
+          this.currentPollToken = pollToken;
 
           // 2. Hiển thị QR với format mới: LIMS_QR|sessionId|nonce
           // Mobile đọc QR này và gửi lên /api/qr/approve kèm Firebase ID Token
@@ -658,9 +663,11 @@ export class LoginComponent implements OnInit, OnDestroy {
 
           // 3. Poll /api/qr/status mỗi 3 giây để chờ Mobile approve
           this.pollInterval = setInterval(async () => {
-              if (!this.currentSessionId) return;
+              if (!this.currentSessionId || !this.currentPollToken) return;
               try {
-                  const statusRes = await fetch(`/api/qr/status?sessionId=${encodeURIComponent(this.currentSessionId)}`);
+                  const statusRes = await fetch(`/api/qr/status?sessionId=${encodeURIComponent(this.currentSessionId)}`, {
+                      headers: { 'X-QR-Poll-Token': this.currentPollToken }
+                  });
                   if (!statusRes.ok) return;
 
                   const statusData = await statusRes.json();
@@ -694,9 +701,12 @@ export class LoginComponent implements OnInit, OnDestroy {
   cleanupSession(clearId = true) {
       if (this.pollInterval) { clearInterval(this.pollInterval); this.pollInterval = null; }
       if (this.expiryTimer) { clearTimeout(this.expiryTimer); this.expiryTimer = null; }
-      if (this.currentSessionId && clearId) {
-          this.auth.deleteAuthSession(this.currentSessionId).catch(() => {});
-          this.currentSessionId = null;
+      const sessionId = this.currentSessionId;
+      const pollToken = this.currentPollToken;
+      this.currentSessionId = null;
+      this.currentPollToken = null;
+      if (sessionId && pollToken && clearId) {
+          this.auth.deleteAuthSession(sessionId, pollToken).catch(() => {});
       }
   }
 

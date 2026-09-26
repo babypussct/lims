@@ -5,13 +5,18 @@ const path = require('node:path');
 const net = require('node:net');
 
 function loadCredentials() {
-  const envPath = '/Users/otada/.codex/secrets/lims-admin.env';
+  let username = (process.env.LIMS_ADMIN_USERNAME || '').trim();
+  let password = process.env.LIMS_ADMIN_PASSWORD || '';
+  if (username && password) return { username, password };
+
+  const envPath = (process.env.LIMS_UI_AUDIT_ENV_FILE || '').trim();
+  if (!envPath) return null;
   if (!fs.existsSync(envPath)) {
-    throw new Error(`Credentials file not found at ${envPath}`);
+    throw new Error(`UI audit credentials file not found at ${envPath}`);
   }
   const content = fs.readFileSync(envPath, 'utf8');
-  let username = '';
-  let password = '';
+  username = '';
+  password = '';
   for (const line of content.split('\n')) {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith('#')) continue;
@@ -231,6 +236,11 @@ async function preflightCheck(baseUrl) {
 }
 
 async function run() {
+  const creds = loadCredentials();
+  if (!creds) {
+    console.log('[UI Zero Jump] SKIP: set LIMS_ADMIN_USERNAME/LIMS_ADMIN_PASSWORD or LIMS_UI_AUDIT_ENV_FILE to run authenticated browser checks.');
+    return;
+  }
   const baseUrl = process.env.UI_AUDIT_BASE_URL || 'http://127.0.0.1:4200';
   await preflightCheck(baseUrl);
 
@@ -575,7 +585,6 @@ async function run() {
     await client.send('Page.navigate', { url: `${baseUrl}/#/dashboard` });
     await sleep(2500);
 
-    const creds = loadCredentials();
     await client.eval(`
       (async () => {
         const tabs = Array.from(document.querySelectorAll('app-login button'));

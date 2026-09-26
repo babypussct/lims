@@ -6,7 +6,7 @@ import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { StateService } from '../../core/services/state.service';
 import { FirebaseService } from '../../core/services/firebase.service';
-import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, type DocumentReference, type DocumentSnapshot } from 'firebase/firestore';
 import { formatDate, formatNum, formatSampleList, naturalCompare, getAvatarUrl } from '../../shared/utils/utils';
 import { Log } from '../../core/models/log.model';
 import { ToastService } from '../../core/services/toast.service';
@@ -1078,22 +1078,51 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
       this.timelineItems.set([]);
       
       try {
-          // 1. Try Direct Log Lookup (Priority 1)
+          // Public traceability is intentionally limited to canonical Activity
+          // documents marked publicTraceable by Firestore rules. A denied/missing
+          // log is treated as non-public so it cannot block the public-safe path.
           const logRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/logs/${id}`);
-          const snap = await getDoc(logRef);
+          const snap = await this.getTraceabilityDoc(logRef);
           if (requestToken !== this.lookupRequest) return;
 
-          if (snap.exists()) {
+          if (snap?.exists()) {
               this.startVerificationProcess({ id: snap.id, ...snap.data() } as Log, requestToken);
+              return;
+          }
+
+          // Request-id QR routes resolve through a minimal exact-get projection.
+          // The projection contains no operational request payload and points only
+          // to a log that Firestore independently marks publicTraceable.
+          const projectionRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/public_traceability/${id}`);
+          const projectionSnap = await this.getTraceabilityDoc(projectionRef);
+          if (requestToken !== this.lookupRequest) return;
+          if (projectionSnap?.exists()) {
+              const projection = projectionSnap.data() as { logId?: unknown; status?: unknown };
+              if (typeof projection.logId === 'string' && projection.logId) {
+                  const projectedLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/logs/${projection.logId}`);
+                  const projectedLogSnap = await this.getTraceabilityDoc(projectedLogRef);
+                  if (requestToken !== this.lookupRequest) return;
+                  if (projectedLogSnap?.exists()) {
+                      const projectedLog = { id: projectedLogSnap.id, ...projectedLogSnap.data() } as Log;
+                      if (typeof projection.status === 'string') projectedLog.status = projection.status;
+                      this.startVerificationProcess(projectedLog, requestToken);
+                      return;
+                  }
+              }
+          }
+
+          // Anonymous/public lookup must never probe operational collections.
+          if (!this.auth.currentUser()) {
+              this.errorMsg.set(`Không tìm thấy dữ liệu công khai cho mã: ${id}`);
               return;
           }
 
           // 2. Try Lookup by Print Job ID (Legacy or linked) (Priority 2)
           const jobRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/print_jobs/${id}`);
-          const jobSnap = await getDoc(jobRef);
+          const jobSnap = await this.getTraceabilityDoc(jobRef);
           if (requestToken !== this.lookupRequest) return;
           
-          if (jobSnap.exists()) {
+          if (jobSnap?.exists()) {
               const jobData = jobSnap.data() as any;
               const mockLog: Log = {
                   id: id,
@@ -1110,10 +1139,10 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
 
           // 3. Try Lookup by REQUEST ID (Dashboard links point here) (Priority 3)
           const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/requests/${id}`);
-          const reqSnap = await getDoc(reqRef);
+          const reqSnap = await this.getTraceabilityDoc(reqRef);
           if (requestToken !== this.lookupRequest) return;
 
-          if (reqSnap.exists()) {
+          if (reqSnap?.exists()) {
               const reqData = reqSnap.data() as any;
               
               // Map Request format to Log format for display consistency
@@ -1178,6 +1207,17 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
       }
   }
 
+  private async getTraceabilityDoc(ref: DocumentReference): Promise<DocumentSnapshot | null> {
+      try {
+          return await getDoc(ref);
+      } catch (error: any) {
+          if (error?.code === 'permission-denied' || error?.code === 'firestore/permission-denied') {
+              return null;
+          }
+          throw error;
+      }
+  }
+
   startVerificationProcess(log: Log, requestToken = this.lookupRequest) {
       this.stopVerificationTimers();
       this.isVerifying.set(true);
@@ -1208,8 +1248,9 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
 
   handleLogData(log: Log, requestToken = this.lookupRequest) {
       const getStatusAndHydrate = async () => {
+          const canHydratePrivateData = !!this.auth.currentUser();
           // If log has requestId and no status, fetch request status
-          if (log.requestId && !log.status) {
+          if (canHydratePrivateData && log.requestId && !log.status) {
               try {
                   const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/requests/${log.requestId}`);
                   const reqSnap = await getDoc(reqRef);
@@ -1222,7 +1263,7 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
           }
 
           // Hydrate if printJobId exists but printData is missing (New Arch)
-          if (log.printJobId && !log.printData) {
+          if (canHydratePrivateData && log.printJobId && !log.printData) {
               try {
                   const jobRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/print_jobs/${log.printJobId}`);
                   const jobSnap = await getDoc(jobRef);

@@ -2,7 +2,34 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.25-b02
+## Phiên bản hiện tại: v26.09.26-b01
+
+### v26.09.26-b01
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Đăng nhập bằng QR được bổ sung mã năng lực riêng cho máy tính, chống đọc trộm trạng thái, phát lại và nhận token nhiều lần.
+- Truy xuất công khai theo mã yêu cầu chỉ dùng một bản chiếu tối thiểu, không cho người chưa đăng nhập dò dữ liệu yêu cầu hoặc hàng đợi in.
+- Thống kê được chuẩn hóa theo dữ liệu nguồn và có cơ chế đối soát lại an toàn khi cập nhật projection thất bại.
+
+#### ✨ Tính Năng Mới
+
+- Bổ sung cơ chế đối soát thống kê có thể chạy lại nhiều lần mà không cộng trừ trùng dữ liệu.
+- Bổ sung migration cho dữ liệu truy xuất công khai lịch sử theo request ID.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Dữ liệu Firestore nghiệp vụ chỉ lưu trong bộ nhớ trình duyệt; chế độ thiết bị chỉ còn điều khiển độ bền phiên đăng nhập.
+- QR chất chuẩn được tạo hoàn toàn trong ứng dụng thay vì gửi URL và ID sang dịch vụ QR bên thứ ba.
+- Telemetry hệ thống dùng đúng monthly_stats và báo trạng thái không xác định khi phép đếm thất bại thay vì hiển thị sai là 0.
+- Luồng sửa yêu cầu đã được rà soát để đối soát cả ngày thống kê cũ và mới khi ngày phân tích thay đổi.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Khóa khả năng lộ poll token của QR login trong mã QR và bổ sung hủy session có xác thực.
+- Đảm bảo custom token QR chỉ được phát hành một lần ngay cả khi có nhiều poll đồng thời.
+- Bổ sung kiểm thử Firestore rules cho projection truy xuất công khai, hàng đợi đối soát thống kê và quyền truy cập theo vai trò.
+- Bổ sung kiểm tra hồi quy quyền camera iOS và loại bỏ CSP cho dịch vụ QR ngoài không còn sử dụng.
 
 ### v26.09.25-b02
 

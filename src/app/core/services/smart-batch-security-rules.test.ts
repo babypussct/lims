@@ -64,8 +64,11 @@ test('report_view can read persisted inventory without receiving inventory write
 test('batch_run cannot approve or arbitrarily rewrite an existing request', () => {
   const block = ruleBlock(
     'match /artifacts/{appId}/requests/{reqId}',
-    'match /artifacts/{appId}/daily_checklists/{analysisDate}'
+    'match /artifacts/{appId}/public_traceability/{requestId}'
   );
+  assert.doesNotMatch(block, /allow get:\s*if\s*true/);
+  assert.match(block, /allow get, list:\s*if canUseSopWorkspace\(appId\) \|\|/);
+  assert.match(block, /hasPermission\(appId, 'report_view'\)/);
   assert.doesNotMatch(block, /allow write:\s*if[^;]*batch_run/);
   assert.match(block, /validBatchRequestUpdate\(appId\)/);
   assert.match(rules, /function validResultUpdate\(\)/);
@@ -98,7 +101,7 @@ test('result details require an operational role to write', () => {
 test('SOP reassignment is the guarded path for changing SOP identity and purges active result details', () => {
   const requestBlock = ruleBlock(
     'match /artifacts/{appId}/requests/{reqId}',
-    'match /artifacts/{appId}/daily_checklists/{analysisDate}'
+    'match /artifacts/{appId}/public_traceability/{requestId}'
   );
   const detailBlock = ruleBlock(
     'match /artifacts/{appId}/results_details/{docId}',

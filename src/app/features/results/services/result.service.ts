@@ -12,6 +12,7 @@ import { Request } from '../../../core/models/request.model';
 import { DailyChecklistEntry } from '../../../core/models/daily-checklist.model';
 import { buildDailyChecklistEntry } from '../../../core/utils/daily-checklist-projection';
 import { buildGeneratePdfRequestId } from './report-request-id';
+import { getSafeGoogleUrl, sanitizeReportMapUrls } from '../../../shared/utils/report-url';
 import {
   buildReportCoverage,
   getReportableSamples,
@@ -416,17 +417,22 @@ export class ResultService {
         updatedBy: userName
       };
       
-      if (draft.pdfUrl !== undefined) summaryPayload.pdfUrl = draft.pdfUrl;
-      else if (metaData['analysisResultSummary']?.['pdfUrl'] !== undefined) summaryPayload.pdfUrl = metaData['analysisResultSummary']['pdfUrl'];
-      else if (legacyResult['pdfUrl'] !== undefined) summaryPayload.pdfUrl = legacyResult['pdfUrl'];
-      
-      if (draft.pdfViewUrl !== undefined) summaryPayload.pdfViewUrl = draft.pdfViewUrl;
-      else if (metaData['analysisResultSummary']?.['pdfViewUrl'] !== undefined) summaryPayload.pdfViewUrl = metaData['analysisResultSummary']['pdfViewUrl'];
-      else if (legacyResult['pdfViewUrl'] !== undefined) summaryPayload.pdfViewUrl = legacyResult['pdfViewUrl'];
-      
-      if (draft.docsUrl !== undefined) summaryPayload.docsUrl = draft.docsUrl;
-      else if (metaData['analysisResultSummary']?.['docsUrl'] !== undefined) summaryPayload.docsUrl = metaData['analysisResultSummary']['docsUrl'];
-      else if (legacyResult['docsUrl'] !== undefined) summaryPayload.docsUrl = legacyResult['docsUrl'];
+      const resolveReportUrl = (
+        incoming: string | null | undefined,
+        current: string | null | undefined,
+        legacy: string | null | undefined,
+        type: 'pdf' | 'doc'
+      ): string | undefined => {
+        const raw = incoming !== undefined ? incoming : (current !== undefined ? current : legacy);
+        return raw === undefined ? undefined : getSafeGoogleUrl(raw, type);
+      };
+
+      const pdfUrl = resolveReportUrl(draft.pdfUrl, metaData['analysisResultSummary']?.['pdfUrl'], legacyResult['pdfUrl'], 'pdf');
+      const pdfViewUrl = resolveReportUrl(draft.pdfViewUrl, metaData['analysisResultSummary']?.['pdfViewUrl'], legacyResult['pdfViewUrl'], 'pdf');
+      const docsUrl = resolveReportUrl(draft.docsUrl, metaData['analysisResultSummary']?.['docsUrl'], legacyResult['docsUrl'], 'doc');
+      if (pdfUrl !== undefined) summaryPayload.pdfUrl = pdfUrl;
+      if (pdfViewUrl !== undefined) summaryPayload.pdfViewUrl = pdfViewUrl;
+      if (docsUrl !== undefined) summaryPayload.docsUrl = docsUrl;
 
       if (draft.pdfFileName !== undefined) summaryPayload.pdfFileName = draft.pdfFileName;
       else if (metaData['analysisResultSummary']?.['pdfFileName'] !== undefined) summaryPayload.pdfFileName = metaData['analysisResultSummary']['pdfFileName'];
@@ -444,9 +450,9 @@ export class ResultService {
       else if (metaData['analysisResultSummary']?.['allReportStatus'] !== undefined) summaryPayload.allReportStatus = metaData['analysisResultSummary']['allReportStatus'];
       else if (legacyResult['allReportStatus'] !== undefined) summaryPayload.allReportStatus = legacyResult['allReportStatus'];
       
-      if (draft.reports !== undefined) summaryPayload.reports = draft.reports;
-      else if (metaData['analysisResultSummary']?.['reports'] !== undefined) summaryPayload.reports = metaData['analysisResultSummary']['reports'];
-      else if (legacyResult['reports'] !== undefined) summaryPayload.reports = legacyResult['reports'];
+      if (draft.reports !== undefined) summaryPayload.reports = sanitizeReportMapUrls(draft.reports);
+      else if (metaData['analysisResultSummary']?.['reports'] !== undefined) summaryPayload.reports = sanitizeReportMapUrls(metaData['analysisResultSummary']['reports']);
+      else if (legacyResult['reports'] !== undefined) summaryPayload.reports = sanitizeReportMapUrls(legacyResult['reports']);
 
       // Mở khóa chỉ tạo một phiên chỉnh sửa. Báo cáo cũ vẫn còn hiệu lực cho tới
       // khi có thay đổi dữ liệu thật sự được lưu.

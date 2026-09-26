@@ -1,7 +1,6 @@
-import { Component, Input, Output, EventEmitter, inject, signal } from '@angular/core';
+import { Component, Input, Output, EventEmitter, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
-import { formatSampleList } from '../../../shared/utils/utils';
+import { formatSampleList, getSafeGoogleUrl as sanitizeGoogleUrl } from '../../../shared/utils/utils';
 
 type ReportKind = 'all' | 'group';
 
@@ -276,7 +275,6 @@ export class ReportHubModalComponent {
   @Output() createReport = new EventEmitter<{requestId: string, prefix?: string}>();
   @Output() previewPdf = new EventEmitter<{pdfUrl: string, docsUrl?: string, prefix: string, version?: number, publishedBy?: string, publishedAt?: string}>();
 
-  private sanitizer = inject(DomSanitizer);
   expandedChipKeys = signal<Record<string, boolean>>({});
   showHistory = signal(false);
 
@@ -294,8 +292,8 @@ export class ReportHubModalComponent {
     this.previewPdf.emit({ pdfUrl, docsUrl, prefix, version, publishedBy, publishedAt });
   }
 
-  getSafeGoogleUrl(docsUrl: string): SafeUrl {
-    return this.sanitizer.bypassSecurityTrustUrl(docsUrl.replace(/\/edit.*$/, '/preview'));
+  getSafeGoogleUrl(docsUrl: string): string {
+    return sanitizeGoogleUrl(docsUrl, 'doc');
   }
 
   toggleChipExpand(key: string) {

@@ -49,4 +49,4 @@ if (uncovered.length > 0) {
   process.exit(1);
 }
 
-console.log(`Test coverage audit passed: ${testFiles.length} test files are referenced by release runners.`);
+console.log(`Test reachability audit passed: ${testFiles.length} test files are referenced by release runners.`);

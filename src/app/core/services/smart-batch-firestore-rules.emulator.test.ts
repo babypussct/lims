@@ -729,6 +729,56 @@ test('public traceability is get-only and requires publicTraceable BUSINESS data
   await assertFails(getDocs(collection(publicDb, `artifacts/${APP_ID}/logs`)));
 });
 
+test('request-id public traceability projection is exact-get only and bound to a public log plus canonical request status', async () => {
+  await env.withSecurityRulesDisabled(async context => {
+    await setDoc(doc(context.firestore(), `artifacts/${APP_ID}/requests/public-request`), {
+      sopId: 'sop-a',
+      sopName: 'SOP A',
+      items: [],
+      status: 'approved',
+      user: users.manager.displayName,
+      timestamp: Timestamp.fromMillis(1_700_000_000_000),
+      lastUpdated: Timestamp.fromMillis(1_700_000_000_000),
+      approvedAt: Timestamp.fromMillis(1_700_000_000_000),
+    });
+  });
+
+  const managerDb = dbFor(users.manager);
+  const projectionRef = doc(managerDb, `artifacts/${APP_ID}/public_traceability/public-request`);
+  await assertSucceeds(setDoc(projectionRef, {
+    requestId: 'public-request',
+    logId: 'public-trace',
+    status: 'approved',
+    updatedAt: serverTimestamp(),
+  }));
+
+  const publicDb = env.unauthenticatedContext().firestore();
+  const projection = await assertSucceeds(getDoc(doc(publicDb, `artifacts/${APP_ID}/public_traceability/public-request`)));
+  assert.equal(projection.data()?.['logId'], 'public-trace');
+  await assertFails(getDocs(collection(publicDb, `artifacts/${APP_ID}/public_traceability`)));
+
+  await assertFails(setDoc(doc(managerDb, `artifacts/${APP_ID}/public_traceability/forged-private`), {
+    requestId: 'forged-private',
+    logId: 'private-business',
+    status: 'approved',
+    updatedAt: serverTimestamp(),
+  }));
+  await assertFails(updateDoc(projectionRef, {
+    status: 'pending',
+    updatedAt: serverTimestamp(),
+  }));
+
+  await env.withSecurityRulesDisabled(async context => {
+    await updateDoc(doc(context.firestore(), `artifacts/${APP_ID}/requests/public-request`), {
+      status: 'rejected',
+    });
+  });
+  await assertSucceeds(updateDoc(projectionRef, {
+    status: 'rejected',
+    updatedAt: serverTimestamp(),
+  }));
+});
+
 test('personal printable logs require canonical UID ownership after display-name changes', async () => {
   const renamedDisplayName = 'Batch A Renamed';
   const seedTime = Timestamp.fromMillis(1_700_000_000_000);
@@ -875,16 +925,20 @@ test('report_view can read inventory for NXT reporting without inventory write a
 test('report_view can read reporting dependencies without receiving operational write access', async () => {
   const reportDb = dbFor(users.customReportOnly);
   const pendingDb = dbFor(users.pending);
+  const publicDb = env.unauthenticatedContext().firestore();
   const requestPath = `artifacts/${APP_ID}/requests/pending-request`;
   const standardPath = `artifacts/${APP_ID}/reference_standards/std-requester`;
   const standardRequestPath = `artifacts/${APP_ID}/standard_requests/requester-lifecycle`;
 
+  await assertSucceeds(getDoc(doc(reportDb, requestPath)));
   await assertSucceeds(getDocs(collection(reportDb, `artifacts/${APP_ID}/requests`)));
   await assertSucceeds(getDoc(doc(reportDb, standardPath)));
   await assertSucceeds(getDocs(collection(reportDb, `artifacts/${APP_ID}/reference_standards`)));
   await assertSucceeds(getDoc(doc(reportDb, standardRequestPath)));
   await assertSucceeds(getDocs(collection(reportDb, `artifacts/${APP_ID}/standard_requests`)));
 
+  await assertFails(getDoc(doc(publicDb, requestPath)));
+  await assertFails(getDoc(doc(pendingDb, requestPath)));
   await assertFails(getDocs(collection(pendingDb, `artifacts/${APP_ID}/requests`)));
   await assertFails(getDoc(doc(pendingDb, standardPath)));
   await assertFails(getDoc(doc(pendingDb, standardRequestPath)));
@@ -911,6 +965,48 @@ test('stats writes require batch_run, sop_approve or manager privileges', async 
       }));
     }
   }
+});
+
+test('stats reconciliation queue is readable and resolvable only by stats operators', async () => {
+  const batchDb = dbFor(users.batchA);
+  const managerDb = dbFor(users.manager);
+  const viewerDb = dbFor(users.viewer);
+  const queuePath = `artifacts/${APP_ID}/stats_reconciliation/reconcile-1`;
+
+  await assertFails(setDoc(doc(viewerDb, queuePath), {
+    status: 'pending',
+    statsDate: '2026-09-26',
+    sopId: 'sop-1',
+    sopName: 'SOP 1',
+    samples: 2,
+    batches: 1,
+    qcs: 0,
+    isDecrement: false,
+    createdByUid: users.viewer.uid,
+    createdAt: serverTimestamp(),
+  }));
+
+  await assertSucceeds(setDoc(doc(batchDb, queuePath), {
+    status: 'pending',
+    statsDate: '2026-09-26',
+    sopId: 'sop-1',
+    sopName: 'SOP 1',
+    samples: 2,
+    batches: 1,
+    qcs: 0,
+    isDecrement: false,
+    createdByUid: users.batchA.uid,
+    createdAt: serverTimestamp(),
+  }));
+
+  await assertSucceeds(getDoc(doc(batchDb, queuePath)));
+  await assertSucceeds(getDoc(doc(managerDb, queuePath)));
+  await assertFails(getDoc(doc(viewerDb, queuePath)));
+  await assertSucceeds(updateDoc(doc(batchDb, queuePath), {
+    status: 'resolved',
+    resolvedAt: serverTimestamp(),
+    resolvedByUid: users.batchA.uid,
+  }));
 });
 
 test('sop_view can read monthly dashboard stats without report_view', async () => {

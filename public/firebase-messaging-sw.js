@@ -1,6 +1,6 @@
 importScripts('./ngsw-worker.js');
-importScripts('https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js');
+importScripts('./vendor/firebase/firebase-app-compat.js');
+importScripts('./vendor/firebase/firebase-messaging-compat.js');
 
 const firebaseConfig = {
     apiKey: "AIzaSyDZmI3PE-j1ZhkqUd3mQaYmX1pJpWqtwck",

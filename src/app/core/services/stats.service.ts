@@ -15,10 +15,18 @@ import {
   startAfter,
   setDoc,
   writeBatch,
-  deleteField
+  deleteField,
+  addDoc,
+  serverTimestamp
 } from 'firebase/firestore';
 import { timestampToDate } from '../../shared/utils/timestamp';
 import { createInclusiveDateRange, enumerateInclusiveDates, toLocalDateKey } from '../../shared/utils/date-range';
+import { isRequestCountedInStats, resolveRequestStatsCounts } from './request-stats.utils';
+import {
+  buildStatsProjectionForDays,
+  collectReconciliationDays,
+  type StatsProjectionRow,
+} from './stats-reconciliation.utils';
 
 export interface DailyStats {
   totalSamples: number;
@@ -33,6 +41,8 @@ export type MonthlyStatsDoc = Record<string, DailyStats>; // '2026-07-31'
 export class StatsService {
   private fb = inject(FirebaseService);
   private auth = inject(AuthService);
+  private reconciliationPromise: Promise<void> | null = null;
+  private lastReconciliationAttempt = 0;
 
   private getMonthKey(date: Date): string {
     const y = date.getFullYear();
@@ -45,6 +55,17 @@ export class StatsService {
     const m = String(date.getMonth() + 1).padStart(2, '0');
     const d = String(date.getDate()).padStart(2, '0');
     return `${y}-${m}-${d}`;
+  }
+
+  private getRequestStatsDate(req: Record<string, any>): Date | null {
+    if (typeof req['analysisDate'] === 'string') {
+      const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(req['analysisDate']);
+      if (match) {
+        const local = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+        if (!Number.isNaN(local.getTime())) return local;
+      }
+    }
+    return timestampToDate(req['approvedAt'] ?? req['timestamp']);
   }
 
   /**
@@ -131,6 +152,149 @@ export class StatsService {
   }
 
   /**
+   * Projection writes must never make the primary Request transaction fail.
+   * Persist a replayable reconciliation item instead of swallowing failures.
+   */
+  async incrementStatsWithReconciliation(
+    date: Date,
+    sopId: string,
+    sopName: string,
+    samples: number,
+    batches = 1,
+    qcs = 0,
+    isDecrement = false,
+    context: { requestId?: string; operation?: string } = {}
+  ): Promise<void> {
+    try {
+      await this.incrementStats(date, sopId, sopName, samples, batches, qcs, isDecrement);
+      this.scheduleStatsReconciliation(false);
+    } catch (error: any) {
+      console.error('[Stats] Projection update failed; queuing reconciliation.', error);
+      try {
+        await addDoc(collection(this.fb.db, `artifacts/${this.fb.APP_ID}/stats_reconciliation`), {
+          status: 'pending',
+          statsDate: this.getDayKey(date),
+          sopId,
+          sopName,
+          samples,
+          batches,
+          qcs,
+          isDecrement,
+          requestId: context.requestId || null,
+          operation: context.operation || 'unknown',
+          errorCode: typeof error?.code === 'string' ? error.code : null,
+          createdAt: serverTimestamp(),
+          createdByUid: this.auth.currentUser()?.uid || null,
+        });
+        this.scheduleStatsReconciliation(true);
+      } catch (queueError) {
+        console.error('[Stats] Failed to persist reconciliation item:', queueError);
+      }
+    }
+  }
+
+  private scheduleStatsReconciliation(force: boolean): void {
+    if (!this.auth.canApprove() && !this.auth.canRunBatch()) return;
+    if (this.reconciliationPromise) return;
+    const now = Date.now();
+    if (!force && now - this.lastReconciliationAttempt < 60_000) return;
+    this.lastReconciliationAttempt = now;
+    this.reconciliationPromise = this.reconcilePendingStats()
+      .catch(error => console.warn('[Stats] Reconciliation retry deferred:', error))
+      .finally(() => { this.reconciliationPromise = null; });
+  }
+
+  /**
+   * Rebuild affected days from canonical Request documents, then resolve queue
+   * entries only after the overwrite succeeds. Re-running after a crash is safe.
+   */
+  async reconcilePendingStats(maxItems = 200): Promise<void> {
+    if (!this.auth.canApprove() && !this.auth.canRunBatch()) return;
+    const queueRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/stats_reconciliation`);
+    const pending = await getDocs(query(queueRef, where('status', '==', 'pending'), limit(maxItems)));
+    if (pending.empty) return;
+
+    const days = collectReconciliationDays(pending.docs.map(item => ({
+      id: item.id,
+      statsDate: item.data()['statsDate']
+    })));
+    if (days.length === 0) return;
+
+    await this.rebuildStatsDays(days);
+
+    const resolvedAt = serverTimestamp();
+    const resolvedByUid = this.auth.currentUser()?.uid || '';
+    const resolveBatch = writeBatch(this.fb.db);
+    for (const item of pending.docs) {
+      const statsDate = item.data()['statsDate'];
+      if (typeof statsDate === 'string' && days.includes(statsDate)) {
+        resolveBatch.update(item.ref, {
+          status: 'resolved',
+          resolvedAt,
+          resolvedByUid,
+        });
+      }
+    }
+    await resolveBatch.commit();
+  }
+
+  private async rebuildStatsDays(dayKeys: readonly string[]): Promise<void> {
+    const targets = new Set(dayKeys);
+    const rows: StatsProjectionRow[] = [];
+    const reqCol = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/requests`);
+    let lastDoc: any = null;
+
+    while (true) {
+      const currentQuery = lastDoc
+        ? query(reqCol, orderBy('__name__'), startAfter(lastDoc), limit(500))
+        : query(reqCol, orderBy('__name__'), limit(500));
+      const snap = await getDocs(currentQuery);
+      if (snap.empty) break;
+
+      for (const requestDoc of snap.docs) {
+        const req = requestDoc.data();
+        const date = this.getRequestStatsDate(req);
+        if (!date) continue;
+        const dateKey = this.getDayKey(date);
+        if (!targets.has(dateKey)) continue;
+        rows.push({
+          dateKey,
+          status: req['status'],
+          isVirtualMaster: req['isVirtualMaster'],
+          sopId: req['sopId'],
+          sopName: req['sopName'],
+          sampleList: req['sampleList'],
+          inputs: req['inputs'],
+        });
+      }
+
+      lastDoc = snap.docs[snap.docs.length - 1];
+      if (snap.size < 500) break;
+    }
+
+    const projection = buildStatsProjectionForDays(rows, dayKeys);
+    const daysByMonth = new Map<string, string[]>();
+    for (const dayKey of dayKeys) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dayKey)) continue;
+      const monthKey = dayKey.slice(0, 7);
+      const monthDays = daysByMonth.get(monthKey) || [];
+      monthDays.push(dayKey);
+      daysByMonth.set(monthKey, monthDays);
+    }
+
+    const batch = writeBatch(this.fb.db);
+    for (const [monthKey, monthDays] of daysByMonth) {
+      const monthlyRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/monthly_stats`, monthKey);
+      const patch: Record<string, DailyStats | ReturnType<typeof deleteField>> = {};
+      for (const dayKey of monthDays) {
+        patch[dayKey] = projection[dayKey] || deleteField();
+      }
+      batch.set(monthlyRef, patch, { merge: true });
+    }
+    await batch.commit();
+  }
+
+  /**
    * Lấy dữ liệu thống kê của nhiều tháng liên tiếp (Ví dụ: để vẽ biểu đồ 60 ngày)
    */
   async getStatsForMonths(monthKeys: string[]): Promise<Record<string, MonthlyStatsDoc>> {
@@ -213,15 +377,9 @@ export class StatsService {
             const req = docSnap.data();
 
             // Client-side status filter to avoid requiring composite Firestore indexes
-            if (!['approved', 'completed', 'draft'].includes(req['status'])) return;
+            if (!isRequestCountedInStats(req['status'])) return;
 
-            let date = timestampToDate(req['approvedAt'] ?? req['timestamp']);
-            if (req['analysisDate']) {
-              const parts = req['analysisDate'].split('-');
-              if (parts.length === 3) {
-                date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-              }
-            }
+            const date = this.getRequestStatsDate(req);
             
             // Bỏ qua nếu ko có ngày hoặc không nằm trong khoảng thời gian
             if (!date || date < start || date > end || req['isVirtualMaster']) return;
@@ -231,10 +389,10 @@ export class StatsService {
 
             if (!statsMap[monthKey]) statsMap[monthKey] = {};
 
-            let s = 1; let q = 0;
-            if (req['inputs']?.['n_sample']) s = Number(req['inputs']['n_sample']);
-            if (req['inputs']?.['n_qc']) q = Number(req['inputs']['n_qc']);
-            else if (req['sampleList']?.length > 0) s = req['sampleList'].length;
+            const { samples: s, qcs: q } = resolveRequestStatsCounts({
+              sampleList: req['sampleList'],
+              inputs: req['inputs']
+            });
 
             if (!statsMap[monthKey][dayKey]) {
                 statsMap[monthKey][dayKey] = { totalSamples: 0, totalBatches: 0, totalQcs: 0, sops: {} };

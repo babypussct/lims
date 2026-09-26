@@ -1,109 +1,89 @@
 /**
  * GET /api/qr/status?sessionId=qr_xxx
  *
- * Desktop poll endpoint này sau khi hiển thị mã QR.
- * Khi session approved, server tạo Firebase Custom Token và trả về cho Desktop.
- * Desktop dùng customToken để signInWithCustomToken().
- * Session bị xóa ngay sau khi customToken được phát.
- *
- * Response (waiting):  { status: 'waiting' }
- * Response (approved): { status: 'approved', customToken: string }
- * Response (expired):  { status: 'expired' }
+ * Desktop polls this same-origin endpoint with X-QR-Poll-Token. The poll token
+ * is returned only by /api/qr/create and is never embedded in the scannable QR.
  */
 import type { VercelRequest, VercelResponse } from '../_lib/vercel-types.js';
-import { cert, getApps, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
-
-function initAdmin() {
-  if (getApps().length > 0) return;
-  const serviceAccountJson = process.env['FIREBASE_SERVICE_ACCOUNT'];
-  if (!serviceAccountJson) throw new Error('FIREBASE_SERVICE_ACCOUNT is not configured.');
-  let serviceAccount: any;
-  try {
-    serviceAccount = JSON.parse(serviceAccountJson);
-  } catch (e: any) {
-    throw new Error(`FIREBASE_SERVICE_ACCOUNT JSON parse error: ${e.message}`);
-  }
-  if (serviceAccount?.private_key) {
-    serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
-  }
-  initializeApp({ credential: cert(serviceAccount) });
-}
+import { initializeFirebaseAdminIfNeeded } from '../_lib/firebase-admin.js';
+import { enforceQrRateLimit, isValidQrSessionId, QrRateLimitError } from '../_lib/qr-rate-limit.js';
+import { readQrPollTokenHeader, verifyQrPollTokenHash } from '../_lib/qr-session-auth.js';
 
 const APP_ID = process.env['VITE_APP_ID'] || process.env['APP_ID'] || 'lims-cloud-fixed';
+const RATE_LIMIT_WINDOW_MS = 5 * 60 * 1000;
+const STATUS_RATE_LIMIT = 240;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // CORS — Desktop poll endpoint này
-  const origin = req.headers['origin'] as string | undefined;
-  res.setHeader('Access-Control-Allow-Origin', origin || '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') {
-    return res.status(204).end();
-  }
-
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+  if (req.method === 'OPTIONS') return res.status(204).end();
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   const { sessionId } = req.query;
-
-  if (typeof sessionId !== 'string' || !sessionId.startsWith('qr_')) {
+  if (!isValidQrSessionId(sessionId)) {
     return res.status(400).json({ error: 'Invalid sessionId' });
   }
 
+  const pollToken = readQrPollTokenHeader(req.headers);
+  if (!pollToken) {
+    return res.status(401).json({ error: 'Missing or invalid QR poll capability' });
+  }
+
   try {
-    initAdmin();
+    initializeFirebaseAdminIfNeeded();
     const auth = getAuth();
     const db = getFirestore();
 
+    await enforceQrRateLimit({
+      db,
+      appId: APP_ID,
+      scope: 'status',
+      headers: req.headers,
+      limit: STATUS_RATE_LIMIT,
+      windowMs: RATE_LIMIT_WINDOW_MS,
+    });
+
     const sessionRef = db.collection(`artifacts/${APP_ID}/auth_sessions`).doc(sessionId);
-    const sessionSnap = await sessionRef.get();
+    const redemption = await db.runTransaction(async txn => {
+      const snap = await txn.get(sessionRef);
+      if (!snap.exists) return { kind: 'expired' as const };
 
-    if (!sessionSnap.exists) {
-      // Session đã bị xóa (đã dùng hoặc expired)
+      const data = snap.data()!;
+      if (!verifyQrPollTokenHash(pollToken, data['pollTokenHash'])) {
+        return { kind: 'forbidden' as const };
+      }
+
+      if (data['expiresAt'] < Date.now()) {
+        txn.delete(sessionRef);
+        return { kind: 'expired' as const };
+      }
+
+      if (data['status'] === 'approved' && typeof data['uid'] === 'string' && data['uid']) {
+        txn.delete(sessionRef);
+        return { kind: 'approved' as const, uid: data['uid'] as string };
+      }
+
+      return { kind: 'waiting' as const };
+    });
+
+    if (redemption.kind === 'forbidden') {
+      return res.status(403).json({ error: 'Invalid QR poll capability' });
+    }
+    if (redemption.kind === 'expired') {
       return res.status(200).json({ status: 'expired' });
     }
-
-    const sessionData = sessionSnap.data()!;
-
-    // Kiểm tra TTL
-    if (sessionData['expiresAt'] < Date.now()) {
-      await sessionRef.delete();
-      return res.status(200).json({ status: 'expired' });
-    }
-
-    if (sessionData['status'] === 'waiting') {
+    if (redemption.kind === 'waiting') {
       return res.status(200).json({ status: 'waiting' });
     }
 
-    if (sessionData['status'] === 'approved' && sessionData['uid']) {
-      // Atomic: chỉ cấp token nếu session vẫn ở trạng thái approved (chống race condition)
-      const approvedUid = await db.runTransaction(async (txn) => {
-        const snap = await txn.get(sessionRef);
-        if (!snap.exists || snap.data()!['status'] !== 'approved') return null;
-        txn.delete(sessionRef);
-        return snap.data()!['uid'] as string;
-      });
-
-      if (!approvedUid) {
-        return res.status(200).json({ status: 'expired' });
-      }
-
-      // Tạo Custom Token cho Desktop — Desktop dùng để signInWithCustomToken()
-      const customToken = await auth.createCustomToken(approvedUid);
-
-      // Không log uid trong production, chỉ log event
-      console.log(`[QR Status] Issued custom token for session ${sessionId.substring(0, 12)}...`);
-
-      return res.status(200).json({ status: 'approved', customToken });
-    }
-
-    // Trạng thái không xác định
-    return res.status(200).json({ status: 'waiting' });
+    const customToken = await auth.createCustomToken(redemption.uid);
+    console.log(`[QR Status] Issued custom token for session ${sessionId.substring(0, 12)}...`);
+    return res.status(200).json({ status: 'approved', customToken });
   } catch (err: any) {
+    if (err instanceof QrRateLimitError) {
+      res.setHeader('Retry-After', String(err.retryAfterSeconds));
+      return res.status(429).json({ error: 'Too many QR status checks. Please retry later.' });
+    }
     console.error('[QR Status] Error:', err);
     return res.status(500).json({ error: 'Internal server error' });
   }

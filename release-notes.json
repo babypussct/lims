@@ -1,19 +1,24 @@
 {
-  "title": "Giao diện rõ ràng hơn cho kiểm nghiệm viên",
+  "title": "Tăng cường bảo mật và độ tin cậy hệ thống",
   "highlights": [
-    "Các màn hình chính dùng ngôn ngữ nghiệp vụ nhất quán hơn, tập trung vào việc cần làm và ý nghĩa dữ liệu.",
-    "Thông báo lỗi được rút gọn theo từng thao tác để người dùng biết cách xử lý mà không phải đọc chi tiết hệ thống."
+    "Đăng nhập bằng QR được bổ sung mã năng lực riêng cho máy tính, chống đọc trộm trạng thái, phát lại và nhận token nhiều lần.",
+    "Truy xuất công khai theo mã yêu cầu chỉ dùng một bản chiếu tối thiểu, không cho người chưa đăng nhập dò dữ liệu yêu cầu hoặc hàng đợi in.",
+    "Thống kê được chuẩn hóa theo dữ liệu nguồn và có cơ chế đối soát lại an toàn khi cập nhật projection thất bại."
   ],
-  "features": [],
+  "features": [
+    "Bổ sung cơ chế đối soát thống kê có thể chạy lại nhiều lần mà không cộng trừ trùng dữ liệu.",
+    "Bổ sung migration cho dữ liệu truy xuất công khai lịch sử theo request ID."
+  ],
   "improvements": [
-    "Đồng bộ mã quản lý nội bộ của chất chuẩn nay tập trung vào hồ sơ có vấn đề, mã hiện tại, mã đề xuất, dữ liệu liên quan và kết quả thay đổi.",
-    "Checklist, lập mẻ phân tích, Kết quả, Kho, Cấu hình và tài khoản được đổi nhãn theo thuật ngữ quen thuộc trong phòng thí nghiệm.",
-    "Khi chưa có mã nghiệp vụ, hệ thống hiển thị trạng thái chưa có mã thay vì dùng mã nội bộ của hệ thống làm mã thay thế.",
-    "Các thao tác lưu, tải, xóa và kết nối có thông báo lỗi thống nhất, dễ hiểu và dễ xử lý hơn."
+    "Dữ liệu Firestore nghiệp vụ chỉ lưu trong bộ nhớ trình duyệt; chế độ thiết bị chỉ còn điều khiển độ bền phiên đăng nhập.",
+    "QR chất chuẩn được tạo hoàn toàn trong ứng dụng thay vì gửi URL và ID sang dịch vụ QR bên thứ ba.",
+    "Telemetry hệ thống dùng đúng monthly_stats và báo trạng thái không xác định khi phép đếm thất bại thay vì hiển thị sai là 0.",
+    "Luồng sửa yêu cầu đã được rà soát để đối soát cả ngày thống kê cũ và mới khi ngày phân tích thay đổi."
   ],
   "fixes": [
-    "Không còn hiển thị mã nội bộ của hệ thống ở các vị trí đã được chuẩn hóa cho chất chuẩn, mẻ phân tích, hàng đợi in và một số biểu mẫu cấu hình.",
-    "Loại bỏ các nhãn mô tả cách hệ thống vận hành khỏi các màn hình nghiệp vụ như Checklist, lập mẻ, Thùng rác và Kết quả.",
-    "Giảm trường hợp thông báo lỗi chứa nội dung khó hiểu khi thao tác với chất chuẩn, Kho, Cấu hình, Kết quả, truy xuất và tài khoản."
+    "Khóa khả năng lộ poll token của QR login trong mã QR và bổ sung hủy session có xác thực.",
+    "Đảm bảo custom token QR chỉ được phát hành một lần ngay cả khi có nhiều poll đồng thời.",
+    "Bổ sung kiểm thử Firestore rules cho projection truy xuất công khai, hàng đợi đối soát thống kê và quyền truy cập theo vai trò.",
+    "Bổ sung kiểm tra hồi quy quyền camera iOS và loại bỏ CSP cho dịch vụ QR ngoài không còn sử dụng."
   ]
 }

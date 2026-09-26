@@ -16,7 +16,7 @@ import {
   SOP914_TBVTV_THUC_PHAM_TEMPLATE_DOC_IDS,
   SOP914_TBVTV_THUC_PHAM_TEMPLATE_URLS
 } from './config/sop-configs';
-import { getSafeGoogleUrl, formatSampleList } from '../../shared/utils/utils';
+import { getSafeGoogleUrl, getSafeGooglePreviewUrl, formatSampleList } from '../../shared/utils/utils';
 import { timestampToDate, timestampToLocalDateKey } from '../../shared/utils/timestamp';
 import { PrintService } from '../../core/services/print.service';
 import { ReloadSafetyService } from '../../core/services/reload-safety.service';
@@ -1510,26 +1510,5 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
  * Trích xuất Google Drive File ID và chuyển đổi sang dạng URL preview an toàn cho iframe nhúng
  */
 function getGoogleDrivePreviewUrl(url: string | null | undefined): string {
-  if (!url) return '';
-  const fileDMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-  if (fileDMatch && fileDMatch[1]) {
-    return `https://drive.google.com/file/d/${fileDMatch[1]}/preview`;
-  }
-  const docDMatch = url.match(/\/document\/d\/([a-zA-Z0-9_-]+)/);
-  if (docDMatch && docDMatch[1]) {
-    return `https://docs.google.com/document/d/${docDMatch[1]}/preview`;
-  }
-  try {
-    const urlObj = new URL(url);
-    const id = urlObj.searchParams.get('id');
-    if (id) {
-      return `https://drive.google.com/file/d/${id}/preview`;
-    }
-  } catch (e) {
-    const idMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-    if (idMatch && idMatch[1]) {
-      return `https://drive.google.com/file/d/${idMatch[1]}/preview`;
-    }
-  }
-  return url;
+  return getSafeGooglePreviewUrl(url);
 }

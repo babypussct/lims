@@ -2,6 +2,7 @@ import { ReferenceStandard } from '../../core/models/standard.model';
 import { isStandardExpired, parseStandardDate, startOfLocalDay } from './standard-fefo';
 import { timestampToDate } from './timestamp';
 export { canAssign } from './standard-fefo';
+export { getSafeGoogleUrl, getSafeGooglePreviewUrl, sanitizeReportMapUrls } from './report-url';
 
 export const UNIT_DATA: Record<string, { type: 'mass' | 'vol' | 'qty'; val: number }> = {
   // Mass (Base: g)
@@ -52,7 +53,6 @@ export function getStandardizedAmount(amount: number, fromUnit: string, toUnit: 
 
   return (amount * u1.val) / u2.val;
 }
-
 export function parseQuantityInput(inputStr: string, baseUnit: string): number | null {
     if (!inputStr) return null;
     const cleanStr = inputStr.trim().toLowerCase().replace(',', '.');
@@ -484,34 +484,4 @@ export function getStandardStatus(std: ReferenceStandard): { label: string, clas
     if ((std.current_amount / (std.initial_amount || 1)) <= 0.2) return { label: 'Sắp hết hàng', class: 'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800/50' };
 
     return { label: 'Sẵn sàng', class: 'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800/50' };
-}
-
-export function getSafeGoogleUrl(url: string | null | undefined, type: 'pdf' | 'doc'): string {
-    if (!url) return '';
-    
-    // For PDFs: transform drive.usercontent.com/download?id=... or export=download to drive.google.com/file/d/.../view
-    if (type === 'pdf') {
-        if (url.includes('drive.usercontent.com/download') || url.includes('export=download')) {
-            try {
-                const urlObj = new URL(url);
-                const id = urlObj.searchParams.get('id');
-                if (id) {
-                    return `https://drive.google.com/file/d/${id}/view`;
-                }
-            } catch(e) {
-                // Ignore parse errors and fallback to original
-            }
-        }
-        return url;
-    }
-    
-    // For Docs (View Only): transform /edit to /preview to enforce Read-Only mode
-    if (type === 'doc') {
-        if (url.includes('docs.google.com/document/d/')) {
-            return url.replace(/\/edit.*$/, '/preview');
-        }
-        return url;
-    }
-    
-    return url;
 }

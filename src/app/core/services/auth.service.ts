@@ -835,12 +835,26 @@ export class AuthService {
     const isSharedDevice = this.isSharedDevice();
     await signOut(this.auth);
 
-    if (isGoogle && isSharedDevice) {
-        // Đăng xuất hoàn toàn khỏi tài khoản Google trên trình duyệt
-        window.location.href = 'https://accounts.google.com/Logout';
-    } else {
-        this.router.navigate(['/']);
+    if (isSharedDevice) {
+        try {
+            await this.fb.clearPersistentCacheForSharedDevice();
+        } catch (e) {
+            // Multi-tab browsers can briefly hold the IndexedDB lease. The
+            // shared-mode bootstrap still uses memory cache, so the next LIMS
+            // user cannot read stale documents through Firestore.
+            console.warn('[Auth] Could not clear historical Firestore persistence:', e);
+        }
+
+        if (isGoogle) {
+            // Đăng xuất hoàn toàn khỏi tài khoản Google trên trình duyệt.
+            window.location.href = 'https://accounts.google.com/Logout';
+        } else {
+            window.location.replace('/');
+        }
+        return;
     }
+
+    this.router.navigate(['/']);
   }
 
   private syncUser(firebaseUser: User) {
@@ -923,13 +937,15 @@ export class AuthService {
   // Desktop: lắng nghe kết quả từ polling API (không dùng Firestore client)
   // Placeholder - được xử lý hoàn toàn trong login.component.ts qua /api/qr/status
 
-  // Mobile: Xoá session sau khi đã approve thành công (cleanup)
-  async deleteAuthSession(sessionId: string) {
-      // Gọi server để xóa session khi user cancel QR login.
-      // Dùng /api/qr/status GET rồi ignore — hoặc tạo endpoint riêng.
-      // Đơn giản nhất: let session expire theo TTL (5 phút).
-      // Trong trường hợp này, ta chấp nhận TTL cleanup vì không có endpoint DELETE.
-      console.log('[Auth] Session cleanup requested for:', sessionId, '(will expire by TTL)');
+  // Desktop hủy session bằng capability chỉ có trong response create, không nằm trong QR.
+  async deleteAuthSession(sessionId: string, pollToken: string): Promise<void> {
+      const response = await fetch(`/api/qr/cancel?sessionId=${encodeURIComponent(sessionId)}`, {
+          method: 'DELETE',
+          headers: { 'X-QR-Poll-Token': pollToken }
+      });
+      if (!response.ok && response.status !== 404) {
+          throw new Error(`QR session cleanup failed with status ${response.status}`);
+      }
   }
 
   // Placeholder - sẽ bị xoá sau khi mobile-qr-login.component.ts được cập nhật

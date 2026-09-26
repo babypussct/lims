@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
   resolveDeviceMode,
+  resolveFirestoreCacheMode,
   persistDeviceMode,
   DEVICE_MODE_STORAGE_KEY,
   LEGACY_SHARED_DEVICE_KEY,
@@ -22,6 +23,11 @@ class MockStorage implements StorageLike {
 }
 
 describe('device-mode resolution & migration', () => {
+  it('keeps Firestore document cache memory-only for both personal and shared modes', () => {
+    assert.equal(resolveFirestoreCacheMode('personal'), 'memory');
+    assert.equal(resolveFirestoreCacheMode('shared'), 'memory');
+  });
+
   it('defaults to shared when storage is null or undefined', () => {
     assert.equal(resolveDeviceMode(null), 'shared');
     assert.equal(resolveDeviceMode(undefined), 'shared');

@@ -6,6 +6,7 @@ import { ToastService } from './toast.service';
 import { StateService } from './state.service';
 import { GoogleDriveService } from './google-drive.service';
 import { openInNewTab } from '../../shared/utils/browser-navigation';
+import { getSafeGooglePreviewUrl } from '../../shared/utils/report-url';
 
 export interface PrintJob {
   sop: any; 
@@ -88,7 +89,7 @@ export class PrintService {
   // --- 2. ENTRY POINT: OPEN PDF CLOUD PREVIEW ---
   openPdfPreview(url: string, title: string, version: number, analyst: string, publishDate: any, onRepublish?: () => Promise<void>, previewType: 'iframe' | 'image' = 'iframe', docsUrl?: string) {
       this.pdfUrl.set(url);
-      const docsPreviewUrl = docsUrl ? docsUrl.replace(/\/edit.*$/, '/preview') : null;
+      const docsPreviewUrl = docsUrl ? getSafeGooglePreviewUrl(docsUrl) : null;
       this.docsUrl.set(docsPreviewUrl);
       this.pdfTitle.set(title);
       this.pdfVersion.set(version);

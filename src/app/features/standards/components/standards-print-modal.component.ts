@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ReferenceStandard } from '../../../core/models/standard.model';
 import { AppModalShellComponent } from '../../../shared/components/ui/modal-shell/modal-shell.component';
+import { StandardQrSrcDirective } from '../../../shared/directives/standard-qr-src.directive';
 
 interface GridPreset {
   id: string;
@@ -29,7 +30,7 @@ interface RollPreset {
 @Component({
   selector: 'app-standards-print-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, AppModalShellComponent],
+  imports: [CommonModule, FormsModule, AppModalShellComponent, StandardQrSrcDirective],
   template: `
       @if (isOpen()) {
           <app-modal-shell
@@ -401,7 +402,7 @@ interface RollPreset {
                        </div>
                        <!-- Right QR Code Column (Dynamic width based on label height) -->
                        <div [style.width.mm]="height - 3.5" [style.height.mm]="height - 3.5" style="display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                           <img [src]="getQrCodeUrl(std)" style="width: 100%; height: 100%; object-fit: contain;" />
+                           <img [appStandardQr]="std?.id || ''" [standardQrSize]="150" style="width: 100%; height: 100%; object-fit: contain;" />
                        </div>
                    </div>
                } @else {
@@ -690,13 +691,6 @@ export class StandardsPrintModalComponent {
     const relativeIndex = slotIndex - startIndex;
     const stdIndex = Math.floor(relativeIndex / copies);
     return list[stdIndex] || null;
-  }
-
-  getQrCodeUrl(std: ReferenceStandard | null): string {
-    if (!std || !std.id) return '';
-    const originUrl = window.location.origin;
-    const url = `${originUrl}/#/standards/${std.id}`;
-    return `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(url)}`;
   }
 
   onPaperSizeChange(size: string) {

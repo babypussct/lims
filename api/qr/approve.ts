@@ -1,56 +1,24 @@
 /**
  * POST /api/qr/approve
  *
- * Mobile gọi endpoint này sau khi đã quét QR.
- * Server verify Firebase ID Token, kiểm tra nonce, và đánh dấu session là approved.
- * KHÔNG có password nào được truyền giữa các thiết bị.
- *
- * Body: { sessionId: string, nonce: string, idToken: string }
- * Response: { ok: true }
+ * Mobile verifies its Firebase identity and consumes the QR nonce exactly once.
+ * The desktop-only poll capability never crosses this endpoint.
  */
 import type { VercelRequest, VercelResponse } from '../_lib/vercel-types.js';
-import { cert, getApps, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
-import { getFirestore, FieldValue } from 'firebase-admin/firestore';
-
-function initAdmin() {
-  if (getApps().length > 0) return;
-  const serviceAccountJson = process.env['FIREBASE_SERVICE_ACCOUNT'];
-  if (!serviceAccountJson) throw new Error('FIREBASE_SERVICE_ACCOUNT is not configured.');
-  let serviceAccount: any;
-  try {
-    serviceAccount = JSON.parse(serviceAccountJson);
-  } catch (e: any) {
-    throw new Error(`FIREBASE_SERVICE_ACCOUNT JSON parse error: ${e.message}`);
-  }
-  if (serviceAccount?.private_key) {
-    serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
-  }
-  initializeApp({ credential: cert(serviceAccount) });
-}
+import { FieldValue, getFirestore } from 'firebase-admin/firestore';
+import { initializeFirebaseAdminIfNeeded } from '../_lib/firebase-admin.js';
+import { isValidQrSessionId } from '../_lib/qr-rate-limit.js';
 
 const APP_ID = process.env['VITE_APP_ID'] || process.env['APP_ID'] || 'lims-cloud-fixed';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // CORS — Mobile PWA gọi endpoint này
-  const origin = req.headers['origin'] as string | undefined;
-  res.setHeader('Access-Control-Allow-Origin', origin || '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') {
-    return res.status(204).end();
-  }
-
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+  if (req.method === 'OPTIONS') return res.status(204).end();
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const { sessionId, nonce, idToken } = req.body || {};
-
-  // Validate input
   if (
-    typeof sessionId !== 'string' || !sessionId.startsWith('qr_') ||
+    !isValidQrSessionId(sessionId) ||
     typeof nonce !== 'string' || nonce.length < 16 ||
     typeof idToken !== 'string' || idToken.length < 100
   ) {
@@ -58,11 +26,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    initAdmin();
+    initializeFirebaseAdminIfNeeded();
     const auth = getAuth();
     const db = getFirestore();
 
-    // 1. Verify Firebase ID Token — xác nhận danh tính mobile user
     let decodedToken;
     try {
       decodedToken = await auth.verifyIdToken(idToken);
@@ -70,43 +37,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(401).json({ error: 'Invalid or expired ID token' });
     }
 
-    const uid = decodedToken.uid;
-
-    // 2. Đọc session document
     const sessionRef = db.collection(`artifacts/${APP_ID}/auth_sessions`).doc(sessionId);
-    const sessionSnap = await sessionRef.get();
+    const outcome = await db.runTransaction(async txn => {
+      const sessionSnap = await txn.get(sessionRef);
+      if (!sessionSnap.exists) return 'not-found' as const;
 
-    if (!sessionSnap.exists) {
-      return res.status(404).json({ error: 'Session not found or already used' });
-    }
+      const sessionData = sessionSnap.data()!;
+      if (sessionData['expiresAt'] < Date.now()) {
+        txn.delete(sessionRef);
+        return 'expired' as const;
+      }
+      if (sessionData['status'] !== 'waiting') return 'conflict' as const;
+      if (sessionData['nonce'] !== nonce) return 'nonce-mismatch' as const;
 
-    const sessionData = sessionSnap.data()!;
-
-    // 3. Kiểm tra session còn hợp lệ
-    if (sessionData['status'] !== 'waiting') {
-      return res.status(409).json({ error: 'Session already approved or expired' });
-    }
-
-    if (sessionData['expiresAt'] < Date.now()) {
-      await sessionRef.delete(); // Cleanup
-      return res.status(410).json({ error: 'QR code has expired. Please scan a new one.' });
-    }
-
-    // 4. Kiểm tra nonce khớp (chống replay attack)
-    if (sessionData['nonce'] !== nonce) {
-      return res.status(403).json({ error: 'Nonce mismatch — possible replay attack' });
-    }
-
-    // 5. Đánh dấu session approved với uid của mobile user
-    // Desktop sẽ poll /api/qr/status và nhận customToken để đăng nhập
-    await sessionRef.update({
-      status: 'approved',
-      uid,
-      approvedAt: FieldValue.serverTimestamp(),
-      // Xóa nonce sau khi dùng (one-time use)
-      nonce: FieldValue.delete(),
+      txn.update(sessionRef, {
+        status: 'approved',
+        uid: decodedToken.uid,
+        approvedAt: FieldValue.serverTimestamp(),
+        nonce: FieldValue.delete(),
+      });
+      return 'approved' as const;
     });
 
+    if (outcome === 'not-found') return res.status(404).json({ error: 'Session not found or already used' });
+    if (outcome === 'expired') return res.status(410).json({ error: 'QR code has expired. Please scan a new one.' });
+    if (outcome === 'conflict') return res.status(409).json({ error: 'Session already approved or expired' });
+    if (outcome === 'nonce-mismatch') return res.status(403).json({ error: 'Nonce mismatch — possible replay attack' });
     return res.status(200).json({ ok: true });
   } catch (err: any) {
     console.error('[QR Approve] Unexpected error:', err);

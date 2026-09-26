@@ -1003,12 +1003,6 @@ export class StandardsComponent implements OnInit, OnDestroy {
       this.showPrintModal.set(true);
   }
 
-  getQrCodeUrl(std: ReferenceStandard | null): string {
-      if (!std) return '';
-      const baseUrl = window.location.origin;
-      return `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(baseUrl + '/standards/' + std.id)}`;
-  }
-
   navigateToDetail(std: ReferenceStandard) {
       this.router.navigate(['/standards', std.id]);
   }

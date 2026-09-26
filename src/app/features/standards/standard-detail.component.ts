@@ -34,6 +34,7 @@ import { AppUiTimelineComponent } from '../../shared/components/ui/timeline/time
 import { TimelineItem } from '../../shared/components/ui/timeline/timeline.model';
 import { AppUiAvatarGroupComponent } from '../../shared/components/ui/avatar-group/avatar-group.component';
 import { AvatarGroupItem } from '../../shared/components/ui/avatar-group/avatar-group.model';
+import { StandardQrSrcDirective } from '../../shared/directives/standard-qr-src.directive';
 
 @Component({
   selector: 'app-standard-detail',
@@ -50,7 +51,8 @@ import { AvatarGroupItem } from '../../shared/components/ui/avatar-group/avatar-
       AppEmptyStateComponent,
       AppPageHeaderComponent,
       AppUiTimelineComponent,
-      AppUiAvatarGroupComponent
+      AppUiAvatarGroupComponent,
+      StandardQrSrcDirective
   ],
   templateUrl: './standard-detail.component.html'
 })
@@ -202,13 +204,6 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
             timeLeftText: this.getExpiryTimeLeft(std.expiry_date),
             colorClass: this.getExpiryClass(std.expiry_date)
         };
-    });
-
-    qrCodeUrl = computed(() => {
-        const std = this.standard();
-        if (!std) return '';
-        const baseUrl = window.location.origin;
-        return `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(baseUrl + '/#/standards/' + std.id)}`;
     });
 
     canReturnStandard = computed(() => {
