@@ -1,13 +1,13 @@
 {
-  "title": "Chuẩn hóa cấu hình domain triển khai",
+  "title": "Khắc phục tải giao diện production dưới CSP nghiêm ngặt",
   "highlights": [
-    "Chuẩn hóa domain Vercel canonical trong công cụ cấu hình môi trường để các origin được thiết lập đúng theo production hiện tại."
+    "Khôi phục đầy đủ stylesheet production để giao diện LIMS hiển thị đúng trên Vercel khi CSP đang bật."
   ],
   "features": [],
   "improvements": [
-    "Công cụ thiết lập biến môi trường Vercel dùng trực tiếp domain production nafiqpm6.vercel.app."
+    "Giữ cấu hình CSP chặt chẽ và tải CSS trực tiếp, không phụ thuộc inline event handler bị CSP chặn."
   ],
   "fixes": [
-    "Loại bỏ domain Vercel cũ không còn tồn tại khỏi cấu hình ALLOWED_ORIGINS."
+    "Sửa lỗi stylesheet bị giữ ở media print khiến toàn bộ layout production rơi về HTML mặc định."
   ]
 }

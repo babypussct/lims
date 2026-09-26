@@ -1,5 +1,21 @@
 [
   {
+    "version": "v26.09.26-b03",
+    "date": "26/9/2026",
+    "title": "Khắc phục tải giao diện production dưới CSP nghiêm ngặt",
+    "highlights": [
+      "Khôi phục đầy đủ stylesheet production để giao diện LIMS hiển thị đúng trên Vercel khi CSP đang bật."
+    ],
+    "features": [],
+    "improvements": [
+      "Giữ cấu hình CSP chặt chẽ và tải CSS trực tiếp, không phụ thuộc inline event handler bị CSP chặn."
+    ],
+    "fixes": [
+      "Sửa lỗi stylesheet bị giữ ở media print khiến toàn bộ layout production rơi về HTML mặc định."
+    ],
+    "releaseOrder": 26092600003
+  },
+  {
     "version": "v26.09.26-b02",
     "date": "26/9/2026",
     "title": "Chuẩn hóa cấu hình domain triển khai",

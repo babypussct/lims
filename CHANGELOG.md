@@ -2,7 +2,25 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.26-b02
+## Phiên bản hiện tại: v26.09.26-b03
+
+### v26.09.26-b03
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Khôi phục đầy đủ stylesheet production để giao diện LIMS hiển thị đúng trên Vercel khi CSP đang bật.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Giữ cấu hình CSP chặt chẽ và tải CSS trực tiếp, không phụ thuộc inline event handler bị CSP chặn.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Sửa lỗi stylesheet bị giữ ở media print khiến toàn bộ layout production rơi về HTML mặc định.
 
 ### v26.09.26-b02
 

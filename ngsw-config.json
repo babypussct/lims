@@ -2,12 +2,12 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.26-b02",
-    "title": "Chuẩn hóa cấu hình domain triển khai",
+    "version": "v26.09.26-b03",
+    "title": "Khắc phục tải giao diện production dưới CSP nghiêm ngặt",
     "features": [
-      "Chuẩn hóa domain Vercel canonical trong công cụ cấu hình môi trường để các origin được thiết lập đúng theo production hiện tại.",
-      "Công cụ thiết lập biến môi trường Vercel dùng trực tiếp domain production nafiqpm6.vercel.app.",
-      "Loại bỏ domain Vercel cũ không còn tồn tại khỏi cấu hình ALLOWED_ORIGINS."
+      "Khôi phục đầy đủ stylesheet production để giao diện LIMS hiển thị đúng trên Vercel khi CSP đang bật.",
+      "Giữ cấu hình CSP chặt chẽ và tải CSS trực tiếp, không phụ thuộc inline event handler bị CSP chặn.",
+      "Sửa lỗi stylesheet bị giữ ở media print khiến toàn bộ layout production rơi về HTML mặc định."
     ]
   },
   "assetGroups": [
