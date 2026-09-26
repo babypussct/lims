@@ -1,5 +1,22 @@
 [
   {
+    "version": "v26.09.26-b04",
+    "date": "26/9/2026",
+    "title": "Khôi phục đầy đủ giao diện production và bộ icon",
+    "highlights": [
+      "Khôi phục stylesheet production và icon Font Awesome để giao diện LIMS hiển thị đầy đủ trên Vercel khi CSP đang bật."
+    ],
+    "features": [],
+    "improvements": [
+      "Giữ cấu hình CSP chặt chẽ, tải CSS trực tiếp và đóng gói bộ icon nội bộ thay vì phụ thuộc CDN bên ngoài."
+    ],
+    "fixes": [
+      "Sửa lỗi stylesheet bị giữ ở media print khiến toàn bộ layout production rơi về HTML mặc định.",
+      "Sửa lỗi icon Font Awesome không được áp dụng trên production khiến nhiều nút và thẻ chỉ còn ô màu hoặc chữ."
+    ],
+    "releaseOrder": 26092600004
+  },
+  {
     "version": "v26.09.26-b03",
     "date": "26/9/2026",
     "title": "Khắc phục tải giao diện production dưới CSP nghiêm ngặt",

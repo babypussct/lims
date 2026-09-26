@@ -2,7 +2,26 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.26-b03
+## Phiên bản hiện tại: v26.09.26-b04
+
+### v26.09.26-b04
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Khôi phục stylesheet production và icon Font Awesome để giao diện LIMS hiển thị đầy đủ trên Vercel khi CSP đang bật.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Giữ cấu hình CSP chặt chẽ, tải CSS trực tiếp và đóng gói bộ icon nội bộ thay vì phụ thuộc CDN bên ngoài.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Sửa lỗi stylesheet bị giữ ở media print khiến toàn bộ layout production rơi về HTML mặc định.
+- Sửa lỗi icon Font Awesome không được áp dụng trên production khiến nhiều nút và thẻ chỉ còn ô màu hoặc chữ.
 
 ### v26.09.26-b03
 

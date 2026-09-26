@@ -2,12 +2,13 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.26-b03",
-    "title": "Khắc phục tải giao diện production dưới CSP nghiêm ngặt",
+    "version": "v26.09.26-b04",
+    "title": "Khôi phục đầy đủ giao diện production và bộ icon",
     "features": [
-      "Khôi phục đầy đủ stylesheet production để giao diện LIMS hiển thị đúng trên Vercel khi CSP đang bật.",
-      "Giữ cấu hình CSP chặt chẽ và tải CSS trực tiếp, không phụ thuộc inline event handler bị CSP chặn.",
-      "Sửa lỗi stylesheet bị giữ ở media print khiến toàn bộ layout production rơi về HTML mặc định."
+      "Khôi phục stylesheet production và icon Font Awesome để giao diện LIMS hiển thị đầy đủ trên Vercel khi CSP đang bật.",
+      "Giữ cấu hình CSP chặt chẽ, tải CSS trực tiếp và đóng gói bộ icon nội bộ thay vì phụ thuộc CDN bên ngoài.",
+      "Sửa lỗi stylesheet bị giữ ở media print khiến toàn bộ layout production rơi về HTML mặc định.",
+      "Sửa lỗi icon Font Awesome không được áp dụng trên production khiến nhiều nút và thẻ chỉ còn ô màu hoặc chữ."
     ]
   },
   "assetGroups": [

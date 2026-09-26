@@ -1,13 +1,14 @@
 {
-  "title": "Khắc phục tải giao diện production dưới CSP nghiêm ngặt",
+  "title": "Khôi phục đầy đủ giao diện production và bộ icon",
   "highlights": [
-    "Khôi phục đầy đủ stylesheet production để giao diện LIMS hiển thị đúng trên Vercel khi CSP đang bật."
+    "Khôi phục stylesheet production và icon Font Awesome để giao diện LIMS hiển thị đầy đủ trên Vercel khi CSP đang bật."
   ],
   "features": [],
   "improvements": [
-    "Giữ cấu hình CSP chặt chẽ và tải CSS trực tiếp, không phụ thuộc inline event handler bị CSP chặn."
+    "Giữ cấu hình CSP chặt chẽ, tải CSS trực tiếp và đóng gói bộ icon nội bộ thay vì phụ thuộc CDN bên ngoài."
   ],
   "fixes": [
-    "Sửa lỗi stylesheet bị giữ ở media print khiến toàn bộ layout production rơi về HTML mặc định."
+    "Sửa lỗi stylesheet bị giữ ở media print khiến toàn bộ layout production rơi về HTML mặc định.",
+    "Sửa lỗi icon Font Awesome không được áp dụng trên production khiến nhiều nút và thẻ chỉ còn ô màu hoặc chữ."
   ]
 }
