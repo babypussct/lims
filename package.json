@@ -1,6 +1,6 @@
 {
   "name": "lims-cloud-pro",
-  "version": "26.09.26-b04",
+  "version": "26.09.26-b05",
   "packageManager": "npm@10.9.8",
   "engines": {
     "node": "22.x"
@@ -32,7 +32,7 @@
     "test": "npm run test:reachability-audit && npm run test:activity && npm run test:core-utils && npm run test:standards && npm run test:inventory && npm run test:notifications && npm run test:backup && npm run test:ui-contracts && npm run test:ui-guardrails && npm run test:service-worker && npm run test:documents && npm run test:results && npm run test:excel-import && npm run test:smart-batch && npm run test:daily-checklists && npm run test:gas && npm run test:prep && npm run test:changelog",
     "test:reachability-audit": "node scripts/test-file-coverage.js",
     "test:coverage-audit": "npm run test:reachability-audit",
-    "test:core-utils": "tsx --test src/app/core/auth/access-control.test.ts src/app/core/auth/device-mode.test.ts src/app/core/auth/shared-device-cache.contract.test.ts src/app/core/services/user-directory.contract.test.ts src/app/core/services/firebase-telemetry.contract.test.ts src/app/shared/utils/format-num.test.ts src/app/shared/utils/report-url.test.ts src/app/shared/utils/external-script-loader.test.ts && node --test scripts/ios-camera-permission.test.js",
+    "test:core-utils": "tsx --test src/app/core/auth/access-control.test.ts src/app/core/auth/device-mode.test.ts src/app/core/auth/shared-device-cache.contract.test.ts src/app/core/services/user-directory.contract.test.ts src/app/core/services/firebase-telemetry.contract.test.ts src/app/shared/utils/format-num.test.ts src/app/shared/utils/report-url.test.ts src/app/shared/utils/external-script-loader.test.ts src/app/shared/utils/avatar-url.test.ts && node --test scripts/ios-camera-permission.test.js",
     "test:activity": "tsx --test src/app/core/activity/*.test.ts src/app/core/services/activity-event.service.test.ts src/app/core/services/feature-rollout.test.ts scripts/activity-backfill-utils.test.ts",
     "test:fefo": "tsx --test src/app/shared/utils/standard-fefo.test.ts",
     "test:inventory": "tsx --test src/app/shared/utils/gs1-parser.test.ts",
@@ -154,6 +154,7 @@
     "@capacitor/filesystem": "^6.0.4",
     "@capacitor/ios": "^6.2.1",
     "@capacitor/share": "^6.0.4",
+    "@fontsource/open-sans": "5.3.0",
     "@fortawesome/fontawesome-free": "6.4.0",
     "@univerjs/core": "0.25.1",
     "@univerjs/design": "0.25.1",

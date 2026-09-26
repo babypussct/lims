@@ -156,25 +156,68 @@ export function sanitizeForFirebase<T>(obj: T): T {
   return obj;
 }
 
+const LOCAL_AVATAR_COLORS = [
+  ['#d81b9c', '#7c3aed'],
+  ['#2563eb', '#0891b2'],
+  ['#ea580c', '#dc2626'],
+  ['#059669', '#0f766e'],
+  ['#7c3aed', '#c026d3'],
+  ['#475569', '#1e293b']
+] as const;
+
+const localAvatarCache = new Map<string, string>();
+
+function hashAvatarSeed(value: string): number {
+  let hash = 0;
+  for (let index = 0; index < value.length; index++) {
+    hash = ((hash << 5) - hash + value.charCodeAt(index)) | 0;
+  }
+  return Math.abs(hash);
+}
+
+function escapeSvgText(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+function getAvatarInitials(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return 'U';
+  if (words.length === 1) return Array.from(words[0]).slice(0, 2).join('').toUpperCase();
+  const first = Array.from(words[0])[0] || '';
+  const last = Array.from(words[words.length - 1])[0] || '';
+  return `${first}${last}`.toUpperCase();
+}
+
+function getLocalAvatarUrl(name: string | undefined | null, style: string): string {
+  const normalizedName = (name || 'User').trim() || 'User';
+  const cacheKey = `${style}:${normalizedName}`;
+  const cached = localAvatarCache.get(cacheKey);
+  if (cached) return cached;
+
+  const seed = hashAvatarSeed(cacheKey);
+  const [startColor, endColor] = LOCAL_AVATAR_COLORS[seed % LOCAL_AVATAR_COLORS.length];
+  const initials = escapeSvgText(getAvatarInitials(normalizedName));
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><defs><linearGradient id="avatar-gradient" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="${startColor}"/><stop offset="100%" stop-color="${endColor}"/></linearGradient></defs><rect width="96" height="96" rx="24" fill="url(#avatar-gradient)"/><circle cx="74" cy="22" r="18" fill="#fff" fill-opacity=".16"/><circle cx="16" cy="86" r="26" fill="#000" fill-opacity=".1"/><text x="48" y="56" fill="#fff" font-family="Arial, sans-serif" font-size="30" font-weight="700" text-anchor="middle" dominant-baseline="middle">${initials}</text></svg>`;
+  const url = `data:image/svg+xml,${encodeURIComponent(svg)}`;
+  localAvatarCache.set(cacheKey, url);
+  return url;
+}
+
 /**
- * Generates an avatar URL.
- * - If style is 'google': use the real Google photo (photoUrl) if available, fallback to initials.
- * - Otherwise: always use DiceBear with the selected style (ignore photoUrl).
+ * Generates an avatar URL without relying on a runtime avatar CDN.
+ * A user-selected Google photo is preserved when it is available; all generated
+ * avatars and fallbacks are deterministic inline SVG data URLs.
  */
 export function getAvatarUrl(name: string | undefined | null, style = 'bottts-neutral', photoUrl?: string | null): string {
-  // 1. When user explicitly chose Google photo style
   if (style === 'google') {
-      if (photoUrl && photoUrl.trim() !== '') {
-          return photoUrl;
-      }
-      // Fallback to initials if no Google photo
-      const seed = encodeURIComponent(name || 'User');
-      return `https://api.dicebear.com/7.x/initials/svg?seed=${seed}`;
+    if (photoUrl && photoUrl.trim() !== '') return photoUrl;
   }
-
-  // 2. Use DiceBear with the selected style
-  const seed = encodeURIComponent(name || 'User');
-  return `https://api.dicebear.com/7.x/${style}/svg?seed=${seed}`;
+  return getLocalAvatarUrl(name, style);
 }
 
 export function naturalCompare(a: string, b: string): number {

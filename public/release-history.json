@@ -1,5 +1,24 @@
 [
   {
+    "version": "v26.09.26-b05",
+    "date": "26/9/2026",
+    "title": "Ổn định giao diện production và loại bỏ lỗi CSP runtime",
+    "highlights": [
+      "Khôi phục đầy đủ stylesheet, font và icon để giao diện LIMS hiển thị ổn định trên Vercel khi CSP đang bật."
+    ],
+    "features": [],
+    "improvements": [
+      "Đóng gói Open Sans, Font Awesome và avatar SVG nội bộ thay vì phụ thuộc CDN runtime bên ngoài.",
+      "Thu hẹp CSP sau khi loại bỏ các request font/avatar không cần thiết từ CDN."
+    ],
+    "fixes": [
+      "Sửa lỗi stylesheet bị giữ ở media print khiến toàn bộ layout production rơi về HTML mặc định.",
+      "Sửa lỗi icon Font Awesome không được áp dụng trên production khiến nhiều nút và thẻ chỉ còn ô màu hoặc chữ.",
+      "Sửa lỗi CSP chặn Google Fonts và DiceBear khiến console phát sinh hàng loạt lỗi fetch khi tải dashboard và avatar."
+    ],
+    "releaseOrder": 26092600005
+  },
+  {
     "version": "v26.09.26-b04",
     "date": "26/9/2026",
     "title": "Khôi phục đầy đủ giao diện production và bộ icon",

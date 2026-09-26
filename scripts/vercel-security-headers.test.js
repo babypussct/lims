@@ -29,4 +29,5 @@ test('publishes browser security headers without applying them to Firebase auth 
   assert.match(csp, /worker-src 'self' blob:/);
   assert.doesNotMatch(csp, /'unsafe-eval'/);
   assert.doesNotMatch(csp, /script-src[^;]*'unsafe-inline'/);
+  assert.doesNotMatch(csp, /fonts\.googleapis\.com|fonts\.gstatic\.com|cdnjs\.cloudflare\.com|api\.dicebear\.com/);
 });
