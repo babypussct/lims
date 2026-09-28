@@ -41,7 +41,8 @@ test('publishes browser security headers without applying them to Firebase auth 
   assert.match(csp, /default-src 'self'/);
   assert.match(csp, /object-src 'none'/);
   assert.match(csp, /frame-ancestors 'none'/);
-  assert.match(csp, /script-src 'self' https:\/\/accounts\.google\.com/);
+  assert.match(csp, /script-src[^;]*https:\/\/accounts\.google\.com/);
+  assert.match(csp, /script-src[^;]*https:\/\/apis\.google\.com/);
   assert.match(csp, /img-src 'self' data: blob:/);
   assert.match(csp, /media-src 'self' blob:/);
   assert.match(csp, /frame-src 'self' blob:/);

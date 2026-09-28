@@ -2,7 +2,27 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.28-b01
+## Phiên bản hiện tại: v26.09.28-b02
+
+### v26.09.28-b02
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Đăng nhập Google trên production hoạt động ổn định dưới chính sách CSP nghiêm ngặt.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Giữ allowlist CSP tối thiểu cho Firebase Auth, Google Identity Services, Drive, Firestore, PDF/print và các worker nội bộ.
+- Bổ sung kiểm thử hồi quy cho script Firebase Auth tải động từ apis.google.com.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Cho phép Firebase Auth tải https://apis.google.com/js/api.js, loại bỏ lỗi auth/internal-error khi xử lý Google redirect.
+- Giữ nguyên các giới hạn CSP an toàn, không thêm unsafe-inline hoặc unsafe-eval.
 
 ### v26.09.28-b01
 

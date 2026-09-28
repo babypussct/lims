@@ -1,5 +1,23 @@
 [
   {
+    "version": "v26.09.28-b02",
+    "date": "28/9/2026",
+    "title": "Khắc phục CSP cho Firebase Google Sign-In",
+    "highlights": [
+      "Đăng nhập Google trên production hoạt động ổn định dưới chính sách CSP nghiêm ngặt."
+    ],
+    "features": [],
+    "improvements": [
+      "Giữ allowlist CSP tối thiểu cho Firebase Auth, Google Identity Services, Drive, Firestore, PDF/print và các worker nội bộ.",
+      "Bổ sung kiểm thử hồi quy cho script Firebase Auth tải động từ apis.google.com."
+    ],
+    "fixes": [
+      "Cho phép Firebase Auth tải https://apis.google.com/js/api.js, loại bỏ lỗi auth/internal-error khi xử lý Google redirect.",
+      "Giữ nguyên các giới hạn CSP an toàn, không thêm unsafe-inline hoặc unsafe-eval."
+    ],
+    "releaseOrder": 26092800002
+  },
+  {
     "version": "v26.09.28-b01",
     "date": "28/9/2026",
     "title": "Đồng bộ phiên bản PWA và hoàn thiện chính sách CSP",
