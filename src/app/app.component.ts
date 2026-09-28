@@ -516,8 +516,21 @@ export class AppComponent implements OnDestroy {
       });
 
       // Chủ động kiểm tra update ngay khi app load (không đợi SW tự check)
-      this.swUpdate.checkForUpdate().then(hasUpdate => {
-        console.log(`[LIMS SW] 🔍 Kiểm tra lần đầu: ${hasUpdate ? 'CÓ bản mới!' : 'Đang dùng bản mới nhất.'}`);
+      this.swUpdate.checkForUpdate().then(async hasUpdate => {
+        console.log(`[LIMS SW] 🔍 Kiểm tra lần đầu: ${hasUpdate ? 'CÓ bản mới!' : 'Không phát hiện manifest mới.'}`);
+
+        // Một client cũ có thể bỏ lỡ VERSION_READY nếu service worker đã cài
+        // bản mới trước khi Angular đăng ký listener. Khi đó checkForUpdate()
+        // trả false dù tab hiện tại vẫn đang gắn với version cũ. activateUpdate()
+        // trả true chính xác trong trường hợp này; reload ngay sau khi kích hoạt
+        // để shell và lazy chunks luôn cùng một version.
+        if (!hasUpdate) {
+          const activated = await this.swUpdate.activateUpdate();
+          if (activated) {
+            console.warn('[LIMS SW] ♻️ Phát hiện client đang dùng version cũ đã cài sẵn. Đang đồng bộ và tải lại...');
+            window.location.reload();
+          }
+        }
       }).catch(err => {
         console.warn('[LIMS SW] ⚠️ Lỗi kiểm tra update lần đầu:', err);
       });

@@ -95,6 +95,20 @@ test('VERSION_READY contract still exposes the modal and activates the pending v
   assert.match(source, /window\.location\.reload\(\)/);
 });
 
+test('startup update check recovers a client that missed VERSION_READY but is still pinned to an older installed version', () => {
+  const source = readFileSync(new URL('src/app/app.component.ts', root), 'utf8');
+  const startupCheckStart = source.indexOf('// Chủ động kiểm tra update ngay khi app load');
+  const pollingStart = source.indexOf('// Kiểm tra mỗi 5 phút', startupCheckStart);
+
+  assert.ok(startupCheckStart >= 0, 'startup service-worker update check must exist');
+  assert.ok(pollingStart > startupCheckStart, 'startup check block must be bounded');
+
+  const startupCheckBlock = source.slice(startupCheckStart, pollingStart);
+  assert.match(startupCheckBlock, /if \(!hasUpdate\)/);
+  assert.match(startupCheckBlock, /await this\.swUpdate\.activateUpdate\(\)/);
+  assert.match(startupCheckBlock, /if \(activated\)[\s\S]*window\.location\.reload\(\)/);
+});
+
 test('update countdown runs continuously through 10 seconds without an interaction pause gate', () => {
   const source = readFileSync(new URL('src/app/app.component.ts', root), 'utf8');
 

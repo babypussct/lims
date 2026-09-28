@@ -1,16 +1,14 @@
 {
-  "title": "Ổn định giao diện production và loại bỏ lỗi CSP runtime",
+  "title": "Đồng bộ phiên bản PWA và hoàn thiện chính sách CSP",
   "highlights": [
-    "Khôi phục đầy đủ stylesheet, font và icon để giao diện LIMS hiển thị ổn định trên Vercel khi CSP đang bật."
+    "Ứng dụng tự đồng bộ và tải lại khi phát hiện client vẫn đang chạy phiên bản PWA cũ đã được cài sẵn."
   ],
   "features": [],
   "improvements": [
-    "Đóng gói Open Sans, Font Awesome và avatar SVG nội bộ thay vì phụ thuộc CDN runtime bên ngoài.",
-    "Thu hẹp CSP sau khi loại bỏ các request font/avatar không cần thiết từ CDN."
+    "Cho phép media và nội dung frame cục bộ dùng blob URL trong CSP để các luồng xem nội dung nội bộ hoạt động đúng mà không nới quyền script.",
+    "Bổ sung kiểm thử hồi quy để ngăn việc đưa lại các phụ thuộc font, icon hoặc avatar CDN đã loại bỏ khỏi runtime."
   ],
   "fixes": [
-    "Sửa lỗi stylesheet bị giữ ở media print khiến toàn bộ layout production rơi về HTML mặc định.",
-    "Sửa lỗi icon Font Awesome không được áp dụng trên production khiến nhiều nút và thẻ chỉ còn ô màu hoặc chữ.",
-    "Sửa lỗi CSP chặn Google Fonts và DiceBear khiến console phát sinh hàng loạt lỗi fetch khi tải dashboard và avatar."
+    "Khắc phục trường hợp tab đang mở bỏ lỡ sự kiện VERSION_READY và tiếp tục bám phiên bản service worker cũ sau khi bản mới đã được cài đặt."
   ]
 }

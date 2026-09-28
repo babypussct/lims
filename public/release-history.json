@@ -1,5 +1,22 @@
 [
   {
+    "version": "v26.09.28-b01",
+    "date": "28/9/2026",
+    "title": "Đồng bộ phiên bản PWA và hoàn thiện chính sách CSP",
+    "highlights": [
+      "Ứng dụng tự đồng bộ và tải lại khi phát hiện client vẫn đang chạy phiên bản PWA cũ đã được cài sẵn."
+    ],
+    "features": [],
+    "improvements": [
+      "Cho phép media và nội dung frame cục bộ dùng blob URL trong CSP để các luồng xem nội dung nội bộ hoạt động đúng mà không nới quyền script.",
+      "Bổ sung kiểm thử hồi quy để ngăn việc đưa lại các phụ thuộc font, icon hoặc avatar CDN đã loại bỏ khỏi runtime."
+    ],
+    "fixes": [
+      "Khắc phục trường hợp tab đang mở bỏ lỡ sự kiện VERSION_READY và tiếp tục bám phiên bản service worker cũ sau khi bản mới đã được cài đặt."
+    ],
+    "releaseOrder": 26092800001
+  },
+  {
     "version": "v26.09.26-b05",
     "date": "26/9/2026",
     "title": "Ổn định giao diện production và loại bỏ lỗi CSP runtime",

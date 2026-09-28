@@ -2,7 +2,26 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.26-b05
+## Phiên bản hiện tại: v26.09.28-b01
+
+### v26.09.28-b01
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Ứng dụng tự đồng bộ và tải lại khi phát hiện client vẫn đang chạy phiên bản PWA cũ đã được cài sẵn.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Cho phép media và nội dung frame cục bộ dùng blob URL trong CSP để các luồng xem nội dung nội bộ hoạt động đúng mà không nới quyền script.
+- Bổ sung kiểm thử hồi quy để ngăn việc đưa lại các phụ thuộc font, icon hoặc avatar CDN đã loại bỏ khỏi runtime.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Khắc phục trường hợp tab đang mở bỏ lỡ sự kiện VERSION_READY và tiếp tục bám phiên bản service worker cũ sau khi bản mới đã được cài đặt.
 
 ### v26.09.26-b05
 
