@@ -1,5 +1,25 @@
 [
   {
+    "version": "v26.09.29-b02",
+    "date": "29/9/2026",
+    "title": "Hoàn thiện CSP cho tài nguyên GHS",
+    "highlights": [
+      "Đồng bộ CSP runtime với toàn bộ tài nguyên an toàn hóa chất và các luồng Firebase Auth, Google Drive, PWA của LIMS."
+    ],
+    "features": [],
+    "improvements": [
+      "Bổ sung allowlist cho request ảnh GHS qua Service Worker trong connect-src.",
+      "Kiểm tra allowlist theo từng CSP directive cho script, connect, frame, worker, image, media, manifest và form.",
+      "Bổ sung guardrail chống inline event-handler và ngăn các phụ thuộc font, icon hoặc avatar CDN ngoài allowlist."
+    ],
+    "fixes": [
+      "Cho phép Service Worker tải các biểu tượng GHS từ https://upload.wikimedia.org mà không bị connect-src từ chối.",
+      "Loại bỏ inline onerror khỏi giao diện tài liệu để script-src không chặn xử lý lỗi ảnh.",
+      "Giữ nguyên CSP tối thiểu, không thêm unsafe-eval hoặc các CDN runtime không cần thiết."
+    ],
+    "releaseOrder": 26092900002
+  },
+  {
     "version": "v26.09.29-b01",
     "date": "29/9/2026",
     "title": "Hoàn thiện kiểm tra CSP production",

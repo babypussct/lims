@@ -81,6 +81,7 @@ test('publishes browser security headers without applying them to Firebase auth 
     'connect-src': [
       '\'self\'',
       'https://apis.google.com',
+      'https://upload.wikimedia.org',
       'https://*.googleapis.com',
       'https://*.firebaseio.com',
       'wss://*.firebaseio.com',

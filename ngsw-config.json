@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.29-b01",
-    "title": "Hoàn thiện kiểm tra CSP production",
+    "version": "v26.09.29-b02",
+    "title": "Hoàn thiện CSP cho tài nguyên GHS",
     "features": [
-      "Đồng bộ CSP với toàn bộ luồng Firebase Auth, Google Drive, PWA và tài liệu của LIMS.",
+      "Đồng bộ CSP runtime với toàn bộ tài nguyên an toàn hóa chất và các luồng Firebase Auth, Google Drive, PWA của LIMS.",
+      "Bổ sung allowlist cho request ảnh GHS qua Service Worker trong connect-src.",
       "Kiểm tra allowlist theo từng CSP directive cho script, connect, frame, worker, image, media, manifest và form.",
       "Bổ sung guardrail chống inline event-handler và ngăn các phụ thuộc font, icon hoặc avatar CDN ngoài allowlist.",
-      "Cho phép Firebase Auth hoàn tất request tới https://apis.google.com/js/api.js qua connect-src, loại bỏ lỗi auth/internal-error khi xử lý Google redirect.",
-      "Loại bỏ inline onerror khỏi giao diện tài liệu để script-src không chặn xử lý lỗi ảnh."
+      "Cho phép Service Worker tải các biểu tượng GHS từ https://upload.wikimedia.org mà không bị connect-src từ chối."
     ]
   },
   "assetGroups": [

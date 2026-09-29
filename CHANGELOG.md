@@ -2,7 +2,29 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.29-b01
+## Phiên bản hiện tại: v26.09.29-b02
+
+### v26.09.29-b02
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Đồng bộ CSP runtime với toàn bộ tài nguyên an toàn hóa chất và các luồng Firebase Auth, Google Drive, PWA của LIMS.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Bổ sung allowlist cho request ảnh GHS qua Service Worker trong connect-src.
+- Kiểm tra allowlist theo từng CSP directive cho script, connect, frame, worker, image, media, manifest và form.
+- Bổ sung guardrail chống inline event-handler và ngăn các phụ thuộc font, icon hoặc avatar CDN ngoài allowlist.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Cho phép Service Worker tải các biểu tượng GHS từ https://upload.wikimedia.org mà không bị connect-src từ chối.
+- Loại bỏ inline onerror khỏi giao diện tài liệu để script-src không chặn xử lý lỗi ảnh.
+- Giữ nguyên CSP tối thiểu, không thêm unsafe-eval hoặc các CDN runtime không cần thiết.
 
 ### v26.09.29-b01
 
