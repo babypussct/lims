@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.09.28-b02",
-    "title": "Khắc phục CSP cho Firebase Google Sign-In",
+    "version": "v26.09.29-b01",
+    "title": "Hoàn thiện kiểm tra CSP production",
     "features": [
-      "Đăng nhập Google trên production hoạt động ổn định dưới chính sách CSP nghiêm ngặt.",
-      "Giữ allowlist CSP tối thiểu cho Firebase Auth, Google Identity Services, Drive, Firestore, PDF/print và các worker nội bộ.",
-      "Bổ sung kiểm thử hồi quy cho script Firebase Auth tải động từ apis.google.com.",
-      "Cho phép Firebase Auth tải https://apis.google.com/js/api.js, loại bỏ lỗi auth/internal-error khi xử lý Google redirect.",
-      "Giữ nguyên các giới hạn CSP an toàn, không thêm unsafe-inline hoặc unsafe-eval."
+      "Đồng bộ CSP với toàn bộ luồng Firebase Auth, Google Drive, PWA và tài liệu của LIMS.",
+      "Kiểm tra allowlist theo từng CSP directive cho script, connect, frame, worker, image, media, manifest và form.",
+      "Bổ sung guardrail chống inline event-handler và ngăn các phụ thuộc font, icon hoặc avatar CDN ngoài allowlist.",
+      "Cho phép Firebase Auth hoàn tất request tới https://apis.google.com/js/api.js qua connect-src, loại bỏ lỗi auth/internal-error khi xử lý Google redirect.",
+      "Loại bỏ inline onerror khỏi giao diện tài liệu để script-src không chặn xử lý lỗi ảnh."
     ]
   },
   "assetGroups": [

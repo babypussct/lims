@@ -1,5 +1,24 @@
 [
   {
+    "version": "v26.09.29-b01",
+    "date": "29/9/2026",
+    "title": "Hoàn thiện kiểm tra CSP production",
+    "highlights": [
+      "Đồng bộ CSP với toàn bộ luồng Firebase Auth, Google Drive, PWA và tài liệu của LIMS."
+    ],
+    "features": [],
+    "improvements": [
+      "Kiểm tra allowlist theo từng CSP directive cho script, connect, frame, worker, image, media, manifest và form.",
+      "Bổ sung guardrail chống inline event-handler và ngăn các phụ thuộc font, icon hoặc avatar CDN ngoài allowlist."
+    ],
+    "fixes": [
+      "Cho phép Firebase Auth hoàn tất request tới https://apis.google.com/js/api.js qua connect-src, loại bỏ lỗi auth/internal-error khi xử lý Google redirect.",
+      "Loại bỏ inline onerror khỏi giao diện tài liệu để script-src không chặn xử lý lỗi ảnh.",
+      "Giữ nguyên CSP tối thiểu, không thêm unsafe-eval hoặc các CDN runtime không cần thiết."
+    ],
+    "releaseOrder": 26092900001
+  },
+  {
     "version": "v26.09.28-b02",
     "date": "28/9/2026",
     "title": "Khắc phục CSP cho Firebase Google Sign-In",

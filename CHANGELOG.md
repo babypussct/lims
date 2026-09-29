@@ -2,7 +2,28 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.28-b02
+## Phiên bản hiện tại: v26.09.29-b01
+
+### v26.09.29-b01
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Đồng bộ CSP với toàn bộ luồng Firebase Auth, Google Drive, PWA và tài liệu của LIMS.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Kiểm tra allowlist theo từng CSP directive cho script, connect, frame, worker, image, media, manifest và form.
+- Bổ sung guardrail chống inline event-handler và ngăn các phụ thuộc font, icon hoặc avatar CDN ngoài allowlist.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Cho phép Firebase Auth hoàn tất request tới https://apis.google.com/js/api.js qua connect-src, loại bỏ lỗi auth/internal-error khi xử lý Google redirect.
+- Loại bỏ inline onerror khỏi giao diện tài liệu để script-src không chặn xử lý lỗi ảnh.
+- Giữ nguyên CSP tối thiểu, không thêm unsafe-eval hoặc các CDN runtime không cần thiết.
 
 ### v26.09.28-b02
 

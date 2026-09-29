@@ -340,7 +340,7 @@ function readStoredOption<T extends string>(key: string, allowed: readonly T[], 
                         @if (isFolder(item)) {
                           <i class="fa-solid fa-folder text-yellow-400 text-5xl group-hover:scale-110 transition-transform"></i>
                         } @else if (item.thumbnailLink) {
-                          <img [src]="item.thumbnailLink" class="w-16 h-16 rounded shadow-sm border border-slate-200 dark:border-slate-700 object-cover group-hover:scale-110 transition-transform" onerror="this.style.display='none'" alt="thumbnail">
+                          <img [src]="item.thumbnailLink" (error)="onThumbnailError($event)" class="w-16 h-16 rounded shadow-sm border border-slate-200 dark:border-slate-700 object-cover group-hover:scale-110 transition-transform" alt="thumbnail">
                         } @else {
                           <i class="fa-solid {{ getFileTypeStyle(item).icon }} text-5xl group-hover:scale-110 transition-transform"></i>
                         }
@@ -981,6 +981,11 @@ export class DocumentsComponent implements OnInit, OnDestroy {
     if (!element) return;
     this.scrollPositions[this.currentFolderId()] = element.scrollTop;
     this.persistScrollPositions();
+  }
+
+  onThumbnailError(event: Event): void {
+    const image = event.currentTarget as HTMLImageElement | null;
+    if (image) image.hidden = true;
   }
 
   private createGridActionButton(item?: DriveItem): HTMLElement | string {
