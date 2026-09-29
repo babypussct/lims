@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { readFileSync, readdirSync } = require('node:fs');
+const { existsSync, readFileSync, readdirSync } = require('node:fs');
 const { join } = require('node:path');
 
 const vercelConfig = JSON.parse(readFileSync(join(__dirname, '..', 'vercel.json'), 'utf8'));
@@ -72,7 +72,6 @@ test('publishes browser security headers without applying them to Firebase auth 
       '\'self\'',
       'data:',
       'blob:',
-      'https://upload.wikimedia.org',
       'https://drive.google.com',
       'https://*.googleusercontent.com',
       'https://*.googleapis.com'
@@ -81,7 +80,6 @@ test('publishes browser security headers without applying them to Firebase auth 
     'connect-src': [
       '\'self\'',
       'https://apis.google.com',
-      'https://upload.wikimedia.org',
       'https://*.googleapis.com',
       'https://*.firebaseio.com',
       'wss://*.firebaseio.com',
@@ -111,6 +109,12 @@ test('publishes browser security headers without applying them to Firebase auth 
 
 test('runtime source does not reintroduce remote font, icon, or avatar dependencies removed for CSP', () => {
   const root = join(__dirname, '..');
+  for (const asset of Array.from({ length: 9 }, (_, index) => 'GHS0' + (index + 1) + '.svg')) {
+    assert.ok(
+      existsSync(join(root, 'public', 'assets', 'ghs', asset)),
+      'packaged GHS asset is missing: ' + asset
+    );
+  }
   const runtimeSource = [join(root, 'src'), join(root, 'public')]
     .flatMap(collectRuntimeSourceFiles)
     .map(file => readFileSync(file, 'utf8'))
@@ -119,6 +123,11 @@ test('runtime source does not reintroduce remote font, icon, or avatar dependenc
   assert.doesNotMatch(
     runtimeSource,
     /fonts\.googleapis\.com|fonts\.gstatic\.com|cdnjs\.cloudflare\.com|api\.dicebear\.com/
+  );
+  assert.doesNotMatch(
+    runtimeSource,
+    /upload\.wikimedia\.org/,
+    'runtime must use packaged GHS assets instead of remote Wikimedia images'
   );
   assert.doesNotMatch(
     runtimeSource,

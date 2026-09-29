@@ -2,7 +2,29 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.29-b02
+## Phiên bản hiện tại: v26.09.29-b03
+
+### v26.09.29-b03
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Đóng gói toàn bộ biểu tượng GHS trong LIMS để loại bỏ request ngoài và ổn định Service Worker dưới CSP nghiêm ngặt.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Đóng gói 9 biểu tượng GHS vào assets nội bộ và dùng đường dẫn same-origin.
+- Kiểm tra allowlist theo từng CSP directive cho script, connect, frame, worker, image, media, manifest và form.
+- Bổ sung guardrail chống inline event-handler và ngăn các phụ thuộc font, icon hoặc avatar CDN ngoài allowlist.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Loại bỏ hoàn toàn request tới upload.wikimedia.org, tránh CSP violation và 504/429 từ dịch vụ ảnh bên ngoài.
+- Loại bỏ inline onerror khỏi giao diện tài liệu để script-src không chặn xử lý lỗi ảnh.
+- Giữ nguyên CSP tối thiểu, không thêm unsafe-eval hoặc các CDN runtime không cần thiết.
 
 ### v26.09.29-b02
 
