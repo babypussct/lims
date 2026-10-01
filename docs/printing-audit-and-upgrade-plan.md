@@ -2,7 +2,7 @@
 
 Ngày rà soát: **01/10/2026**. Mã nguồn đối chiếu: **`dc6e1e5e`**.
 
-Trạng thái cập nhật: **Đã triển khai đợt 1–2, phần mềm của đợt 3 và các biểu mẫu đợt 4 dựa trên dữ liệu hiện có; chuẩn bị phát hành `26.10.01-b06`.** Kết quả cuối, hướng dẫn vận hành và bằng chứng triển khai được tập hợp ở [tài liệu bàn giao](printing-handover.md).
+Trạng thái cập nhật: **Đã triển khai đợt 1–2, phần mềm của đợt 3 và các biểu mẫu đợt 4 dựa trên dữ liệu hiện có; đã phát hành và xác minh production `26.10.01-b06`.** Kết quả cuối, hướng dẫn vận hành và bằng chứng triển khai được tập hợp ở [tài liệu bàn giao](printing-handover.md).
 
 Tài liệu này hiệu chỉnh bản phân tích ban đầu và xác định thứ tự nâng cấp, ranh giới nghiệp vụ, các phụ thuộc và tiêu chí nghiệm thu. Mục 1 và 2 ghi nhận hiện trạng tại commit `dc6e1e5e`, trước thay đổi. Các bảng đợt 1 và Smart Prep là kết quả tại thời điểm kiểm tra từng đợt; số test phát hành cuối được ghi ở tài liệu bàn giao. Kiểm tra trình duyệt dùng component Angular thực tế với dữ liệu giả lập; chưa kiểm tra phiên đăng nhập LIMS, PDF thật trên Drive hoặc bản in vật lý.
 

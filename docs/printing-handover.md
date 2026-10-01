@@ -1,6 +1,6 @@
 # Bàn giao nâng cấp chức năng in LIMS
 
-Bản phát hành **26.10.01-b06 — Nâng cấp xem trước và in hồ sơ LIMS**, ngày **01/10/2026**. Baseline đối chiếu: `dc6e1e5e454d4ddd8609bea6da3abb99de8de358`. Hệ thống production: [nafiqpm6.vercel.app](https://nafiqpm6.vercel.app).
+Bản phát hành **26.10.01-b06 — Nâng cấp xem trước và in hồ sơ LIMS**, ngày **01/10/2026**, **đã triển khai và xác minh production**. Baseline đối chiếu: `dc6e1e5e454d4ddd8609bea6da3abb99de8de358`. Hệ thống production: [nafiqpm6.vercel.app](https://nafiqpm6.vercel.app).
 
 Phạm vi bàn giao gồm nền in chung, các đường in hiện có và biểu mẫu đọc dữ liệu hiện tại. Các biểu mẫu có chỗ ký/ghi thực tế hỗ trợ ghi nhận thủ công; không tự tạo trạng thái phê duyệt, tiếp nhận hoặc chữ ký mật mã. Xem [bản rà soát và kế hoạch](printing-audit-and-upgrade-plan.md) để đối chiếu yêu cầu ban đầu.
 
@@ -73,6 +73,19 @@ Cách tái hiện: [TESTING_GUIDE.md](../TESTING_GUIDE.md), [script browser smok
 
 Release dùng **Git Integration + Deployment Check** theo [DEPLOYMENT.md](../DEPLOYMENT.md): prepare → verify → commit → prepush → push `main` → chờ CI và deployment check cho đúng SHA → xác nhận Vercel READY/alias production → kiểm tra runtime. Không có thay đổi schema, rules/index Firestore, API hoặc Apps Script cần phát hành riêng.
 
-Ở thời điểm chuẩn bị commit tài liệu này, gate local đã đạt; bằng chứng CI/deployment/runtime sẽ được bổ sung sau khi phát hành. Chỉ xác nhận hoàn thành deployment khi `ngsw.json` và `release-history.json` trên production trả về `26.10.01-b06` và release check của SHA đó đạt.
+Đã xác minh bản phát hành từ commit **`8301901ec55368876c0f87381b014f9d56ed5514`**. Commit cập nhật tài liệu bàn giao sau đó chỉ bổ sung bằng chứng, không thay đổi ứng dụng hoặc tăng phiên bản.
+
+| Bằng chứng phát hành | Kết quả |
+| --- | --- |
+| [Commit nguồn](https://github.com/babypussct/lims/commit/8301901ec55368876c0f87381b014f9d56ed5514) | Đã push `main`; prepush và release gate đạt; release discipline xác minh trực tiếp từ baseline, 46 file production có metadata hợp lệ |
+| [GitHub Release Gate #36906750907](https://github.com/babypussct/lims/actions/runs/36906750907) | `completed / success` cho đúng SHA release |
+| Vercel — `release-verify` | `success`, liên kết đúng job verify của SHA release |
+| [Vercel deployment](https://vercel.com/babypusscts-projects/nafiqpm6/6QimGfHqwxqmb7S8tAMEDWmJpUpZ) | `success / Deployment has completed`; GitHub deployment `6792111419`, environment `Production`, đúng SHA release |
+| [URL deployment](https://nafiqpm6-nptur7tnt-babypusscts-projects.vercel.app) / [alias production](https://nafiqpm6.vercel.app) | Deployment hoàn tất; alias phục vụ `v26.10.01-b06` |
+| HTTP production | `/`, `/ngsw.json`, `/release-history.json`, `/changelog`, `/index.html`, CSS và main JS trả 200. Manifest/history cùng version/title release |
+| Service worker | SHA-1 của `/index.html`, `/styles-VVZUUU5K.css` và `/main-YX2JP4FI.js` khớp `hashTable` của manifest production |
+| Trình duyệt production | Trang đăng nhập, modal cập nhật và [nhật ký tại `/#/changelog`](https://nafiqpm6.vercel.app/#/changelog) hiển thị version/title `b06`; desktop/mobile 390×844 đạt; không có `pageerror` |
+
+Thời điểm kiểm tra runtime: **2026-10-01T13:15:50.410Z**. Kiểm tra public runtime là đọc dữ liệu; không đăng nhập, ghi kho, tạo mẫu hoặc phát hành báo cáo. Ứng dụng dùng hash routing (`/#/…`); `/changelog` trực tiếp chỉ trả app shell, nên kiểm tra UI phải dùng `/#/changelog`.
 
 Nếu cần khôi phục, chọn deployment production đã xác minh của `26.10.01-b05` trong Vercel để chuyển alias theo quy trình vận hành; đồng thời chuẩn bị bản sửa/revert có release metadata mới qua gate. Không force-push `main` hoặc ghi đè dữ liệu kho. Vì lần nâng cấp này chỉ bổ sung renderer/thao tác đọc, không có migration dữ liệu để đảo ngược.
