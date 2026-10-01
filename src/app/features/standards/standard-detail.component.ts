@@ -704,9 +704,16 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
         }
     }
 
-    copyText(text: string | undefined) {
-        if (!text) return;
-        navigator.clipboard.writeText(text).then(() => this.toast.show('Đã sao chép: ' + text));
+    async copyText(text: string | undefined, event?: Event) {
+        event?.stopPropagation();
+        const value = readStandardText(text);
+        if (!value) return;
+        try {
+            await navigator.clipboard.writeText(value);
+            this.toast.show('Đã sao chép: ' + value, 'success');
+        } catch {
+            this.toast.show('Không thể sao chép. Vui lòng chọn nội dung và sao chép thủ công.', 'error');
+        }
     }
 
     openCoaPreview(url: string) {

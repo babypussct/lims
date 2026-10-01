@@ -5,6 +5,7 @@ import { UserProfile } from '../../../core/services/auth.service';
 import { SkeletonComponent } from '../../../shared/components/skeleton/skeleton.component';
 import { LockPermissionDirective } from '../../../shared/directives/lock-permission.directive';
 import { StateService } from '../../../core/services/state.service';
+import { readStandardText } from '../standard-detail.utils';
 import { formatNum, getStorageInfo, getExpiryClass, getExpiryTimeClass, getExpiryTimeLeft, getStandardStatus, canAssign, getExpiryBarClass } from '../../../shared/utils/utils';
 
 @Component({
@@ -87,22 +88,22 @@ import { formatNum, getStorageInfo, getExpiryClass, getExpiryTimeClass, getExpir
 
                                <!-- Data Grid (Click to copy) -->
                                <div class="grid grid-cols-2 gap-px bg-slate-100 dark:bg-slate-700 rounded-lg overflow-hidden border border-slate-100 dark:border-slate-700 mb-4 text-[11px]">
-                                   <button type="button" class="bg-white dark:bg-slate-800 p-2 text-left hover:bg-blue-50 dark:hover:bg-blue-900/20 transition cursor-pointer group/cell" (click)="copyText.emit({text: std.lot_number || '', event: $event})" [attr.aria-label]="'Sao chép lô ' + (std.lot_number || 'trống')" title="Sao chép lô">
-                                       <div class="text-slate-400 dark:text-slate-500 font-bold uppercase mb-0.5 flex justify-between">Lô <i class="fa-regular fa-copy opacity-0 group-hover/cell:opacity-100"></i></div>
-                                       <div class="font-mono font-bold text-slate-700 dark:text-slate-300 truncate">{{std.lot_number || '-'}}</div>
+                                   <button type="button" class="bg-white dark:bg-slate-800 p-2 text-left enabled:hover:bg-blue-50 dark:enabled:hover:bg-blue-900/20 transition enabled:cursor-pointer disabled:cursor-default focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-fuchsia-500 group/cell" (click)="copyText.emit({text: std.lot_number || '', event: $event})" [disabled]="!readStandardText(std.lot_number)" [attr.aria-label]="'Sao chép số lô: ' + (readStandardText(std.lot_number) || 'Chưa ghi nhận')" [title]="readStandardText(std.lot_number) ? 'Sao chép số lô: ' + readStandardText(std.lot_number) : 'Chưa ghi nhận số lô'">
+                                       <div class="text-slate-400 dark:text-slate-500 font-bold uppercase mb-0.5 flex justify-between">Lô @if (readStandardText(std.lot_number)) { <i class="fa-regular fa-copy opacity-50 group-hover/cell:opacity-100 group-focus-visible/cell:opacity-100" aria-hidden="true"></i> }</div>
+                                       <div class="font-mono font-bold text-slate-700 dark:text-slate-300 truncate">{{readStandardText(std.lot_number) || '-'}}</div>
                                    </button>
-                                   <button type="button" class="bg-white dark:bg-slate-800 p-2 text-left hover:bg-blue-50 dark:hover:bg-blue-900/20 transition cursor-pointer group/cell" (click)="copyText.emit({text: std.product_code || '', event: $event})" [attr.aria-label]="'Sao chép mã ' + (std.product_code || 'trống')" title="Sao chép mã">
-                                       <div class="text-slate-400 dark:text-slate-500 font-bold uppercase mb-0.5 flex justify-between">Mã <i class="fa-regular fa-copy opacity-0 group-hover/cell:opacity-100"></i></div>
-                                       <div class="font-mono font-bold text-slate-700 dark:text-slate-300 truncate">{{std.product_code || '-'}}</div>
+                                   <button type="button" class="bg-white dark:bg-slate-800 p-2 text-left enabled:hover:bg-blue-50 dark:enabled:hover:bg-blue-900/20 transition enabled:cursor-pointer disabled:cursor-default focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-fuchsia-500 group/cell" (click)="copyText.emit({text: std.product_code || '', event: $event})" [disabled]="!readStandardText(std.product_code)" [attr.aria-label]="'Sao chép mã sản phẩm: ' + (readStandardText(std.product_code) || 'Chưa ghi nhận')" [title]="readStandardText(std.product_code) ? 'Sao chép mã sản phẩm: ' + readStandardText(std.product_code) : 'Chưa ghi nhận mã sản phẩm'">
+                                       <div class="text-slate-400 dark:text-slate-500 font-bold uppercase mb-0.5 flex justify-between">Mã @if (readStandardText(std.product_code)) { <i class="fa-regular fa-copy opacity-50 group-hover/cell:opacity-100 group-focus-visible/cell:opacity-100" aria-hidden="true"></i> }</div>
+                                       <div class="font-mono font-bold text-slate-700 dark:text-slate-300 truncate">{{readStandardText(std.product_code) || '-'}}</div>
                                    </button>
-                                   <div class="bg-white dark:bg-slate-800 p-2">
-                                       <div class="text-slate-400 dark:text-slate-500 font-bold uppercase mb-0.5">NSX</div>
-                                       <div class="font-bold text-slate-700 dark:text-slate-300 truncate" [title]="std.manufacturer">{{std.manufacturer || '-'}}</div>
-                                   </div>
-                                   <div class="bg-white dark:bg-slate-800 p-2">
-                                       <div class="text-slate-400 dark:text-slate-500 font-bold uppercase mb-0.5">CAS</div>
-                                       <div class="font-mono font-bold text-slate-700 dark:text-slate-300 truncate">{{std.cas_number || '-'}}</div>
-                                   </div>
+                                   <button type="button" class="bg-white dark:bg-slate-800 p-2 text-left enabled:hover:bg-blue-50 dark:enabled:hover:bg-blue-900/20 transition enabled:cursor-pointer disabled:cursor-default focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-fuchsia-500 group/cell" (click)="copyText.emit({text: std.manufacturer || '', event: $event})" [disabled]="!readStandardText(std.manufacturer)" [attr.aria-label]="'Sao chép hãng sản xuất: ' + (readStandardText(std.manufacturer) || 'Chưa ghi nhận')" [title]="readStandardText(std.manufacturer) ? 'Sao chép hãng sản xuất: ' + readStandardText(std.manufacturer) : 'Chưa ghi nhận hãng sản xuất'">
+                                       <div class="text-slate-400 dark:text-slate-500 font-bold uppercase mb-0.5 flex justify-between">NSX @if (readStandardText(std.manufacturer)) { <i class="fa-regular fa-copy opacity-50 group-hover/cell:opacity-100 group-focus-visible/cell:opacity-100" aria-hidden="true"></i> }</div>
+                                       <div class="font-bold text-slate-700 dark:text-slate-300 truncate">{{readStandardText(std.manufacturer) || '-'}}</div>
+                                   </button>
+                                   <button type="button" class="bg-white dark:bg-slate-800 p-2 text-left enabled:hover:bg-blue-50 dark:enabled:hover:bg-blue-900/20 transition enabled:cursor-pointer disabled:cursor-default focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-fuchsia-500 group/cell" (click)="copyText.emit({text: std.cas_number || '', event: $event})" [disabled]="!readStandardText(std.cas_number)" [attr.aria-label]="'Sao chép số CAS: ' + (readStandardText(std.cas_number) || 'Chưa ghi nhận')" [title]="readStandardText(std.cas_number) ? 'Sao chép số CAS: ' + readStandardText(std.cas_number) : 'Chưa ghi nhận số CAS'">
+                                       <div class="text-slate-400 dark:text-slate-500 font-bold uppercase mb-0.5 flex justify-between">CAS @if (readStandardText(std.cas_number)) { <i class="fa-regular fa-copy opacity-50 group-hover/cell:opacity-100 group-focus-visible/cell:opacity-100" aria-hidden="true"></i> }</div>
+                                       <div class="font-mono font-bold text-slate-700 dark:text-slate-300 truncate">{{readStandardText(std.cas_number) || '-'}}</div>
+                                   </button>
                                </div>
 
                                <!-- Stock & Storage -->
@@ -244,6 +245,7 @@ export class StandardsGridViewComponent {
 
   // Helpers exposed to template
   Math = Math;
+  readStandardText = readStandardText;
   formatNum = formatNum;
   getStorageInfo = getStorageInfo;
   getExpiryClass = getExpiryClass;

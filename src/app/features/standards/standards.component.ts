@@ -36,6 +36,7 @@ import { StandardsBackfillModalComponent, BackfillData } from './components/stan
 import { StandardsBulkTagModalComponent } from './components/standards-bulk-tag-modal.component';
 import { StandardsTagManagerModalComponent } from './components/standards-tag-manager-modal.component';
 import { ExportModalComponent } from '../../shared/components/export-modal/export-modal.component';
+import { readStandardText } from './standard-detail.utils';
 import { StandardTagCatalogService } from './services/standard-tag-catalog.service';
 import { StandardBulkTagMode, formatMethodOptionLabel, summarizeStockByUnit, StockSummaryResult } from './services/standard-tag.utils';
 
@@ -909,10 +910,16 @@ export class StandardsComponent implements OnInit, OnDestroy {
   // --- Helpers ---
 
 
-  copyText(text: string | undefined, event: Event) {
+  async copyText(text: string | undefined, event: Event) {
       event.stopPropagation();
-      if (!text) return;
-      navigator.clipboard.writeText(text).then(() => this.toast.show('Đã sao chép: ' + text));
+      const value = readStandardText(text);
+      if (!value) return;
+      try {
+          await navigator.clipboard.writeText(value);
+          this.toast.show('Đã sao chép: ' + value, 'success');
+      } catch {
+          this.toast.show('Không thể sao chép. Vui lòng chọn nội dung và sao chép thủ công.', 'error');
+      }
   }
 
   goToReturn(std: ReferenceStandard) {

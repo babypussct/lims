@@ -1,5 +1,23 @@
 [
   {
+    "version": "v26.10.01-b03",
+    "date": "1/10/2026",
+    "title": "Sao chép nhanh thông tin chất chuẩn",
+    "highlights": [
+      "Nhấn vào số lô, mã sản phẩm, hãng sản xuất hoặc số CAS để sao chép nhanh khi tra cứu chất chuẩn."
+    ],
+    "features": [
+      "Sao chép thông tin ngay tại Chi tiết chất chuẩn và cả dạng bảng, dạng thẻ trong Quản lý chất chuẩn."
+    ],
+    "improvements": [
+      "Hiển thị gợi ý sao chép và thông báo xác nhận; có thể dùng phím Enter hoặc Space khi chọn trường thông tin."
+    ],
+    "fixes": [
+      "Không cho sao chép trường chưa nhập và thông báo rõ khi trình duyệt không cho phép sao chép."
+    ],
+    "releaseOrder": 26100100003
+  },
+  {
     "version": "v26.10.01-b02",
     "date": "1/10/2026",
     "title": "Khôi phục mã QR chất chuẩn và in nhãn",

@@ -2,13 +2,13 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.10.01-b02",
-    "title": "Khôi phục mã QR chất chuẩn và in nhãn",
+    "version": "v26.10.01-b03",
+    "title": "Sao chép nhanh thông tin chất chuẩn",
     "features": [
-      "Mã QR chất chuẩn hiển thị trở lại để quét, phóng to và in nhãn.",
-      "Giữ liên kết trong mã QR chất chuẩn đồng nhất với liên kết chia sẻ.",
-      "Sửa lỗi ảnh QR chất chuẩn không hiển thị trên bản phát hành chính thức.",
-      "Sửa cùng nguyên nhân gây lỗi tạo QR khi in nhãn và giữ các luồng đăng nhập, truy xuất bằng QR hoạt động ổn định."
+      "Nhấn vào số lô, mã sản phẩm, hãng sản xuất hoặc số CAS để sao chép nhanh khi tra cứu chất chuẩn.",
+      "Sao chép thông tin ngay tại Chi tiết chất chuẩn và cả dạng bảng, dạng thẻ trong Quản lý chất chuẩn.",
+      "Hiển thị gợi ý sao chép và thông báo xác nhận; có thể dùng phím Enter hoặc Space khi chọn trường thông tin.",
+      "Không cho sao chép trường chưa nhập và thông báo rõ khi trình duyệt không cho phép sao chép."
     ]
   },
   "assetGroups": [

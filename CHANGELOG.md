@@ -2,7 +2,25 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.10.01-b02
+## Phiên bản hiện tại: v26.10.01-b03
+
+### v26.10.01-b03
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Nhấn vào số lô, mã sản phẩm, hãng sản xuất hoặc số CAS để sao chép nhanh khi tra cứu chất chuẩn.
+
+#### ✨ Tính Năng Mới
+
+- Sao chép thông tin ngay tại Chi tiết chất chuẩn và cả dạng bảng, dạng thẻ trong Quản lý chất chuẩn.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Hiển thị gợi ý sao chép và thông báo xác nhận; có thể dùng phím Enter hoặc Space khi chọn trường thông tin.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Không cho sao chép trường chưa nhập và thông báo rõ khi trình duyệt không cho phép sao chép.
 
 ### v26.10.01-b02
 
