@@ -753,7 +753,9 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
   }
   private currentScope = this.viewerScope();
   private scopeWatcher = effect(() => {
-      const next = this.viewerScope();
+      this.handleViewerScopeChange(this.viewerScope());
+  });
+  private handleViewerScopeChange(next: string): void {
       if (next !== this.currentScope) {
           this.currentScope = next;
           this.lookupRequest++;
@@ -763,9 +765,14 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
           this.timelineItems.set([]);
           this.isLoading.set(false);
           this.isVerifying.set(false);
-          if (this.routeId) this.errorMsg.set('Phiên đăng nhập hoặc quyền truy cập đã thay đổi. Vui lòng tra cứu lại hồ sơ.');
+          if (this.initialized && this.routeId && this.auth.currentUser() && !this.auth.isStandardAuditMode()) {
+              const code = this.normalizeLookupValue(this.routeId);
+              if (code) void this.loadData(code);
+          } else if (this.routeId) {
+              this.errorMsg.set('Phiên đăng nhập hoặc quyền truy cập đã thay đổi. Vui lòng tra cứu lại hồ sơ.');
+          }
       }
-  });
+  }
   private lookupIsCurrent(token: number, scope = this.currentScope): boolean {
       return token === this.lookupRequest && scope === this.viewerScope();
   }

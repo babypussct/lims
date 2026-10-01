@@ -14,6 +14,7 @@
   ],
   "fixes": [
     "Mã phiếu mượn và mã nhật ký sử dụng chất chuẩn được nhận diện đúng khi tra cứu.",
-    "Tránh hiển thị lặp cùng một lần sử dụng và tránh nhầm hồ sơ khi đổi mã tra cứu liên tiếp."
+    "Tránh hiển thị lặp cùng một lần sử dụng và tránh nhầm hồ sơ khi đổi mã tra cứu liên tiếp.",
+    "Tự động tra cứu lại liên kết hồ sơ sau khi khôi phục phiên đăng nhập, giúp mở liên kết được gửi từ đồng nghiệp thuận tiện hơn."
   ]
 }

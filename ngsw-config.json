@@ -2,7 +2,7 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.10.01-b04",
+    "version": "v26.10.01-b05",
     "title": "Truy xuất đầy đủ lịch sử sử dụng chất chuẩn",
     "features": [
       "Nhận biết người sử dụng ngay tại từng mốc nhật ký và mở phiếu mượn bằng một lần nhấn.",

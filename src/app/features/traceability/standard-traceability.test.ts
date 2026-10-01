@@ -205,3 +205,30 @@ test('an older history page cannot contaminate a newly selected record', async (
   assert.equal(c.standardRecord().id, 'new');
   assert.deepEqual(c.standardUsages(), []);
 });
+
+test('restoring an authenticated session retries the route, while logout and Audit immediately clear private data', async () => {
+  const { c, user, audit } = harness();
+  c.initialized = true;
+  c.routeId = 'borrow-1';
+  user.set(null);
+  c.currentScope = c.viewerScope();
+  c.errorMsg.set('Không tìm thấy dữ liệu công khai');
+  user.set({ uid: 'actual-user' });
+  c.handleViewerScopeChange(c.viewerScope());
+  await new Promise(resolve => setTimeout(resolve, 0));
+  assert.equal(c.standardRecord()?.id, 'borrow-1');
+  assert.equal(c.errorMsg(), '');
+  audit.set(true);
+  c.handleViewerScopeChange(c.viewerScope());
+  assert.equal(c.standardRecord(), null);
+  assert.deepEqual(c.timelineItems(), []);
+  assert.match(c.errorMsg(), /quyền truy cập đã thay đổi/);
+  audit.set(false);
+  c.handleViewerScopeChange(c.viewerScope());
+  await new Promise(resolve => setTimeout(resolve, 0));
+  assert.equal(c.standardRecord()?.id, 'borrow-1');
+  user.set(null);
+  c.handleViewerScopeChange(c.viewerScope());
+  assert.equal(c.standardRecord(), null);
+  assert.equal(c.logData(), null);
+});
