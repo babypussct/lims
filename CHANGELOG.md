@@ -2,7 +2,34 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.09.29-b03
+## Phiên bản hiện tại: v26.10.01-b01
+
+### v26.10.01-b01
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Xem chất chuẩn rõ ràng trên điện thoại, phóng to mã QR và chia sẻ liên kết cho đồng nghiệp.
+- Nhận biết hồ sơ còn thiếu dữ liệu để bổ sung đúng thông tin về lượng, hạn dùng và bảo quản.
+- Tra cứu mẻ phân tích bằng mã hồ sơ khi chưa có mã mẻ riêng.
+
+#### ✨ Tính Năng Mới
+
+- Trong Chất chuẩn → Chi tiết, dùng Chia sẻ để gửi liên kết hoặc sao chép liên kết; dùng Phóng to để quét mã QR dễ hơn.
+- Xem độ tinh khiết, quy cách, phương pháp thử, thiết bị và chứng nhận phân tích tại tab Hồ sơ & quy chuẩn.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Sắp xếp thông tin chất chuẩn thành các khối dễ đọc và đưa các thao tác mượn, trả, in nhãn xuống thanh thao tác trên điện thoại.
+- Hiển thị các mục cần bổ sung và cho phép người có quyền sửa mở nhanh hồ sơ để cập nhật.
+- Gắn nhãn Theo nhật ký sử dụng cho ngày mở nắp suy ra từ lịch sử, để người dùng đối chiếu trước khi xác nhận trong hồ sơ.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Phân biệt lượng chưa nhập với lượng bằng 0; không báo đã hết hoặc hiển thị tỷ lệ còn lại sai khi thiếu dữ liệu.
+- Giữ trang chi tiết chất chuẩn hiển thị đầy đủ khi ngày không hợp lệ và chỉ rõ thông tin cần kiểm tra.
+- Giữ trống lượng và đơn vị chưa ghi nhận khi sửa hồ sơ, đồng thời yêu cầu nhập đủ trước khi lưu.
+- Sửa lỗi mã QR không hiển thị trong một số bản phát hành.
+- Hiển thị mã hồ sơ mẻ nhất quán trong Kết quả, khi gộp mẻ, xem báo cáo và đặt tên tệp nhập Excel nếu chưa có mã mẻ riêng.
 
 ### v26.09.29-b03
 

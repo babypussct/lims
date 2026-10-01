@@ -13,6 +13,7 @@ import { StandardTagPickerComponent } from './standard-tag-picker.component';
 import { isCurrentStandardLifecycle, isSpecialInternalId, normalizeInternalId, STANDARD_INTERNAL_ID_PATTERN } from '../../../shared/utils/standard-internal-id';
 import { AppModalShellComponent } from '../../../shared/components/ui/modal-shell/modal-shell.component';
 import { AppDatePickerComponent } from '../../../shared/components/ui/date-picker/date-picker.component';
+import { parseStandardAmount, standardDateState } from '../standard-detail.utils';
 
 @Component({
   selector: 'app-standards-form-modal',
@@ -95,9 +96,13 @@ import { AppDatePickerComponent } from '../../../shared/components/ui/date-picke
                                 <div>
                                     <label class="text-[10px] font-bold text-fuchsia-800 dark:text-fuchsia-400 uppercase block mb-1">Đơn vị</label>
                                     <select formControlName="unit" class="w-full bg-white dark:bg-slate-800 border border-white dark:border-slate-700 rounded-lg p-2.5 text-center font-bold text-slate-800 dark:text-slate-200 outline-none h-[44px]">
+                                        <option value="" disabled>Chọn đơn vị</option>
                                         @for(u of unitOptions; track u.value){<option [value]="u.value">{{u.value}}</option>}
                                     </select>
                                 </div>
+                                @if (form.get('initial_amount')?.invalid || form.get('current_amount')?.invalid || form.get('unit')?.invalid) {
+                                    <p class="col-span-3 text-xs text-fuchsia-700 dark:text-fuchsia-300">Cần nhập lượng ban đầu, lượng hiện tại và chọn đơn vị. Với lượng hiện tại, chỉ nhập 0 khi đã xác nhận hết chất chuẩn.</p>
+                                }
                             </div>
                         </div>
 
@@ -195,7 +200,7 @@ export class StandardsFormModalComponent {
         if (this.isOpen()) {
             const currentStd = this.std();
             if (currentStd) {
-                this.form.reset({ initial_amount: 0, current_amount: 0, unit: 'mg' }); 
+                this.form.reset({ initial_amount: null, current_amount: null, unit: '' });
                 this.form.patchValue(currentStd as any); 
                 this.originalStandardSopTags = sanitizeLegacyTagKeys(currentStd.sop_tags || []);
                 this.standardSopTags.set([...this.originalStandardSopTags]);
@@ -279,7 +284,30 @@ export class StandardsFormModalComponent {
 
   async saveStandard(keepOpen = false) {
     if (this.isProcessing()) return;
-    if (this.form.invalid) { this.toast.show('Vui lòng điền các trường bắt buộc (*)', 'error'); return; }
+    for (const [field, control] of Object.entries(this.form.controls)) {
+        if (field !== 'id' && typeof control.value === 'string') control.setValue(control.value.trim(), { emitEvent: false });
+    }
+    for (const field of ['initial_amount', 'current_amount']) {
+        const control = this.form.get(field)!;
+        const amount = parseStandardAmount(control.value);
+        if (amount === null || amount < 0) {
+            control.setErrors({ ...control.errors, invalidAmount: true });
+            control.markAsTouched();
+            this.toast.show('Vui lòng nhập lượng ban đầu và lượng hiện tại bằng số hợp lệ, không âm.', 'error');
+            return;
+        }
+        control.setValue(amount, { emitEvent: false });
+    }
+    for (const field of ['expiry_date', 'received_date', 'date_opened']) {
+        const control = this.form.get(field)!;
+        if (standardDateState(control.value).kind === 'invalid') {
+            control.setErrors({ ...control.errors, invalidDate: true });
+            control.markAsTouched();
+            this.toast.show('Ngày không hợp lệ. Vui lòng kiểm tra hạn sử dụng, ngày nhận và ngày mở nắp.', 'error');
+            return;
+        }
+    }
+    if (this.form.invalid) { this.form.markAllAsTouched(); this.toast.show('Vui lòng điền các trường bắt buộc (*)', 'error'); return; }
     
     const val = this.form.value;
 

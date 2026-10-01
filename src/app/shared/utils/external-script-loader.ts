@@ -1,5 +1,15 @@
 export async function ensureQrious(): Promise<any> {
-  const QRCode = await import('qrcode');
+  const QRCodeModule = await import('qrcode');
+  // `qrcode` is CommonJS. Depending on Angular/esbuild interop, a production
+  // chunk may expose the API directly on the namespace or under `default`.
+  // Normalize both shapes before keeping the legacy QRious-compatible wrapper.
+  const QRCode: any = typeof (QRCodeModule as any).toCanvas === 'function'
+    ? QRCodeModule
+    : (QRCodeModule as any).default;
+
+  if (!QRCode || typeof QRCode.toCanvas !== 'function') {
+    throw new TypeError('QR library does not expose a toCanvas renderer.');
+  }
 
   // Compatibility wrapper for existing `new QRious({...})` call sites while
   // keeping the implementation bundled by Angular instead of loading code from CDN.

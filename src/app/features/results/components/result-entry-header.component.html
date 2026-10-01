@@ -2,7 +2,7 @@
   variant="workspace"
   [sticky]="true"
   title="Nhập Dữ Liệu Phân Tích"
-  [subtitle]="run ? (run.sopName + ' · ' + (run.batchCode || '')) : 'Đang tải...'">
+  [subtitle]="run ? (run.sopName + ' · ' + (run.inputs?.['batchCode'] || run.id || '')) : 'Đang tải...'">
 
   <!-- Left: Back Button -->
   <button

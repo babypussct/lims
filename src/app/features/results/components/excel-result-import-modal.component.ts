@@ -384,6 +384,7 @@ export class ExcelResultImportModalComponent implements OnChanges, OnDestroy {
 
   private buildStoredFileName(file: File): string {
     const batchCode = this.run?.inputs?.['batchCode']
+      || this.run?.id
       || `Chua-co-ma-me_${new Date().toISOString().slice(0, 10)}`;
     const versionSuffix = this.draft.version ? `_v${this.draft.version}` : '';
     const extensionIndex = file.name.lastIndexOf('.');

@@ -7,6 +7,8 @@ const source = readFileSync(resolve(process.cwd(), 'src/app/shared/utils/externa
 
 test('QR rendering is bundled from npm and does not inject a CDN script', () => {
   assert.match(source, /import\('qrcode'\)/);
+  assert.match(source, /QRCodeModule as any\)\.default/);
+  assert.match(source, /typeof \(QRCodeModule as any\)\.toCanvas === 'function'/);
   assert.match(source, /QRCode\.toCanvas/);
   assert.doesNotMatch(source, /cdnjs|createElement\('script'\)|appendChild\(script\)/);
 });

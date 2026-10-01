@@ -1,483 +1,392 @@
-    <div class="flex flex-col h-full p-2 md:p-4 gap-4 overflow-y-auto custom-scrollbar relative fade-in">
-        
-        <!-- Header Area -->
-            <app-page-header
-            variant="detail"
-            title="Chi tiết chất chuẩn đối chiếu"
-            [subtitle]="isAuditMode() ? 'Chỉ hiển thị các trường được phép đối chiếu.' : 'Thông tin chi tiết chất chuẩn, hồ sơ nguồn gốc, lịch sử sử dụng và điều kiện bảo quản.'"
-            [sticky]="true">
-            <app-button pageHeaderLeading variant="ghost" size="sm" (click)="goBack()" title="Quay lại danh sách chất chuẩn">
-                <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
-                <span class="sr-only">Quay lại danh sách chất chuẩn</span>
-            </app-button>
-
-            <div pageHeaderActions class="contents">
-                @if (!isAuditMode()) {
-                    <div class="contents" [appLockPermission]="'standard_edit'">
-                        <app-button variant="secondary" size="sm" (click)="openPrintModal()" [disabled]="!standard()" title="In nhãn">
-                            <i class="fa-solid fa-print" aria-hidden="true"></i> In nhãn
-                        </app-button>
-                        <app-button variant="secondary" size="sm" (click)="releaseInternalId()" [disabled]="!standard()?.internal_id || isProcessing() || standard()?.lifecycle_status === 'RELEASED' || standard()?.lifecycle_status === 'CLOSED'" title="Trả Mã quản lý nội bộ về sổ mã">
+<div class="flex min-h-full min-w-0 flex-col gap-4 p-2 md:p-4 fade-in"
+     [ngClass]="!isAuditMode() && !!standard() && !isLoading() && !notFound() ? 'pb-[calc(7rem+env(safe-area-inset-bottom,0px))] md:pb-4' : ''">
+    <app-page-header
+        variant="detail"
+        title="Chi tiết chất chuẩn đối chiếu"
+        [subtitle]="isAuditMode() ? 'Chỉ hiển thị các trường được phép đối chiếu.' : 'Thông tin chất chuẩn, hồ sơ nguồn gốc, lịch sử sử dụng và điều kiện bảo quản.'"
+        [sticky]="true">
+        <app-button pageHeaderLeading variant="ghost" size="sm" (click)="goBack()" title="Quay lại danh sách chất chuẩn">
+            <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+            <span class="sr-only">Quay lại danh sách chất chuẩn</span>
+        </app-button>
+        <div pageHeaderActions class="contents">
+            @if (!isAuditMode()) {
+                <div class="hidden flex-wrap items-center gap-2 md:flex">
+                    <app-button variant="secondary" size="sm" (click)="openPrintModal()" [disabled]="!standard() || isLoading()" title="In nhãn">
+                        <i class="fa-solid fa-print" aria-hidden="true"></i> In nhãn
+                    </app-button>
+                    @if (canReleaseInternalId()) {
+                        <app-button variant="secondary" size="sm" (click)="releaseInternalId()" [disabled]="isProcessing() || isLoading()" title="Trả Mã quản lý nội bộ về sổ mã">
                             <i class="fa-solid fa-arrow-rotate-left" aria-hidden="true"></i> Trả mã
                         </app-button>
-                        <app-button size="sm" (click)="openEditModal()" [disabled]="!standard()">
+                    }
+                    @if (canEditStandard()) {
+                        <app-button size="sm" (click)="openEditModal()" [disabled]="isProcessing() || isLoading()">
                             <i class="fa-solid fa-pen" aria-hidden="true"></i> Chỉnh sửa
                         </app-button>
-                    </div>
-                }
-            </div>
-
-            @if (standard(); as headerStd) {
-                <div pageHeaderMeta class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-slate-100 pt-3 text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400">
-                    @if (!isAuditMode()) {
-                        <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-bold" [ngClass]="statusInfo().class">
-                            <i class="fa-solid fa-circle text-[7px]" aria-hidden="true"></i>
-                            {{ statusInfo().label }}
-                        </span>
                     }
-                    <span class="min-w-0 font-semibold text-slate-700 dark:text-slate-200">{{ headerStd.name }}</span>
-                    @if (headerStd.internal_id) {
-                        <span class="inline-flex items-center gap-1.5">
-                            <i class="fa-solid fa-tag text-slate-400" aria-hidden="true"></i>
-                            <span class="font-mono font-bold text-slate-700 dark:text-slate-300">{{ headerStd.internal_id }}</span>
-                        </span>
-                    }
-                    <span class="inline-flex items-center gap-1.5">
-                        <i class="fa-solid fa-barcode text-slate-400" aria-hidden="true"></i>
-                        Lô <span class="font-mono font-bold text-slate-700 dark:text-slate-300">{{ headerStd.lot_number || 'N/A' }}</span>
-                    </span>
-                    <span class="inline-flex items-center gap-1.5">
-                        <i class="fa-solid fa-industry text-slate-400" aria-hidden="true"></i>
-                        {{ headerStd.manufacturer || 'Chưa rõ hãng sản xuất' }}
-                    </span>
                 </div>
             }
-        </app-page-header>
-
-        @if(isLoading()) {
-            <!-- Loading Skeleton -->
-            <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col gap-4 animate-pulse">
-                <div class="h-8 bg-slate-200 dark:bg-slate-700 rounded-lg w-1/3"></div>
-                <div class="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/4"></div>
-                <div class="flex gap-2 mt-4"><div class="h-6 bg-slate-200 dark:bg-slate-700 rounded w-16"></div><div class="h-6 bg-slate-200 dark:bg-slate-700 rounded w-20"></div></div>
+        </div>
+        @if (standard(); as headerStd) {
+            <div pageHeaderMeta class="mt-3 flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-500 dark:text-slate-400">
+                @if (!isAuditMode()) {
+                    <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-bold" [ngClass]="statusInfo().class">
+                        <i class="fa-solid fa-circle text-[7px]" aria-hidden="true"></i>{{ statusInfo().label }}
+                    </span>
+                }
+                @if (readStandardText(headerStd.internal_id)) {
+                    <span class="font-mono font-bold text-slate-700 dark:text-slate-200">{{ standardText(headerStd.internal_id) }}</span>
+                }
+                <span class="break-words">Lô {{ standardText(headerStd.lot_number) }}</span>
+                <span class="break-words">{{ standardText(headerStd.manufacturer, 'Chưa ghi nhận hãng sản xuất') }}</span>
             </div>
-        } @else if(notFound() || !standard()) {
-            <!-- Not Found State -->
-            <div class="flex-1 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm">
-                <app-empty-state
-                    icon="fa-flask-vial"
-                    title="Không tìm thấy chất chuẩn đối chiếu"
-                    message="Dữ liệu có thể đã bị xóa hoặc đường dẫn không hợp lệ. Vui lòng kiểm tra lại.">
-                    <div emptyStateActions class="contents">
-                        <app-button (click)="goBack()">Quay lại danh sách</app-button>
-                    </div>
-                </app-empty-state>
-            </div>
-        } @else {
-            @if (standard(); as std) {
-                
-                <!-- HERO CARD -->
-                <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 md:p-8 border border-slate-100 dark:border-slate-700 shadow-sm relative overflow-hidden flex flex-col md:flex-row gap-6 items-start md:items-center">
-                    
-                    <!-- Decorative Background -->
-                    <div class="absolute -right-10 -top-10 text-fuchsia-50 dark:text-slate-700/30 opacity-50 pointer-events-none">
-                        <i class="fa-solid fa-flask-vial text-[200px]"></i>
-                    </div>
+        }
+    </app-page-header>
 
-                    <div class="flex-1 z-10 w-full">
-                        <div class="flex flex-wrap items-center gap-3 mb-3">
-                            @if (!isAuditMode()) {
-                                <span class="px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider border shadow-sm" [ngClass]="statusInfo().class">
-                                    <i class="fa-solid fa-circle text-[8px] mr-1.5" [class.animate-pulse]="std.status === 'IN_USE' || std.current_amount <= 0"></i>
-                                    {{statusInfo().label}}
-                                </span>
-                            }
-                            @if(std.internal_id) { <span class="px-3 py-1 rounded-lg bg-fuchsia-50 dark:bg-fuchsia-900/30 text-fuchsia-700 dark:text-fuchsia-400 text-xs font-black border border-fuchsia-100 dark:border-fuchsia-800/50 shadow-sm"><i class="fa-solid fa-tag mr-1 opacity-70"></i> {{std.internal_id}}</span> }
-                        </div>
-                        
-                        <h2 class="text-3xl md:text-4xl font-black text-slate-800 dark:text-slate-100 tracking-tight leading-tight mb-1 break-words">
-                            {{std.name}}
-                        </h2>
-                        @if(!isAuditMode() && std.chemical_name) { <p class="text-base text-slate-500 dark:text-slate-400 italic font-medium mb-4">{{std.chemical_name}}</p> }
-                        
-                        <div class="flex flex-wrap items-center gap-x-6 gap-y-3 mt-4 text-sm bg-slate-50 dark:bg-slate-900/50 w-fit p-3 px-5 rounded-2xl border border-slate-100 dark:border-slate-800">
-                            <div class="flex flex-col">
-                                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Số lô</span>
-                                <button type="button" class="text-left font-mono font-bold text-slate-700 dark:text-slate-300 text-base cursor-pointer hover:text-fuchsia-600 transition" (click)="copyText(std.lot_number)" title="Nhấn để sao chép">{{std.lot_number || 'N/A'}}</button>
-                            </div>
-                            <div class="w-px h-8 bg-slate-200 dark:bg-slate-700 hidden sm:block"></div>
-                            <div class="flex flex-col">
-                                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Hãng SX</span>
-                                <span class="font-bold text-slate-700 dark:text-slate-300 text-base">{{std.manufacturer || 'N/A'}}</span>
-                            </div>
-                            <div class="w-px h-8 bg-slate-200 dark:bg-slate-700 hidden sm:block"></div>
-                            <div class="flex flex-col">
-                                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Mã sản phẩm</span>
-                                <button type="button" class="text-left font-mono font-bold text-slate-700 dark:text-slate-300 text-base cursor-pointer hover:text-fuchsia-600 transition" (click)="copyText(std.product_code)" title="Nhấn để sao chép">{{std.product_code || 'N/A'}}</button>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    @if (!isAuditMode()) {
-                        <div class="w-28 h-28 bg-white p-2 rounded-2xl shadow-md border border-slate-100 shrink-0 mx-auto md:mx-0 z-10 group relative">
-                             <img [appStandardQr]="standard()?.id || ''" [standardQrSize]="150" class="w-full h-full object-contain mix-blend-multiply opacity-90 group-hover:opacity-100 transition" alt="QR Code">
-                             <button type="button" aria-label="In nhãn chuẩn từ mã QR" class="absolute inset-0 bg-black/50 rounded-2xl opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 flex items-center justify-center transition-opacity cursor-pointer backdrop-blur-sm" (click)="openPrintModal()">
-                                 <i class="fa-solid fa-print text-white text-2xl" aria-hidden="true"></i>
-                             </button>
-                        </div>
+    @if (isLoading()) {
+        <div class="flex flex-col gap-4 rounded-2xl border border-slate-100 bg-white p-6 shadow-sm animate-pulse dark:border-slate-700 dark:bg-slate-800" role="status" aria-label="Đang tải chất chuẩn">
+            <div class="h-8 w-2/3 rounded-lg bg-slate-200 dark:bg-slate-700"></div>
+            <div class="h-4 w-1/3 rounded bg-slate-200 dark:bg-slate-700"></div>
+            <div class="h-24 rounded-xl bg-slate-100 dark:bg-slate-700"></div>
+        </div>
+    } @else if (notFound() || !standard()) {
+        <div class="rounded-2xl border border-slate-100 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+            <app-empty-state icon="fa-flask-vial" title="Không tìm thấy chất chuẩn đối chiếu" message="Dữ liệu có thể đã bị xóa hoặc đường dẫn không hợp lệ. Vui lòng kiểm tra lại.">
+                <div emptyStateActions class="contents">
+                    <app-button (click)="goBack()">Quay lại danh sách</app-button>
+                </div>
+            </app-empty-state>
+        </div>
+    } @else if (standard(); as std) {
+        <!-- Both action surfaces project the same business guards. -->
+        <ng-template #workflowActions>
+            @if (!isAuditMode()) {
+                @if (canAssign(std) && (canAssignStandards() || canRequestStandards())) {
+                    @if (std.has_pending_request) {
+                        <app-button variant="secondary" size="sm" [disabled]="true"><i class="fa-solid fa-hourglass-half" aria-hidden="true"></i> Đang chờ duyệt</app-button>
+                    } @else if (canAssignStandards()) {
+                        <app-button size="sm" (click)="openAssignModal(true)" [disabled]="isProcessing()"><i class="fa-solid fa-hand-holding-hand" aria-hidden="true"></i> Gán cho mượn</app-button>
+                    } @else if (canRequestStandards()) {
+                        <app-button size="sm" (click)="openAssignModal(false)" [disabled]="isProcessing()"><i class="fa-solid fa-hand-holding-hand" aria-hidden="true"></i> Đăng ký mượn</app-button>
                     }
+                }
+                @if (std.status === 'IN_USE' && canReturnStandard()) {
+                    <app-button size="sm" (click)="goToReturn()" [disabled]="isProcessing()"><i class="fa-solid fa-rotate-left" aria-hidden="true"></i> Trả chất chuẩn</app-button>
+                }
+                @if (canPurchase(std) && canRequestPurchase()) {
+                    <app-button variant="secondary" size="sm" (click)="openPurchaseModal()" [disabled]="!!std.restock_requested || isProcessing()"><i class="fa-solid fa-cart-plus" aria-hidden="true"></i>{{ std.restock_requested ? 'Đã có yêu cầu mua' : 'Đề nghị mua thêm' }}</app-button>
+                }
+            }
+        </ng-template>
+        @if (!isAuditMode() && dataIssues().length) {
+            <aside class="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800" aria-label="Cần bổ sung thông tin">
+                <i class="fa-solid fa-circle-info text-amber-600" aria-hidden="true"></i>
+                <div class="min-w-0 flex-1 basis-[220px]">
+                    <h3 class="text-sm font-bold text-slate-700 dark:text-slate-200">Cần bổ sung thông tin</h3>
+                    <p class="mt-1 break-words text-xs text-slate-500 dark:text-slate-400">Các mục chưa có dữ liệu hoặc cần kiểm tra: {{ dataIssues().join(' · ') }}.</p>
                 </div>
-
-                <!-- MAIN CONTENT GRID -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    
-                    <!-- COLUMN 1: TỒN KHO & BẢO QUẢN -->
-                    <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col h-full">
-                        <div class="flex items-center gap-3 mb-6">
-                            <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 flex items-center justify-center shadow-inner">
-                                <i class="fa-solid fa-boxes-stacked text-lg"></i>
-                            </div>
-                            <h3 class="text-base font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide">{{ isAuditMode() ? 'Khối lượng & bảo quản' : 'Tồn kho & bảo quản' }}</h3>
-                        </div>
-
-                        <div class="bg-slate-50 dark:bg-slate-900/50 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 mb-6">
-                            @if (isAuditMode()) {
-                                <div>
-                                    <span class="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Khối lượng chai</span>
-                                    <div class="flex items-baseline gap-1">
-                                        <span class="text-4xl font-black text-emerald-600 dark:text-emerald-400 leading-none">{{formatNum(std.initial_amount || 0)}}</span>
-                                        <span class="text-sm font-bold text-slate-500">{{std.unit || '—'}}</span>
-                                    </div>
-                                </div>
-                            } @else {
-                                <div class="flex justify-between items-end mb-2">
-                                    <div>
-                                        <span class="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Lượng hiện tại</span>
-                                        <div class="flex items-baseline gap-1">
-                                            <span class="text-4xl font-black text-emerald-600 dark:text-emerald-400 leading-none">{{formatNum(std.current_amount)}}</span>
-                                            <span class="text-sm font-bold text-slate-500">{{std.unit}}</span>
-                                        </div>
-                                    </div>
-                                    <div class="text-right">
-                                        <span class="text-[10px] font-bold text-slate-400 block mb-0.5">Lượng ban đầu</span>
-                                        <span class="text-sm font-bold text-slate-600 dark:text-slate-300 font-mono">{{formatNum(std.initial_amount || 0)}} {{std.unit}}</span>
-                                    </div>
-                                </div>
-                                <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden shadow-inner">
-                                    <div class="h-full rounded-full transition-all duration-1000 ease-out"
-                                         [style.width.%]="Math.min((std.current_amount / (std.initial_amount || 1)) * 100, 100)"
-                                         [class.bg-emerald-500]="(std.current_amount / (std.initial_amount || 1)) > 0.2"
-                                         [class.bg-rose-500]="(std.current_amount / (std.initial_amount || 1)) <= 0.2">
-                                    </div>
-                                </div>
-                            }
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-4 flex-1">
-                            @if (!isAuditMode()) {
-                            <div>
-                                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Vị trí lưu trữ</span>
-                                @if(std.location) { 
-                                    <div class="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2"><i class="fa-solid fa-location-dot text-slate-400"></i> {{std.location}}</div> 
-                                } @else { <span class="text-sm text-slate-400 italic">Chưa xác định</span> }
-                            </div>
-                            }
-                            <div>
-                                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Điều kiện bảo quản</span>
-                                @if (isAuditMode()) {
-                                    <div class="font-bold text-slate-700 dark:text-slate-200 break-words">{{std.storage_condition || 'N/A'}}</div>
-                                } @else {
-                                    <div class="flex flex-col gap-1.5">
-                                        @for(info of storageInfo(); track $index) {
-                                            <div class="px-2 py-1 rounded text-[11px] flex items-center gap-2 border w-fit shadow-sm" [ngClass]="[info.bg, info.border, info.color]">
-                                                <i class="fa-solid" [ngClass]="info.icon"></i><span class="font-bold">{{info.text}}</span>
-                                            </div>
-                                        }
-                                    </div>
-                                }
-                            </div>
-                             @if(!isAuditMode() && std.purity) {
-                             <div>
-                                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Độ tinh khiết</span>
-                                <div class="font-bold text-slate-700 dark:text-slate-200">{{std.purity}}</div>
-                             </div>
-                             }
-                            @if (!isAuditMode()) {
-                            <div>
-                                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Quy cách đóng gói</span>
-                                <div class="font-bold text-slate-700 dark:text-slate-200">{{std.pack_size || 'N/A'}}</div>
-                            </div>
-                            }
-                            @if(std.cas_number) {
-                                <div>
-                                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">CAS Number</span>
-                                    <div class="font-mono font-bold text-slate-700 dark:text-slate-200">{{std.cas_number}}</div>
-                                </div>
-                            }
-                        </div>
-                    </div>
-
-                    <!-- COLUMN 2: HẠN DÙNG & HỒ SƠ -->
-                    <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col h-full">
-                        <div class="flex items-center justify-between mb-6">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-xl bg-orange-50 dark:bg-orange-900/30 text-orange-600 flex items-center justify-center shadow-inner">
-                                    <i class="fa-solid fa-clock text-lg"></i>
-                                </div>
-                                <h3 class="text-base font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide">Hạn dùng & hồ sơ</h3>
-                            </div>
-                            
-                            <div class="flex items-center gap-2">
-                                @if(std.certificate_ref) {
-                                    <app-button size="sm" (click)="openCoaPreview(std.certificate_ref)">
-                                        <i class="fa-solid fa-file-pdf" aria-hidden="true"></i> Xem CoA
-                                    </app-button>
-                                }
-                                    @if (!isAuditMode()) {
-                                        <app-button variant="secondary" size="sm" [appLockPermission]="'standard_edit'" (click)="triggerQuickDriveUpload()" [loading]="isUploadingCoa()">
-                                            @if(!isUploadingCoa()) {
-                                                <i class="fa-brands fa-google-drive text-emerald-600"></i>
-                                            }
-                                            {{ std.certificate_ref ? 'Cập nhật CoA' : 'Tải CoA lên' }}
-                                        </app-button>
-                                    }
-                            </div>
-                        </div>
-
-                        <div class="bg-slate-50 dark:bg-slate-900/50 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 mb-6 flex items-center gap-5">
-                            <div class="w-14 h-14 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm border border-slate-200 dark:border-slate-700 shrink-0">
-                                <i class="fa-regular fa-calendar-xmark text-2xl" [ngClass]="expiryInfo().colorClass"></i>
-                            </div>
-                            <div class="flex-1">
-                                <span class="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Hạn sử dụng</span>
-                                <div class="text-2xl font-black font-mono tracking-tight" [ngClass]="expiryInfo().colorClass">{{std.expiry_date ? (std.expiry_date | date:'dd/MM/yyyy') : 'N/A'}}</div>
-                                <div class="text-sm font-bold mt-1" [ngClass]="expiryInfo().colorClass">{{expiryInfo().timeLeftText}}</div>
-                            </div>
-                        </div>
-
+                @if (canEditStandard()) {
+                    <app-button variant="secondary" size="sm" (click)="openEditModal()" [disabled]="isProcessing()"><i class="fa-solid fa-pen" aria-hidden="true"></i> Bổ sung thông tin</app-button>
+                }
+            </aside>
+        }
+        <div class="flex min-w-0 flex-col items-start gap-5 xl:grid" [ngClass]="isAuditMode() ? 'xl:max-w-3xl' : 'xl:grid-cols-[380px_minmax(0,1fr)]'">
+            <div class="flex w-full min-w-0 flex-col gap-4">
+                <section class="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm md:p-5 dark:border-slate-700 dark:bg-slate-800" aria-label="Thông tin nhận diện chất chuẩn">
+                    <div class="flex flex-wrap items-center gap-2">
+                        @if (readStandardText(std.internal_id)) {
+                            <span class="rounded-lg border border-fuchsia-100 bg-fuchsia-50 px-2.5 py-1 font-mono text-xs font-bold text-fuchsia-700 dark:border-fuchsia-800 dark:bg-fuchsia-900/20 dark:text-fuchsia-300">{{ standardText(std.internal_id) }}</span>
+                        } @else {
+                            <span class="text-xs text-slate-400">Chưa ghi nhận mã nội bộ</span>
+                        }
                         @if (!isAuditMode()) {
-                        <div class="grid grid-cols-2 gap-4 flex-1 content-start">
-                            <div class="bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-700">
-                                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block"><i class="fa-solid fa-calendar-check mr-1"></i> Ngày nhận</span>
-                                <div class="font-bold text-slate-700 dark:text-slate-200">{{std.received_date ? (std.received_date | date:'dd/MM/yyyy') : 'N/A'}}</div>
-                            </div>
-                            <div class="bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-700">
-                                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block"><i class="fa-solid fa-flask-vial mr-1"></i> Ngày mở nắp</span>
-                                <div class="font-bold text-slate-700 dark:text-slate-200">{{effectiveOpenDate() ? (effectiveOpenDate() | date:'dd/MM/yyyy') : 'Chưa mở nắp'}}</div>
-                            </div>
-                            @if(std.contract_ref) {
-                                <div class="col-span-2 bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-700 flex items-center gap-3">
-                                    <div class="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-900 flex items-center justify-center text-slate-500"><i class="fa-solid fa-file-contract"></i></div>
-                                    <div>
-                                        <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5 block">Hợp đồng / PO</span>
-                                        <div class="font-bold text-slate-700 dark:text-slate-200">{{std.contract_ref}}</div>
-                                    </div>
-                                </div>
-                            }
-                        </div>
+                            <span class="rounded-lg px-2.5 py-1 text-xs font-bold" [ngClass]="statusInfo().class">{{ statusInfo().label }}</span>
                         }
                     </div>
-                </div>
-
-                <!-- SECTION: CURRENT HOLDER (IF IN_USE) -->
-                @if(!isAuditMode() && std.status === 'IN_USE' && std.current_holder) {
-                    <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl p-5 flex items-center gap-4 animate-fade-in shadow-sm mt-2">
-                        <div class="w-12 h-12 rounded-full bg-white dark:bg-slate-800 shadow-sm flex items-center justify-center text-blue-500 text-xl border border-blue-100 dark:border-blue-700 shrink-0">
-                            <i class="fa-solid fa-user-lock"></i>
-                        </div>
-                        <div class="flex-1">
-                            <h4 class="text-sm font-black text-blue-800 dark:text-blue-300">Đang được mượn bởi</h4>
-                            <p class="text-base font-bold text-blue-900 dark:text-blue-200 mt-0.5">{{std.current_holder}}</p>
-                        </div>
-                        @if(canReturnStandard()) {
-                            <app-button (click)="goToReturn()">
-                                <i class="fa-solid fa-rotate-left" aria-hidden="true"></i> Trả chất chuẩn
-                            </app-button>
-                        }
-                    </div>
-                }
-
-                <!-- ACTION SHORTCUTS (BOTTOM PANEL) -->
-                @if(!isAuditMode() && ((canAssign(std) && (canAssignStandards() || canRequestStandards())) || ((std.status === 'DEPLETED' || std.current_amount <= 0) && canRequestPurchase()) || canRequestCoa())) {
-                    <div class="flex flex-wrap items-center gap-3 mt-2 bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm">
-                        <span class="text-xs font-black text-slate-400 uppercase tracking-widest mr-2"><i class="fa-solid fa-bolt text-amber-500 mr-1"></i> Tác vụ nhanh:</span>
-
-                        <!-- FEFO Warning: có lọ khác nên dùng trước -->
-                        @if(fefoWarningSibling(); as warn) {
-                            <div class="w-full flex items-center gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50 rounded-xl px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
-                                <i class="fa-solid fa-triangle-exclamation text-amber-500"></i>
-                                <span>
-                                    <strong>Gợi ý FEFO:</strong> Lọ <strong>{{warn.internal_id || warn.lot_number}}</strong>
-                                    (hết hạn: {{warn.expiry_date ? (warn.expiry_date | date:'dd/MM/yyyy') : 'N/A'}})
-                                    nên được cấp trước lọ này.
-                                </span>
-                                <button (click)="navigateToRelated(warn.id!)" class="ml-auto px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-black transition whitespace-nowrap">
-                                    Chuyển sang Lọ Ưu Tiên
+                    <h2 class="mt-3 break-words text-2xl font-extrabold leading-tight tracking-tight text-slate-800 dark:text-slate-100">{{ standardText(std.name, 'Chưa ghi nhận tên chất chuẩn') }}</h2>
+                    @if (!isAuditMode() && readStandardText(std.chemical_name)) {
+                        <p class="mt-1 break-words text-sm italic text-slate-500 dark:text-slate-400">{{ standardText(std.chemical_name) }}</p>
+                    }
+                    <div class="mt-4 flex flex-wrap items-start gap-4">
+                        <dl class="grid min-w-0 flex-1 grid-cols-1 gap-x-3 gap-y-3 text-sm sm:grid-cols-2 xl:grid-cols-1">
+                            <div class="min-w-0"><dt class="text-xs text-slate-500 dark:text-slate-400">Số lô</dt><dd class="mt-1 break-words font-mono font-bold text-slate-700 dark:text-slate-200">{{ standardText(std.lot_number) }}</dd></div>
+                            <div class="min-w-0"><dt class="text-xs text-slate-500 dark:text-slate-400">Mã sản phẩm</dt><dd class="mt-1 break-words font-mono font-bold text-slate-700 dark:text-slate-200">{{ standardText(std.product_code) }}</dd></div>
+                            <div class="min-w-0"><dt class="text-xs text-slate-500 dark:text-slate-400">Hãng sản xuất</dt><dd class="mt-1 break-words font-semibold text-slate-700 dark:text-slate-200">{{ standardText(std.manufacturer) }}</dd></div>
+                            <div class="min-w-0"><dt class="text-xs text-slate-500 dark:text-slate-400">Số CAS</dt><dd class="mt-1 break-words font-mono font-semibold text-slate-700 dark:text-slate-200">{{ standardText(std.cas_number) }}</dd></div>
+                        </dl>
+                        @if (!isAuditMode()) {
+                            <div class="flex w-[144px] shrink-0 flex-col items-center gap-2">
+                                <button type="button" class="rounded-2xl border border-slate-200 bg-white p-2 transition hover:border-fuchsia-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-fuchsia-500 dark:border-slate-700" (click)="openQrModal()" aria-label="Phóng to mã QR chất chuẩn" aria-haspopup="dialog">
+                                    <img [appStandardQr]="std.id" [standardQrSize]="120" width="104" height="104" class="h-[104px] w-[104px] object-contain" alt="Mã QR chất chuẩn">
                                 </button>
+                                <div class="grid w-full grid-cols-2 gap-1">
+                                    <button type="button" class="inline-flex min-h-10 items-center justify-center gap-1 rounded-lg text-[11px] font-semibold text-slate-600 hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-fuchsia-500 dark:text-slate-300 dark:hover:bg-slate-700" (click)="openQrModal()" aria-haspopup="dialog"><i class="fa-solid fa-expand" aria-hidden="true"></i>Phóng to</button>
+                                    <button type="button" class="inline-flex min-h-10 items-center justify-center gap-1 rounded-lg text-[11px] font-semibold text-fuchsia-700 hover:bg-fuchsia-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-fuchsia-500 disabled:cursor-wait disabled:opacity-50 dark:text-fuchsia-300 dark:hover:bg-fuchsia-900/20" (click)="shareStandard()" [disabled]="isSharing() || !standardShareUrl()" [attr.aria-busy]="isSharing()" title="Chia sẻ liên kết chất chuẩn"><i class="fa-solid fa-share-nodes" aria-hidden="true"></i>Chia sẻ</button>
+                                </div>
                             </div>
                         }
-                        
-                        @if(canAssign(std)) {
-                            @if(std.has_pending_request) {
-                                <app-button variant="secondary" size="sm" [disabled]="true">
-                                    <i class="fa-solid fa-hourglass-half" aria-hidden="true"></i> Đang chờ duyệt
-                                </app-button>
-                            } @else if(canAssignStandards()) {
-                                <app-button size="sm" (click)="openAssignModal(true)">
-                                    <i class="fa-solid fa-hand-holding-hand" aria-hidden="true"></i> Gán cho mượn
-                                </app-button>
-                            } @else if(canRequestStandards()) {
-                                <app-button size="sm" (click)="openAssignModal(false)">
-                                    <i class="fa-solid fa-hand-holding-hand" aria-hidden="true"></i> Đăng ký mượn chuẩn
-                                </app-button>
-                            }
-                        }
-
-                        @if((std.status === 'DEPLETED' || std.current_amount <= 0) && canRequestPurchase()) {
-                            @if(!std.restock_requested) {
-                                <app-button variant="secondary" size="sm" (click)="openPurchaseModal()">
-                                    <i class="fa-solid fa-cart-plus" aria-hidden="true"></i> Đề nghị mua thêm
-                                </app-button>
-                            } @else {
-                                <span class="px-4 py-2 bg-slate-50 text-slate-500 border border-slate-200 rounded-xl font-bold text-sm flex items-center gap-2 cursor-not-allowed">
-                                    <i class="fa-solid fa-cart-arrow-down"></i> Đã có yêu cầu mua
-                                </span>
-                            }
-                        }
-
-                        @if(canRequestCoa()) {
-                            <app-button variant="secondary" size="sm" (click)="requestCoa(std)" [disabled]="!!std.coa_requested_by">
-                                <i class="fa-solid" [class.fa-file-signature]="!std.coa_requested_by" [class.fa-clock-rotate-left]="!!std.coa_requested_by" aria-hidden="true"></i> {{std.coa_requested_by ? 'Đã yêu cầu CoA' : 'Yêu cầu cập nhật CoA'}}
-                            </app-button>
-                        }
                     </div>
-                }
+                </section>
+
+                <section class="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm md:p-5 dark:border-slate-700 dark:bg-slate-800" aria-label="Khối lượng, hạn dùng và bảo quản">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="min-w-0 rounded-xl border p-3" [ngClass]="displayedAmountIsValid() ? 'border-emerald-100 bg-emerald-50/60 dark:border-emerald-800 dark:bg-emerald-900/15' : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/40'">
+                            <div class="text-xs font-semibold text-slate-500 dark:text-slate-400">{{ isAuditMode() ? 'Khối lượng chai' : 'Lượng hiện tại' }}</div>
+                            <div class="mt-2 break-words font-extrabold" [ngClass]="displayedAmountIsValid() ? 'text-2xl text-emerald-700 dark:text-emerald-400' : 'text-sm text-slate-600 dark:text-slate-300'">
+                                @if (isAuditMode()) { {{ standardAmountText(std.initial_amount) }} } @else { {{ standardAmountText(std.current_amount) }} }
+                                <span class="text-sm font-semibold">{{ standardText(std.unit, 'Chưa ghi nhận đơn vị') }}</span>
+                            </div>
+                            @if (!isAuditMode()) {
+                                <div class="mt-2 text-xs text-slate-500 dark:text-slate-400">Ban đầu: {{ standardAmountText(std.initial_amount) }} @if (hasStandardAmount(std.initial_amount)) { {{ readStandardText(std.unit) }} }</div>
+                                @if (stockPercentage() !== null) {
+                                    <div class="mt-2 h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700" role="progressbar" aria-label="Lượng chất chuẩn còn lại" aria-valuemin="0" aria-valuemax="100" [attr.aria-valuenow]="stockPercentage()">
+                                        <div class="h-full rounded-full" [style.width.%]="stockPercentage()" [class.bg-emerald-500]="stockPercentage()! > 20" [class.bg-rose-500]="stockPercentage()! <= 20"></div>
+                                    </div>
+                                } @else {
+                                    <p class="mt-2 text-xs text-slate-400">Chưa đủ dữ liệu tính tỷ lệ còn lại.</p>
+                                }
+                            }
+                        </div>
+                        <div class="min-w-0 rounded-xl border border-orange-100 bg-orange-50/60 p-3 dark:border-orange-800 dark:bg-orange-900/15">
+                            <div class="text-xs font-semibold text-slate-500 dark:text-slate-400">Hạn sử dụng</div>
+                            <div class="mt-2 break-words font-mono text-sm font-bold" [ngClass]="expiryInfo().colorClass">{{ standardDateText(std.expiry_date) }}</div>
+                            <div class="mt-2 text-xs font-semibold" [ngClass]="expiryInfo().colorClass">{{ expiryInfo().timeLeftText }}</div>
+                        </div>
+                    </div>
+                    <dl class="mt-4 grid grid-cols-2 gap-4 text-sm">
+                        <div class="min-w-0">
+                            <dt class="text-xs text-slate-500 dark:text-slate-400">Điều kiện bảo quản</dt>
+                            <dd class="mt-1">
+                                @if (isAuditMode()) {
+                                    <span class="break-words font-semibold text-slate-700 dark:text-slate-200">{{ standardText(std.storage_condition) }}</span>
+                                } @else {
+                                    <div class="flex flex-wrap gap-1.5">
+                                        @for (info of storageInfo(); track $index) {
+                                            <span class="inline-flex items-center gap-1.5 rounded-lg border px-2 py-1 text-xs font-semibold" [ngClass]="[info.bg, info.border, info.color]"><i class="fa-solid" [ngClass]="info.icon" aria-hidden="true"></i>{{ info.text }}</span>
+                                        } @empty { <span class="text-slate-400">Chưa ghi nhận</span> }
+                                    </div>
+                                }
+                            </dd>
+                        </div>
+                        @if (!isAuditMode()) {
+                            <div class="min-w-0"><dt class="text-xs text-slate-500 dark:text-slate-400">Vị trí lưu trữ</dt><dd class="mt-1 break-words font-semibold text-slate-700 dark:text-slate-200">{{ standardText(std.location, 'Chưa xác định') }}</dd></div>
+                            <div class="min-w-0"><dt class="text-xs text-slate-500 dark:text-slate-400">Ngày nhận</dt><dd class="mt-1 break-words font-semibold text-slate-700 dark:text-slate-200">{{ standardDateText(std.received_date) }}</dd></div>
+                            <div class="min-w-0"><dt class="text-xs text-slate-500 dark:text-slate-400">Ngày mở nắp</dt><dd class="mt-1 break-words font-semibold text-slate-700 dark:text-slate-200">{{ standardDateText(effectiveOpenDate()) }} @if (openedDateFromHistory()) { <span class="mt-1 block text-xs font-normal text-slate-400">Theo nhật ký sử dụng</span> }</dd></div>
+                        }
+                    </dl>
+                    @if (isAuditMode() && readStandardText(std.certificate_ref)) {
+                        <app-button class="mt-4" variant="secondary" size="sm" (click)="openCoaPreview(readStandardText(std.certificate_ref))"><i class="fa-solid fa-file-pdf" aria-hidden="true"></i> Xem CoA</app-button>
+                    }
+                </section>
 
                 @if (!isAuditMode()) {
-                <!-- TABS: RELATED & HISTORY -->
-                <div class="mt-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col min-h-[400px]">
-                    <div class="flex border-b border-slate-100 dark:border-slate-700 px-6 pt-4 gap-8 bg-slate-50/50 dark:bg-slate-900/50">
-                        <button (click)="activeTab.set('usage')" class="pb-3 text-sm font-bold border-b-2 transition flex items-center gap-2 tracking-wide" [class]="activeTab() === 'usage' ? 'border-fuchsia-600 text-fuchsia-700 dark:text-fuchsia-400 dark:border-fuchsia-500' : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'">
-                            <i class="fa-solid fa-clock-rotate-left"></i> Nhật ký sử dụng
-                        </button>
-                        <button (click)="activeTab.set('related')" class="pb-3 text-sm font-bold border-b-2 transition flex items-center gap-2 tracking-wide" [class]="activeTab() === 'related' ? 'border-emerald-600 text-emerald-700 dark:text-emerald-400 dark:border-emerald-500' : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'">
-                            <i class="fa-solid fa-flask"></i> Lọ chuẩn cùng tên
-                            <span class="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-full text-[10px] ml-1">{{relatedStandards().length}}</span>
-                        </button>
-                    </div>
+                    @if (std.status === 'IN_USE') {
+                        <section class="flex items-center gap-3 rounded-2xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20" aria-label="Người đang mượn">
+                            <i class="fa-solid fa-user-lock text-xl text-blue-500" aria-hidden="true"></i>
+                            <div class="min-w-0 flex-1"><div class="text-xs text-blue-700 dark:text-blue-300">Đang được mượn bởi</div><div class="mt-1 break-words font-bold text-blue-900 dark:text-blue-200">{{ standardText(currentHolderName(), 'Chưa xác định người đang mượn') }}</div>@if (!currentHolderName()) { <p class="mt-1 text-xs text-blue-700 dark:text-blue-300">Đối chiếu thông tin trong phiếu mượn.</p> }</div>
+                        </section>
+                    }
+                    <section class="hidden rounded-2xl border border-slate-100 bg-white p-4 shadow-sm md:block dark:border-slate-700 dark:bg-slate-800" aria-label="Tác vụ chất chuẩn">
+                        <h3 class="mb-3 text-sm font-bold text-slate-700 dark:text-slate-200"><i class="fa-solid fa-bolt mr-2 text-amber-500" aria-hidden="true"></i>Tác vụ nhanh</h3>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <ng-container [ngTemplateOutlet]="workflowActions" />
+                            @if (readStandardText(std.certificate_ref)) { <app-button variant="secondary" size="sm" (click)="openCoaPreview(readStandardText(std.certificate_ref))"><i class="fa-solid fa-file-pdf" aria-hidden="true"></i> Xem CoA</app-button> }
+                            @if (canEditStandard()) { <app-button variant="secondary" size="sm" (click)="triggerQuickDriveUpload()" [loading]="isUploadingCoa()" [disabled]="isProcessing()"><i class="fa-brands fa-google-drive" aria-hidden="true"></i>{{ readStandardText(std.certificate_ref) ? 'Cập nhật CoA' : 'Tải CoA lên' }}</app-button> }
+                            @if (canRequestCoa()) { <app-button variant="secondary" size="sm" (click)="requestCoa(std)" [disabled]="!!readStandardText(std.coa_requested_by) || isProcessing()"><i class="fa-solid fa-file-signature" aria-hidden="true"></i>{{ readStandardText(std.coa_requested_by) ? 'Đã yêu cầu CoA' : 'Yêu cầu cập nhật CoA' }}</app-button> }
+                        </div>
+                    </section>
+                }
+            </div>
 
-                    <div class="p-0 flex-1 overflow-y-auto">
-                        <!-- TAB: USAGE LOGS -->
-                        @if(activeTab() === 'usage') {
-                            @if(loadingHistory()) {
-                                <div class="p-12 text-center text-slate-400"><i class="fa-solid fa-spinner fa-spin text-2xl"></i><p class="mt-2 text-sm">Đang tải lịch sử...</p></div>
-                            } @else {
-                                <div class="p-4 sm:p-6">
-                                    @if(usageActors().length > 0) {
+            @if (!isAuditMode()) {
+                <div class="flex w-full min-w-0 flex-col gap-4">
+                    @if (fefoWarningSibling(); as warn) {
+                        <aside class="flex flex-wrap items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300" aria-label="Gợi ý sử dụng theo hạn dùng">
+                            <i class="fa-solid fa-triangle-exclamation text-amber-500" aria-hidden="true"></i>
+                            <p class="min-w-0 flex-1 basis-[220px] break-words"><strong>Gợi ý FEFO:</strong> Lọ <strong>{{ readStandardText(warn.internal_id) || standardText(warn.lot_number) }}</strong> (hết hạn {{ standardDateText(warn.expiry_date) }}) nên được cấp trước lọ này.</p>
+                            <app-button variant="secondary" size="sm" (click)="navigateToRelated(warn.id)">Chuyển sang lọ ưu tiên<i class="fa-solid fa-arrow-right" aria-hidden="true"></i></app-button>
+                        </aside>
+                    }
+                    <section class="min-w-0 overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800" aria-label="Nhật ký và hồ sơ chất chuẩn">
+                        <div class="grid grid-cols-3 gap-1 border-b border-slate-100 bg-slate-50/60 p-2 dark:border-slate-700 dark:bg-slate-900/40" role="group" aria-label="Chọn nội dung chất chuẩn">
+                            <button type="button" id="standard-usage-tab" (click)="activeTab.set('usage')" aria-controls="standard-usage-panel" [attr.aria-pressed]="activeTab() === 'usage'" class="min-h-11 rounded-xl px-2 py-2 text-xs font-bold transition sm:text-sm" [ngClass]="activeTab() === 'usage' ? 'bg-white text-fuchsia-700 shadow-sm dark:bg-slate-700 dark:text-fuchsia-300' : 'text-slate-500 hover:bg-white/60 dark:text-slate-400 dark:hover:bg-slate-700/60'">
+                                <i class="fa-solid fa-clock-rotate-left mr-1 hidden sm:inline" aria-hidden="true"></i> Nhật ký sử dụng
+                            </button>
+                            <button type="button" id="standard-related-tab" (click)="activeTab.set('related')" aria-controls="standard-related-panel" [attr.aria-pressed]="activeTab() === 'related'" class="min-h-11 rounded-xl px-2 py-2 text-xs font-bold transition sm:text-sm" [ngClass]="activeTab() === 'related' ? 'bg-white text-fuchsia-700 shadow-sm dark:bg-slate-700 dark:text-fuchsia-300' : 'text-slate-500 hover:bg-white/60 dark:text-slate-400 dark:hover:bg-slate-700/60'">
+                                <i class="fa-solid fa-flask mr-1 hidden sm:inline" aria-hidden="true"></i> Lọ chuẩn cùng tên <span class="ml-1 text-[10px]">({{ relatedStandards().length }})</span>
+                            </button>
+                            <button type="button" id="standard-specs-tab" (click)="activeTab.set('specs')" aria-controls="standard-specs-panel" [attr.aria-pressed]="activeTab() === 'specs'" class="min-h-11 rounded-xl px-2 py-2 text-xs font-bold transition sm:text-sm" [ngClass]="activeTab() === 'specs' ? 'bg-white text-fuchsia-700 shadow-sm dark:bg-slate-700 dark:text-fuchsia-300' : 'text-slate-500 hover:bg-white/60 dark:text-slate-400 dark:hover:bg-slate-700/60'">
+                                <i class="fa-solid fa-folder-open mr-1 hidden sm:inline" aria-hidden="true"></i> Hồ sơ & quy chuẩn
+                            </button>
+                        </div>
+                        @if (activeTab() === 'usage') {
+                            <div id="standard-usage-panel" role="region" aria-labelledby="standard-usage-tab" class="min-h-[320px] p-4 sm:p-5">
+                                @if (loadingHistory()) {
+                                    <div class="p-10 text-center text-slate-400" role="status"><i class="fa-solid fa-spinner fa-spin text-2xl" aria-hidden="true"></i><p class="mt-2 text-sm">Đang tải lịch sử...</p></div>
+                                } @else {
+                                    @if (usageActors().length > 0) {
                                         <div class="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50/70 px-3 py-2.5 dark:border-slate-700 dark:bg-slate-900/35">
-                                            <div>
-                                                <div class="text-[10px] font-black uppercase tracking-wider text-slate-400">Người tham gia</div>
-                                                <div class="mt-0.5 text-xs font-semibold text-slate-600 dark:text-slate-300">{{usageActors().length}} người đã thao tác trên lọ chuẩn này</div>
-                                            </div>
+                                            <span class="text-xs font-semibold text-slate-600 dark:text-slate-300">Người sử dụng trong phần nhật ký đã tải</span>
                                             <app-ui-avatar-group [items]="usageActors()" [maxVisible]="6" size="md" ariaLabel="Người đã sử dụng chất chuẩn" />
                                         </div>
                                     }
-                                    <app-ui-timeline [items]="usageTimelineItems()" ariaLabel="Dòng thời gian sử dụng chất chuẩn" />
-                                </div>
-                                @if(hasMoreHistory()) {
-                                    <div class="p-4 text-center border-t border-slate-100 dark:border-slate-700">
-                                        <app-button variant="secondary" size="sm" (click)="loadMoreHistory()" [loading]="loadingMoreHistory()">
-                                            @if(!loadingMoreHistory()) { <i class="fa-solid fa-chevron-down" aria-hidden="true"></i> Tải thêm lịch sử }
-                                        </app-button>
-                                    </div>
-                                }
-                            }
-                        }
-
-                        <!-- TAB: RELATED STANDARDS -->
-                        @if(activeTab() === 'related') {
-                            <!-- FEFO Banner -->
-                            @if(fefoPriorityStandard(); as priority) {
-                                <div class="px-6 py-3 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-100 dark:border-amber-800/30 flex items-center gap-2">
-                                    <i class="fa-solid fa-triangle-exclamation text-amber-500 text-sm"></i>
-                                    <p class="text-xs text-amber-700 dark:text-amber-400 font-medium">
-                                        Thứ tự <strong>FEFO</strong>: hạn gần nhất &rarr; ít lượng &rarr; ngày nhận cũ nhất.
-                                        Lô nên cấp tiếp theo: <strong>{{priority.internal_id || priority.lot_number || 'Chưa có mã quản lý'}}</strong>
-                                        ({{priority.expiry_date ? (priority.expiry_date | date:'dd/MM/yyyy') : 'chưa rõ hạn'}}).
-                                    </p>
-                                </div>
-                            }
-                            <table class="w-full text-sm text-left">
-                                <thead class="text-xs text-slate-500 dark:text-slate-400 uppercase bg-slate-50 dark:bg-slate-800 sticky top-0 border-b border-slate-100 dark:border-slate-700">
-                                    <tr>
-                                        <th class="px-6 py-4 font-bold">Mã</th>
-                                        <th class="px-6 py-4 font-bold">Số lô</th>
-                                        <th class="px-6 py-4 font-bold">Tồn kho</th>
-                                        <th class="px-6 py-4 font-bold">Hạn dùng</th>
-                                        <th class="px-6 py-4 font-bold text-center">Trạng thái</th>
-                                        <th class="px-6 py-4 font-bold text-center w-16"></th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-slate-50 dark:divide-slate-800/50">
-                                    @for (rStd of relatedStandards(); track rStd.id) {
-                                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition cursor-pointer group" role="link" tabindex="0" (click)="navigateToRelated(rStd.id!)" (keydown.enter)="navigateToRelated(rStd.id!)" (keydown.space)="navigateToRelated(rStd.id!); $event.preventDefault()">
-                                            <td class="px-6 py-4">
-                                                <div class="flex items-center gap-2">
-                                                    <span class="font-bold text-slate-700 dark:text-slate-200">{{rStd.internal_id || 'N/A'}}</span>
-                                                    @if(isFefoPriority(rStd)) {
-                                                        <span class="px-1.5 py-0.5 rounded text-[9px] font-black bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700/50 uppercase tracking-wide whitespace-nowrap">
-                                                            <i class="fa-solid fa-star text-[8px]"></i> Ưu tiên
-                                                        </span>
-                                                    }
-                                                </div>
-                                            </td>
-                                            <td class="px-6 py-4 font-mono text-slate-600 dark:text-slate-300 text-xs">{{rStd.lot_number || '-'}}</td>
-                                            <td class="px-6 py-4 font-mono font-bold text-emerald-600 dark:text-emerald-400">{{formatNum(rStd.current_amount)}} {{rStd.unit}}</td>
-                                            <td class="px-6 py-4 font-mono text-xs" [ngClass]="getExpiryClass(rStd.expiry_date)">{{rStd.expiry_date ? (rStd.expiry_date | date:'dd/MM/yyyy') : 'N/A'}}</td>
-                                            <td class="px-6 py-4 text-center">
-                                                <span class="px-2 py-1 rounded text-[10px] font-bold uppercase border" [ngClass]="getStandardStatus(rStd).class">{{getStandardStatus(rStd).label}}</span>
-                                            </td>
-                                            <td class="px-6 py-4 text-center text-slate-400 group-hover:text-fuchsia-500 transition"><i class="fa-solid fa-chevron-right"></i></td>
-                                        </tr>
-                                    } @empty {
-                                        <tr><td colspan="6" class="p-16 text-center text-slate-400 italic">Không có lọ chuẩn nào khác cùng tên "{{std.name}}".</td></tr>
+                                    @if (usageTimelineItems().length) {
+                                        <app-ui-timeline [items]="usageTimelineItems()" ariaLabel="Dòng thời gian sử dụng chất chuẩn" />
+                                    } @else {
+                                        <app-empty-state icon="fa-clock-rotate-left" title="Chưa có nhật ký sử dụng" message="Các lần sử dụng chất chuẩn sẽ được hiển thị tại đây." />
                                     }
-                                </tbody>
-                            </table>
+                                    @if (hasMoreHistory()) {
+                                        <div class="mt-4 text-center"><app-button variant="secondary" size="sm" (click)="loadMoreHistory()" [loading]="loadingMoreHistory()"><i class="fa-solid fa-chevron-down" aria-hidden="true"></i> Tải thêm lịch sử</app-button></div>
+                                    }
+                                }
+                            </div>
                         }
-                    </div>
+                        @if (activeTab() === 'related') {
+                            <div id="standard-related-panel" role="region" aria-labelledby="standard-related-tab">
+                                @if (fefoPriorityStandard(); as priority) {
+                                    <p class="border-b border-amber-100 bg-amber-50 px-4 py-3 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300">Thứ tự <strong>FEFO</strong>: hạn gần nhất → ít lượng → ngày nhận cũ nhất. Lọ nên cấp tiếp theo: <strong>{{ readStandardText(priority.internal_id) || standardText(priority.lot_number, 'Chưa ghi nhận mã nội bộ') }}</strong>.</p>
+                                }
+                                <div class="space-y-3 p-4 md:hidden">
+                                    @for (rStd of relatedStandards(); track rStd.id) {
+                                        <button type="button" class="w-full rounded-xl border border-slate-200 bg-white p-3.5 text-left transition hover:border-fuchsia-300 dark:border-slate-700 dark:bg-slate-800" (click)="navigateToRelated(rStd.id)">
+                                            <span class="flex flex-wrap items-center gap-2">
+                                                <span class="font-mono text-sm font-bold text-slate-700 dark:text-slate-200">{{ standardText(rStd.internal_id) }}</span>
+                                                @if (isFefoPriority(rStd)) { <span class="rounded-md bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">FEFO ưu tiên</span> }
+                                                <span class="ml-auto rounded-md px-2 py-1 text-[10px] font-bold" [ngClass]="getStandardStatus(rStd).class">{{ getStandardStatus(rStd).label }}</span>
+                                            </span>
+                                            <span class="mt-3 flex flex-wrap justify-between gap-2 text-xs text-slate-500 dark:text-slate-400"><span class="break-words">Lô {{ standardText(rStd.lot_number) }}</span><span class="font-bold" [ngClass]="hasStandardAmount(rStd.current_amount) && readStandardText(rStd.unit) ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-400'">{{ standardAmountText(rStd.current_amount) }} {{ standardText(rStd.unit, 'Chưa ghi nhận đơn vị') }}</span></span>
+                                            <span class="mt-2 block text-xs font-semibold" [ngClass]="getExpiryClass(rStd.expiry_date)">Hạn dùng: {{ standardDateText(rStd.expiry_date) }}<i class="fa-solid fa-chevron-right float-right" aria-hidden="true"></i></span>
+                                        </button>
+                                    } @empty { <app-empty-state icon="fa-flask" title="Chưa có lọ cùng tên" message="Không có lọ chất chuẩn khác cùng tên trong danh sách hiện tại." /> }
+                                </div>
+                                <div class="hidden overflow-x-auto md:block" role="region" aria-label="Bảng lọ chuẩn cùng tên" tabindex="0">
+                                    <table class="hidden w-full text-left text-sm md:table">
+                                        <thead class="border-b border-slate-100 bg-slate-50 text-xs text-slate-500 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400">
+                                            <tr><th scope="col" class="px-4 py-3">Mã</th><th scope="col" class="px-4 py-3">Số lô</th><th scope="col" class="px-4 py-3">Tồn kho</th><th scope="col" class="px-4 py-3">Hạn dùng</th><th scope="col" class="px-4 py-3">Trạng thái</th><th scope="col" class="px-3 py-3"><span class="sr-only">Xem chi tiết</span></th></tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                                            @for (rStd of relatedStandards(); track rStd.id) {
+                                                <tr class="cursor-pointer transition hover:bg-slate-50 dark:hover:bg-slate-700/40" role="link" tabindex="0" (click)="navigateToRelated(rStd.id)" (keydown.enter)="navigateToRelated(rStd.id)" (keydown.space)="navigateToRelated(rStd.id); $event.preventDefault()">
+                                                    <td class="px-4 py-3 font-mono font-bold text-slate-700 dark:text-slate-200">{{ standardText(rStd.internal_id) }} @if (isFefoPriority(rStd)) { <span class="mt-1 block text-[10px] text-amber-600 dark:text-amber-400">★ Ưu tiên</span> }</td>
+                                                    <td class="px-4 py-3 font-mono text-xs text-slate-600 dark:text-slate-300">{{ standardText(rStd.lot_number) }}</td>
+                                                    <td class="break-words px-4 py-3 font-semibold" [ngClass]="hasStandardAmount(rStd.current_amount) && readStandardText(rStd.unit) ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-400'">{{ standardAmountText(rStd.current_amount) }} {{ standardText(rStd.unit, 'Chưa ghi nhận đơn vị') }}</td>
+                                                    <td class="break-words px-4 py-3 font-mono text-xs" [ngClass]="getExpiryClass(rStd.expiry_date)">{{ standardDateText(rStd.expiry_date) }}</td>
+                                                    <td class="px-4 py-3"><span class="inline-block whitespace-nowrap rounded-md px-2 py-1 text-[10px] font-bold" [ngClass]="getStandardStatus(rStd).class">{{ getStandardStatus(rStd).label }}</span></td>
+                                                    <td class="px-3 py-3 text-slate-400"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></td>
+                                                </tr>
+                                            } @empty { <tr><td colspan="6" class="p-10 text-center text-sm text-slate-400">Không có lọ chuẩn nào khác cùng tên.</td></tr> }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        }
+                        @if (activeTab() === 'specs') {
+                            <div id="standard-specs-panel" role="region" aria-labelledby="standard-specs-tab" class="space-y-5 p-4 sm:p-5">
+                                <section aria-label="Thông số kỹ thuật">
+                                    <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100">Quy chuẩn & kỹ thuật</h3>
+                                    <dl class="mt-3 grid grid-cols-2 gap-4 rounded-xl bg-slate-50 p-4 text-sm dark:bg-slate-900/40">
+                                        <div><dt class="text-xs text-slate-500 dark:text-slate-400">Độ tinh khiết</dt><dd class="mt-1 break-words font-semibold text-slate-700 dark:text-slate-200">{{ standardText(std.purity) }}</dd></div>
+                                        <div><dt class="text-xs text-slate-500 dark:text-slate-400">Quy cách đóng gói</dt><dd class="mt-1 break-words font-semibold text-slate-700 dark:text-slate-200">{{ standardText(std.pack_size) }}</dd></div>
+                                        <div><dt class="text-xs text-slate-500 dark:text-slate-400">Dạng chuẩn</dt><dd class="mt-1 font-semibold text-slate-700 dark:text-slate-200">{{ standardFormLabel() }}</dd></div>
+                                        <div><dt class="text-xs text-slate-500 dark:text-slate-400">Hợp đồng / PO</dt><dd class="mt-1 break-words font-semibold text-slate-700 dark:text-slate-200">{{ standardText(std.contract_ref) }}</dd></div>
+                                    </dl>
+                                </section>
+                                <section aria-label="Phương pháp thử và thiết bị">
+                                    <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100">Phương pháp thử & thiết bị</h3>
+                                    <div class="mt-3 text-xs text-slate-500 dark:text-slate-400">Thiết bị phân tích</div>
+                                    <div class="mt-2 flex flex-wrap gap-2">
+                                        @for (code of deviceCodes(); track code) { <span class="rounded-lg border border-blue-100 bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-300">{{ code }}</span> }
+                                        @empty { <span class="text-sm text-slate-400">Chưa ghi nhận thiết bị phân tích.</span> }
+                                    </div>
+                                    <div class="mt-4 text-xs text-slate-500 dark:text-slate-400">Phương pháp thử</div>
+                                    <div class="mt-2 flex flex-wrap gap-2">
+                                        @for (method of methodLabels(); track $index) { <span class="max-w-full break-words rounded-lg border border-fuchsia-100 bg-fuchsia-50 px-2.5 py-1 text-xs font-semibold text-fuchsia-700 dark:border-fuchsia-800 dark:bg-fuchsia-900/20 dark:text-fuchsia-300">{{ method }}</span> }
+                                        @empty { <span class="text-sm text-slate-400">Chưa gán phương pháp thử cho chất chuẩn.</span> }
+                                    </div>
+                                </section>
+                                <section class="rounded-xl border border-slate-200 p-4 dark:border-slate-700" aria-label="Chứng nhận phân tích">
+                                    <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100">Chứng nhận phân tích (CoA)</h3>
+                                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ readStandardText(std.certificate_ref) ? 'Đã có chứng nhận phân tích.' : 'Chưa có chứng nhận phân tích.' }}</p>
+                                    <div class="mt-3 flex flex-wrap gap-2">
+                                        @if (readStandardText(std.certificate_ref)) { <app-button variant="secondary" size="sm" (click)="openCoaPreview(readStandardText(std.certificate_ref))"><i class="fa-solid fa-file-pdf" aria-hidden="true"></i> Xem CoA</app-button> }
+                                        @if (canEditStandard()) { <app-button variant="secondary" size="sm" (click)="triggerQuickDriveUpload()" [loading]="isUploadingCoa()" [disabled]="isProcessing()"><i class="fa-brands fa-google-drive" aria-hidden="true"></i>{{ readStandardText(std.certificate_ref) ? 'Cập nhật CoA' : 'Tải CoA lên' }}</app-button> }
+                                        @if (canRequestCoa()) { <app-button variant="secondary" size="sm" (click)="requestCoa(std)" [disabled]="!!readStandardText(std.coa_requested_by) || isProcessing()"><i class="fa-solid fa-file-signature" aria-hidden="true"></i>{{ readStandardText(std.coa_requested_by) ? 'Đã yêu cầu CoA' : 'Yêu cầu cập nhật CoA' }}</app-button> }
+                                    </div>
+                                </section>
+                                <section aria-label="Vòng đời mã nội bộ">
+                                    <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100">Vòng đời mã nội bộ</h3>
+                                    <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">{{ std.lifecycle_status === 'RELEASED' ? 'Đã trả mã về sổ mã' : std.lifecycle_status === 'CLOSED' ? 'Hồ sơ đã đóng' : 'Đang quản lý' }}</p>
+                                    @if (readStandardText(std.internal_id_release_reason)) { <p class="mt-2 break-words text-sm text-slate-500 dark:text-slate-400">Lý do trả mã: {{ standardText(std.internal_id_release_reason) }}</p> }
+                                </section>
+                            </div>
+                        }
+                    </section>
                 </div>
-                }
-
             }
+        </div>
+        @if (!isAuditMode()) {
+            <div class="fixed bottom-0 left-0 right-0 z-40 flex flex-wrap items-center gap-2 border-t border-slate-200 bg-white/95 px-3 py-2.5 shadow-lg backdrop-blur-md md:hidden dark:border-slate-800 dark:bg-slate-900/95" style="padding-bottom: max(0.625rem, env(safe-area-inset-bottom, 0px))" role="group" aria-label="Thao tác nhanh chất chuẩn">
+                <div class="flex min-w-0 flex-1 flex-wrap gap-2"><ng-container [ngTemplateOutlet]="workflowActions" /></div>
+                <app-button variant="secondary" size="sm" (click)="openPrintModal()" title="In nhãn"><i class="fa-solid fa-print" aria-hidden="true"></i><span class="sr-only">In nhãn</span></app-button>
+                @if (readStandardText(std.certificate_ref)) {
+                    <app-button variant="secondary" size="sm" (click)="openCoaPreview(readStandardText(std.certificate_ref))" title="Xem CoA"><i class="fa-solid fa-file-pdf" aria-hidden="true"></i><span class="sr-only">Xem CoA</span></app-button>
+                } @else if (canEditStandard()) {
+                    <app-button variant="secondary" size="sm" (click)="triggerQuickDriveUpload()" [loading]="isUploadingCoa()" [disabled]="isProcessing()" title="Tải CoA lên"><i class="fa-brands fa-google-drive" aria-hidden="true"></i><span class="sr-only">Tải CoA lên</span></app-button>
+                } @else if (canRequestCoa()) {
+                    <app-button variant="secondary" size="sm" (click)="requestCoa(std)" [disabled]="!!readStandardText(std.coa_requested_by) || isProcessing()" title="Yêu cầu cập nhật CoA"><i class="fa-solid fa-file-signature" aria-hidden="true"></i><span class="sr-only">{{ readStandardText(std.coa_requested_by) ? 'Đã yêu cầu CoA' : 'Yêu cầu cập nhật CoA' }}</span></app-button>
+                }
+                @if (canEditStandard() || canReleaseInternalId()) {
+                    <details #mobileMenu class="relative">
+                        <summary class="flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-xl border border-slate-200 text-slate-600 dark:border-slate-700 dark:text-slate-300" title="Thêm thao tác"><i class="fa-solid fa-ellipsis" aria-hidden="true"></i><span class="sr-only">Thêm thao tác</span></summary>
+                        <div class="absolute bottom-full right-0 mb-3 flex w-52 flex-col gap-2 rounded-xl border border-slate-200 bg-white p-2 shadow-lg dark:border-slate-700 dark:bg-slate-800">
+                            @if (canEditStandard()) { <app-button variant="ghost" size="sm" [fullWidth]="true" [disabled]="isProcessing()" (click)="mobileMenu.open = false; openEditModal()"><i class="fa-solid fa-pen" aria-hidden="true"></i> Chỉnh sửa</app-button> }
+                            @if (canReleaseInternalId()) { <app-button variant="ghost" size="sm" [fullWidth]="true" [disabled]="isProcessing()" (click)="mobileMenu.open = false; releaseInternalId()"><i class="fa-solid fa-arrow-rotate-left" aria-hidden="true"></i> Trả mã về sổ mã</app-button> }
+                        </div>
+                    </details>
+                }
+            </div>
         }
-    </div>
+    }
+</div>
 
-    @if (!isAuditMode()) {
-    <!-- Modals -->
-    @if(showEditModal() && standard()) {
-        <app-standards-form-modal [std]="standard()" [isOpen]="true" [allStandards]="allStandardsCache()" (closeModal)="onModalSaved()"></app-standards-form-modal>
+@if (!isAuditMode()) {
+    @if (showQrModal() && standard(); as qrStd) {
+        <app-modal-shell size="md" [title]="'Mã QR chất chuẩn: ' + standardName()" description="Phóng to để quét mã và mở chi tiết lọ chất chuẩn." (closed)="closeQrModal()">
+            <div modalBody class="flex flex-col items-center gap-4">
+                <img [appStandardQr]="qrStd.id" [standardQrSize]="320" width="320" height="320" class="h-auto w-full max-w-[320px] rounded-xl border border-slate-200 bg-white" alt="Mã QR chất chuẩn phóng to">
+                <dl class="grid w-full grid-cols-2 gap-3 text-sm">
+                    <div><dt class="text-xs text-slate-500">Mã nội bộ</dt><dd class="mt-1 font-mono font-bold text-slate-700 dark:text-slate-200">{{ standardText(qrStd.internal_id) }}</dd></div>
+                    <div><dt class="text-xs text-slate-500">Số lô</dt><dd class="mt-1 break-words font-mono text-slate-700 dark:text-slate-200">{{ standardText(qrStd.lot_number) }}</dd></div>
+                    <div class="col-span-2"><dt class="text-xs text-slate-500">Hạn dùng</dt><dd class="mt-1 font-semibold" [ngClass]="getExpiryClass(qrStd.expiry_date)">{{ standardDateText(qrStd.expiry_date) }}</dd></div>
+                </dl>
+                <div class="w-full min-w-0 rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-900/40">
+                    <label for="standard-share-link" class="text-xs font-semibold text-slate-600 dark:text-slate-300">Liên kết chất chuẩn</label>
+                    <div class="mt-2 flex min-w-0 flex-col gap-2 sm:flex-row">
+                        <input #shareLinkInput id="standard-share-link" type="text" readonly [value]="standardShareUrl()" (focus)="shareLinkInput.select()" (click)="shareLinkInput.select()" [attr.aria-describedby]="manualCopyRequired() ? 'standard-share-copy-help' : null" class="min-h-10 w-full min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:border-fuchsia-400 focus:outline-none focus:ring-2 focus:ring-fuchsia-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
+                        <app-button variant="secondary" size="sm" (click)="copyStandardLink()" [disabled]="isSharing() || !standardShareUrl()"><i class="fa-regular fa-copy" aria-hidden="true"></i> Sao chép</app-button>
+                    </div>
+                    @if (manualCopyRequired()) {
+                        <p id="standard-share-copy-help" class="mt-2 text-xs text-slate-600 dark:text-slate-300" role="status">Chưa thể sao chép tự động. Chạm vào liên kết để chọn, rồi dùng lệnh Sao chép của thiết bị.</p>
+                    }
+                </div>
+            </div>
+            <div modalFooter class="contents">
+                <app-button variant="secondary" (click)="closeQrModal()">Đóng</app-button>
+                <app-button variant="secondary" (click)="shareStandard()" [loading]="isSharing()" [disabled]="!standardShareUrl()"><i class="fa-solid fa-share-nodes" aria-hidden="true"></i> Chia sẻ liên kết</app-button>
+                <app-button (click)="openPrintModal()"><i class="fa-solid fa-print" aria-hidden="true"></i> In nhãn</app-button>
+            </div>
+        </app-modal-shell>
     }
-    @if(showPrintModal() && standard()) {
-        <app-standards-print-modal [std]="standard()" [isOpen]="true" (closeModal)="showPrintModal.set(false)"></app-standards-print-modal>
+    @if (showEditModal() && standard()) {
+        <app-standards-form-modal [std]="standard()" [isOpen]="true" [allStandards]="allStandardsCache()" (closeModal)="onModalSaved()" />
     }
-    @if(showPurchaseModal() && standard()) {
-        <app-standards-purchase-modal [selectedStd]="standard()" [isOpen]="true" (closeModal)="showPurchaseModal.set(false)"></app-standards-purchase-modal>
+    @if (showPrintModal() && standard()) {
+        <app-standards-print-modal [std]="standard()" [isOpen]="true" (closeModal)="showPrintModal.set(false)" />
     }
-    <!-- ASSIGN/BORROW MODAL -->
-    <app-standards-assign-modal
-        [isOpen]="showAssignModal()"
-        [std]="standard()"
-        [isAssignMode]="isAssignMode()"
-        [userList]="userList()"
-        [isProcessing]="isProcessing()"
-        [currentUserUid]="currentUserUid()"
-        [currentUserName]="currentUserName()"
-        [sameName]="relatedStandards()"
-        (closeModal)="showAssignModal.set(false)"
-        (confirm)="confirmAssign($event)">
-    </app-standards-assign-modal>
-    
-    <!-- Hidden input for quick Drive upload -->
-    <input id="quickDriveInput" #quickDriveInput type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx" (change)="handleQuickDriveUpload($event)">
+    @if (showPurchaseModal() && standard()) {
+        <app-standards-purchase-modal [selectedStd]="standard()" [isOpen]="true" (closeModal)="showPurchaseModal.set(false)" />
     }
+    <app-standards-assign-modal [isOpen]="showAssignModal()" [std]="standard()" [isAssignMode]="isAssignMode()" [userList]="userList()" [isProcessing]="isProcessing()" [currentUserUid]="currentUserUid()" [currentUserName]="currentUserName()" [sameName]="relatedStandards()" (closeModal)="showAssignModal.set(false)" (confirm)="confirmAssign($event)" />
+    <input id="quickDriveInput" type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx" (change)="handleQuickDriveUpload($event)">
+}

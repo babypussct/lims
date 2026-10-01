@@ -476,7 +476,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
                               </span>
                             }
                           </div>
-                          <div class="text-[10px] text-slate-400 font-mono font-semibold ml-4">{{ run.inputs?.['batchCode'] || 'Chưa có mã mẻ' }}</div>
+                          <div class="text-[10px] text-slate-400 font-mono font-semibold ml-4">{{ run.inputs?.['batchCode'] || run.id || 'Chưa có mã mẻ' }}</div>
                           @if (run.isVirtualMaster && run.childRequestIds) {
                             <div class="text-[9px] text-fuchsia-500 font-bold flex items-center gap-0.5 ml-4 mt-0.5">
                               <i class="fa-solid fa-link text-[7px]"></i> Gộp từ: {{ run.childRequestIds.join(', ') }}

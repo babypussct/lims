@@ -1,5 +1,5 @@
-import { Component, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
-import { CommonModule, Location } from '@angular/common';
+import { Component, Injector, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
+import { CommonModule, DOCUMENT, Location } from '@angular/common';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -9,7 +9,7 @@ import { ToastService } from '../../core/services/toast.service';
 import { FirebaseService } from '../../core/services/firebase.service';
 import { StateService } from '../../core/services/state.service';
 import { ReferenceStandard, UsageLog, StandardRequest } from '../../core/models/standard.model';
-import { formatNum, getAvatarUrl, getStandardStatus, getStorageInfo, getExpiryClass, getExpiryTimeLeft, canAssign } from '../../shared/utils/utils';
+import { formatNum, getAvatarUrl, getStorageInfo, getExpiryClass, getExpiryTimeLeft } from '../../shared/utils/utils';
 import {
     getFefoPredecessor,
     getFefoPriorityStandard,
@@ -25,8 +25,7 @@ import { StandardsAssignModalComponent } from './components/standards-assign-mod
 import { PrintService } from '../../core/services/print.service';
 import { ConfirmationService } from '../../core/services/confirmation.service';
 import { GoogleDriveService } from '../../core/services/google-drive.service';
-import { QueryDocumentSnapshot, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
-import { LockPermissionDirective } from '../../shared/directives/lock-permission.directive';
+import { QueryDocumentSnapshot } from 'firebase/firestore';
 import { AppButtonComponent } from '../../shared/components/ui/button/button.component';
 import { AppEmptyStateComponent } from '../../shared/components/ui/empty-state/empty-state.component';
 import { AppPageHeaderComponent } from '../../shared/components/ui/page-header/page-header.component';
@@ -35,6 +34,15 @@ import { TimelineItem } from '../../shared/components/ui/timeline/timeline.model
 import { AppUiAvatarGroupComponent } from '../../shared/components/ui/avatar-group/avatar-group.component';
 import { AvatarGroupItem } from '../../shared/components/ui/avatar-group/avatar-group.model';
 import { StandardQrSrcDirective } from '../../shared/directives/standard-qr-src.directive';
+import { buildStandardQrPayload } from '../../shared/utils/standard-qr';
+import { AppModalShellComponent } from '../../shared/components/ui/modal-shell/modal-shell.component';
+import { StandardTagCatalogService } from './services/standard-tag-catalog.service';
+import { formatMethodOptionLabel } from './services/standard-tag.utils';
+import {
+    canAssignDetailStandard, canPurchaseDetailStandard, detailStandardStatus, hasStandardAmount,
+    readStandardText, standardAmountText, standardDataIssues, standardDateState, standardDateText,
+    standardStockPercentage, standardText, standardTextList,
+} from './standard-detail.utils';
 
 @Component({
   selector: 'app-standard-detail',
@@ -46,13 +54,13 @@ import { StandardQrSrcDirective } from '../../shared/directives/standard-qr-src.
       StandardsPrintModalComponent,
       StandardsPurchaseModalComponent,
       StandardsAssignModalComponent,
-      LockPermissionDirective,
       AppButtonComponent,
       AppEmptyStateComponent,
       AppPageHeaderComponent,
       AppUiTimelineComponent,
       AppUiAvatarGroupComponent,
-      StandardQrSrcDirective
+      StandardQrSrcDirective,
+      AppModalShellComponent
   ],
   templateUrl: './standard-detail.component.html'
 })
@@ -70,15 +78,21 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     sanitizer = inject(DomSanitizer);
     printService = inject(PrintService);
     googleDriveService = inject(GoogleDriveService);
+    private readonly injector = inject(Injector);
+    private readonly document = inject(DOCUMENT);
 
-    Math = Math;
     formatNum = formatNum;
     getAvatarUrl = getAvatarUrl;
-    getStandardStatus = getStandardStatus;
+    getStandardStatus = detailStandardStatus;
     getStorageInfo = getStorageInfo;
-    getExpiryClass = getExpiryClass;
-    getExpiryTimeLeft = getExpiryTimeLeft;
-    canAssign = canAssign;
+    getExpiryClass = (date: unknown) => standardDateState(date).kind === 'invalid' ? 'text-rose-600' : getExpiryClass(readStandardText(date));
+    canAssign = canAssignDetailStandard;
+    canPurchase = canPurchaseDetailStandard;
+    readStandardText = readStandardText;
+    standardText = standardText;
+    standardAmountText = standardAmountText;
+    standardDateText = standardDateText;
+    hasStandardAmount = hasStandardAmount;
 
     currentUserUid = computed(() => this.auth.currentUser()?.uid || '');
     currentUserName = computed(() => this.auth.currentUser()?.displayName || '');
@@ -91,6 +105,7 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     notFound = signal(false);
 
     usageLogs = signal<UsageLog[]>([]);
+    historyOpenDate = signal<string | null>(null);
     loadingHistory = signal(false);
     loadingMoreHistory = signal(false);
     hasMoreHistory = signal(false);
@@ -100,7 +115,37 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     private readonly usageHistoryPageSize = 100;
     private historyLastDoc: QueryDocumentSnapshot | null = null;
 
-    activeTab = signal<'usage' | 'related'>('usage');
+    activeTab = signal<'usage' | 'related' | 'specs'>('usage');
+
+    readonly standardFormLabels: Record<string, string> = {
+        neat: 'Chất nguyên chất',
+        solution: 'Dung dịch',
+        mixture: 'Hỗn hợp',
+        isotope: 'Đồng vị',
+        salt_or_hydrate: 'Muối / hydrat',
+    };
+
+    deviceCodes = computed(() => {
+        const std = this.standard();
+        if (!std || this.isAuditMode()) return [];
+        const derived = standardTextList(std.derivedDeviceCodes);
+        if (derived.length) return derived;
+        const keys = standardTextList(std.sop_tags);
+        return keys.length ? this.injector.get(StandardTagCatalogService).deriveDeviceCodes(keys) : [];
+    });
+
+    methodLabels = computed(() => {
+        const std = this.standard();
+        if (!std || this.isAuditMode()) return [];
+        const derived = standardTextList(std.derivedMethodLabels);
+        if (derived.length) return derived;
+        const keys = standardTextList(std.sop_tags);
+        if (!keys.length) return [];
+        const catalog = this.injector.get(StandardTagCatalogService);
+        return keys
+            .map(key => formatMethodOptionLabel(catalog.resolveTag(key)))
+            .filter(Boolean);
+    });
 
     usageTimelineItems = computed<TimelineItem[]>(() => {
         const std = this.standard();
@@ -156,6 +201,15 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     showPrintModal = signal(false);
     showPurchaseModal = signal(false);
     showAssignModal = signal(false);
+    showQrModal = signal(false);
+    isSharing = signal(false);
+    manualCopyRequired = signal(false);
+    standardShareUrl = computed(() => {
+        const std = this.standard();
+        const origin = this.document.defaultView?.location.origin;
+        const id = typeof std?.id === 'string' && std.id.trim() ? std.id : '';
+        return !this.isAuditMode() && id && origin ? buildStandardQrPayload(origin, id) : '';
+    });
 
     isAssignMode = signal(true);
     userList = signal<UserProfile[]>([]);
@@ -166,23 +220,38 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
 
     private liveUnsub?: () => void;
     private routeSub: any;
+    private isDestroyed = false;
 
     // Computed Properties
     effectiveOpenDate = computed(() => {
         const std = this.standard();
         if (!std) return null;
-        if (std.date_opened) return std.date_opened;
-
-        const logs = this.usageLogs();
-        if (logs && logs.length > 0) {
-            const earliestLog = logs.reduce((min, log) => {
-                const logTime = new Date(log.date).getTime();
-                const minTime = new Date(min.date).getTime();
-                return logTime < minTime ? log : min;
-            }, logs[0]);
-            return earliestLog.date;
-        }
-        return null;
+        if (readStandardText(std.date_opened)) return std.date_opened;
+        if (this.historyOpenDate()) return this.historyOpenDate();
+        return this.usageLogs()
+            .filter(log => standardDateState(log.date).kind === 'valid')
+            .sort((a, b) => standardDateState(a.date).timestamp! - standardDateState(b.date).timestamp!)[0]?.date || null;
+    });
+    openedDateFromHistory = computed(() => !readStandardText(this.standard()?.date_opened) && !!this.effectiveOpenDate());
+    standardName = computed(() => standardText(this.standard()?.name, 'Chưa ghi nhận tên chất chuẩn'));
+    stockPercentage = computed(() => this.standard() ? standardStockPercentage(this.standard()!) : null);
+    displayedAmountIsValid = computed(() => {
+        const std = this.standard();
+        return !!std && hasStandardAmount(this.isAuditMode() ? std.initial_amount : std.current_amount) && !!readStandardText(std.unit);
+    });
+    dataIssues = computed(() => !this.isAuditMode() && this.standard() ? standardDataIssues(this.standard()!) : []);
+    currentHolderName = computed(() => {
+        const std = this.standard();
+        if (!std || this.isAuditMode()) return '';
+        const uid = readStandardText(std.current_holder_uid);
+        const cached = uid ? this.state.usersInfoByUidCache().get(uid)?.displayName : '';
+        const currentName = uid && uid === this.currentUserUid() ? this.currentUserName() : '';
+        const stored = readStandardText(std.current_holder);
+        return readStandardText(cached) || readStandardText(currentName) || (stored !== uid ? stored : '');
+    });
+    standardFormLabel = computed(() => {
+        const form = readStandardText(this.standard()?.standard_form);
+        return form ? this.standardFormLabels[form] || 'Dạng chuẩn chưa được nhận diện' : 'Chưa ghi nhận';
     });
 
     statusInfo = computed(() => {
@@ -194,14 +263,14 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     storageInfo = computed(() => {
         const std = this.standard();
         if (!std) return [];
-        return this.getStorageInfo(std.storage_condition);
+        return this.getStorageInfo(readStandardText(std.storage_condition));
     });
 
     expiryInfo = computed(() => {
         const std = this.standard();
         if (!std) return { timeLeftText: '', colorClass: '' };
         return {
-            timeLeftText: this.getExpiryTimeLeft(std.expiry_date),
+            timeLeftText: getExpiryTimeLeft(readStandardText(std.expiry_date)),
             colorClass: this.getExpiryClass(std.expiry_date)
         };
     });
@@ -217,7 +286,7 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     canRequestCoa = computed(() => {
         const std = this.standard();
         if (!std || this.isAuditMode()) return false;
-        return !std.certificate_ref &&
+        return !readStandardText(std.certificate_ref) &&
           this.auth.hasPermission('standard_request') &&
           !this.auth.canAssignStandards();
     });
@@ -226,6 +295,12 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     canRequestStandards = computed(() => !this.isAuditMode() && this.auth.hasPermission('standard_request'));
     canRequestPurchase = computed(() => this.canRequestStandards() || this.canAssignStandards());
     canDeleteStandardLogs = computed(() => !this.isAuditMode() && this.auth.canDeleteStandardLogs());
+    canEditStandard = computed(() => !this.isAuditMode() && !!this.standard() && this.auth.hasPermission('standard_edit'));
+    canReleaseInternalId = computed(() => {
+        const std = this.standard();
+        return !!std && !this.isAuditMode() && this.auth.canEditStandards() && !!readStandardText(std.internal_id)
+            && std.lifecycle_status !== 'RELEASED' && std.lifecycle_status !== 'CLOSED';
+    });
 
     relatedStandards = computed(() => {
         const std = this.standard();
@@ -241,14 +316,20 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     fefoWarningSibling = computed(() => {
         const std = this.standard();
         if (!std) return null;
-        return getFefoPredecessor(std, this.allStandardsCache());
+        if (!this.canAssign(std)) return null;
+        return getFefoPredecessor({ ...std, expiry_date: readStandardText(std.expiry_date) }, this.detailFefoCandidates());
     });
 
     fefoPriorityStandard = computed(() => {
         const std = this.standard();
         if (!std) return null;
-        return getFefoPriorityStandard(std, this.allStandardsCache());
+        const candidate = { ...std, expiry_date: readStandardText(std.expiry_date), current_amount: this.canAssign(std) ? std.current_amount : Number.NaN };
+        return getFefoPriorityStandard(candidate, this.detailFefoCandidates());
     });
+
+    private detailFefoCandidates = computed(() => this.allStandardsCache()
+        .filter(canAssignDetailStandard)
+        .map(std => ({ ...std, expiry_date: readStandardText(std.expiry_date) })));
 
     isFefoPriority(std: ReferenceStandard): boolean {
         return this.fefoPriorityStandard()?.id === std.id;
@@ -261,9 +342,12 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
             const id = params.get('id');
             if (id) {
                 this.standardId.set(id);
+                this.historyOpenDate.set(null);
+                this.usageLogs.set([]);
                 this.loadStandardData(id);
                 // Active usage tab by default on navigation
                 this.activeTab.set('usage');
+                this.closeQrModal();
             }
         });
 
@@ -277,6 +361,7 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     }
 
     ngOnDestroy() {
+        this.isDestroyed = true;
         if (this.routeSub) this.routeSub.unsubscribe();
         if (this.liveUnsub) this.liveUnsub();
     }
@@ -323,26 +408,26 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
             return;
         }
         this.loadingHistory.set(true);
+        this.historyOpenDate.set(null);
         this.historyLastDoc = null;
         this.hasMoreHistory.set(false);
         try {
             const page = await this.stdService.getUsageHistoryPage(id, this.usageHistoryPageSize);
+            if (id !== this.standardId() || this.isAuditMode()) return;
             this.usageLogs.set(page.items);
             this.historyLastDoc = page.lastDoc;
             this.hasMoreHistory.set(page.hasMore);
 
-            // SELF-HEALING (Cách 1): Cập nhật ngầm ngày mở nắp nếu chưa có
+            // Usage history is a source for comparison, not a confirmed opening date.
             const std = this.standard();
-            if (std && !std.date_opened && page.items.length > 0) {
+            if (std && !readStandardText(std.date_opened) && page.items.length > 0) {
                 const earliestLog = page.hasMore
                     ? await this.stdService.getEarliestUsageLog(id)
-                    : page.items.reduce((min, log) => {
-                        const logTime = new Date(log.date).getTime();
-                        const minTime = new Date(min.date).getTime();
-                        return logTime < minTime ? log : min;
-                    }, page.items[0]);
-
-                if (earliestLog) this.autoHealDateOpened(std.id, earliestLog.date);
+                    : page.items.filter(log => standardDateState(log.date).kind === 'valid')
+                        .sort((a, b) => standardDateState(a.date).timestamp! - standardDateState(b.date).timestamp!)[0];
+                if (id === this.standardId() && !this.isAuditMode() && standardDateState(earliestLog?.date).kind === 'valid') {
+                    this.historyOpenDate.set(earliestLog!.date);
+                }
             }
         } catch (error) {
             console.error('Failed to load history:', error);
@@ -378,20 +463,6 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
         }
     }
 
-    async autoHealDateOpened(id: string, date: string) {
-        if (this.isAuditMode()) return;
-        try {
-            const ref = doc(this.firebaseService.db, `artifacts/${this.firebaseService.APP_ID}/reference_standards`, id);
-            await updateDoc(ref, { date_opened: date, lastUpdated: serverTimestamp() });
-
-            // Cập nhật lại UI local (dù delta sync cũng sẽ bắt được nhưng cập nhật luôn cho mượt)
-            this.standard.update(s => s ? { ...s, date_opened: date } : s);
-            console.log(`[Self-Heal] Đã cập nhật ngầm date_opened thành ${date} cho chuẩn ${id}`);
-        } catch (e) {
-            console.warn('Lỗi khi tự động cập nhật date_opened', e);
-        }
-    }
-
     // --- NAVIGATION & ACTIONS ---
 
     goBack() {
@@ -404,7 +475,9 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     }
 
     async openAssignModal(isAssign = true) {
-        if (this.isAuditMode() || this.isProcessing() || !this.standard()) return;
+        const std = this.standard();
+        if (this.isAuditMode() || this.isProcessing() || !std || !this.canAssign(std) || std.has_pending_request) return;
+        if (isAssign ? !this.canAssignStandards() : !this.canRequestStandards()) return;
         this.isAssignMode.set(isAssign);
         this.showAssignModal.set(true);
 
@@ -420,12 +493,14 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
 
     async confirmAssign(data: {userId: string, userName: string, purpose: string, expectedAmount: number | null}) {
         const std = this.standard();
+        if (this.isAuditMode() || this.isProcessing()) return;
+        if (this.isAssignMode() ? !this.canAssignStandards() : !this.canRequestStandards()) return;
 
         if (!std || !data.userId || !data.purpose) {
             this.toast.show('Vui lòng điền đầy đủ thông tin bắt buộc (*)', 'error');
             return;
         }
-        if (!isFefoCandidate(std)) {
+        if (!this.canAssign(std) || !isFefoCandidate({ ...std, expiry_date: readStandardText(std.expiry_date) })) {
             this.toast.show('Lô chuẩn không còn sẵn sàng để cấp. Vui lòng tải lại và chọn lô khác.', 'error');
             return;
         }
@@ -464,7 +539,7 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     }
 
     goToReturn() {
-        if (this.isAuditMode()) return;
+        if (this.standard()?.status !== 'IN_USE' || !this.canReturnStandard()) return;
         this.router.navigate(['/standard-requests']);
         this.toast.show('Chuyển đến trang Yêu cầu chất chuẩn để hoàn trả', 'info');
     }
@@ -511,18 +586,94 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     }
 
     openPrintModal() {
-        if (!this.isAuditMode() && this.standard()) this.showPrintModal.set(true);
+        if (!this.isAuditMode() && this.standard()) {
+            this.closeQrModal();
+            this.showPrintModal.set(true);
+        }
+    }
+
+    openQrModal() {
+        if (!this.isAuditMode() && this.standard()) this.showQrModal.set(true);
+    }
+
+    closeQrModal() {
+        this.showQrModal.set(false);
+        this.manualCopyRequired.set(false);
+    }
+
+    shareStandard() {
+        return this.runStandardShare(false);
+    }
+
+    copyStandardLink() {
+        return this.runStandardShare(true);
+    }
+
+    private async runStandardShare(copyOnly: boolean) {
+        const std = this.standard();
+        const url = this.standardShareUrl();
+        if (!std || !url || this.isSharing() || !this.isCurrentShare(std.id)) return;
+        const browserNavigator = this.document.defaultView?.navigator;
+        const shareData: ShareData = {
+            title: `${this.standardName()} (${readStandardText(std.internal_id) || readStandardText(std.lot_number) || 'Chất chuẩn'})`,
+            text: `Chất chuẩn đối chiếu: ${this.standardName()} - Lô: ${standardText(std.lot_number)}`,
+            url,
+        };
+        this.isSharing.set(true);
+        try {
+            if (!copyOnly && browserNavigator?.share) {
+                try {
+                    if (!browserNavigator.canShare || browserNavigator.canShare(shareData)) {
+                        // Invoke before any other await to preserve the button's user activation.
+                        await browserNavigator.share(shareData);
+                        return;
+                    }
+                } catch (error: unknown) {
+                    if (error && typeof error === 'object' && 'name' in error && error.name === 'AbortError') return;
+                }
+            }
+            if (!this.isCurrentShare(std.id)) return;
+            try {
+                if (!browserNavigator?.clipboard?.writeText) {
+                    this.showManualLinkCopy(std.id);
+                    return;
+                }
+                await browserNavigator.clipboard.writeText(url);
+                if (this.isCurrentShare(std.id)) {
+                    this.manualCopyRequired.set(false);
+                    this.toast.show('Đã sao chép liên kết chất chuẩn!', 'success');
+                }
+            } catch {
+                this.showManualLinkCopy(std.id);
+            }
+        } finally {
+            this.isSharing.set(false);
+        }
+    }
+
+    private isCurrentShare(standardId: string) {
+        return !this.isDestroyed && !this.isAuditMode() && !this.isLoading() && !this.notFound()
+            && this.standard()?.id === standardId;
+    }
+
+    private showManualLinkCopy(standardId: string) {
+        if (!this.isCurrentShare(standardId)) return;
+        this.openQrModal();
+        this.manualCopyRequired.set(true);
+        this.toast.show('Hãy chọn liên kết trong hộp mã QR và sao chép thủ công.', 'info');
     }
 
     openPurchaseModal() {
-        if (!this.isAuditMode() && this.standard() && this.canRequestPurchase()) this.showPurchaseModal.set(true);
+        const std = this.standard();
+        if (!std || this.isProcessing() || !this.canRequestPurchase() || std.restock_requested) return;
+        if (this.canPurchase(std)) this.showPurchaseModal.set(true);
     }
 
     async requestCoa(std: ReferenceStandard) {
-        if (this.isAuditMode() || this.isProcessing() || std.coa_requested_by || !this.canRequestCoa()) return;
+        if (this.isAuditMode() || this.isProcessing() || readStandardText(std.coa_requested_by) || !this.canRequestCoa()) return;
 
         this.confirmation.confirm({
-            message: `Bạn đang gửi thông báo yêu cầu Quản trị viên bổ sung chứng nhận phân tích (CoA) cho chuẩn "${std.name}". Bạn có chắc chắn không?`,
+            message: `Bạn đang gửi thông báo yêu cầu Quản trị viên bổ sung chứng nhận phân tích (CoA) cho chuẩn "${this.standardName()}". Bạn có chắc chắn không?`,
             confirmText: 'Gửi yêu cầu',
             cancelText: 'Hủy'
         }).then(async (confirmed) => {
@@ -559,7 +710,7 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     }
 
     openCoaPreview(url: string) {
-        this.printService.openCoaPreview(url, 'Chứng chỉ chất lượng (CoA)');
+        if (readStandardText(url)) this.printService.openCoaPreview(url.trim(), 'Chứng chỉ chất lượng (CoA)');
     }
 
 
@@ -578,7 +729,7 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     }
     // --- Quick Upload CoA ---
     triggerQuickDriveUpload() {
-        if (this.isAuditMode()) return;
+        if (!this.canEditStandard() || this.isUploadingCoa() || this.isProcessing()) return;
         if (this.googleDriveService.hasValidToken) {
             const input = document.querySelector('#quickDriveInput') as HTMLInputElement;
             if (input) {
@@ -600,7 +751,7 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
     }
 
     async handleQuickDriveUpload(event: any) {
-        if (this.isAuditMode()) return;
+        if (!this.canEditStandard() || this.isUploadingCoa() || this.isProcessing()) return;
         const file = event.target.files[0];
         if (!file) return;
 
@@ -609,18 +760,19 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
 
         try {
             this.isUploadingCoa.set(true);
-            const fileName = GoogleDriveService.generateFileName(std.name, std.lot_number || '', file.name);
-            this.toast.show(`Đang tải CoA lên cho "${std.name}"...`);
+            const fileName = GoogleDriveService.generateFileName(this.standardName(), readStandardText(std.lot_number), file.name);
+            this.toast.show(`Đang tải CoA lên cho "${this.standardName()}"...`);
 
             const previewUrl = await this.googleDriveService.uploadFile(file, fileName);
 
             // Tìm tất cả các chuẩn cùng Tên và Số Lô từ Delta Sync cache
             const allStds = this.stdService.getAllStandardsFromCache();
-            const lot = (std.lot_number || '').trim().toLowerCase();
-            const siblings = lot
+            const name = readStandardText(std.name).toLowerCase();
+            const lot = readStandardText(std.lot_number).toLowerCase();
+            const siblings = name && lot
                 ? allStds.filter(s =>
-                    s.name.trim().toLowerCase() === std.name.trim().toLowerCase() &&
-                    (s.lot_number || '').trim().toLowerCase() === lot &&
+                    readStandardText(s.name).toLowerCase() === name &&
+                    readStandardText(s.lot_number).toLowerCase() === lot &&
                     !s._isDeleted
                 )
                 : [std];
