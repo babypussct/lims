@@ -29,6 +29,9 @@ import { isRegisteredActivityAction } from '../../core/activity/activity-event-r
 import { TraceabilityDataService, StandardTraceRecord, StandardHistorySource, isStandardActivity } from './traceability-data.service';
 import { buildStandardTraceTimeline, mergeStandardUsages, standardTraceSummary, standardTraceTitle } from './standard-traceability.utils';
 import { UsageLog } from '../../core/models/standard.model';
+import { A4DocumentPreviewComponent } from '../../shared/components/a4-document-preview/a4-document-preview.component';
+import { A4Document } from '../../shared/utils/a4-document';
+import { buildTraceDocument } from '../../shared/utils/business-print-documents';
 
 export interface TraceabilitySampleRow {
   sampleId: string;
@@ -41,8 +44,9 @@ export interface TraceabilitySampleRow {
 @Component({
   selector: 'app-traceability',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, AppButtonComponent, AppEmptyStateComponent, AppPageHeaderComponent, AppUiTimelineComponent],
+  imports: [CommonModule, FormsModule, RouterLink, AppButtonComponent, AppEmptyStateComponent, AppPageHeaderComponent, AppUiTimelineComponent, A4DocumentPreviewComponent],
   template: `
+    @if (tracePrintDocument(); as document) { <app-a4-document-preview [document]="document" (closed)="tracePrintDocument.set(null)" /> }
     <div class="relative mx-auto min-h-full w-full max-w-7xl shrink-0 p-4 md:p-6 pb-20 fade-in">
         <app-page-header
           [variant]="id ? 'detail' : 'page'"
@@ -101,6 +105,9 @@ export interface TraceabilitySampleRow {
                   </span>
                 }
             </div>
+          }
+          @if (auth.currentUser() && logData() && !isLoading() && !isVerifying()) {
+            <app-button pageHeaderActions variant="secondary" size="sm" (click)="printTraceRecord()"><i class="fa-solid fa-print" aria-hidden="true"></i> Xem & In hồ sơ</app-button>
           }
         </app-page-header>
 
@@ -720,6 +727,18 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
   objectKeys = Object.keys;
 
   logData = signal<Log | null>(null);
+  readonly tracePrintDocument = signal<A4Document | null>(null);
+  printTraceRecord(): void {
+    const log = this.logData();
+    if (!this.auth.currentUser() || !log || this.isLoading() || this.isVerifying()) return;
+    const summary = this.standardRecord() ? this.standardSummary() : [
+      { label: 'Mã truy xuất', value: log.id },
+      { label: 'Hồ sơ liên quan', value: this.getDistinctAssociatedRequestId() || 'Chưa có thông tin' },
+      { label: 'Phương pháp', value: log.sopBasicInfo?.name || log.printData?.sop?.name || 'Chưa có thông tin' },
+      { label: 'Người ghi nhận', value: log.user || 'Chưa có thông tin' },
+    ];
+    this.tracePrintDocument.set(buildTraceDocument(log.id, summary, this.timelineItems(), this.standardHistoryNotes(), this.standardHistoryHasMore() || this.standardHistoryLoading()));
+  }
   timelineItems = signal<TimelineItem[]>([]);
   recordType = signal<'SOP_REQUEST' | 'STANDARD_REQUEST' | 'STANDARD_USAGE' | 'PRINT_JOB' | 'ACTIVITY_LOG' | null>(null);
   standardRecord = signal<StandardTraceRecord | null>(null);
@@ -1565,6 +1584,7 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
   }
 
   private resetStandardTrace(): void {
+      this.tracePrintDocument.set(null);
       this.recordType.set(null);
       this.standardRecord.set(null);
       this.standardUsages.set([]);

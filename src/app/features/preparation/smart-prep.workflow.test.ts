@@ -31,6 +31,25 @@ function dilution() {
   return ui;
 }
 
+test('print preview rejects an incomplete calculation and snapshots valid data without opening a print dialog', () => {
+  const empty = setup();
+  empty.printSimulation();
+  assert.equal(empty.printDocument(), null);
+  const ui = dilution();
+  ui.sheetMethod.set('SOP-01 v2');
+  ui.sheetSource.set('LOT-2026');
+  ui.showTrace.set(false);
+  ui.printSimulation();
+  const snapshot = ui.printDocument();
+  assert.ok(snapshot);
+  assert.match(JSON.stringify(snapshot), /SOP-01 v2/);
+  assert.ok(snapshot.sections.some(section => section.title === 'Công thức và phép thế số'));
+  ui.sheetSource.set('LOT-CHANGED');
+  ui.targetValue.set(20);
+  assert.equal(ui.printDocument(), snapshot);
+  assert.doesNotMatch(JSON.stringify(snapshot), /LOT-CHANGED/);
+});
+
 class MemoryStorage implements Storage {
   private readonly values = new Map<string, string>();
 

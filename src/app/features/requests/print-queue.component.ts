@@ -6,26 +6,24 @@ import { StateService } from '../../core/services/state.service';
 import { AuthService } from '../../core/services/auth.service';
 import { PrintService, PrintJob } from '../../core/services/print.service';
 import { Log } from '../../core/models/log.model';
-import { cleanName, formatNum, formatDate } from '../../shared/utils/utils';
+import { formatDate } from '../../shared/utils/utils';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
 import { FirebaseService } from '../../core/services/firebase.service';
-import { doc, getDoc, getDocs, collection, query, where, documentId } from 'firebase/firestore';
+import { getDocs, collection, query, where, documentId } from 'firebase/firestore';
 import { ToastService } from '../../core/services/toast.service';
-import { timestampToDate } from '../../shared/utils/timestamp';
 import { PrintQueueService } from '../../core/services/print-queue.service';
+import { loadOrderedPrintJobs } from './print-queue.utils';
+import { AppButtonComponent } from '../../shared/components/ui/button/button.component';
+import { AppPageHeaderComponent } from '../../shared/components/ui/page-header/page-header.component';
 
 @Component({
   selector: 'app-print-queue',
   standalone: true,
-  imports: [CommonModule, SkeletonComponent],
+  imports: [CommonModule, SkeletonComponent, AppButtonComponent, AppPageHeaderComponent],
   template: `
     <div class="w-full space-y-6 pb-20 fade-in h-full flex flex-col">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
-            <h2 class="text-2xl font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                <i class="fa-solid fa-print text-fuchsia-500 dark:text-fuchsia-400"></i> Hàng Đợi In
-            </h2>
-            
-            <div class="flex gap-2">
+        <app-page-header title="Hàng đợi in" icon="fa-print" subtitle="Chọn phiếu để xem trước và in theo thứ tự trong danh sách.">
+            <div pageHeaderActions class="flex flex-wrap gap-2">
                @if(state.isAdmin()) {
                  <button (click)="deleteSelected()" [disabled]="selectedLogIds().size === 0"
                     class="px-4 py-2 bg-red-600 dark:bg-red-500 hover:bg-red-700 dark:hover:bg-red-600 text-white rounded-lg font-bold shadow-sm dark:shadow-none transition text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
@@ -33,13 +31,18 @@ import { PrintQueueService } from '../../core/services/print-queue.service';
                  </button>
                }
                
-               <button (click)="printSelected()" [disabled]="selectedLogIds().size === 0 || isPrinting()"
-                  class="px-4 py-2 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg font-bold shadow-sm dark:shadow-none transition text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                  @if(isPrinting()) { <i class="fa-solid fa-spinner fa-spin"></i> } 
-                  @else { <i class="fa-solid fa-print"></i> } Xem & In
-               </button>
+               <app-button variant="secondary" (click)="printSelected()" [loading]="isPrinting()"
+                  [disabled]="selectedLogIds().size === 0 || isLoading() || !!queue.error()">
+                  <i class="fa-solid fa-print" aria-hidden="true"></i> Xem và in
+               </app-button>
             </div>
-        </div>
+        </app-page-header>
+
+        @if (queue.error() || printError()) {
+          <div role="alert" class="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-200">
+            {{queue.error() || printError()}}
+          </div>
+        }
 
         <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 flex-1 flex flex-col overflow-hidden">
             <div class="flex-1 overflow-y-auto p-2 md:hidden">
@@ -93,7 +96,7 @@ import { PrintQueueService } from '../../core/services/print-queue.service';
                                 </dl>
 
                                 <div class="mt-3 flex items-center justify-end gap-2 border-t border-slate-100 pt-2 dark:border-slate-700/70">
-                                    <button (click)="printSingle(log)" class="flex h-10 w-10 items-center justify-center rounded-xl text-blue-600 transition hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/30" aria-label="In phiếu này" title="In phiếu này">
+                                    <button type="button" (click)="printSingle(log)" [disabled]="isPrinting() || isLoading() || !!queue.error()" class="flex h-10 w-10 items-center justify-center rounded-xl text-indigo-600 transition hover:bg-indigo-50 disabled:opacity-50 dark:text-indigo-400 dark:hover:bg-indigo-950/30" aria-label="Xem và in phiếu này" title="Xem và in phiếu này">
                                         <i class="fa-solid fa-print" aria-hidden="true"></i>
                                     </button>
                                     @if (state.isAdmin()) {
@@ -163,7 +166,7 @@ import { PrintQueueService } from '../../core/services/print-queue.service';
                                     <td class="px-4 py-2 text-slate-600 dark:text-slate-300 font-medium">{{log.user}}</td>
                                     <td class="px-4 py-2 text-slate-500 dark:text-slate-400 text-xs">{{formatDate(log.timestamp)}}</td>
                                     <td class="px-4 py-2 text-center">
-                                        <button (click)="printSingle(log)" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 p-2 rounded-md transition" title="In phiếu này">
+                                        <button type="button" (click)="printSingle(log)" [disabled]="isPrinting() || isLoading() || !!queue.error()" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 disabled:opacity-50 p-2 rounded-xl transition" aria-label="Xem và in phiếu này" title="Xem và in phiếu này">
                                             <i class="fa-solid fa-print"></i>
                                         </button>
                                         @if (state.isAdmin()) {
@@ -201,18 +204,14 @@ export class PrintQueueComponent implements OnInit {
   router = inject(Router);
   queue = inject(PrintQueueService);
   
-  isLoading = signal(true);
+  isLoading = computed(() => this.queue.loading());
   isPrinting = signal(false);
+  printError = signal<string | null>(null);
   selectedLogIds = signal<Set<string>>(new Set());
   formatDate = formatDate;
 
   ngOnInit() {
       this.queue.ensureListener();
-      if (this.queue.printableLogs().length > 0) {
-          this.isLoading.set(false);
-      } else {
-          setTimeout(() => this.isLoading.set(false), 800);
-      }
   }
 
   filteredLogs = computed(() => {
@@ -243,81 +242,40 @@ export class PrintQueueComponent implements OnInit {
   }
 
   async fetchPrintData(logs: Log[]): Promise<PrintJob[]> {
-      const jobs: PrintJob[] = [];
-      const jobIdsToFetch: string[] = [];
-      const mapLogIdToJob: Record<string, string> = {}; 
-
-      for (const log of logs) {
-          if (log.printData) {
-              jobs.push({
-                  ...log.printData,
-                  date: timestampToDate(log.timestamp) ?? new Date(0),
-                  user: log.user,
-                  requestId: log.requestId || log.printData.requestId || log.id
-              });
-          } else if (log.printJobId) {
-              jobIdsToFetch.push(log.printJobId);
-              mapLogIdToJob[log.printJobId] = log.id; 
-          }
-      }
-
-      if (jobIdsToFetch.length > 0) {
-          const chunkSize = 30;
-          for (let i = 0; i < jobIdsToFetch.length; i += chunkSize) {
-              const chunk = jobIdsToFetch.slice(i, i + chunkSize);
-              try {
-                  const q = query(collection(this.fb.db, `artifacts/${this.fb.APP_ID}/print_jobs`), where(documentId(), 'in', chunk));
-                  const snap = await getDocs(q);
-                  
-                  snap.forEach(d => {
-                      const data = d.data() as any;
-                      const relatedLogId = mapLogIdToJob[d.id];
-                      const originalLog = logs.find(l => l.id === relatedLogId); 
-                      
-                      if (originalLog) {
-                          jobs.push({
-                              ...data,
-                              date: timestampToDate(originalLog.timestamp) ?? new Date(0),
-                              user: originalLog.user,
-                              requestId: originalLog.requestId || relatedLogId
-                          });
-                      }
-                  });
-              } catch (e) {
-                  console.error("Error fetching print jobs:", e);
-                  this.toast.show('Lỗi tải dữ liệu in chi tiết.', 'error');
-              }
-          }
-      }
-      return jobs;
+    return loadOrderedPrintJobs(logs, async ids => {
+      const q = query(collection(this.fb.db, `artifacts/${this.fb.APP_ID}/print_jobs`), where(documentId(), 'in', [...ids]));
+      const snapshot = await getDocs(q);
+      return new Map(snapshot.docs.map(document => [document.id, document.data()]));
+    });
   }
 
   async printSingle(log: Log) {
-    this.isPrinting.set(true);
-    try {
-        const jobs = await this.fetchPrintData([log]);
-        if (jobs.length > 0) {
-            this.printService.openPreview(jobs); // UPDATED: Open Preview
-        } else {
-            this.toast.show('Không tìm thấy dữ liệu in cho phiếu này.', 'error');
-        }
-    } finally {
-        this.isPrinting.set(false);
-    }
+    await this.openPrintPreview([log]);
   }
 
   async printSelected() {
     const ids = this.selectedLogIds();
     if (ids.size === 0) return;
 
+    const logsToPrint = this.filteredLogs().filter(log => ids.has(log.id));
+    if (logsToPrint.length !== ids.size) {
+      this.printError.set('Một số phiếu đã chọn không còn trong hàng đợi. Vui lòng chọn lại phiếu cần in.');
+      return;
+    }
+    await this.openPrintPreview(logsToPrint);
+  }
+
+  private async openPrintPreview(logs: Log[]): Promise<void> {
+    if (this.isPrinting() || this.isLoading() || this.queue.error() || !logs.length) return;
     this.isPrinting.set(true);
+    this.printError.set(null);
     try {
-        const logsToPrint = this.filteredLogs().filter(log => ids.has(log.id));
-        const jobs = await this.fetchPrintData(logsToPrint);
-        
-        if (jobs.length > 0) {
-            this.printService.openPreview(jobs); // UPDATED: Open Preview
-        }
+      const jobs = await this.fetchPrintData(logs);
+      this.printService.openPreview(jobs);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Không tải được dữ liệu in. Vui lòng thử lại.';
+      this.printError.set(message);
+      this.toast.show(message, 'error');
     } finally {
         this.isPrinting.set(false);
     }

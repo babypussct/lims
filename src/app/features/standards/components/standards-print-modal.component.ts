@@ -1,36 +1,18 @@
-import { Component, input, output, signal, computed } from '@angular/core';
+import { STANDARD_GRID_PRESETS, STANDARD_ROLL_PRESETS, GridPreset, labelSheetError } from '../../../shared/utils/label-paper-catalog';
+import { clonePrintContent, printWithCleanup, waitForPrintAssets } from '../../../shared/utils/print-dom';
+import { AppButtonComponent } from '../../../shared/components/ui/button/button.component';
+import { Component, input, output, signal, computed, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ReferenceStandard } from '../../../core/models/standard.model';
 import { AppModalShellComponent } from '../../../shared/components/ui/modal-shell/modal-shell.component';
 import { StandardQrSrcDirective } from '../../../shared/directives/standard-qr-src.directive';
 
-interface GridPreset {
-  id: string;
-  name: string;
-  rows: number;
-  cols: number;
-  width: number;       // width of label in mm
-  height: number;      // height of label in mm
-  topMargin: number;   // top margin of sheet in mm
-  leftMargin: number;  // left margin of sheet in mm
-  rowGap: number;      // vertical space between labels in mm
-  colGap: number;      // horizontal space between labels in mm
-  fontSize: number;    // default font size in pt
-}
-
-interface RollPreset {
-  id: string;
-  name: string;
-  width: number;
-  height: number;
-  fontSize: number;
-}
 
 @Component({
   selector: 'app-standards-print-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, AppModalShellComponent, StandardQrSrcDirective],
+  imports: [CommonModule, FormsModule, AppModalShellComponent, StandardQrSrcDirective, AppButtonComponent],
   template: `
       @if (isOpen()) {
           <app-modal-shell
@@ -38,6 +20,7 @@ interface RollPreset {
               [description]="printModalDescription()"
               size="xl"
               [closeOnBackdrop]="false"
+              [closeDisabled]="printBusy()"
               (closed)="onClose()"
           >
              <div modalBody class="-mx-6 -my-5 flex min-h-[500px] flex-col lg:h-[calc(100vh-12rem)] lg:flex-row">
@@ -46,26 +29,26 @@ interface RollPreset {
                      <div>
                          <!-- Segmented Control for Layout Mode -->
                          <div class="flex p-1 bg-slate-100 dark:bg-slate-800/80 rounded-2xl mb-6 border border-slate-200/40 dark:border-slate-700/30">
-                             <button (click)="printLayoutMode.set('roll')" 
-                                     [class.bg-white]="printLayoutMode() === 'roll'" 
-                                     [class.dark:bg-slate-700]="printLayoutMode() === 'roll'" 
-                                     [class.shadow-sm]="printLayoutMode() === 'roll'" 
+                             <button (click)="printLayoutMode.set('roll')"
+                                     [class.bg-white]="printLayoutMode() === 'roll'"
+                                     [class.dark:bg-slate-700]="printLayoutMode() === 'roll'"
+                                     [class.shadow-sm]="printLayoutMode() === 'roll'"
                                      [class.text-fuchsia-650]="printLayoutMode() === 'roll'"
                                      [class.dark:text-fuchsia-400]="printLayoutMode() === 'roll'"
                                      class="flex-1 py-2 text-center text-xs font-black rounded-xl transition-all duration-300 text-slate-600 dark:text-slate-400 hover:text-slate-800">
                                  <i class="fa-solid fa-scroll mr-1.5"></i> In Cuộn (Brother QL)
                              </button>
-                             <button (click)="printLayoutMode.set('grid')" 
-                                     [class.bg-white]="printLayoutMode() === 'grid'" 
-                                     [class.dark:bg-slate-700]="printLayoutMode() === 'grid'" 
-                                     [class.shadow-sm]="printLayoutMode() === 'grid'" 
+                             <button (click)="printLayoutMode.set('grid')"
+                                     [class.bg-white]="printLayoutMode() === 'grid'"
+                                     [class.dark:bg-slate-700]="printLayoutMode() === 'grid'"
+                                     [class.shadow-sm]="printLayoutMode() === 'grid'"
                                      [class.text-fuchsia-650]="printLayoutMode() === 'grid'"
                                      [class.dark:text-fuchsia-400]="printLayoutMode() === 'grid'"
                                      class="flex-1 py-2 text-center text-xs font-black rounded-xl transition-all duration-300 text-slate-600 dark:text-slate-400 hover:text-slate-800">
                                  <i class="fa-solid fa-grip mr-1.5"></i> In Tấm A4 Decal
                              </button>
                          </div>
-                         
+
                          <div class="space-y-5">
                              <!-- Template Selection -->
                              <div>
@@ -89,7 +72,7 @@ interface RollPreset {
                              <!-- Dimensions Selection based on Mode -->
                              <div>
                                  <label class="block text-[11px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Kích thước nhãn</label>
-                                 
+
                                  @if (printLayoutMode() === 'roll') {
                                      <select [ngModel]="printPaperSize()" (ngModelChange)="onPaperSizeChange($event)" class="w-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-2.5 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-fuchsia-500/50 transition mb-3">
                                          <option value="62x29_ql800">Brother QL-800 DK-22205 (62 x 29 mm - Khuyên dùng)</option>
@@ -101,7 +84,7 @@ interface RollPreset {
                                          <option value="70x50">Tem lớn (70 x 50 mm)</option>
                                          <option value="custom">Tùy chỉnh kích thước...</option>
                                      </select>
-                                     
+
                                      @if (printPaperSize() === 'custom') {
                                          <div class="grid grid-cols-3 gap-3 animate-fade-in">
                                              <div>
@@ -140,7 +123,7 @@ interface RollPreset {
                                              Chia Ô Sẵn (Tomy)
                                          </button>
                                      </div>
-                                     
+
                                      @if (a4PaperType() === 'fullsheet') {
                                          <!-- Full sheet configurations -->
                                          <select [ngModel]="fullSheetPreset()" (ngModelChange)="onFullSheetPresetChange($event)" class="w-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-2.5 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-fuchsia-500/50 transition mb-3">
@@ -149,7 +132,7 @@ interface RollPreset {
                                              <option value="small">Lưới nhãn phụ 5x12 (60 nhãn - ~36x21 mm)</option>
                                              <option value="custom">Tự cấu hình hàng & cột...</option>
                                          </select>
-                                         
+
                                          @if (fullSheetPreset() === 'custom') {
                                              <div class="grid grid-cols-2 gap-3 mb-3 animate-fade-in">
                                                  <div>
@@ -162,7 +145,7 @@ interface RollPreset {
                                                  </div>
                                              </div>
                                          }
-                                         
+
                                          <!-- Crop mark checkbox -->
                                          <label class="flex items-center gap-2 cursor-pointer group mb-3">
                                              <input type="checkbox" [ngModel]="printShowCropMarks()" (ngModelChange)="printShowCropMarks.set($event)" class="w-4 h-4 text-fuchsia-600 rounded border-slate-350 dark:border-slate-700 focus:ring-fuchsia-500 bg-white dark:bg-slate-800">
@@ -176,7 +159,7 @@ interface RollPreset {
                                              <option value="tomy_146">Tomy 146 (18 nhãn - 3x6 | 62 x 42 mm)</option>
                                          </select>
                                      }
-                                     
+
                                      <!-- A4 Offset Info -->
                                      <div class="mt-3 grid grid-cols-2 gap-3">
                                          <div>
@@ -187,7 +170,7 @@ interface RollPreset {
                                                  <button type="button" (click)="gridStartIndex.set(Math.min(getGridPreset().rows * getGridPreset().cols, gridStartIndex() + 1))" aria-label="Tăng vị trí ô bắt đầu" class="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-850 hover:bg-slate-200 text-slate-655 dark:text-slate-300 flex items-center justify-center text-xs"><i class="fa-solid fa-plus"></i></button>
                                              </div>
                                          </div>
-                                         
+
                                          <!-- Estimated A4 sheets info badge -->
                                          <div class="p-3 bg-fuchsia-50/50 dark:bg-fuchsia-950/20 rounded-xl border border-fuchsia-100/50 dark:border-fuchsia-900/30 text-[10px] text-fuchsia-700 dark:text-fuchsia-300 flex flex-col justify-center animate-fade-in">
                                              <div class="flex justify-between mb-0.5">
@@ -240,7 +223,7 @@ interface RollPreset {
                                          <span class="text-xs font-semibold text-slate-700 dark:text-slate-300 group-hover:text-fuchsia-600 dark:group-hover:text-fuchsia-400 transition">Chỉ số CAS</span>
                                      </label>
                                  </div>
-                                 
+
                                  <!-- Overflow Warning for Small Labels -->
                                  @if (showOverflowWarning()) {
                                      <div class="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-xl border border-amber-200 dark:border-amber-900/40 text-[11px] text-amber-700 dark:text-amber-400 mt-2.5 flex gap-2">
@@ -271,7 +254,7 @@ interface RollPreset {
                      <div class="absolute top-4 left-4 text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-2">
                          <i class="fa-solid fa-eye animate-pulse text-fuchsia-500"></i> Bản Xem Trước Trực Quan
                      </div>
-                     
+
                      @if (printLayoutMode() === 'roll') {
                          <!-- Single Label Preview (Roll) -->
                          <div class="bg-white shadow-xl border border-slate-300/60 dark:border-slate-700/30 flex flex-col justify-center text-black overflow-hidden relative print-content"
@@ -288,7 +271,7 @@ interface RollPreset {
                              <div class="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider self-start flex items-center gap-1.5">
                                  <i class="fa-solid fa-magnifying-glass-plus text-fuchsia-500"></i> Độ nét thực tế nhãn đơn mẫu
                              </div>
-                             
+
                              <div class="bg-white shadow-xl border border-slate-350 overflow-hidden relative"
                                   [style.width.mm]="getGridPreset().width"
                                   [style.height.mm]="getGridPreset().height"
@@ -296,20 +279,20 @@ interface RollPreset {
                                   style="transform-origin: center center; margin: 15px 0;">
                                   <ng-container *ngTemplateOutlet="labelTemplate; context: { std: standardsToPrint()[0], fontSize: getGridPreset().fontSize, width: getGridPreset().width, height: getGridPreset().height, isPrint: false }"></ng-container>
                              </div>
-                             
+
                              <!-- A4 Layout Sheet -->
                              <div class="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider self-start flex items-center gap-1.5 mt-3 w-full justify-between">
                                  <span class="flex items-center gap-1.5"><i class="fa-solid fa-file-lines text-fuchsia-500"></i> Mô phỏng tấm A4 Decal</span>
                                  <span class="text-fuchsia-500 dark:text-fuchsia-400 font-bold normal-case text-[9px] cursor-pointer hover:underline">(Nhấp để đổi điểm bắt đầu)</span>
                              </div>
-                             
+
                              <!-- Scaled A4 preview container -->
                              <div class="flex items-center justify-center overflow-hidden w-full" style="height: 310px; border-radius: 16px; background: rgba(0,0,0,0.02); border: 1px dashed rgba(0,0,0,0.08); padding: 5px;">
                                  <div class="bg-white shadow-lg border border-slate-200 overflow-hidden flex-shrink-0"
                                       [style.width.mm]="210"
                                       [style.height.mm]="297"
                                       style="transform: scale(0.24); transform-origin: center top; margin-bottom: -225mm;">
-                                      
+
                                       <!-- A4 Grid -->
                                       <div [style.padding-top.mm]="getGridPreset().topMargin"
                                            [style.padding-left.mm]="getGridPreset().leftMargin"
@@ -318,7 +301,7 @@ interface RollPreset {
                                            [style.grid-auto-rows]="getGridPreset().height + 'mm'"
                                            [style.row-gap.mm]="getGridPreset().rowGap"
                                            [style.column-gap.mm]="getGridPreset().colGap">
-                                           
+
                                            @for (slotIndex of getGridSlots(); track slotIndex) {
                                                @if (slotIndex < gridStartIndex()) {
                                                    <!-- Skipped cell -->
@@ -360,17 +343,16 @@ interface RollPreset {
                              </div>
                          </div>
                      }
-                     
+
                      <div class="mt-4 text-[10px] text-slate-400 dark:text-slate-500 text-center max-w-[280px]">
                          Xem trước mang tính tương đối. Chất lượng và vị trí in thực tế phụ thuộc cấu hình khổ máy in của bạn.
                      </div>
                  </div>
              </div>
-             <div modalFooter class="flex w-full items-center justify-between gap-3">
-                 <button (click)="onClose()" class="px-5 py-2.5 text-slate-500 dark:text-slate-400 font-extrabold text-xs hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition">Hủy bỏ</button>
-                 <button (click)="printLabel()" class="px-8 py-2.5 bg-fuchsia-600 hover:bg-fuchsia-700 dark:bg-fuchsia-500 dark:hover:bg-fuchsia-600 text-white font-extrabold text-xs rounded-xl shadow-sm transition flex items-center gap-2">
-                     <i class="fa-solid fa-print"></i> Tiến hành in nhãn ({{ standardsToPrint().length * printCopies() }})
-                 </button>
+             <div modalFooter class="print-workspace flex w-full flex-wrap items-center justify-between gap-3">
+                 @if (printError()) { <p role="alert" class="w-full text-sm text-rose-700 dark:text-rose-300">{{printError()}}</p> }
+                 <app-button variant="secondary" [disabled]="printBusy()" (click)="onClose()">Đóng</app-button>
+                 <app-button class="print-primary" [loading]="printBusy()" (click)="printLabel()"><i class="fa-solid fa-print" aria-hidden="true"></i> In nhãn ({{standardsToPrint().length * printCopies()}})</app-button>
              </div>
           </app-modal-shell>
       }
@@ -383,17 +365,18 @@ interface RollPreset {
                [style.padding.mm]="1.5"
                [style.font-size.pt]="fontSize"
                style="line-height: 1.15; box-sizing: border-box; font-family: 'Segoe UI', Roboto, Arial, sans-serif;">
-               
+
                @if (printTemplate() === 'qr') {
                    <div style="display: flex; height: 100%; gap: 1.2mm; align-items: center; overflow: hidden; box-sizing: border-box; width: 100%;">
                        <!-- Left Text Column -->
                        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; height: 100%; overflow: hidden;">
-                           @if (printIncludeName()) { 
-                               <div style="font-weight: 800; margin-bottom: 0.4mm; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" 
+                           @if (printIncludeName()) {
+                               <div style="font-weight: 800; margin-bottom: 0.4mm; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
                                     [style.font-size.pt]="fontSize + 1.2">
                                    {{ std?.name }}
-                               </div> 
+                               </div>
                            }
+                           <div style="font-weight:700;overflow-wrap:anywhere;margin-bottom:0.1mm">Mã: {{std?.internal_id || 'Chưa có mã'}}</div>
                            @if (printIncludeLot()) { <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 0.1mm;">Lô: <span style="font-weight: bold;">{{ std?.lot_number || 'N/A' }}</span></div> }
                            @if (printIncludePurity()) { <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 0.1mm;">Pur: <span style="font-weight: bold;">{{ std?.purity || 'N/A' }}</span></div> }
                            @if (printIncludeOpened()) { <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 0.1mm;">Opn: <span style="font-weight: bold;">{{ std?.date_opened ? (std?.date_opened | date:'dd/MM/yy') : '__/__/__' }}</span></div> }
@@ -408,13 +391,14 @@ interface RollPreset {
                } @else {
                    <!-- Standard or Detailed layout -->
                    <div style="display: flex; flex-direction: column; justify-content: center; height: 100%; overflow: hidden; box-sizing: border-box; width: 100%;">
-                       @if (printIncludeName()) { 
-                           <div style="font-weight: 800; margin-bottom: 0.4mm; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" 
+                       <div style="font-weight:700;overflow-wrap:anywhere;margin-bottom:0.4mm">Mã: {{std?.internal_id || 'Chưa có mã'}}</div>
+                       @if (printIncludeName()) {
+                           <div style="font-weight: 800; margin-bottom: 0.4mm; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
                                 [style.font-size.pt]="fontSize + 1.2">
                                {{ std?.name }}
-                           </div> 
+                           </div>
                        }
-                       
+
                        @if (printTemplate() === 'detailed') {
                            @if (printIncludeCas() || printIncludeManufacturer()) {
                                <div style="display: flex; justify-content: space-between; margin-bottom: 0.1mm; overflow: hidden; white-space: nowrap; width: 100%;">
@@ -430,7 +414,7 @@ interface RollPreset {
                                @if (printIncludePurity()) { <span style="text-overflow: ellipsis; overflow: hidden; flex-shrink: 0; margin-left: 1mm;">Pur: <span style="font-weight: bold;">{{ std?.purity || 'N/A' }}</span></span> }
                            </div>
                        }
-                       
+
                        @if (printIncludeOpened() || printIncludeExpiry()) {
                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.1mm; overflow: hidden; white-space: nowrap; width: 100%;">
                                @if (printIncludeOpened()) { <span style="text-overflow: ellipsis; overflow: hidden; flex: 1;">Opn: <span style="font-weight: bold;">{{ std?.date_opened ? (std?.date_opened | date:'dd/MM/yy') : '__/__/__' }}</span></span> }
@@ -476,7 +460,10 @@ interface RollPreset {
     }
   `]
 })
-export class StandardsPrintModalComponent {
+export class StandardsPrintModalComponent implements OnDestroy {
+  private destroyed = false;
+  private controller?: AbortController;
+  ngOnDestroy(): void { this.destroyed = true; this.controller?.abort(); }
   std = input<ReferenceStandard | null>(null);
   standards = input<ReferenceStandard[]>([]);
   isOpen = input<boolean>(false);
@@ -496,7 +483,7 @@ export class StandardsPrintModalComponent {
   a4PaperType = signal<'fullsheet' | 'precut'>('fullsheet'); // Default to A4 full sticker sheets
   gridPreset = signal<string>('tomy_145');
   gridStartIndex = signal<number>(1);
-  
+
   // Fullsheet specific settings
   fullSheetPreset = signal<'large' | 'medium' | 'small' | 'custom'>('medium');
   fullSheetCols = signal<number>(4);
@@ -504,6 +491,8 @@ export class StandardsPrintModalComponent {
   printShowCropMarks = signal<boolean>(true); // Cutting guide lines
 
   // Toggleable Print Fields
+  readonly printBusy = signal(false);
+  readonly printError = signal<string | null>(null);
   printIncludeName = signal(true);
   printIncludeLot = signal(true);
   printIncludePurity = signal(true);
@@ -533,74 +522,12 @@ export class StandardsPrintModalComponent {
   });
 
   // Pre-cut Presets mapping (Tomy)
-  GRID_PRESETS: Record<string, GridPreset> = {
-    tomy_145: {
-      id: 'tomy_145',
-      name: 'Tomy 145 (65 nhãn - 5x13)',
-      rows: 13,
-      cols: 5,
-      width: 38.1,
-      height: 21.2,
-      topMargin: 10.5,
-      leftMargin: 9.5,
-      rowGap: 0,
-      colGap: 2.5,
-      fontSize: 5.5
-    },
-    tomy_138: {
-      id: 'tomy_138',
-      name: 'Tomy 138 (100 nhãn - 5x20)',
-      rows: 20,
-      cols: 5,
-      width: 40.0,
-      height: 14.0,
-      topMargin: 8.5,
-      leftMargin: 5.0,
-      rowGap: 0.5,
-      colGap: 2.5,
-      fontSize: 4.5
-    },
-    tomy_135: {
-      id: 'tomy_135',
-      name: 'Tomy 135 (24 nhãn - 3x8)',
-      rows: 8,
-      cols: 3,
-      width: 47.0,
-      height: 22.0,
-      topMargin: 20.0,
-      leftMargin: 34.5,
-      rowGap: 0,
-      colGap: 2.0,
-      fontSize: 6.5
-    },
-    tomy_146: {
-      id: 'tomy_146',
-      name: 'Tomy 146 (18 nhãn - 3x6)',
-      rows: 6,
-      cols: 3,
-      width: 62.0,
-      height: 42.0,
-      topMargin: 22.0,
-      leftMargin: 12.0,
-      rowGap: 0,
-      colGap: 2.0,
-      fontSize: 8.0
-    }
-  };
-
-  ROLL_PRESETS: Record<string, RollPreset> = {
-    '62x29_ql800': { id: '62x29_ql800', name: 'Brother QL-800 DK-22205 (62 x 29 mm)', width: 62, height: 29, fontSize: 7 },
-    '90x29_ql800': { id: '90x29_ql800', name: 'Brother QL-800 DK-11201 (90 x 29 mm)', width: 90, height: 29, fontSize: 7 },
-    '62x62_ql800': { id: '62x62_ql800', name: 'Brother QL-800 DK-11209 (62 x 62 mm)', width: 62, height: 62, fontSize: 9 },
-    '35x22': { id: '35x22', name: 'Tem chuẩn (35 x 22 mm)', width: 35, height: 22, fontSize: 6 },
-    '22x12': { id: '22x12', name: 'Tem nhỏ (22 x 12 mm)', width: 22, height: 12, fontSize: 4.5 },
-    '50x30': { id: '50x30', name: 'Tem trung (50 x 30 mm)', width: 50, height: 30, fontSize: 8 },
-    '70x50': { id: '70x50', name: 'Tem lớn (70 x 50 mm)', width: 70, height: 50, fontSize: 10 }
-  };
+  GRID_PRESETS = STANDARD_GRID_PRESETS;
+  ROLL_PRESETS = STANDARD_ROLL_PRESETS;
 
   showOverflowWarning = computed(() => {
     const height = this.printLayoutMode() === 'roll' ? this.printHeight() : this.getGridPreset().height;
-    const activeFieldsCount = 
+    const activeFieldsCount =
       (this.printIncludeName() ? 1 : 0) +
       (this.printIncludeLot() ? 1 : 0) +
       (this.printIncludePurity() ? 1 : 0) +
@@ -613,6 +540,7 @@ export class StandardsPrintModalComponent {
   });
 
   onClose() {
+    if (this.printBusy()) return;
     this.closeModal.emit();
   }
 
@@ -640,7 +568,7 @@ export class StandardsPrintModalComponent {
 
       const margin = 10; // 10mm safe print border
       const gap = 1.5;   // 1.5mm space between stickers
-      
+
       const width = (210 - (margin * 2) - (cols - 1) * gap) / cols;
       const height = (297 - (margin * 2) - (rows - 1) * gap) / rows;
 
@@ -684,7 +612,7 @@ export class StandardsPrintModalComponent {
     const startIndex = this.gridStartIndex();
     const copies = this.printCopies();
     const list = this.standardsToPrint();
-    
+
     if (slotIndex < startIndex || slotIndex >= startIndex + (list.length * copies)) {
       return null;
     }
@@ -756,11 +684,30 @@ export class StandardsPrintModalComponent {
     return 1.4;
   }
 
-  printLabel() {
+  async printLabel() {
+    if (this.printBusy()) return;
+    this.printError.set(null);
+    if (this.printLayoutMode() === 'grid') {
+      const preset = this.getGridPreset();
+      const error = labelSheetError({width:preset.width,height:preset.height,cols:preset.cols,rows:preset.rows,left:preset.leftMargin,top:preset.topMargin,gapX:preset.colGap,gapY:preset.rowGap});
+      if (error) { this.printError.set(error); return; }
+    }
     const list = this.standardsToPrint();
     const copies = this.printCopies();
     if (list.length === 0) return;
-    
+    if (!Number.isInteger(copies) || copies < 1) { this.printError.set('Số bản sao phải là số nguyên lớn hơn 0.'); return; }
+    this.printBusy.set(true);
+    try {
+      const references = list.map(item => document.getElementById('print-ref-' + item.id));
+      if (references.some(ref => !ref)) throw new Error('Thiếu nội dung một nhãn. Vui lòng mở lại preview.');
+      await Promise.all(references.map(ref => waitForPrintAssets(ref!)));
+    } catch (error) {
+      this.printError.set(error instanceof Error ? error.message : 'Nhãn chưa sẵn sàng.');
+      this.printBusy.set(false);
+      return;
+    }
+    if (this.destroyed) { this.printBusy.set(false); return; }
+
     // Create print block wrapper
     const printArea = document.createElement('div');
     printArea.id = 'print-area';
@@ -775,11 +722,11 @@ export class StandardsPrintModalComponent {
     if (this.printLayoutMode() === 'roll') {
         // Roll label printer DK (Brother QL-800, Dymo...)
         printArea.style.display = 'block';
-        
+
         for (const stdItem of list) {
-            const ref = document.querySelector(`#print-ref-${stdItem.id} > div`);
-            if (!ref) continue;
-            
+            const ref = document.getElementById('print-ref-' + stdItem.id)?.firstElementChild;
+            if (!ref) { this.printError.set('Thiếu nội dung một nhãn. Vui lòng mở lại preview.'); this.printBusy.set(false); return; }
+
             for (let i = 0; i < copies; i++) {
                 // Wrapper element to isolate flex/grid layout page-breaking issues in Chromium
                 const wrapper = document.createElement('div');
@@ -795,14 +742,14 @@ export class StandardsPrintModalComponent {
                 wrapper.style.overflow = 'hidden';
                 wrapper.style.backgroundColor = 'white';
 
-                const clonedNode = ref.cloneNode(true) as HTMLElement;
+                const clonedNode = clonePrintContent(ref as HTMLElement);
                 clonedNode.style.boxShadow = 'none';
                 clonedNode.style.border = 'none';
                 clonedNode.style.transform = 'none';
                 clonedNode.style.width = '100%';
                 clonedNode.style.height = '100%';
                 clonedNode.style.margin = '0';
-                
+
                 wrapper.appendChild(clonedNode);
                 printArea.appendChild(wrapper);
             }
@@ -812,7 +759,7 @@ export class StandardsPrintModalComponent {
         const preset = this.getGridPreset();
         const labelsPerPage = preset.rows * preset.cols;
         const startIndex = this.gridStartIndex();
-        
+
         // Form sequential label printing queue
         const labelQueue: ReferenceStandard[] = [];
         for (const stdItem of list) {
@@ -869,14 +816,14 @@ export class StandardsPrintModalComponent {
                 const firstPageLabels = Math.min(labelQueue.length, firstPageSlotsAvailable);
                 for (let c = 0; c < firstPageLabels; c++) {
                     const stdItem = labelQueue[queueIndex++];
-                    const ref = document.querySelector(`#print-ref-${stdItem.id} > div`);
-                    if (!ref) continue;
-                    
-                    const clone = ref.cloneNode(true) as HTMLElement;
+                    const ref = document.getElementById('print-ref-' + stdItem.id)?.firstElementChild;
+                    if (!ref) { this.printError.set('Thiếu nội dung một nhãn. Vui lòng mở lại preview.'); this.printBusy.set(false); return; }
+
+                    const clone = clonePrintContent(ref as HTMLElement);
                     clone.style.boxShadow = 'none';
                     clone.style.width = `${preset.width}mm`;
                     clone.style.height = `${preset.height}mm`;
-                    
+
                     // Inject crop borders if fullsheet and crop marks enabled
                     if (this.a4PaperType() === 'fullsheet') {
                         if (this.printShowCropMarks()) {
@@ -887,24 +834,24 @@ export class StandardsPrintModalComponent {
                     } else {
                         clone.style.border = 'none';
                     }
-                    
+
                     pageEl.appendChild(clone);
                 }
             } else {
                 // Subsequent pages
                 const remaining = labelQueue.length - queueIndex;
                 const pageKLabels = Math.min(remaining, labelsPerPage);
-                
+
                 for (let c = 0; c < pageKLabels; c++) {
                     const stdItem = labelQueue[queueIndex++];
-                    const ref = document.querySelector(`#print-ref-${stdItem.id} > div`);
-                    if (!ref) continue;
-                    
-                    const clone = ref.cloneNode(true) as HTMLElement;
+                    const ref = document.getElementById('print-ref-' + stdItem.id)?.firstElementChild;
+                    if (!ref) { this.printError.set('Thiếu nội dung một nhãn. Vui lòng mở lại preview.'); this.printBusy.set(false); return; }
+
+                    const clone = clonePrintContent(ref as HTMLElement);
                     clone.style.boxShadow = 'none';
                     clone.style.width = `${preset.width}mm`;
                     clone.style.height = `${preset.height}mm`;
-                    
+
                     if (this.a4PaperType() === 'fullsheet') {
                         if (this.printShowCropMarks()) {
                             clone.style.border = '0.3mm dashed #cbd5e1';
@@ -914,30 +861,32 @@ export class StandardsPrintModalComponent {
                     } else {
                         clone.style.border = 'none';
                     }
-                    
+
                     pageEl.appendChild(clone);
                 }
             }
-            
+
             wrapper.appendChild(pageEl);
             printArea.appendChild(wrapper);
         }
     }
 
+    this.printBusy.set(true);
+    printArea.style.height = 'auto';
     document.body.appendChild(printArea);
 
     const style = document.createElement('style');
     style.id = 'print-style';
-    
+
     if (this.printLayoutMode() === 'roll') {
         style.textContent = `
             @media print {
                 @page { size: ${this.printWidth()}mm ${this.printHeight()}mm; margin: 0; }
                 #print-area { display: block !important; }
-                body, html { 
-                    margin: 0 !important; 
-                    padding: 0 !important; 
-                    overflow: hidden !important; 
+                body, html {
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    overflow: visible !important;
                     background-color: white !important;
                 }
                 body > *:not(#print-area) { display: none !important; }
@@ -954,10 +903,10 @@ export class StandardsPrintModalComponent {
             @media print {
                 @page { size: A4 portrait; margin: 0; }
                 #print-area { display: block !important; }
-                body, html { 
-                    margin: 0 !important; 
-                    padding: 0 !important; 
-                    overflow: hidden !important; 
+                body, html {
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    overflow: visible !important;
                     background-color: white !important;
                 }
                 body > *:not(#print-area) { display: none !important; }
@@ -970,14 +919,16 @@ export class StandardsPrintModalComponent {
             }
         `;
     }
+    style.textContent += '@media print{html,body{width:auto !important;height:auto !important;overflow:visible !important}#print-area{position:relative !important;inset:auto !important;width:auto !important;height:auto !important;overflow:visible !important}#print-area>div:last-child{break-after:auto !important;page-break-after:auto !important}}';
     document.head.appendChild(style);
 
-    setTimeout(() => {
-        window.print();
-        setTimeout(() => {
-            document.body.removeChild(printArea);
-            document.head.removeChild(style);
-        }, 800);
-    }, 150);
+    try {
+      await waitForPrintAssets(printArea);
+      this.controller = new AbortController();
+      if (this.destroyed) this.controller.abort();
+      await printWithCleanup(window, () => { printArea.remove(); style.remove(); }, this.controller.signal);
+    } catch (error) {
+      this.printError.set(error instanceof Error ? error.message : 'Không mở được bản in.');
+    } finally { printArea.remove(); style.remove(); this.controller = undefined; this.printBusy.set(false); }
   }
 }

@@ -273,10 +273,16 @@ export class InventoryService {
 
   async getStockCard(itemId: string): Promise<StockHistoryItem[]> {
       const ref = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', itemId, 'history');
-      const q = query(ref, orderBy('timestamp', 'desc'), limit(500));
-      const snapshot = await getDocs(q);
-      this.readMonitor.record('getDocs', `artifacts/${this.fb.APP_ID}/inventory/${itemId}/history`, snapshot.size);
-      return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as StockHistoryItem));
+      const rows: StockHistoryItem[] = [];
+      let cursor: QueryDocumentSnapshot | null = null;
+      while (true) {
+        const snapshot: QuerySnapshot<DocumentData> = await getDocs(query(ref, orderBy(documentId()), ...(cursor ? [startAfter(cursor)] : []), limit(500)));
+        this.readMonitor.record('getDocs', `artifacts/${this.fb.APP_ID}/inventory/${itemId}/history`, snapshot.size);
+        rows.push(...snapshot.docs.map(d => ({ id: d.id, ...d.data() } as StockHistoryItem)));
+        if (snapshot.size < 500) return rows;
+        if (rows.length >= 10000) throw new Error('Lịch sử vượt giới hạn đọc của lần xuất. Cần chia phạm vi thẻ kho trước khi in.');
+        cursor = snapshot.docs.at(-1)!;
+      }
   }
 
   // --- TRANSACTIONAL WRITE Operations ---

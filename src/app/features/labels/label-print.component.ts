@@ -1,5 +1,7 @@
+import { SAMPLE_TOMY_TEMPLATES, labelSheetError } from '../../shared/utils/label-paper-catalog';
+import { printWithCleanup, waitForPrintAssets } from '../../shared/utils/print-dom';
 
-import { Component, inject, signal, computed, effect, ViewChild, ElementRef, AfterViewInit, Input } from '@angular/core';
+import { Component, inject, signal, computed, effect, ViewChild, ElementRef, AfterViewInit, Input, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ToastService } from '../../core/services/toast.service';
@@ -13,25 +15,6 @@ import { loadQrCode } from '../../shared/utils/qr-code';
 type PrintMode = 'brother' | 'tomy_a4' | 'plain_a4';
 type DisplayFormat = 'text' | 'barcode' | 'barcode_text' | 'qrcode' | 'qrcode_text' | 'qrcode_hybrid';
 
-interface TomyTemplate {
-  id: string;
-  name: string;
-  cols: number;
-  rows: number;
-  cellW: number;
-  cellH: number;
-  marginTop: number;
-  marginLeft: number;
-  gapX: number;
-  gapY: number;
-}
-
-const TOMY_TEMPLATES: TomyTemplate[] = [
-  { id: 'tomy_145', name: 'Tomy 145 (65 tem - 38x21mm)', cols: 5, rows: 13, cellW: 38, cellH: 21, marginTop: 12, marginLeft: 10, gapX: 0, gapY: 0 },
-  { id: 'tomy_149', name: 'Tomy 149 (21 tem - 70x42.5mm)', cols: 3, rows: 7, cellW: 70, cellH: 42.5, marginTop: 0, marginLeft: 0, gapX: 0, gapY: 0 },
-  { id: 'tomy_144', name: 'Tomy 144 (30 tem - 67x28mm)', cols: 3, rows: 10, cellW: 67, cellH: 28, marginTop: 8.5, marginLeft: 4.5, gapX: 0, gapY: 0 },
-  { id: 'tomy_109', name: 'Tomy 109 (96 tem - 22x14mm)', cols: 8, rows: 12, cellW: 22, cellH: 14, marginTop: 64.5, marginLeft: 17, gapX: 0, gapY: 0 },
-];
 
 interface LabelCell {
   subLabels: string[];
@@ -70,8 +53,12 @@ interface LabelPage {
     :host-context(.dark) .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; }
   `]
 })
-export class LabelPrintComponent implements AfterViewInit {
+export class LabelPrintComponent implements AfterViewInit, OnDestroy {
+  private destroyed = false;
+  private controller?: AbortController;
+  ngOnDestroy(): void { this.destroyed = true; this.controller?.abort(); this.inputSubject.complete(); }
   Math = Math;
+  readonly printBusy = signal(false);
   toast = inject(ToastService);
   state = inject(StateService);
 
@@ -121,7 +108,7 @@ export class LabelPrintComponent implements AfterViewInit {
   padRight = signal<number>(2);
   
   // Tomy Config
-  tomyTemplates = TOMY_TEMPLATES;
+  tomyTemplates = SAMPLE_TOMY_TEMPLATES;
   selectedTomyId = signal<string>('tomy_145');
   
   // Plain A4 Config
@@ -810,59 +797,31 @@ export class LabelPrintComponent implements AfterViewInit {
   }
 
   // --- HELPER: Print HTML via hidden iframe (bypass popup blocker) ---
-  private printViaIframe(htmlContent: string) {
-      // Remove any existing print iframe
-      const existingFrame = document.getElementById('lims-print-frame');
-      if (existingFrame) existingFrame.remove();
-
+  private async printViaIframe(htmlContent: string): Promise<void> {
+      if (this.destroyed) return;
       const iframe = document.createElement('iframe');
       iframe.id = 'lims-print-frame';
       iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:none;';
       document.body.appendChild(iframe);
-
-      const doc = iframe.contentDocument || iframe.contentWindow?.document;
-      if (!doc) {
-          this.toast.show('Không thể tạo khung in. Thử lại.', 'error');
-          return;
-      }
-
-      doc.open();
-      doc.write(htmlContent);
-      doc.close();
-
-      // Wait for iframe content (especially images) to fully load before printing
-      const iframeWin = iframe.contentWindow;
-      if (!iframeWin) return;
-
-      const doPrint = () => {
-          try {
-              iframeWin.focus();
-              iframeWin.print();
-          } catch (e) {
-              console.error('Print error:', e);
-              this.toast.show('Lỗi khi in. Vui lòng thử lại.', 'error');
-          }
-          // Clean up after print dialog closes
-          setTimeout(() => iframe.remove(), 2000);
-      };
-
-      const format = this.displayFormat();
-      if (format !== 'text') {
-          // Images need time to render - use load event with fallback
-          let loaded = false;
-          iframeWin.onload = () => {
-              if (!loaded) { loaded = true; setTimeout(doPrint, 200); }
-          };
-          // Fallback in case onload already fired
-          setTimeout(() => { if (!loaded) { loaded = true; doPrint(); } }, 800);
-      } else {
-          // Text-only: can print immediately after DOM write
-          setTimeout(doPrint, 100);
-      }
+      try {
+          const doc = iframe.contentDocument;
+          const frameWindow = iframe.contentWindow;
+          if (!doc || !frameWindow) throw new Error('Không thể tạo khung in.');
+          doc.open(); doc.write(htmlContent); doc.close();
+          await waitForPrintAssets(doc.body);
+          this.controller = new AbortController();
+          if (this.destroyed) this.controller.abort();
+          await printWithCleanup(frameWindow, () => iframe.remove(), this.controller.signal, window);
+      } catch (error) {
+          this.toast.show(error instanceof Error ? error.message : 'Lỗi khi in. Vui lòng thử lại.', 'error');
+      } finally { iframe.remove(); this.controller = undefined; this.printBusy.set(false); }
   }
 
   // --- BROTHER PRINTING LOGIC ---
   async printBrother() {
+      if (this.printBusy()) return;
+      this.printBusy.set(true);
+      try {
       const pages = this.brotherPages();
       if (pages.length === 0) return;
 
@@ -974,17 +933,24 @@ export class LabelPrintComponent implements AfterViewInit {
 
       htmlContent += `</body></html>`;
 
-      this.printViaIframe(htmlContent);
+      await this.printViaIframe(htmlContent);
+      } catch (error) { this.toast.show(error instanceof Error ? error.message : 'Không chuẩn bị được nhãn.', 'error'); }
+      finally { this.printBusy.set(false); }
   }
 
   // --- A4 PRINTING LOGIC (Direct Window Print) ---
   async printA4() {
+      if (this.printBusy()) return;
+      this.printBusy.set(true);
+      try {
+      const dims = this.layoutDims();
+      const error = labelSheetError({width:dims.cellW,height:dims.cellH,cols:dims.cols,rows:dims.rows,left:this.marginLeft(),top:this.marginTop(),gapX:this.gapX(),gapY:this.gapY()});
+      if (error) { this.toast.show(error, 'error'); return; }
       const pages = this.pages();
       const validPages = pages.filter(p => p.cells.some(c => !c.isEmpty) || p.pageIndex === 0);
       
       if (this.rawInputCount() === 0 && this.skippedCells() === 0) return;
 
-      const dims = this.layoutDims();
       const isPlain = this.printMode() === 'plain_a4';
       const showCut = isPlain && this.showCutLines();
 
@@ -1103,6 +1069,8 @@ export class LabelPrintComponent implements AfterViewInit {
 
       htmlContent += `</body></html>`;
 
-      this.printViaIframe(htmlContent);
+      await this.printViaIframe(htmlContent);
+      } catch (error) { this.toast.show(error instanceof Error ? error.message : 'Không chuẩn bị được nhãn.', 'error'); }
+      finally { this.printBusy.set(false); }
   }
 }

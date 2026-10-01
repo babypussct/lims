@@ -55,7 +55,8 @@ test('shared overlays across the application enforce centralized z-layer-* utili
   assert.match(scannerSource, /z-layer-scanner-preview/);
 
   const printSource = readFileSync(resolve(root, 'src/app/shared/components/print-preview-modal/print-preview-modal.component.ts'), 'utf8');
-  assert.match(printSource, /z-layer-scanner-preview/);
+  assert.match(printSource, /AppModalShellComponent/);
+  assert.match(printSource, /<app-modal-shell/);
 
   const modalShellSource = readFileSync(resolve(root, 'src/app/shared/components/ui/modal-shell/modal-shell.component.ts'), 'utf8');
   assert.match(modalShellSource, /z-layer-modal/);

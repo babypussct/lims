@@ -4,7 +4,6 @@
   "src/app/core/layout/bottom-nav.component.ts": 1,
   "src/app/features/auth/forgot-password-modal.component.ts": 1,
   "src/app/features/auth/password-setup.component.ts": 1,
-  "src/app/features/checklist/daily-checklist.component.html": 1,
   "src/app/features/documents/document-preview-modal.component.ts": 1,
   "src/app/features/inventory/inventory.component.html": 1,
   "src/app/features/requests/request-list.component.ts": 1,
@@ -20,7 +19,6 @@
   "src/app/shared/components/global-scanner/global-scanner.component.ts": 1,
   "src/app/shared/components/gs1-info-modal/gs1-info-modal.component.ts": 1,
   "src/app/shared/components/notification-panel/notification-panel.component.ts": 1,
-  "src/app/shared/components/print-preview-modal/print-preview-modal.component.ts": 2,
   "src/app/shared/components/progress-overlay/progress-overlay.component.ts": 1,
   "src/app/shared/components/pwa-install-prompt.component.ts": 2,
   "src/app/shared/components/quick-generate-sample-modal/quick-generate-sample-modal.component.ts": 1

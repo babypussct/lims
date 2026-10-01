@@ -25,6 +25,8 @@ import { DutyShiftSwapRequestComponent } from './duty-shift-swap-request.compone
 import { DutyShiftSwapService } from './duty-shift-swap.service';
 import { DutyStatsChartComponent } from './duty-stats-chart.component';
 import { DutyTsvImportComponent } from './duty-tsv-import.component';
+import { A4DocumentPreviewComponent } from '../../shared/components/a4-document-preview/a4-document-preview.component';
+import { A4Document } from '../../shared/utils/a4-document';
 import { DutyWeekViewComponent } from './duty-week-view.component';
 import {
   activeDutySchedules,
@@ -76,11 +78,13 @@ interface DutyCalendarCell {
     DutyStatsChartComponent,
     DutyTsvImportComponent,
     DutyWeekViewComponent,
+    A4DocumentPreviewComponent,
   ],
   templateUrl: './duty-stats.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DutyStatsComponent implements OnInit, OnDestroy {
+  readonly printDocument = signal<A4Document | null>(null);
   readonly duty = inject(DutyScheduleService);
   readonly dutySwap = inject(DutyShiftSwapService);
   private readonly auth = inject(AuthService);
@@ -893,11 +897,7 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
   }
 
   printSchedule(): void {
-    const printContainer = document.getElementById('print-container');
-    if (!printContainer) {
-      this.toast.show('Không tìm thấy vùng in của ứng dụng.', 'error');
-      return;
-    }
+    if (this.duty.loadingSchedules()) { this.toast.show('Đợi tải đủ lịch trước khi xem bản in.', 'warning'); return; }
 
     const myStaffId = this.myStaffId();
     const schedules = activeDutySchedules(this.duty.schedules())
@@ -935,7 +935,8 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
       timeZone: 'Asia/Ho_Chi_Minh',
     }).format(new Date());
 
-    printContainer.innerHTML = `
+    const source = document.createElement('div');
+    source.innerHTML = `
       <style>
         @media print {
           @page { size: A4 landscape; margin: 10mm; }
@@ -983,18 +984,17 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
         </footer>
       </div>`;
 
-    document.body.classList.add('duty-schedule-printing');
-    const cleanup = () => {
-      document.body.classList.remove('duty-schedule-printing');
-      printContainer.innerHTML = '';
-    };
-    window.addEventListener('afterprint', cleanup, { once: true });
-    try {
-      window.print();
-    } catch (error) {
-      cleanup();
-      this.toast.show(`Không thể mở hộp thoại in: ${this.errorMessage(error)}`, 'error');
-    }
+    const css = source.querySelector('style')!.textContent!;
+    this.printDocument.set({
+      title: 'Xem & In lịch trực', subtitle: title, notice: '', preparedAt: generatedAt,
+      sections: [], orientation: 'landscape', fileName: 'LIMS_Lich_truc.pdf',
+      html: {
+        header: source.querySelector<HTMLElement>('.duty-print-header')!,
+        table: source.querySelector<HTMLTableElement>('.duty-print-table') || undefined,
+        after: Array.from(source.querySelectorAll<HTMLElement>('.duty-print-empty, .duty-print-note, .duty-print-signatures')),
+        css: css.slice(css.indexOf('.duty-print-document')) + '\n.a4-html-root{font-size:10.5pt}.a4-html-root .duty-print-header{margin-bottom:4mm}',
+      },
+    });
   }
 
   private refreshRange(): void {

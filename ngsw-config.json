@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.10.01-b05",
-    "title": "Truy xuất đầy đủ lịch sử sử dụng chất chuẩn",
+    "version": "v26.10.01-b06",
+    "title": "Nâng cấp xem trước và in hồ sơ LIMS",
     "features": [
-      "Nhận biết người sử dụng ngay tại từng mốc nhật ký và mở phiếu mượn bằng một lần nhấn.",
-      "Tra cứu phiếu mượn hoặc từng lần sử dụng chất chuẩn trong Truy xuất nguồn gốc.",
-      "Hiển thị ảnh đại diện, lượng dùng và cảnh báo hết chuẩn tại từng lần sử dụng; ghi rõ người nhập bù hồ sơ.",
-      "Xem thông tin phiếu mượn cùng lịch sử gửi yêu cầu, phê duyệt, sử dụng và trả chất chuẩn theo quyền được cấp.",
-      "Sắp xếp nhật ký theo thời điểm sử dụng thực tế và cho phép tải thêm lịch sử của phiếu."
+      "Xem trước trang giấy trước khi in phiếu pha chế, lịch trực, bảng theo dõi mẫu và các hồ sơ nghiệp vụ.",
+      "Phiếu dài tự phân trang, giữ đầy đủ nội dung và hỗ trợ tải PDF theo bố cục đã xem.",
+      "Phiếu Smart Prep cho năm chế độ tính, có thông tin phương pháp, lượng dự tính/thực tế, công thức, cảnh báo và vùng ký tay.",
+      "In thẻ kho đã đối soát, phiếu kiểm kê theo phạm vi đang lọc và nhãn hóa chất sang chiết A4 tự cắt.",
+      "In phiếu bàn giao mẫu để ghi nhận thực tế, thông tin cấu hình SOP và hồ sơ truy xuất trong phạm vi dữ liệu đã tải."
     ]
   },
   "assetGroups": [

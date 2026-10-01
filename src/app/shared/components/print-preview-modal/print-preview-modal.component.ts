@@ -1,478 +1,245 @@
-import { Component, inject, signal, effect, computed } from '@angular/core';
+import { Component, inject, signal, effect, computed, ViewChild, ElementRef, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { DomSanitizer } from '@angular/platform-browser';
 import { PrintService, PrintOptions } from '../../../core/services/print.service';
-import { PrintLayoutComponent } from '../print-layout/print-layout.component';
+import { PrintLayoutComponent, PrintLayoutState } from '../print-layout/print-layout.component';
+import { AppModalShellComponent } from '../ui/modal-shell/modal-shell.component';
+import { AppButtonComponent } from '../ui/button/button.component';
 import { ToastService } from '../../../core/services/toast.service';
 import { timestampToDate } from '../../utils/timestamp';
+import { downloadPreparedA4, printPreparedA4 } from '../../utils/a4-output';
+import { openInNewTab } from '../../utils/browser-navigation';
 
 @Component({
   selector: 'app-print-preview-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, PrintLayoutComponent],
+  imports: [CommonModule, FormsModule, PrintLayoutComponent, AppModalShellComponent, AppButtonComponent],
   template: `
-    <!-- Chế Độ 1: Xem trước & In ấn Phiếu chạy A4 Cục bộ -->
     @if (printService.isPreviewOpen()) {
-        <div class="fixed inset-0 z-layer-scanner-preview flex items-center justify-center bg-slate-900/95 backdrop-blur-md p-4 fade-in print-modal-overlay" (click)="close()">
-            <div class="bg-white w-full max-w-6xl h-[90vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-bounce-in relative print-modal-content" (click)="$event.stopPropagation()">
-                
-                <!-- HEADER (Hidden when printing) -->
-                <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white shrink-0 z-10 print-hidden-ui">
-                    <h3 class="font-black text-slate-800 text-lg flex items-center gap-2">
-                        <i class="fa-solid fa-print text-fuchsia-600"></i> Xem trước khi in (A4)
-                    </h3>
-                    <div class="flex gap-2">
-                        <div class="flex items-center gap-1 bg-slate-100 rounded-lg p-1 border border-slate-200">
-                            <button (click)="zoomOut()" class="w-8 h-8 flex items-center justify-center rounded hover:bg-white transition text-slate-600"><i class="fa-solid fa-minus"></i></button>
-                            <span class="text-xs font-bold w-10 text-center">{{zoomLevel()}}%</span>
-                            <button (click)="zoomIn()" class="w-8 h-8 flex items-center justify-center rounded hover:bg-white transition text-slate-600"><i class="fa-solid fa-plus"></i></button>
-                        </div>
-                        <button (click)="close()" class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 hover:text-red-500 transition"><i class="fa-solid fa-xmark text-xl"></i></button>
-                    </div>
-                </div>
-
-                <!-- BODY (Split Layout) -->
-                <div class="flex-1 flex overflow-hidden">
-                    
-                    <!-- LEFT: Config Panel (Hidden when printing) -->
-                    <div class="w-72 bg-slate-50 border-r border-slate-200 p-5 flex flex-col gap-6 overflow-y-auto shrink-0 print-hidden-ui">
-                        
-                        <!-- Toggle Options -->
-                        <div class="space-y-3">
-                            <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Tùy Chọn Hiển Thị</h4>
-                            
-                            <label class="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-fuchsia-300 transition">
-                                <span class="text-sm font-bold text-slate-700">Tiêu đề (Header)</span>
-                                <input type="checkbox" [(ngModel)]="options.showHeader" class="w-5 h-5 accent-fuchsia-600 rounded">
-                            </label>
-
-                            <label class="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-fuchsia-300 transition">
-                                <span class="text-sm font-bold text-slate-700">Chân trang</span>
-                                <input type="checkbox" [(ngModel)]="options.showFooter" class="w-5 h-5 accent-fuchsia-600 rounded">
-                            </label>
-
-                            <label class="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-fuchsia-300 transition">
-                                <span class="text-sm font-bold text-slate-700">Ký tên điện tử</span>
-                                <input type="checkbox" [(ngModel)]="options.showSignature" class="w-5 h-5 accent-fuchsia-600 rounded">
-                            </label>
-
-                            <label class="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-fuchsia-300 transition">
-                                <span class="text-sm font-bold text-slate-700">Đường cắt</span>
-                                <input type="checkbox" [(ngModel)]="options.showCutLine" class="w-5 h-5 accent-fuchsia-600 rounded">
-                            </label>
-                        </div>
-
-                        <div class="mt-auto pt-6 border-t border-slate-200 flex flex-col gap-3">
-                            <button (click)="doPrint()" 
-                                    class="w-full py-4 bg-fuchsia-600 hover:bg-fuchsia-700 text-white rounded-xl font-bold shadow-lg shadow-fuchsia-200 transition transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2">
-                                <i class="fa-solid fa-print text-lg"></i>
-                                <span>IN NGAY</span>
-                            </button>
-                            
-                            <button (click)="doPdf()" [disabled]="isGeneratingPdf()"
-                                    class="w-full py-3 bg-white border border-fuchsia-200 text-fuchsia-700 hover:bg-fuchsia-50 rounded-xl font-bold transition flex items-center justify-center gap-2 disabled:opacity-50">
-                                @if(isGeneratingPdf()) { <i class="fa-solid fa-spinner fa-spin"></i> } 
-                                @else { <i class="fa-solid fa-file-pdf"></i> }
-                                <span>Tải PDF chất lượng cao</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- RIGHT: Preview Canvas -->
-                    <div class="flex-1 bg-slate-200 overflow-auto flex justify-center p-8 relative custom-scrollbar print-scale-reset">
-                        <div id="print-area" class="origin-top transition-transform duration-200 ease-out shadow-2xl bg-white print-scale-reset"
-                             [style.transform]="'scale(' + (zoomLevel()/100) + ')'">
-                             <app-print-layout [jobs]="printService.previewJobs()" [options]="options"></app-print-layout>
-                        </div>
-                    </div>
-                </div>
+      <app-modal-shell title="Xem trước phiếu A4" size="xl"
+        [description]="printService.previewJobs().length + ' phiếu · ' + layoutStatus().pageCount + ' trang A4'"
+        [closeDisabled]="busy()" (closed)="close()">
+        <div modalBody class="print-workspace flex min-h-0 flex-col gap-4 lg:flex-row" style="height:min(65vh,760px)">
+          <details class="shrink-0 rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800 lg:w-56" open>
+            <summary class="cursor-pointer text-sm font-bold text-slate-700 dark:text-slate-200">Tùy chọn bản in</summary>
+            <div class="mt-3 grid grid-cols-2 gap-3 text-sm text-slate-700 dark:text-slate-200 lg:grid-cols-1">
+              @for (option of optionLabels; track option.key) {
+                <label class="flex items-center gap-2">
+                  <input type="checkbox" [ngModel]="options[option.key]" (ngModelChange)="setOption(option.key, $event)"
+                    [disabled]="busy()" class="h-4 w-4 accent-indigo-600">
+                  {{option.label}}
+                </label>
+              }
             </div>
+            <p class="mt-4 text-xs leading-relaxed text-slate-500 dark:text-slate-400">Phiếu ngắn ghép đôi. Phiếu dài được phân trang theo dòng của bảng.</p>
+          </details>
+          <div class="flex min-h-0 min-w-0 flex-1 flex-col gap-2">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <span role="status" class="text-xs text-slate-600 dark:text-slate-300">
+                {{layoutStatus().ready ? 'Bản in đã sẵn sàng' : layoutStatus().error ? 'Bản in chưa sẵn sàng' : 'Đang chuẩn bị bản in và mã QR…'}}
+              </span>
+              <div class="flex items-center gap-2">
+                <app-button variant="ghost" size="sm" (click)="zoomOut()" [disabled]="busy()" title="Thu nhỏ">
+                  <i class="fa-solid fa-minus" aria-hidden="true"></i><span class="sr-only">Thu nhỏ</span>
+                </app-button>
+                <span class="w-12 text-center text-xs text-slate-600 dark:text-slate-300">{{zoomLevel()}}%</span>
+                <app-button variant="ghost" size="sm" (click)="zoomIn()" [disabled]="busy()" title="Phóng to">
+                  <i class="fa-solid fa-plus" aria-hidden="true"></i><span class="sr-only">Phóng to</span>
+                </app-button>
+                <app-button variant="secondary" size="sm" (click)="fitWidth()" [disabled]="busy()">Vừa chiều rộng</app-button>
+              </div>
+            </div>
+            @if (layoutStatus().error) {
+              <div role="alert" class="rounded-xl bg-rose-50 p-3 text-sm text-rose-800 dark:bg-rose-950/40 dark:text-rose-200">
+                {{layoutStatus().error}}
+                <app-button variant="secondary" size="sm" (click)="layout?.retryLayout()" [disabled]="busy()">Thử lại</app-button>
+              </div>
+            }
+            <div #previewViewport class="min-h-0 flex-1 overflow-auto rounded-xl bg-slate-200 p-3 dark:bg-slate-950">
+              <div [style.width.px]="794 * zoomLevel()/100" [style.height.px]="(1123 + 16) * layoutStatus().pageCount * zoomLevel()/100" class="mx-auto">
+                <div class="origin-top-left" [style.transform]="'scale(' + zoomLevel()/100 + ')'">
+                  <app-print-layout [jobs]="printService.previewJobs()" [options]="options"
+                    [preparedAt]="printService.previewPreparedAt()" (layoutState)="onLayoutState($event)"></app-print-layout>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
+        <div modalFooter class="print-workspace flex w-full flex-wrap justify-end gap-2">
+          <app-button variant="secondary" (click)="close()" [disabled]="busy()">Đóng</app-button>
+          <app-button variant="secondary" (click)="doPdf()" [loading]="isGeneratingPdf()" [disabled]="!layoutStatus().ready || printService.isPrinting()">
+            <i class="fa-solid fa-file-pdf" aria-hidden="true"></i> Tải PDF
+          </app-button>
+          <app-button class="print-primary" (click)="doPrint()" [loading]="printService.isPrinting()" [disabled]="!layoutStatus().ready || isGeneratingPdf()">
+            <i class="fa-solid fa-print" aria-hidden="true"></i> In
+          </app-button>
+        </div>
+      </app-modal-shell>
     }
 
-    <!-- Chế Độ 2: Trình Quản Lý & Xem Báo Cáo PDF Drive (Cloud PDF Viewer) -->
     @if (printService.isPreviewPdfOpen()) {
-        <div class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center z-layer-scanner-preview p-4 fade-in" (click)="closePdfModal()">
-            <div class="relative bg-white dark:bg-slate-900 shadow-2xl overflow-hidden flex flex-col border border-slate-200/50 dark:border-slate-800 transition-all duration-300 ease-out"
-                [class.w-full]="isFullscreen()" [class.h-full]="isFullscreen()" [class.max-w-none]="isFullscreen()" [class.rounded-none]="isFullscreen()"
-                [class.max-w-6xl]="!isFullscreen()" [class.w-full]="!isFullscreen()" [class.h-[90vh]]="!isFullscreen()" [class.rounded-2xl]="!isFullscreen()"
-                (click)="$event.stopPropagation()">
-                
-                <!-- Modal Header -->
-                <div class="bg-gradient-to-r from-slate-900 via-fuchsia-950 to-slate-900 text-white px-4 py-2 flex flex-col sm:flex-row sm:items-center justify-between shrink-0 border-b border-fuchsia-500/20 shadow-md gap-3">
-                    <div class="flex items-center gap-2.5 min-w-0">
-                        <div class="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center border border-red-500/20 shrink-0">
-                            <i class="fa-solid fa-file-pdf text-red-400 text-sm"></i>
-                        </div>
-                        <div class="min-w-0 flex flex-col gap-0.5">
-                            <div class="flex items-center gap-2 flex-wrap min-w-0">
-                                <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/30 uppercase tracking-wider shrink-0">
-                                    {{ printService.pdfVersion() === 0 ? 'CoA' : 'Báo cáo' }}
-                                </span>
-                                <h4 class="text-xs sm:text-sm font-extrabold m-0 tracking-tight text-white truncate max-w-[200px] sm:max-w-[300px] md:max-w-[450px]" [title]="printService.pdfTitle()">
-                                    {{ printService.pdfTitle() }}
-                                </h4>
-                            </div>
-                            
-                            @if (printService.pdfVersion() > 0) {
-                                <div class="flex items-center gap-2 text-[10px] text-slate-455 flex-wrap">
-                                    <span class="flex items-center gap-1">
-                                        <i class="fa-solid fa-code-branch text-fuchsia-400"></i>
-                                        <span class="text-slate-350">v{{ printService.pdfVersion() }}</span>
-                                    </span>
-                                    <span class="text-slate-650 font-bold hidden sm:inline">•</span>
-                                    <span class="flex items-center gap-1">
-                                        <i class="fa-solid fa-user text-fuchsia-350"></i>
-                                        <span class="text-slate-300 font-semibold">{{ printService.pdfAnalyst() }}</span>
-                                    </span>
-                                    @if (printService.pdfPublishDate()) {
-                                        <span class="text-slate-650 font-bold hidden md:inline">•</span>
-                                        <span class="flex items-center gap-1 hidden md:inline-flex">
-                                            <i class="fa-solid fa-clock text-blue-400"></i>
-                                            <span class="text-slate-300">{{ formatPublishDate(printService.pdfPublishDate()) }}</span>
-                                        </span>
-                                    }
-                                </div>
-                            }
-                        </div>
-                    </div>
-                    
-                    <!-- Right Side Actions -->
-                    <div class="flex items-center gap-1.5 flex-wrap sm:flex-nowrap justify-end shrink-0">
-                        <!-- Google Docs Button -->
-                        @if (printService.docsUrl()) {
-                            <a [href]="printService.docsUrl()" target="_blank" rel="noopener noreferrer"
-                               class="px-2.5 py-1.5 text-xs font-bold text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-all duration-150 flex items-center gap-1.5 no-underline active:scale-95 shadow-sm cursor-pointer border border-slate-700"
-                               title="Mở Google Docs">
-                                <i class="fa-solid fa-file-word text-blue-400"></i>
-                                <span class="hidden md:inline">GOOGLE DOCS</span>
-                                <span class="inline md:hidden">Docs</span>
-                            </a>
-                        }
-
-                        <!-- Print Button -->
-                        <button (click)="printPdf()" [disabled]="printService.isPrinting()"
-                                class="px-2.5 py-1.5 text-xs font-bold text-slate-200 bg-white/10 hover:bg-white/20 disabled:opacity-55 rounded-lg transition-all duration-150 flex items-center gap-1.5 active:scale-95 border-none cursor-pointer"
-                                title="In tài liệu">
-                            @if (printService.isPrinting()) {
-                                <i class="fa-solid fa-circle-notch fa-spin text-fuchsia-400"></i>
-                                <span>ĐANG IN...</span>
-                            } @else {
-                                <i class="fa-solid fa-print"></i>
-                                <span class="hidden md:inline">IN NHANH</span>
-                                <span class="inline md:hidden">In</span>
-                            }
-                        </button>
-
-                        <!-- Download Button -->
-                        <button (click)="downloadPdf()" [disabled]="printService.isDownloading()"
-                                class="px-2.5 py-1.5 text-xs font-bold text-slate-200 bg-white/10 hover:bg-white/20 disabled:opacity-55 rounded-lg transition-all duration-150 flex items-center gap-1.5 active:scale-95 border-none cursor-pointer"
-                                title="Tải PDF xuống">
-                            @if (printService.isDownloading()) {
-                                <i class="fa-solid fa-circle-notch fa-spin text-fuchsia-400"></i>
-                                <span>ĐANG TẢI...</span>
-                            } @else {
-                                <i class="fa-solid fa-download"></i>
-                                <span class="hidden md:inline">TẢI TÀI LIỆU</span>
-                                <span class="inline md:hidden">Tải tệp</span>
-                            }
-                        </button>
-
-                        <!-- Copy Link Button -->
-                        <button (click)="copyPdfLink()" 
-                                class="px-2.5 py-1.5 text-xs font-bold text-slate-200 bg-white/10 hover:bg-white/20 rounded-lg transition-all duration-150 flex items-center gap-1.5 active:scale-95 border-none cursor-pointer"
-                                title="Sao chép liên kết PDF">
-                            <i class="fa-solid" [class.fa-copy]="!isCopying()" [class.fa-check]="isCopying()"></i>
-                            <span class="hidden md:inline">{{ isCopying() ? 'ĐÃ SAO CHÉP' : 'SAO CHÉP LIÊN KẾT' }}</span>
-                            <span class="inline md:hidden">{{ isCopying() ? 'Đã sao chép' : 'Sao chép' }}</span>
-                        </button>
-
-                        <div class="h-5 w-[1px] bg-white/20 mx-0.5 hidden sm:block"></div>
-
-                        <!-- Maximize Toggle Button -->
-                        <button (click)="toggleFullscreen()" 
-                                class="w-8 h-8 rounded-lg hover:bg-white/10 text-white/80 hover:text-white flex items-center justify-center transition active:scale-95 border-none cursor-pointer"
-                                [title]="isFullscreen() ? 'Thu nhỏ cửa sổ' : 'Phóng to cửa sổ'">
-                            <i class="fa-solid" [class.fa-expand]="!isFullscreen()" [class.fa-compress]="isFullscreen()"></i>
-                        </button>
-
-                        <!-- Close Button -->
-                        <button (click)="closePdfModal()" 
-                                class="w-8 h-8 rounded-lg hover:bg-white/10 text-white/80 hover:text-white flex items-center justify-center transition active:scale-95 border border-white/10 cursor-pointer"
-                                title="Đóng xem trước">
-                            <i class="fa-solid fa-xmark text-base"></i>
-                        </button>
-                    </div>
-                </div>
-                
-                <!-- Modal Body -->
-                <div class="flex-1 bg-slate-100 dark:bg-slate-950 relative">
-                    <!-- Inline loading overlay when recreating a report from inside the modal -->
-                    @if (isPublishing()) {
-                        <div class="absolute inset-0 bg-slate-900/70 backdrop-blur-sm flex flex-col items-center justify-center text-white gap-3 z-50 animate-in fade-in duration-200">
-                            <i class="fa-solid fa-arrows-rotate fa-spin text-4xl text-fuchsia-400"></i>
-                            <span class="text-xs font-bold uppercase tracking-widest text-fuchsia-200">Đang tạo lại bản báo cáo v{{ printService.pdfVersion() + 1 }}...</span>
-                            <span class="text-[10px] text-slate-400">Vui lòng đợi trong giây lát, bảng xem trước sẽ tự cập nhật.</span>
-                        </div>
-                    }
-
-                    @if (printService.isPdfBlobLoading()) {
-                        <div class="w-full h-full flex flex-col items-center justify-center text-slate-400 gap-3 p-4">
-                            <i class="fa-solid fa-spinner fa-spin text-4xl text-fuchsia-500"></i>
-                            <span class="text-sm font-bold uppercase tracking-wider text-slate-650 dark:text-slate-355">Đang tải tài liệu từ Drive...</span>
-                        </div>
-                    } @else if (pdfModalSafeUrl()) {
-                        @if (printService.pdfPreviewType() === 'image') {
-                            <div class="w-full h-full flex items-center justify-center overflow-auto bg-slate-950 p-4">
-                                <img [src]="rawPdfUrl()" class="max-w-full max-h-full object-contain shadow-2xl rounded-lg animate-in zoom-in-95 duration-200">
-                            </div>
-                        } @else {
-                            <iframe [src]="pdfModalSafeUrl()" class="w-full h-full border-none rounded-b-2xl bg-white"></iframe>
-                        }
-                    } @else {
-                        <div class="w-full h-full flex flex-col items-center justify-center text-slate-400 gap-4 p-6">
-                            <div class="w-16 h-16 rounded-2xl bg-amber-500/10 flex items-center justify-center">
-                                <i class="fa-solid fa-triangle-exclamation text-2xl text-amber-500"></i>
-                            </div>
-                            <div class="text-center">
-                                <p class="text-sm font-bold text-slate-700 dark:text-slate-200 mb-1">Cần xác thực Google Drive</p>
-                                <p class="text-xs text-slate-500 max-w-xs leading-relaxed">
-                                    Phiên xác thực đã hết hạn. Nhấn nút bên dưới để đăng nhập lại.
-                                </p>
-                            </div>
-                            <button (click)="retryLoadBlob()"
-                                    class="px-5 py-2.5 bg-fuchsia-600 hover:bg-fuchsia-700 text-white text-xs font-bold rounded-xl transition flex items-center gap-2 active:scale-95">
-                                <i class="fa-solid fa-rotate-right"></i>
-                                <span>Xác Thực & Tải Lại</span>
-                            </button>
-                            <p class="text-[11px] text-slate-400">
-                                Hoặc nhấn <strong class="text-fuchsia-500">TẢI TÀI LIỆU</strong> / <strong class="text-fuchsia-500">GOOGLE DOCS</strong> ở trên.
-                            </p>
-                        </div>
-                    }
-                </div>
-            </div>
+      <app-modal-shell [title]="printService.pdfTitle() || 'Xem tài liệu'" [size]="isFullscreen() ? '2xl' : 'xl'"
+        [description]="pdfDescription()" [closeDisabled]="printService.isPrinting() || isPublishing()" (closed)="closePdfModal()">
+        <div modalBody class="print-workspace flex min-h-0 flex-col gap-3" [style.height]="isFullscreen() ? '72vh' : '60vh'">
+          <div class="flex flex-wrap items-center gap-2">
+            @if (printService.docsUrl()) {
+              <a [href]="printService.docsUrl()" target="_blank" rel="noopener noreferrer"
+                class="rounded-xl border border-slate-200 px-3 py-2 text-sm font-bold text-indigo-600 dark:border-slate-700 dark:text-indigo-300">
+                <i class="fa-solid fa-file-word" aria-hidden="true"></i> Google Docs
+              </a>
+            }
+            <app-button variant="secondary" size="sm" (click)="copyPdfLink()">
+              <i class="fa-solid fa-copy" aria-hidden="true"></i> {{isCopying() ? 'Đã sao chép' : 'Sao chép liên kết'}}
+            </app-button>
+            <app-button variant="ghost" size="sm" (click)="toggleFullscreen()">{{isFullscreen() ? 'Thu gọn' : 'Mở rộng'}}</app-button>
+            @if (printService.onRepublishCallback()) {
+              <app-button variant="secondary" size="sm" (click)="triggerRepublishFromModal()" [loading]="isPublishing()" [disabled]="printService.isPrinting()">
+                <i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i> Tạo lại báo cáo
+              </app-button>
+            }
+          </div>
+          <div class="min-h-0 flex-1 overflow-auto rounded-xl bg-slate-100 dark:bg-slate-950">
+            @if (printService.isPdfBlobLoading() || isPublishing()) {
+              <div role="status" class="flex h-full items-center justify-center gap-3 p-6 text-slate-600 dark:text-slate-300">
+                <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> {{isPublishing() ? 'Đang tạo báo cáo…' : 'Đang tải tài liệu…'}}
+              </div>
+            } @else if (pdfModalSafeUrl()) {
+              @if (printService.pdfPreviewType() === 'image') {
+                <img [src]="rawPdfUrl()" alt="Chứng chỉ phân tích" class="mx-auto max-h-full max-w-full object-contain">
+              } @else {
+                <iframe [src]="pdfModalSafeUrl()" title="Bản xem trước tài liệu PDF" class="h-full w-full border-0 bg-white"></iframe>
+              }
+            } @else {
+              <div class="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
+                <p class="font-bold text-slate-700 dark:text-slate-200">Chưa tải được tài liệu</p>
+                <p class="text-sm text-slate-500 dark:text-slate-400">Thử tải lại hoặc xác thực Google Drive để tiếp tục.</p>
+                <app-button class="print-primary" (click)="retryLoadBlob()">Xác thực và tải lại</app-button>
+              </div>
+            }
+          </div>
         </div>
+        <div modalFooter class="print-workspace flex w-full flex-wrap justify-end gap-2">
+          <app-button variant="secondary" (click)="closePdfModal()" [disabled]="printService.isPrinting() || isPublishing()">Đóng</app-button>
+          <app-button variant="secondary" (click)="downloadPdf()" [loading]="printService.isDownloading()" [disabled]="printService.isPdfBlobLoading() || isPublishing()">
+            <i class="fa-solid fa-download" aria-hidden="true"></i> Tải tài liệu
+          </app-button>
+          <app-button class="print-primary" (click)="printPdf()" [loading]="printService.isPrinting()"
+            [disabled]="printService.isPdfBlobLoading() || isPublishing() || !pdfModalSafeUrl()">
+            <i class="fa-solid fa-print" aria-hidden="true"></i> {{printService.pdfPreviewType() === 'image' ? 'Mở để in' : 'In PDF'}}
+          </app-button>
+        </div>
+      </app-modal-shell>
     }
-  `
+  `,
 })
-export class PrintPreviewModalComponent {
+export class PrintPreviewModalComponent implements OnDestroy {
   printService = inject(PrintService);
   toast = inject(ToastService);
   private sanitizer = inject(DomSanitizer);
-  
-  // HTML A4 Print options & levels
-  zoomLevel = signal(75); // %
+  @ViewChild(PrintLayoutComponent) layout?: PrintLayoutComponent;
+  @ViewChild('previewViewport') viewport?: ElementRef<HTMLElement>;
+  zoomLevel = signal(75);
   isGeneratingPdf = signal(false);
+  layoutStatus = signal<PrintLayoutState>({ ready: false, pageCount: 0, error: null });
   options: PrintOptions = { ...this.printService.defaultOptions };
-
-  // Cloud PDF reporting panel states
+  optionLabels: { key: keyof PrintOptions; label: string }[] = [
+    { key: 'showHeader', label: 'Tiêu đề' }, { key: 'showFooter', label: 'Chân trang' },
+    { key: 'showSignature', label: 'Người duyệt' }, { key: 'showCutLine', label: 'Đường cắt' },
+  ];
   isFullscreen = signal(false);
   isCopying = signal(false);
   isPublishing = signal(false);
-  // isPrinting now delegated to printService.isPrinting()
-
-  // Safe resource computed URL
+  busy = computed(() => this.isGeneratingPdf() || this.printService.isPrinting());
+  private printController?: AbortController;
   pdfModalSafeUrl = computed(() => {
-    const url = this.printService.pdfBlobUrl(); // Use Blob URL to bypass CSP
-    if (!url) return null;
-    return this.sanitizer.bypassSecurityTrustResourceUrl(url);
+    const url = this.printService.pdfBlobUrl();
+    return url ? this.sanitizer.bypassSecurityTrustResourceUrl(url) : null;
   });
-
-  // Raw raw URL for tab bypass
   rawPdfUrl = computed(() => this.printService.pdfUrl() || '');
+  pdfDescription = computed(() => this.printService.pdfVersion() > 0
+    ? `Phiên bản ${this.printService.pdfVersion()} · ${this.printService.pdfAnalyst()} · ${this.formatPublishDate(this.printService.pdfPublishDate())}`
+    : 'Chứng chỉ phân tích');
 
   constructor() {
-      // Reset options when HTML preview is opened
-      effect(() => {
-          if (this.printService.isPreviewOpen()) {
-              this.options = { ...this.printService.defaultOptions };
-              this.zoomLevel.set(75);
-          }
-      });
-  }
-
-  // --- 1. LOCAL A4 PRINT HANDLERS ---
-  close() { this.printService.closePreview(); }
-  zoomIn() { this.zoomLevel.update(v => Math.min(v + 10, 150)); }
-  zoomOut() { this.zoomLevel.update(v => Math.max(v - 10, 25)); }
-
-  private cloneContentToContainer(targetContainer: HTMLElement): void {
-      const source = document.querySelector('app-print-layout');
-      if (!source) throw new Error('Không tìm thấy nội dung cần xem trước.');
-
-      const clone = source.cloneNode(true) as HTMLElement;
-      const sourceCanvases = source.querySelectorAll('canvas');
-      const cloneCanvases = clone.querySelectorAll('canvas');
-      
-      sourceCanvases.forEach((sourceCanvas, index) => {
-          if (cloneCanvases[index]) {
-              const destCanvas = cloneCanvases[index];
-              const ctx = destCanvas.getContext('2d');
-              if (ctx) ctx.drawImage(sourceCanvas, 0, 0);
-          }
-      });
-
-      clone.style.width = '210mm'; 
-      clone.style.margin = '0';
-      clone.style.transform = 'none';
-      clone.style.boxShadow = 'none';
-
-      targetContainer.innerHTML = '';
-      targetContainer.appendChild(clone);
-  }
-
-  doPrint() {
-      const printContainer = document.getElementById('print-container');
-      if (!printContainer) {
-          this.toast.show('Lỗi: Không tìm thấy container in.', 'error');
-          return;
+    effect(() => {
+      if (this.printService.isPreviewOpen()) {
+        this.options = { ...this.printService.defaultOptions };
+        this.layoutStatus.set({ ready: false, pageCount: 0, error: null });
+        this.zoomLevel.set(75);
       }
-      try {
-          this.cloneContentToContainer(printContainer);
-          setTimeout(() => {
-              window.print();
-          }, 50);
-      } catch (e) {
-          console.error(e);
-          this.toast.show('Lỗi chuẩn bị in.', 'error');
-      }
+    });
   }
 
-  async doPdf() {
-      this.isGeneratingPdf.set(true);
-      this.toast.show('Đang tạo PDF chất lượng cao...', 'info');
-      let tempContainer: HTMLElement | null = null;
-      try {
-          tempContainer = document.createElement('div');
-          tempContainer.style.position = 'fixed';
-          tempContainer.style.top = '0';
-          tempContainer.style.left = '0';
-          tempContainer.style.zIndex = '-10000';
-          tempContainer.style.width = '210mm';
-          tempContainer.style.background = 'white';
-          document.body.appendChild(tempContainer);
+  ngOnDestroy() { this.printController?.abort(); }
+  close() { if (!this.busy()) this.printService.closePreview(); }
+  zoomIn() { this.zoomLevel.update(value => Math.min(value + 10, 150)); }
+  zoomOut() { this.zoomLevel.update(value => Math.max(value - 10, 25)); }
+  fitWidth() {
+    const width = this.viewport?.nativeElement.clientWidth;
+    if (width) this.zoomLevel.set(Math.max(25, Math.min(100, Math.floor((width - 24) / 794 * 100))));
+  }
+  onLayoutState(state: PrintLayoutState) {
+    this.layoutStatus.set(state);
+    if (state.ready && window.innerWidth < 1024) this.fitWidth();
+  }
+  setOption(key: keyof PrintOptions, value: boolean) { this.options = { ...this.options, [key]: value }; }
 
-          this.cloneContentToContainer(tempContainer);
-          const elementToCapture = tempContainer.firstChild as HTMLElement;
-          await new Promise(r => setTimeout(r, 150));
-
-          const { jsPDF } = await import('jspdf');
-          const html2canvas = (await import('html2canvas')).default;
-
-          const canvas = await html2canvas(elementToCapture, {
-              scale: 2, 
-              useCORS: true,
-              logging: false,
-              backgroundColor: '#ffffff',
-              windowWidth: 1200
-          });
-
-          const imgData = canvas.toDataURL('image/jpeg', 0.95);
-          const pdfWidth = 210;
-          const pdfHeight = 297;
-          
-          const doc = new jsPDF('p', 'mm', 'a4');
-          const imgProps = (doc as any).getImageProperties(imgData);
-          const pdfImgHeight = (imgProps.height * pdfWidth) / imgProps.width;
-
-          let heightLeft = pdfImgHeight;
-          let position = 0;
-
-          doc.addImage(imgData, 'JPEG', 0, position, pdfWidth, pdfImgHeight);
-          heightLeft -= pdfHeight;
-
-          while (heightLeft > 0) {
-            position = heightLeft - pdfImgHeight;
-            doc.addPage();
-            doc.addImage(imgData, 'JPEG', 0, position, pdfWidth, pdfImgHeight);
-            heightLeft -= pdfHeight;
-          }
-
-          const fileName = `LIMS_Phieu_${new Date().toISOString().slice(0,10)}.pdf`;
-          doc.save(fileName);
-          this.toast.show('Tải PDF thành công!', 'success');
-      } catch (e: any) {
-          console.error(e);
-          console.error('[PrintPreview] Không thể tạo PDF:', e);
-          this.toast.show('Đã xảy ra lỗi. Vui lòng thử lại hoặc liên hệ quản trị viên.', 'error');
-      } finally {
-          if (tempContainer && document.body.contains(tempContainer)) {
-              document.body.removeChild(tempContainer);
-          }
-          this.isGeneratingPdf.set(false);
-      }
+  async doPrint(): Promise<void> {
+    if (this.busy() || !this.layoutStatus().ready) return;
+    this.printService.isPrinting.set(true);
+    this.printController = new AbortController();
+    try {
+      await printPreparedA4(this.layout!.getPreparedContent(), this.printController.signal);
+    } catch (error) {
+      this.toast.show(error instanceof Error ? error.message : 'Không chuẩn bị được bản in.', 'error');
+    } finally {
+      this.printController = undefined;
+      this.printService.isPrinting.set(false);
+    }
   }
 
-  // --- 2. CLOUD PDF REPORTING PANEL HANDLERS ---
-  closePdfModal() {
-      this.printService.closePdfPreview();
-      this.isFullscreen.set(false);
+  async doPdf(): Promise<void> {
+    if (this.busy() || !this.layoutStatus().ready) return;
+    this.isGeneratingPdf.set(true);
+    try {
+      const date = this.printService.previewPreparedAt();
+      const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      await downloadPreparedA4(this.layout!.getPreparedContent(), `LIMS_Phieu_${dateKey}.pdf`);
+      this.toast.show('Đã tải PDF.', 'success');
+    } catch (error) {
+      this.toast.show(error instanceof Error ? error.message : 'Không tạo được PDF.', 'error');
+    } finally {
+      this.isGeneratingPdf.set(false);
+    }
   }
 
-  toggleFullscreen() {
-      this.isFullscreen.update(v => !v);
-  }
-
-  getFileId(url: string | null): string | null {
-      if (!url) return null;
-      const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
-      return match ? match[1] : null;
-  }
-
+  closePdfModal() { if (!this.printService.isPrinting() && !this.isPublishing()) { this.printService.closePdfPreview(); this.isFullscreen.set(false); } }
+  toggleFullscreen() { this.isFullscreen.update(value => !value); }
   printPdf() {
-      const url = this.printService.pdfUrl();
-      if (!url) return;
-      this.printService.quickPrint(url);
+    const url = this.printService.pdfUrl();
+    if (!url) return;
+    if (this.printService.pdfPreviewType() === 'image') openInNewTab(url);
+    else void this.printService.quickPrint(url);
   }
-
   downloadPdf() {
-      const url = this.printService.pdfUrl();
-      const title = this.printService.pdfTitle();
-      const version = this.printService.pdfVersion();
-      if (!url) return;
-      const fileName = `${title.replace(/[\/\\]/g, '_')}_v${version}.pdf`;
-      this.printService.quickDownload(url, fileName);
+    const url = this.printService.pdfUrl();
+    if (url) void this.printService.quickDownload(url, `${this.printService.pdfTitle().replace(/[\/\\]/g, '_')}_v${this.printService.pdfVersion()}.pdf`);
   }
-
-  retryLoadBlob() {
-      this.printService.retryLoadPdfBlob();
-  }
-
+  retryLoadBlob() { void this.printService.retryLoadPdfBlob(); }
   async copyPdfLink() {
-      const url = this.printService.pdfUrl();
-      if (url) {
-          try {
-              this.isCopying.set(true);
-              await navigator.clipboard.writeText(url);
-              this.toast.show('Đã sao chép liên kết báo cáo PDF vào clipboard!', 'success');
-              setTimeout(() => this.isCopying.set(false), 1500);
-          } catch (err) {
-              this.toast.show('Không thể sao chép liên kết', 'error');
-          }
-      }
+    const url = this.printService.pdfUrl();
+    if (!url) return;
+    try { await navigator.clipboard.writeText(url); this.isCopying.set(true); this.toast.show('Đã sao chép liên kết.', 'success'); }
+    catch { this.toast.show('Không sao chép được liên kết.', 'error'); }
   }
-
   async triggerRepublishFromModal() {
-      const callback = this.printService.onRepublishCallback();
-      if (callback) {
-          this.isPublishing.set(true);
-          try {
-              await callback();
-              this.toast.show('Đã tạo lại bản báo cáo mới thành công!', 'success');
-          } catch (err: any) {
-              this.toast.show('Lỗi tạo lại báo cáo: ' + (err.message || err), 'error');
-          } finally {
-              this.isPublishing.set(false);
-          }
-      } else {
-          this.toast.show('Không thể tạo lại: Thiếu callback xử lý', 'error');
-      }
+    const callback = this.printService.onRepublishCallback();
+    if (!callback || this.isPublishing() || this.printService.isPrinting()) return;
+    this.isPublishing.set(true);
+    try { await callback(); this.toast.show('Đã tạo lại báo cáo.', 'success'); }
+    catch { this.toast.show('Không tạo lại được báo cáo.', 'error'); }
+    finally { this.isPublishing.set(false); }
   }
-
-  formatPublishDate(timestamp: any): string {
-      const date = timestampToDate(timestamp);
-      return date ? date.toLocaleString('vi-VN') : 'Chưa rõ';
-  }
+  formatPublishDate(value: unknown): string { return timestampToDate(value)?.toLocaleString('vi-VN') || 'Chưa rõ ngày phát hành'; }
 }

@@ -7,6 +7,7 @@ import { StateService } from './state.service';
 import { GoogleDriveService } from './google-drive.service';
 import { openInNewTab } from '../../shared/utils/browser-navigation';
 import { getSafeGooglePreviewUrl } from '../../shared/utils/report-url';
+import { printWithCleanup } from '../../shared/utils/print-dom';
 
 export interface PrintJob {
   sop: any; 
@@ -17,6 +18,7 @@ export interface PrintJob {
   user?: string; 
   analysisDate?: string;
   requestId?: string; 
+  batchCode?: string;
 }
 
 export interface PrintOptions {
@@ -47,6 +49,9 @@ export class PrintService {
   // PREVIEW STATE (Used by Modal)
   isPreviewOpen = signal<boolean>(false);
   previewJobs = signal<PrintJob[]>([]);
+  previewPreparedAt = signal(new Date());
+  private pdfLoadRevision = 0;
+  private pdfPrintController?: AbortController;
   
   // NEW PDF VIEWING STATE
   isPreviewPdfOpen = signal<boolean>(false);
@@ -77,7 +82,10 @@ export class PrintService {
           this.toast.show('Không có dữ liệu để in.', 'error');
           return;
       }
-      this.previewJobs.set(jobs);
+      if (this.isPrinting()) return;
+      this.closePdfPreview();
+      this.previewJobs.set(structuredClone(jobs));
+      this.previewPreparedAt.set(new Date());
       this.isPreviewOpen.set(true);
   }
 
@@ -88,6 +96,9 @@ export class PrintService {
 
   // --- 2. ENTRY POINT: OPEN PDF CLOUD PREVIEW ---
   openPdfPreview(url: string, title: string, version: number, analyst: string, publishDate: any, onRepublish?: () => Promise<void>, previewType: 'iframe' | 'image' = 'iframe', docsUrl?: string) {
+      if (this.isPrinting()) return;
+      this.closePreview();
+      this.closePdfPreview();
       this.pdfUrl.set(url);
       const docsPreviewUrl = docsUrl ? getSafeGooglePreviewUrl(docsUrl) : null;
       this.docsUrl.set(docsPreviewUrl);
@@ -128,6 +139,8 @@ export class PrintService {
   }
 
   closePdfPreview() {
+      this.pdfLoadRevision++;
+      this.pdfPrintController?.abort();
       this.isPreviewPdfOpen.set(false);
       this.pdfUrl.set(null);
       
@@ -183,6 +196,7 @@ export class PrintService {
   // This runs automatically and only calls the same-origin Drive proxy. If
   // authorization is missing, the modal shows an explicit redirect button.
   private async loadPdfBlobForPreview(pdfUrl: string) {
+      const revision = ++this.pdfLoadRevision;
       const id = this.getFileId(pdfUrl);
       if (!id) {
           this.pdfBlobUrl.set(pdfUrl);
@@ -206,10 +220,10 @@ export class PrintService {
                             downloadErr.message?.toLowerCase().includes('invalid credential');
 
               if (is401) {
+                  if (revision !== this.pdfLoadRevision) return;
                   // Token hết hạn hoặc bị thu hồi → xóa cache, yêu cầu user xác thực lại
                   console.warn('[Preview] 401 — stale token cleared. User must re-authenticate.');
                   this.googleDriveService.clearSession();
-                  this.isPdfBlobLoading.set(false);
                   return; // UI hiện nút "Xác thực & Tải lại"
               }
               throw downloadErr;
@@ -218,7 +232,7 @@ export class PrintService {
           const blob = new Blob([rawBlob!], { type: 'application/pdf' });
           const blobUrl = URL.createObjectURL(blob);
 
-          if (this.isPreviewPdfOpen() && this.pdfUrl() === pdfUrl) {
+          if (revision === this.pdfLoadRevision && this.isPreviewPdfOpen() && this.pdfUrl() === pdfUrl) {
               this.pdfBlobUrl.set(blobUrl);
               sessionStorage.removeItem(this.pendingPreviewKey);
           } else {
@@ -228,7 +242,7 @@ export class PrintService {
           console.error('[Preview] Failed to load PDF blob:', err);
           // pdfBlobUrl = null → UI hiện nút retry
       } finally {
-          this.isPdfBlobLoading.set(false);
+          if (revision === this.pdfLoadRevision) this.isPdfBlobLoading.set(false);
       }
   }
 
@@ -240,6 +254,7 @@ export class PrintService {
       if (!pdfUrl) return;
       const id = this.getFileId(pdfUrl);
       if (!id) return;
+      const revision = ++this.pdfLoadRevision;
 
       this.persistPendingPdfPreview(pdfUrl);
 
@@ -255,7 +270,9 @@ export class PrintService {
           const blob = new Blob([rawBlob], { type: 'application/pdf' });
           const blobUrl = URL.createObjectURL(blob);
 
-          if (this.isPreviewPdfOpen() && this.pdfUrl() === pdfUrl) {
+          if (revision === this.pdfLoadRevision && this.isPreviewPdfOpen() && this.pdfUrl() === pdfUrl) {
+              const previous = this.pdfBlobUrl();
+              if (previous?.startsWith('blob:')) URL.revokeObjectURL(previous);
               this.pdfBlobUrl.set(blobUrl);
               sessionStorage.removeItem(this.pendingPreviewKey);
           } else {
@@ -264,7 +281,7 @@ export class PrintService {
       } catch (err: any) {
           this.toast.show('Xác thực thất bại: ' + (err.message || 'Không xác định'), 'error');
       } finally {
-          this.isPdfBlobLoading.set(false);
+          if (revision === this.pdfLoadRevision) this.isPdfBlobLoading.set(false);
       }
   }
 
@@ -275,54 +292,66 @@ export class PrintService {
   }
 
   async quickPrint(pdfUrl: string): Promise<void> {
+      if (this.isPrinting()) return;
       const id = this.getFileId(pdfUrl);
       if (!id) {
           openInNewTab(pdfUrl);
           return;
       }
 
-      // If we already loaded the blob for preview, reuse it!
-      if (this.pdfUrl() === pdfUrl && this.pdfBlobUrl()?.startsWith('blob:')) {
-          this.printBlobUrl(this.pdfBlobUrl()!);
-          return;
-      }
-
-      if (!await this.googleDriveService.hasServerOAuthSession()) {
-          this.persistPendingPdfPreview(pdfUrl);
-          this.googleDriveService.beginRedirectAuth();
-          return;
-      }
-
+      this.isPrinting.set(true);
       try {
-          this.isPrinting.set(true);
+          if (this.pdfUrl() === pdfUrl && this.pdfBlobUrl()?.startsWith('blob:')) {
+              await this.printBlobUrl(this.pdfBlobUrl()!);
+              return;
+          }
+          if (!await this.googleDriveService.hasServerOAuthSession()) {
+              this.persistPendingPdfPreview(pdfUrl);
+              this.googleDriveService.beginRedirectAuth();
+              return;
+          }
           this.toast.show('Đang chuẩn bị dữ liệu in...', 'info');
           const rawBlob = await this.googleDriveService.downloadFile(id);
           const blob = new Blob([rawBlob], { type: 'application/pdf' });
           const blobUrl = URL.createObjectURL(blob);
-          this.printBlobUrl(blobUrl, true);
+          await this.printBlobUrl(blobUrl, true);
       } catch (err: any) {
           console.error('[Print] Lỗi khi in nhanh:', err);
-          this.toast.show('Không thể tải PDF để in. Đang mở bản xem trước...', 'warning');
-          this.openPdfPreview(pdfUrl, 'Báo cáo (Cần in thủ công)', 1, 'Hệ thống', null, undefined, 'iframe');
+          this.toast.show('Không mở được hộp thoại in. Có thể tải PDF để in từ máy.', 'warning');
+          // Keep the selected document/version metadata intact when printing fails.
       } finally {
           this.isPrinting.set(false);
       }
   }
 
-  private printBlobUrl(blobUrl: string, autoRevoke = false) {
+  private async printBlobUrl(blobUrl: string, autoRevoke = false): Promise<void> {
       const iframe = document.createElement('iframe');
       iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
-      iframe.src = blobUrl;
-      document.body.appendChild(iframe);
-
-      iframe.onload = () => {
-          iframe.contentWindow?.focus();
-          iframe.contentWindow?.print();
-          setTimeout(() => {
-              if (document.body.contains(iframe)) document.body.removeChild(iframe);
-              if (autoRevoke) URL.revokeObjectURL(blobUrl);
-          }, 60000);
+      iframe.title = 'Tài liệu chuẩn bị in';
+      const controller = new AbortController();
+      this.pdfPrintController = controller;
+      const cleanup = () => {
+          iframe.remove();
+          if (autoRevoke) URL.revokeObjectURL(blobUrl);
       };
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      try {
+          await new Promise<void>((resolve, reject) => {
+              iframe.onload = () => resolve();
+              iframe.onerror = () => reject(new Error('Không tải được PDF vào vùng in.'));
+              controller.signal.addEventListener('abort', () => reject(new Error('Đã đóng vùng in.')), { once: true });
+              timer = setTimeout(() => reject(new Error('Tải PDF để in quá thời gian.')), 15000);
+              iframe.src = blobUrl;
+              document.body.appendChild(iframe);
+          });
+          clearTimeout(timer);
+          if (!iframe.contentWindow) throw new Error('Không mở được vùng in PDF.');
+          await printWithCleanup(iframe.contentWindow, () => {}, controller.signal, window);
+      } finally {
+          clearTimeout(timer);
+          cleanup();
+          if (this.pdfPrintController === controller) this.pdfPrintController = undefined;
+      }
   }
 
   async quickDownload(pdfUrl: string, fileName = 'document.pdf'): Promise<void> {

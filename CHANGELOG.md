@@ -2,7 +2,33 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.10.01-b05
+## Phiên bản hiện tại: v26.10.01-b06
+
+### v26.10.01-b06
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Xem trước trang giấy trước khi in phiếu pha chế, lịch trực, bảng theo dõi mẫu và các hồ sơ nghiệp vụ.
+- Phiếu dài tự phân trang, giữ đầy đủ nội dung và hỗ trợ tải PDF theo bố cục đã xem.
+
+#### ✨ Tính Năng Mới
+
+- Phiếu Smart Prep cho năm chế độ tính, có thông tin phương pháp, lượng dự tính/thực tế, công thức, cảnh báo và vùng ký tay.
+- In thẻ kho đã đối soát, phiếu kiểm kê theo phạm vi đang lọc và nhãn hóa chất sang chiết A4 tự cắt.
+- In phiếu bàn giao mẫu để ghi nhận thực tế, thông tin cấu hình SOP và hồ sơ truy xuất trong phạm vi dữ liệu đã tải.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Preview hỗ trợ zoom vừa chiều rộng, thao tác trên điện thoại, giao diện sáng/tối và thông báo khi nội dung chưa sẵn sàng.
+- Lịch trực có preview A4 ngang; bảng theo dõi mẫu giữ lựa chọn danh sách/lưới gọn, dọc/ngang và mô tả mẫu.
+- Nhãn chất chuẩn hiển thị mã nội bộ; kiểm tra kích thước A4 và đợi QR/ảnh sẵn sàng trước khi in.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Hàng đợi giữ thứ tự phiếu và chặn in khi chưa tải đủ dữ liệu.
+- Tránh cắt nội dung phiếu SOP dài; lặp đầu bảng và thông tin nhận diện khi sang trang.
+- Giữ nội dung đến khi hộp thoại in kết thúc và dọn đúng vùng in khi hủy, đóng hoặc gặp lỗi.
+- Giữ đúng phiên bản và thông tin báo cáo khi tải PDF liên tiếp hoặc gặp lỗi in.
 
 ### v26.10.01-b05
 

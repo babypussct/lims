@@ -63,8 +63,8 @@ import { PdfDocumentViewerComponent } from './pdf-document-viewer.component';
           <div class="hidden sm:flex items-center gap-1.5 shrink-0">
             @if (kind() === 'pdf') {
               <button type="button" (click)="printDocument()" [disabled]="loading() || !!error()"
-                      class="preview-action-button" title="In PDF">
-                <i class="fa-solid fa-print"></i><span class="hidden lg:inline">In</span>
+                      class="preview-action-button" title="Mở PDF để in">
+                <i class="fa-solid fa-print"></i><span class="hidden lg:inline">Mở để in</span>
               </button>
             }
             <button type="button" (click)="downloadOriginal()" [disabled]="loading() && !previewBlob()"
@@ -92,8 +92,8 @@ import { PdfDocumentViewerComponent } from './pdf-document-viewer.component';
                 <div class="absolute right-0 top-11 z-50 w-48 p-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl">
                   @if (kind() === 'pdf') {
                     <button type="button" (click)="printDocument()" [disabled]="loading() || !!error()"
-                            class="preview-menu-item" title="In PDF">
-                      <i class="fa-solid fa-print"></i><span>In PDF</span>
+                            class="preview-menu-item" title="Mở PDF để in">
+                      <i class="fa-solid fa-print"></i><span>Mở PDF để in</span>
                     </button>
                   }
                   <button type="button" (click)="openOriginal()" class="preview-menu-item">

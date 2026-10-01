@@ -1304,3 +1304,6 @@
     (closed)="closeScheduleModal()"
     (saved)="saveSchedule()" />
 }
+@if (printDocument(); as document) {
+  <app-a4-document-preview [document]="document" (closed)="printDocument.set(null)" />
+}

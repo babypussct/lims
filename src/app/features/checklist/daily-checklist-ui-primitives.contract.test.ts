@@ -64,7 +64,7 @@ describe('daily checklist shared UI primitive integration', () => {
 
   it('renders compact sample runs with bold codes and normal-weight descriptions while keeping expanded traceability', () => {
     const template = read('./daily-checklist.component.html');
-    const component = read('./daily-checklist.component.ts');
+    const component = read('./daily-checklist.component.ts') + read('./daily-print-renderer.styles.ts');
     const printTemplate = template.slice(
       template.indexOf('<div class="cl-print-document cl-print-only"'),
       template.indexOf('<!-- ===== PRINT OPTIONS SETTINGS MODAL ===== -->')

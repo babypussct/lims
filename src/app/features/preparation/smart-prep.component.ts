@@ -4,6 +4,9 @@ import { FormsModule } from '@angular/forms';
 import { ToastService } from '../../core/services/toast.service';
 import { AppButtonComponent } from '../../shared/components/ui/button/button.component';
 import { AppPageHeaderComponent } from '../../shared/components/ui/page-header/page-header.component';
+import { A4DocumentPreviewComponent } from '../../shared/components/a4-document-preview/a4-document-preview.component';
+import { A4Document } from '../../shared/utils/a4-document';
+import { buildPrepPrintDocument } from './prep-print-document';
 import { PRESET_CHEMICALS, calculatePrep, calculateSaltHydrateFactor as calculateSaltHydrateFactorEngine, concentrationToGPerL } from './prep-calculation.engine';
 import {
   AdditionDraft,
@@ -233,13 +236,14 @@ import { AppDatePickerComponent } from '../../shared/components/ui/date-picker/d
 @Component({
   selector: 'app-smart-prep',
   standalone: true,
-  imports: [CommonModule, FormsModule, AppButtonComponent, AppPageHeaderComponent, AppDatePickerComponent],
+  imports: [CommonModule, FormsModule, AppButtonComponent, AppPageHeaderComponent, AppDatePickerComponent, A4DocumentPreviewComponent],
   templateUrl: './smart-prep.component.html',
   styles: [
     ".field-label{display:block;margin-bottom:.45rem;font-size:.8rem;font-weight:600;color:#64748b}.field-input{width:100%;min-width:0;border:1px solid #cbd5e1;border-radius:.75rem;background:#fff;padding:.62rem .72rem;font-size:.875rem;outline:0;transition:border-color .15s,box-shadow .15s}.field-input.unit-input{width:9rem;flex-shrink:0}details>summary{cursor:pointer;font-weight:600;font-size:.875rem}details[open]>summary{margin-bottom:1rem}details:focus-within{border-color:#94a3b8}.field-input:focus{border-color:#cb0c9f;box-shadow:0 0 0 3px rgba(203,12,159,.12)}.field-help{display:block;margin-top:.35rem;font-size:.75rem;line-height:1.5;color:#64748b}.result-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem}.result-grid>div{border-radius:.75rem;background:#f8fafc;padding:.75rem}.result-grid span{display:block;font-size:.625rem;font-weight:700;color:#94a3b8}.result-grid strong{display:block;margin-top:.25rem;font-size:.8rem;line-height:1.35}@media (prefers-color-scheme:dark){.field-label{color:#94a3b8}.field-input{border-color:#334155;background:#0f172a;color:#e2e8f0}.field-help{color:#94a3b8}.result-grid>div{background:rgba(30,41,59,.7)}}"
   ]
 })
 export class SmartPrepComponent {
+  readonly printDocument = signal<A4Document | null>(null);
   private readonly toast = inject(ToastService);
   private readonly draftStorageKey = 'lims.smart-prep.draft.v1';
   private readonly baselineDraftState: Record<string, unknown>;
@@ -1083,26 +1087,8 @@ export class SmartPrepComponent {
 
   printSimulation(): void {
     if (!this.canExport()) { this.toast.show('Nhập đủ và kiểm tra số liệu trước khi xuất phiếu.', 'warning'); return; }
-    const frame = document.createElement('iframe');
-    frame.style.position = 'fixed';
-    frame.style.width = '0';
-    frame.style.height = '0';
-    frame.style.border = '0';
-    document.body.appendChild(frame);
-    const printDocument = frame.contentDocument;
-    if (!printDocument) {
-      frame.remove();
-      this.toast.show('Không mở được bản in.', 'error');
-      return;
-    }
-    printDocument.open();
-    printDocument.write('<!doctype html><html><head><title>Chuẩn bị dung dịch</title><style>body{font-family:Arial,sans-serif;padding:32px;color:#172033}h1{margin:0 0 4px}.result{white-space:pre-wrap;border:1px solid #cbd5e1;border-radius:12px;padding:20px;line-height:1.6}</style></head><body><h1>Chuẩn bị dung dịch</h1><div class="result">' + this.escapeHtml(this.resultText()) + '</div></body></html>');
-    printDocument.close();
-    window.setTimeout(() => {
-      frame.contentWindow?.focus();
-      frame.contentWindow?.print();
-      frame.remove();
-    }, 100);
+    const unit = this.concentrationOption(this.calcMode() === 'concentration' ? this.concentrationResultChoice() : this.targetChoice()).unit;
+    this.printDocument.set(buildPrepPrintDocument(this.buildDraft(), this.calculation(), this.sheetFields(), new Date(), unit));
   }
 
   private buildDraft(): PrepDraft {
@@ -1641,7 +1627,4 @@ export class SmartPrepComponent {
     return value ? this.parseNumber(value) : null;
   }
 
-  private escapeHtml(value: string): string {
-    return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
-  }
 }

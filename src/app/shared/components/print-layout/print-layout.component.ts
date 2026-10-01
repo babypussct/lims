@@ -1,24 +1,23 @@
 
-import { Component, Input, AfterViewInit, OnChanges, SimpleChanges, ViewChildren, QueryList, ElementRef, inject } from '@angular/core';
+import { Component, Input, Output, EventEmitter, AfterViewInit, OnChanges, OnDestroy, ViewChild, ElementRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { PrintJob } from '../../../core/services/print.service';
+import { PrintJob, PrintOptions } from '../../../core/services/print.service';
 import { StateService } from '../../../core/services/state.service';
 import { formatDate, formatNum, formatSampleList } from '../../utils/utils';
 import { formatSampleDescriptions } from '../../utils/sample-description.utils';
-import { ensureQrious } from '../../utils/external-script-loader';
+import { loadQrCode } from '../../utils/qr-code';
+import { waitForPrintAssets } from '../../utils/print-dom';
+import { paginatePrintSlips } from '../../utils/print-pagination';
+
+export interface PrintLayoutState { ready: boolean; pageCount: number; error: string | null; }
 
 @Component({
   selector: 'app-print-layout',
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="print-root">
-       @for (group of groupedJobs; track $index) {
-         <!-- A4 Page Container -->
-         <div class="print-page">
-            
-            <!-- Stack 2 slips vertically. -->
-            @for (job of group; track job.requestId || $index; let i = $index) {
+    <div #source class="print-root print-source" aria-hidden="true">
+            @for (job of jobs; track $index) {
                 <div class="print-slip">
                     
                     <!-- 1. HEADER -->
@@ -36,6 +35,7 @@ import { ensureQrious } from '../../utils/external-script-loader';
                                 </div>
                                 
                                 <h1 class="sop-name">{{job.sop?.name}}</h1>
+                                <div class="batch-code">Mã mẻ: {{getBatchCode(job)}}</div>
                                 
                                 @if (getTargetNames(job).length > 0) {
                                     <div class="targets-list">
@@ -90,6 +90,7 @@ import { ensureQrious } from '../../utils/external-script-loader';
                     </div>
 
                     <!-- 3. SAMPLES LIST -->
+                    <div class="record-fields">Thiết bị thực dùng: ____________________________________</div>
                     @if (job.inputs['sampleList'] && job.inputs['sampleList'].length > 0) {
                         <div class="samples-box">
                             <div class="box-label">Danh sách mẫu ({{job.inputs['sampleList'].length}})</div>
@@ -120,7 +121,7 @@ import { ensureQrious } from '../../utils/external-script-loader';
                                         </td>
                                         <td class="td-amount">{{formatNum(item.totalQty)}}</td>
                                         <td class="td-unit">{{stdUnit(item.unit)}}</td>
-                                        <td class="td-note">{{item.base_note}}</td>
+                                        <td class="td-note">{{item.base_note}}<div>Lô/HSD thực dùng: __________</div></td>
                                     </tr>
 
                                     @if(item.isComposite) {
@@ -145,14 +146,14 @@ import { ensureQrious } from '../../utils/external-script-loader';
                             <div class="footer-content">
                                 <div class="footer-info">
                                     <div class="disclaimer">{{ getFooterText() }}</div>
-                                    <div class="meta-print">In lúc: {{ getCurrentTime() }} | Máy: {{ job.user }}</div>
+                                    <div class="meta-print">Chuẩn bị in: {{ getCurrentTime() }} | Người duyệt: {{ job.user || 'Chưa duyệt' }}</div>
                                 </div>
                                 
                                 @if (options.showSignature) {
                                     <div class="signature-box">
                                         <div class="sig-icon">✔</div>
                                         <div class="sig-text">
-                                            <div class="sig-label">XÁC NHẬN ĐIỆN TỬ</div>
+                                            <div class="sig-label">NGƯỜI DUYỆT TRÊN HỆ THỐNG</div>
                                             <div class="sig-name">{{ job.user }}</div>
                                         </div>
                                     </div>
@@ -161,18 +162,10 @@ import { ensureQrious } from '../../utils/external-script-loader';
                         </div>
                     }
 
-                    <!-- CUT LINE -->
-                    @if (options.showCutLine && i === 0) { 
-                        <div class="cut-line">
-                            <span class="cut-icon">✂</span>
-                            <div class="dashed-line"></div>
-                        </div> 
-                    }
                 </div>
             }
-         </div>
-       }
     </div>
+    <div #prepared></div>
   `,
   styles: [`
     /* GLOBAL RESET FOR PRINT */
@@ -188,24 +181,31 @@ import { ensureQrious } from '../../utils/external-script-loader';
 
     .print-page {
         width: 210mm;
-        height: 296mm; /* A4 Height */
+        height: 297mm;
         background: white;
         display: flex;
         flex-direction: column;
-        overflow: hidden;
+        overflow: visible;
         page-break-after: always;
         position: relative;
     }
     .print-page:last-child { page-break-after: auto; }
 
     .print-slip {
-        flex: 1; /* 50% height */
+        flex: none;
         padding: 10mm 15mm; /* Safe margins */
         display: flex;
         flex-direction: column;
         position: relative;
-        max-height: 148mm;
+        width: 210mm;
+        overflow-wrap: anywhere;
     }
+    .print-source { position: absolute; left: -100000px; top: 0; }
+    .print-page { margin-bottom: 16px; }
+    .print-page.print-cut-line::after { content: '✂'; position: absolute; top: 148.5mm; left: 0; right: 0; border-top: 1px dashed #94a3b8; color: #64748b; font-size: 10px; text-align: center; }
+    .batch-code { font: 700 10px 'Open Sans', sans-serif; margin-bottom: 5px; }
+    .record-fields { font-size: 9px; margin-bottom: 8px; }
+    @media print { .print-page { margin-bottom: 0; break-after: page; } .print-page:last-child { break-after: auto; } }
 
     /* --- HEADER --- */
     .header-section { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; }
@@ -276,10 +276,10 @@ import { ensureQrious } from '../../utils/external-script-loader';
     .disclaimer { font-size: 8px; color: #666; font-style: italic; margin-bottom: 2px; }
     .meta-print { font-size: 7px; color: #999; font-family: 'Roboto Mono', monospace; }
 
-    .signature-box { border: 1px solid #94a3b8; border-radius: 4px; padding: 3px 8px; display: flex; align-items: center; gap: 6px; background: #fff; }
+    .signature-box { border: 1px solid #94a3b8; border-radius: 4px; padding: 5px 8px; display: flex; align-items: center; gap: 6px; background: #fff; }
     .sig-icon { font-size: 12px; color: #059669; }
-    .sig-label { font-size: 6px; font-weight: 800; color: #64748b; line-height: 1; }
-    .sig-name { font-size: 9px; font-weight: 700; color: #0f172a; text-transform: uppercase; margin-top: 1px; line-height: 1; }
+    .sig-label { font-size: 7px; font-weight: 800; color: #64748b; line-height: 1.4; }
+    .sig-name { font-size: 9px; font-weight: 700; color: #0f172a; text-transform: uppercase; margin-top: 2px; line-height: 1.4; }
 
     /* --- CUT LINE --- */
     .cut-line { position: absolute; bottom: -6px; left: 0; width: 100%; display: flex; align-items: center; justify-content: center; height: 12px; }
@@ -287,7 +287,7 @@ import { ensureQrious } from '../../utils/external-script-loader';
     .dashed-line { position: absolute; left: 0; right: 0; top: 50%; border-top: 1px dashed #cbd5e1; }
   `]
 })
-export class PrintLayoutComponent implements AfterViewInit, OnChanges {
+export class PrintLayoutComponent implements AfterViewInit, OnChanges, OnDestroy {
   state = inject(StateService);
   formatNum = formatNum;
   formatDate = formatDate;
@@ -298,37 +298,58 @@ export class PrintLayoutComponent implements AfterViewInit, OnChanges {
   }
 
   @Input() jobs: PrintJob[] = [];
-  @Input() options: any = { showHeader: true, showFooter: true, showSignature: true, showCutLine: true };
+  @Input() options: PrintOptions = { showHeader: true, showFooter: true, showSignature: true, showCutLine: true };
+  @Input() preparedAt = new Date();
+  @Output() layoutState = new EventEmitter<PrintLayoutState>();
+  @ViewChild('source') source!: ElementRef<HTMLElement>;
+  @ViewChild('prepared') prepared!: ElementRef<HTMLElement>;
+  private revision = 0;
+  private ready = false;
 
-  @ViewChildren('qrCanvas') qrCanvases!: QueryList<ElementRef<HTMLCanvasElement>>;
+  ngAfterViewInit() { this.scheduleLayout(); }
+  ngOnChanges() { if (this.source) this.scheduleLayout(); }
+  ngOnDestroy() { this.revision++; }
+  retryLayout() { this.scheduleLayout(); }
 
-  get groupedJobs(): PrintJob[][] {
-    const groups: PrintJob[][] = [];
-    const itemsPerPage = 2; 
-    for (let i = 0; i < this.jobs.length; i += itemsPerPage) {
-      groups.push(this.jobs.slice(i, i + itemsPerPage));
-    }
-    return groups;
+  private scheduleLayout(): void {
+    const revision = ++this.revision;
+    this.ready = false;
+    this.layoutState.emit({ ready: false, pageCount: 0, error: null });
+    // Angular finishes applying input/options bindings before measuring.
+    queueMicrotask(() => void this.prepareLayout(revision));
   }
 
-  ngAfterViewInit() { setTimeout(() => void this.generateQRCodes(), 100); }
-  ngOnChanges(changes: SimpleChanges) { if (changes['options'] || changes['jobs']) setTimeout(() => void this.generateQRCodes(), 100); }
-
-  async generateQRCodes() {
-    let QRious: any;
+  private async prepareLayout(revision: number): Promise<void> {
     try {
-      QRious = await ensureQrious();
-    } catch (e) {
-      console.warn('QR library load error:', e);
-      return;
+      const source = this.source.nativeElement;
+      await waitForPrintAssets(source);
+      const canvases = Array.from(source.querySelectorAll<HTMLCanvasElement>('canvas'));
+      if (canvases.length) {
+        const qr = await loadQrCode();
+        const baseUrl = window.location.origin + window.location.pathname + '#/traceability/';
+        await Promise.all(canvases.map(canvas => qr.toCanvas(canvas, baseUrl + (canvas.dataset['qr'] || 'LIMS'), {
+          width: 200, errorCorrectionLevel: 'M',
+        })));
+        canvases.forEach(canvas => { canvas.style.width = '70px'; canvas.style.height = '70px'; });
+      }
+      if (revision !== this.revision) return;
+      const pages = paginatePrintSlips(source, this.options.showCutLine);
+      pages.classList.remove('print-source');
+      pages.removeAttribute('aria-hidden');
+      this.prepared.nativeElement.replaceChildren(pages);
+      this.ready = true;
+      this.layoutState.emit({ ready: true, pageCount: pages.children.length, error: null });
+    } catch (error) {
+      if (revision !== this.revision) return;
+      this.prepared.nativeElement.replaceChildren();
+      this.layoutState.emit({ ready: false, pageCount: 0, error: error instanceof Error ? error.message : 'Không chuẩn bị được bản in.' });
     }
-    if (!QRious) return;
-    const baseUrl = window.location.origin + window.location.pathname + '#/traceability/';
-    this.qrCanvases?.forEach(canvasRef => {
-        const canvas = canvasRef.nativeElement;
-        const id = canvas.getAttribute('data-qr') || 'LIMS';
-        new QRious({ element: canvas, value: baseUrl + id, size: 200, level: 'L' });
-    });
+  }
+
+  getPreparedContent(): HTMLElement {
+    const content = this.prepared.nativeElement.firstElementChild as HTMLElement | null;
+    if (!this.ready || !content) throw new Error('Bản in chưa sẵn sàng. Vui lòng đợi hoặc thử lại.');
+    return content;
   }
 
   stdUnit(unit: string): string {
@@ -345,11 +366,17 @@ export class PrintLayoutComponent implements AfterViewInit, OnChanges {
           if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
       }
       const d = new Date(job.date);
+      if (!Number.isFinite(d.getTime())) return 'Chưa rõ';
       return `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear()}`;
   }
 
+  getBatchCode(job: PrintJob): string {
+      const code = job.batchCode ?? job.inputs?.['batchCode'] ?? job.requestId;
+      return code || (job.requestId ? 'Chưa có mã mẻ' : 'Bản nháp');
+  }
+
   getCurrentTime(): string {
-      const now = new Date();
+      const now = this.preparedAt;
       return `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2, '0')} ${now.getDate()}/${now.getMonth()+1}/${now.getFullYear()}`;
   }
 

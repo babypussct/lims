@@ -27,11 +27,14 @@ import { AppButtonComponent } from '../../shared/components/ui/button/button.com
 import { AppEmptyStateComponent } from '../../shared/components/ui/empty-state/empty-state.component';
 import { AppPageHeaderComponent } from '../../shared/components/ui/page-header/page-header.component';
 import { AppToolbarComponent } from '../../shared/components/ui/toolbar/toolbar.component';
+import { A4DocumentPreviewComponent } from '../../shared/components/a4-document-preview/a4-document-preview.component';
+import { A4Document } from '../../shared/utils/a4-document';
+import { buildInventoryCountDocument, buildStockCardDocument } from './inventory-print-document';
 
 @Component({
   selector: 'app-inventory',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, SkeletonComponent, LabelPrintComponent, HasPermissionDirective, LockPermissionDirective, ModalA11yDirective, FormLabelA11yDirective, AppButtonComponent, AppEmptyStateComponent, AppPageHeaderComponent, AppToolbarComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, SkeletonComponent, LabelPrintComponent, HasPermissionDirective, LockPermissionDirective, ModalA11yDirective, FormLabelA11yDirective, AppButtonComponent, AppEmptyStateComponent, AppPageHeaderComponent, AppToolbarComponent, A4DocumentPreviewComponent],
   templateUrl: './inventory.component.html',
   styles: [`
     @keyframes slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
@@ -41,6 +44,43 @@ import { AppToolbarComponent } from '../../shared/components/ui/toolbar/toolbar.
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class InventoryComponent implements OnInit, OnDestroy {
+  readonly printDocument = signal<A4Document | null>(null);
+  readonly printLoading = signal(false);
+  printDecantLabel(item: InventoryItem): void {
+    const header = document.createElement('header');
+    header.textContent = 'NHÃN HÓA CHẤT SANG CHIẾT · A4 TỰ CẮT';
+    const label = document.createElement('section');
+    label.className = 'lims-decant-label';
+    const title = document.createElement('h3'); title.textContent = item.name; label.appendChild(title);
+    for (const text of [
+      `Nguồn: ${item.id} · Lô: ${item.lotNumber || '________________'}`,
+      'Nồng độ: ________________', 'Ngày sang chiết: ________________',
+      'Hạn dùng đã xác định: ________________', 'Người sang chiết: ________________',
+      `GHS nguồn: ${item.ghsWarnings?.join(', ') || 'Chưa khai báo'}`,
+      ...(item.hazardStatements || []), ...(item.precautionaryStatements || []),
+      'Đối chiếu cảnh báo, nồng độ và hạn dùng trước khi sử dụng.',
+    ]) { const line = document.createElement('p'); line.textContent = text; label.appendChild(line); }
+    this.printDocument.set({ title: 'Xem & In nhãn sang chiết', subtitle: item.name, preparedAt: new Date().toLocaleString('vi-VN'), notice: '', sections: [], fileName: 'LIMS_Nhan_sang_chiet.pdf', html: {
+      header, after: [label], css: '.a4-html-root .lims-decant-label{width:90mm;box-sizing:border-box;border:1px dashed #334155;padding:4mm;font-size:11px;line-height:1.5}.a4-html-root .lims-decant-label h3{font-size:15px;font-weight:700;margin-bottom:3mm}.a4-html-root .lims-decant-label p{margin:1mm 0;overflow-wrap:anywhere}',
+    } });
+  }
+  printInventoryCount(): void {
+    try { this.printDocument.set(buildInventoryCountDocument(this.filteredItems(), `Phân loại: ${this.filterType()} · Từ khóa: ${this.searchTerm() || 'Tất cả'}`)); }
+    catch (error) { this.toast.show(error instanceof Error ? error.message : 'Không chuẩn bị được phiếu kiểm kê.', 'error'); }
+  }
+  async printStockCard(item: InventoryItem): Promise<void> {
+    if (this.printLoading()) return;
+    this.printLoading.set(true);
+    try {
+      const [before] = await this.inventoryService.getItemsByIdsFresh([item.id]);
+      if (!before) throw new Error('Không tìm thấy vật tư hiện tại.');
+      const history = await this.inventoryService.getStockCard(item.id);
+      const [after] = await this.inventoryService.getItemsByIdsFresh([item.id]);
+      if (!after || after.stock !== before.stock || JSON.stringify(after.lastUpdated) !== JSON.stringify(before.lastUpdated)) throw new Error('Dữ liệu kho vừa thay đổi. Vui lòng tải lại thẻ kho.');
+      this.printDocument.set(buildStockCardDocument(after, history));
+    } catch (error) { this.toast.show(error instanceof Error ? error.message : 'Không tải đủ lịch sử kho.', 'error'); }
+    finally { this.printLoading.set(false); }
+  }
   state = inject(StateService);
   inventoryService = inject(InventoryService);
   recipeService = inject(RecipeService); // Inject RecipeService

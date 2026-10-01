@@ -27,6 +27,9 @@ import { SampleDescriptionMap, SampleDescriptionMaster, SampleDescriptionSnapsho
 import { getSampleDescriptionSnapshot, setSampleDescriptionSnapshot, subsetSampleDescriptionMap } from '../../../shared/utils/sample-description.utils';
 import { SampleDescriptionMasterService } from '../../config/sample-description-master.service';
 import { AppButtonComponent, AppDatePickerComponent, AppEmptyStateComponent, AppPageHeaderComponent, AppToolbarComponent } from '../../../shared/components/ui';
+import { A4DocumentPreviewComponent } from '../../../shared/components/a4-document-preview/a4-document-preview.component';
+import { A4Document } from '../../../shared/utils/a4-document';
+import { buildSopConfigDocument } from '../../../shared/utils/business-print-documents';
 
 interface EditInfoChange {
   label: string;
@@ -57,10 +60,13 @@ interface EditInventoryDiff {
     AppEmptyStateComponent,
     AppPageHeaderComponent,
     AppToolbarComponent,
+    A4DocumentPreviewComponent,
   ],
   templateUrl: './calculator.component.html'
 })
 export class CalculatorComponent implements OnDestroy {
+  readonly sopPrintDocument = signal<A4Document | null>(null);
+  printSopGuide(sop: Sop): void { this.sopPrintDocument.set(buildSopConfigDocument(sop)); }
   sopInput = input<Sop | null>(null, { alias: 'sop' }); 
   get GHS_DICT() { return GHS_DICTIONARY; }
   

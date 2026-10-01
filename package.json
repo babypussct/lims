@@ -1,6 +1,6 @@
 {
   "name": "lims-cloud-pro",
-  "version": "26.10.01-b05",
+  "version": "26.10.01-b06",
   "packageManager": "npm@10.9.8",
   "engines": {
     "node": "22.x"
@@ -35,7 +35,7 @@
     "test:core-utils": "tsx --test src/app/core/auth/access-control.test.ts src/app/core/auth/device-mode.test.ts src/app/core/auth/shared-device-cache.contract.test.ts src/app/core/services/user-directory.contract.test.ts src/app/core/services/firebase-telemetry.contract.test.ts src/app/shared/utils/format-num.test.ts src/app/shared/utils/report-url.test.ts src/app/shared/utils/external-script-loader.test.ts src/app/shared/utils/avatar-url.test.ts && node --test scripts/ios-camera-permission.test.js",
     "test:activity": "tsx --test src/app/core/activity/*.test.ts src/app/core/services/activity-event.service.test.ts src/app/core/services/feature-rollout.test.ts scripts/activity-backfill-utils.test.ts",
     "test:fefo": "tsx --test src/app/shared/utils/standard-fefo.test.ts",
-    "test:inventory": "tsx --test src/app/shared/utils/gs1-parser.test.ts",
+    "test:inventory": "tsx --test src/app/shared/utils/gs1-parser.test.ts src/app/features/inventory/inventory-print-document.test.ts",
     "test:standards": "tsx --test src/app/shared/utils/standard-fefo.test.ts src/app/shared/utils/standard-amount.test.ts src/app/shared/utils/standard-workflow.test.ts src/app/shared/utils/standard-backfill.test.ts src/app/shared/utils/standard-internal-id.test.ts src/app/shared/utils/standard-query.test.ts src/app/shared/utils/date-range.test.ts src/app/shared/utils/date-only.test.ts src/app/shared/utils/standard-rules.test.ts src/app/shared/utils/chemical-name.test.ts src/app/shared/utils/standard-cleanup.test.ts src/app/shared/utils/standard-qr.test.ts src/app/core/services/pubchem.service.test.ts src/app/core/services/stats.service.test.ts src/app/core/services/request-stats.utils.test.ts src/app/core/services/stats-reconciliation.utils.test.ts src/app/features/standards/services/standard-import.utils.test.ts src/app/shared/utils/spreadsheet-file-security.test.ts src/app/features/standards/services/standard-tag.utils.test.ts src/app/features/standards/services/standard-tag-catalog.service.spec.ts src/app/core/services/delta-sync.test.ts src/app/core/services/firestore-activity-log-rules.test.ts src/app/core/services/firestore-read-monitor.service.test.ts src/app/features/standards/services/standard-internal-id-sync.service.test.ts src/app/features/standards/components/standards-internal-id-sync-modal.component.test.ts src/app/shared/utils/excel-export.test.ts",
     "test:cleanup": "tsx --test src/app/shared/utils/chemical-name.test.ts src/app/shared/utils/standard-cleanup.test.ts src/app/core/services/pubchem.service.test.ts",
     "test:notifications": "tsx --test api/_lib/notification-utils.test.ts api/_lib/notification-retention.test.ts api/_lib/activity-notification-dispatch.test.ts scripts/firebase-admin-runtime.test.js src/app/core/services/notification-badge.test.ts src/app/core/services/notification-policy.test.ts src/app/core/services/toast.service.test.ts src/app/shared/components/notification-panel/notification-panel.utils.test.ts && npm run test:notification-workflow",
@@ -47,7 +47,8 @@
     "test:ui-dashboard": "tsx --test src/app/features/dashboard/dashboard-ui-primitives.contract.test.ts src/app/features/dashboard/statistics-report.utils.test.ts src/app/features/duty-stats/duty-stats-ui-primitives.contract.test.ts src/app/features/duty-stats/duty-schedule.utils.test.ts src/app/features/duty-stats/duty-shift-swap.utils.test.ts src/app/features/duty-stats/duty-stats.utils.test.ts src/app/features/duty-stats/duty-tsv-import.test.ts",
     "test:ui-inventory": "tsx --test src/app/features/inventory/inventory-ui-primitives.contract.test.ts",
     "test:ui-results": "tsx --test src/app/features/results/result-list-ui-primitives.contract.test.ts",
-    "test:ui-requests": "tsx --test src/app/features/requests/request-list-ui-primitives.contract.test.ts",
+    "test:printing": "tsx --test src/app/features/requests/print-queue.utils.test.ts src/app/shared/utils/print-dom.test.ts src/app/shared/utils/label-paper-catalog.test.ts src/app/shared/utils/business-print-documents.test.ts",
+    "test:ui-requests": "npm run test:printing && tsx --test src/app/features/requests/request-list-ui-primitives.contract.test.ts",
     "test:ui-batch": "tsx --test src/app/features/batch/smart-batch-ui-primitives.contract.test.ts",
     "test:ui-recipes": "tsx --test src/app/features/recipes/recipe-ui-primitives.contract.test.ts",
     "test:ui-preparation": "tsx --test src/app/features/preparation/smart-prep-ui-primitives.contract.test.ts",
@@ -73,7 +74,7 @@
     "test:gas": "tsx --test scripts/gas-report-regression.test.ts",
     "gas:push": "npm run test:gas && npx clasp push",
     "gas:watch": "npx clasp push --watch",
-    "test:prep": "tsx --test src/app/features/preparation/prep-calculation.engine.test.ts src/app/features/preparation/smart-prep.boundary.test.ts src/app/features/preparation/smart-prep.workflow.test.ts",
+    "test:prep": "tsx --test src/app/features/preparation/prep-calculation.engine.test.ts src/app/features/preparation/smart-prep.boundary.test.ts src/app/features/preparation/smart-prep.workflow.test.ts src/app/features/preparation/prep-print-document.test.ts",
     "test:release": "node --test scripts/release-pipeline.test.js scripts/release-gate.test.js scripts/release-discipline.test.js scripts/vercel-ignore-build.test.js scripts/vercel-security-headers.test.js scripts/verify-runtime.test.js && tsx --test src/app/core/services/changelog-fallback.test.ts api/_lib/qr-rate-limit.test.ts api/_lib/qr-session-auth.test.ts",
     "test:changelog": "npm run test:release",
     "verify:runtime": "node scripts/verify-runtime.js",

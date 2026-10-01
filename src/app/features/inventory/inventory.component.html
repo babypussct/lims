@@ -5,6 +5,9 @@
           title="Quản lý kho hóa chất"
           subtitle="Nhật ký tồn kho, thông tin định lượng và an toàn hóa chất."
           icon="fa-boxes-stacked">
+          @if (activeTab() === 'list') {
+            <app-button pageHeaderActions variant="secondary" size="sm" [disabled]="filteredItems().length === 0" (click)="printInventoryCount()"><i class="fa-solid fa-print" aria-hidden="true"></i> Xem & In kiểm kê</app-button>
+          }
       </app-page-header>
 
       <!-- Statistics Card Row (Only show for List/Capacity tabs) -->
@@ -133,6 +136,7 @@
                                             <span class="text-[10px] font-bold uppercase bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-2 py-1 rounded">{{state.categoriesMap().get(item.category || '') || item.category}}</span>
                                         </div>
                                     </div>
+                                    <app-button variant="secondary" size="sm" (keydown)="$event.stopPropagation()" (click)="$event.stopPropagation(); printDecantLabel(item)"><i class="fa-solid fa-tag" aria-hidden="true"></i><span class="sr-only">In nhãn sang chiết {{item.name}}</span></app-button><app-button variant="secondary" size="sm" [disabled]="printLoading()" (keydown)="$event.stopPropagation()" (click)="$event.stopPropagation(); printStockCard(item)"><i class="fa-solid fa-print" aria-hidden="true"></i> Thẻ kho</app-button>
                                     <div [appLockPermission]="'inventory_edit'" class="flex items-center justify-end" (click)="$event.stopPropagation()">
                                         <div class="flex items-center gap-2">
                                             <input #quickInputMobile type="text" inputmode="text" [disabled]="isProcessing()" class="w-24 px-2 py-1.5 text-xs border border-slate-200 dark:border-slate-600 rounded-lg text-center focus:border-fuchsia-500 dark:focus:border-fuchsia-500 outline-none font-bold text-slate-700 dark:text-slate-300 font-mono bg-slate-50 dark:bg-slate-900/50" [placeholder]="'+/- (' + item.unit + ')'" (keyup.enter)="quickUpdate(item, quickInputMobile.value); quickInputMobile.value=''">
@@ -205,7 +209,7 @@
                                             <button type="button" aria-label="Lưu cập nhật nhanh tồn kho" (click)="quickUpdate(item, quickInput.value); quickInput.value=''" class="w-9 h-9 flex items-center justify-center rounded-lg bg-fuchsia-600 dark:bg-fuchsia-500 text-white hover:bg-fuchsia-700 dark:hover:bg-fuchsia-600 transition shadow-sm dark:shadow-none"><i class="fa-solid fa-check text-xs" aria-hidden="true"></i></button>
                                         </div>
                                     </td>
-                                <td class="px-4 py-2 text-center border-l border-slate-50"><button type="button" aria-label="Chỉnh sửa vật tư" (click)="openModal(item)" class="w-9 h-9 inline-flex items-center justify-center rounded-lg text-blue-600 hover:text-blue-800 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition"><i class="fa-solid fa-pen text-xs" aria-hidden="true"></i></button></td>
+                                <td class="px-4 py-2 text-center border-l border-slate-50"><app-button variant="secondary" size="sm" (keydown)="$event.stopPropagation()" (click)="$event.stopPropagation(); printDecantLabel(item)"><i class="fa-solid fa-tag" aria-hidden="true"></i><span class="sr-only">In nhãn sang chiết {{item.name}}</span></app-button><app-button variant="secondary" size="sm" [disabled]="printLoading()" (keydown)="$event.stopPropagation()" (click)="$event.stopPropagation(); printStockCard(item)"><i class="fa-solid fa-print" aria-hidden="true"></i><span class="sr-only">In thẻ kho {{item.name}}</span></app-button><button type="button" aria-label="Chỉnh sửa vật tư" (click)="openModal(item)" class="w-9 h-9 inline-flex items-center justify-center rounded-lg text-blue-600 hover:text-blue-800 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition"><i class="fa-solid fa-pen text-xs" aria-hidden="true"></i></button></td>
                             </tr>
                         }
                     </tbody>
@@ -458,3 +462,7 @@
          }
       }
     </div>
+
+@if (printDocument(); as document) {
+  <app-a4-document-preview [document]="document" (closed)="printDocument.set(null)" />
+}

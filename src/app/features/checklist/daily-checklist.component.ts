@@ -1,12 +1,16 @@
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, Input, OnDestroy, ViewChild, ViewEncapsulation, computed, inject, signal } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, Input, OnDestroy, ViewChild, ViewEncapsulation, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { StateService } from '../../core/services/state.service';
 import { ToastService } from '../../core/services/toast.service';
 import { Request } from '../../core/models/request.model';
 import { TargetGroup } from '../../core/models/sop.model';
-import { AppButtonComponent, AppDatePickerComponent, AppEmptyStateComponent, AppPageHeaderComponent, AppToolbarComponent, AppUiProgressComponent } from '../../shared/components/ui';
+import { AppButtonComponent, AppDatePickerComponent, AppEmptyStateComponent, AppModalShellComponent, AppPageHeaderComponent, AppToolbarComponent, AppUiProgressComponent } from '../../shared/components/ui';
+import { A4DocumentPreviewComponent } from '../../shared/components/a4-document-preview/a4-document-preview.component';
+import { A4Document } from '../../shared/utils/a4-document';
+import { clonePrintContent } from '../../shared/utils/print-dom';
+import { DAILY_PRINT_RENDERER_CSS } from './daily-print-renderer.styles';
 import { DailyChecklistDataService } from './daily-checklist-data.service';
 import {
   ApprovedBatchOverview,
@@ -32,7 +36,7 @@ import { getCanonicalId } from '../results/shared/compound-id-resolver';
 @Component({
   selector: 'app-daily-checklist',
   standalone: true,
-  imports: [CommonModule, FormsModule, AppButtonComponent, AppDatePickerComponent, AppEmptyStateComponent, AppPageHeaderComponent, AppToolbarComponent, AppUiProgressComponent],
+  imports: [CommonModule, FormsModule, AppButtonComponent, AppDatePickerComponent, AppEmptyStateComponent, AppPageHeaderComponent, AppToolbarComponent, AppUiProgressComponent, AppModalShellComponent, A4DocumentPreviewComponent],
   templateUrl: './daily-checklist.component.html',
   encapsulation: ViewEncapsulation.None,
   styles: [`
@@ -422,326 +426,15 @@ import { getCanonicalId } from '../results/shared/compound-id-resolver';
         display: flex !important;
       }
 
-      /* Adaptive batch table: print renderer độc lập với card màn hình */
-      body.daily-checklist-printing #print-container .cl-adaptive-root {
-        display: block !important;
-        width: 100% !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        color: #0f172a !important;
-        background: #ffffff !important;
-      }
-
-      body.daily-checklist-printing #print-container .cl-print-document {
-        display: block !important;
-        width: 100% !important;
-      }
-
-      body.daily-checklist-printing #print-container .cl-print-header {
-        display: flex !important;
-        align-items: baseline !important;
-        justify-content: space-between !important;
-        gap: 8px !important;
-        padding: 0 0 4mm !important;
-        border-bottom: 1.5px solid #334155 !important;
-        margin-bottom: 3mm !important;
-      }
-
-      body.daily-checklist-printing #print-container .cl-print-header h2 {
-        margin: 0 !important;
-        font-size: 12pt !important;
-        line-height: 1.2 !important;
-        font-weight: 800 !important;
-        letter-spacing: 0.02em !important;
-      }
-
-      body.daily-checklist-printing #print-container .cl-print-header div {
-        font-size: 9pt !important;
-        white-space: nowrap !important;
-      }
-
-      body.daily-checklist-printing #print-container .cl-print-list-layout,
-      body.daily-checklist-printing #print-container .cl-print-compact-layout {
-        display: none !important;
-      }
-
-      body.daily-checklist-printing #print-container .cl-print-mode-list .cl-print-list-layout {
-        display: block !important;
-      }
-
-      body.daily-checklist-printing #print-container .cl-print-mode-compact .cl-print-compact-layout {
-        display: block !important;
-      }
-
-      body.daily-checklist-printing #print-container .cl-print-compact-page {
-        display: block !important;
-        position: relative !important;
-        box-sizing: border-box !important;
-        break-inside: avoid-page !important;
-        page-break-inside: avoid !important;
-        break-after: page !important;
-        page-break-after: always !important;
-      }
-
-      body.daily-checklist-printing.print-portrait-mode #print-container .cl-print-compact-page {
-        height: 265mm !important;
-      }
-
-      body.daily-checklist-printing.print-landscape-mode #print-container .cl-print-compact-page {
-        height: 178mm !important;
-      }
-
-      body.daily-checklist-printing #print-container .cl-print-compact-page-last {
-        break-after: auto !important;
-        page-break-after: auto !important;
-      }
-
-      body.daily-checklist-printing #print-container .cl-print-compact-columns {
-        display: grid !important;
-        align-items: start !important;
-        gap: 4mm !important;
-        box-sizing: border-box !important;
-      }
-
-      body.daily-checklist-printing.print-portrait-mode #print-container .cl-print-compact-columns {
-        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-      }
-
-      body.daily-checklist-printing.print-landscape-mode #print-container .cl-print-compact-columns {
-        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-      }
-
-      body.daily-checklist-printing #print-container .cl-print-compact-column {
-        display: block !important;
-        min-width: 0 !important;
-      }
-
-      body.daily-checklist-printing #print-container .cl-print-compact-card {
-        display: block !important;
-        width: 100% !important;
-        margin: 0 0 4mm !important;
-        border: 1px solid #94a3b8 !important;
-        border-radius: 2.5mm !important;
-        overflow: hidden !important;
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
-        background: white !important;
-        font-size: 8pt !important;
-        line-height: 1.3 !important;
-      }
-
-      body.daily-checklist-printing #print-container .cl-print-compact-head {
-        display: flex !important;
-        align-items: flex-start !important;
-        gap: 2mm !important;
-        padding: 2.2mm !important;
-        border-bottom: 1px solid #cbd5e1 !important;
-        background: #f8fafc !important;
-      }
-
-      body.daily-checklist-printing #print-container .cl-print-compact-index {
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        width: 5mm !important;
-        height: 5mm !important;
-        flex: 0 0 5mm !important;
-        border-radius: 50% !important;
-        color: white !important;
-        background: #2563eb !important;
-        font-size: 7pt !important;
-        font-weight: 800 !important;
-      }
-
-      body.daily-checklist-printing #print-container .cl-print-compact-title {
-        min-width: 0 !important;
-        flex: 1 1 auto !important;
-        font-size: 8.5pt !important;
-        font-weight: 800 !important;
-        overflow-wrap: anywhere !important;
-      }
-
-      body.daily-checklist-printing #print-container .cl-print-compact-title small {
-        display: block !important;
-        margin-top: 0.7mm !important;
-        color: #64748b !important;
-        font-size: 6.5pt !important;
-        font-weight: 600 !important;
-      }
-
-      body.daily-checklist-printing #print-container .cl-print-compact-group {
-        padding: 2.2mm !important;
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
-      }
-
-      body.daily-checklist-printing #print-container .cl-print-compact-group + .cl-print-compact-group {
-        border-top: 1px dashed #cbd5e1 !important;
-      }
-
-      body.daily-checklist-printing #print-container .cl-print-compact-label {
-        margin-bottom: 0.7mm !important;
-        color: #64748b !important;
-        font-size: 6.7pt !important;
-        font-weight: 800 !important;
-        text-transform: uppercase !important;
-        letter-spacing: 0.03em !important;
-      }
-
-      body.daily-checklist-printing #print-container .cl-print-compact-samples {
-        margin-bottom: 1.5mm !important;
-        font-size: 8.5pt !important;
-        font-weight: 400 !important;
-        overflow-wrap: anywhere !important;
-      }
-
-      body.daily-checklist-printing #print-container .cl-print-compact-targets {
-        margin: 0 !important;
-        padding: 0 !important;
-        list-style: none !important;
-      }
-
-      body.daily-checklist-printing #print-container .cl-print-compact-targets li {
-        display: inline !important;
-      }
-
-      body.daily-checklist-printing #print-container .cl-print-compact-targets li:not(:last-child)::after {
-        content: '; ' !important;
-      }
-
-      body.daily-checklist-printing #print-container .cl-print-table {
-        display: table !important;
-        width: 100% !important;
-        table-layout: fixed !important;
-        border-collapse: collapse !important;
-        border: 1px solid #64748b !important;
-        font-size: 9pt !important;
-        line-height: 1.3 !important;
-      }
-
-      body.daily-checklist-printing.print-portrait-mode #print-container .cl-col-batch { width: 24% !important; }
-      body.daily-checklist-printing.print-portrait-mode #print-container .cl-col-samples { width: 38% !important; }
-      body.daily-checklist-printing.print-portrait-mode #print-container .cl-col-targets { width: 38% !important; }
-      body.daily-checklist-printing.print-landscape-mode #print-container .cl-col-batch { width: 22% !important; }
-      body.daily-checklist-printing.print-landscape-mode #print-container .cl-col-samples { width: 40% !important; }
-      body.daily-checklist-printing.print-landscape-mode #print-container .cl-col-targets { width: 38% !important; }
-
-      body.daily-checklist-printing #print-container .cl-print-table thead {
-        display: table-header-group !important;
-      }
-
-      body.daily-checklist-printing #print-container .cl-print-table th {
-        padding: 2.2mm 2.5mm !important;
-        border: 1px solid #64748b !important;
-        background: #e2e8f0 !important;
-        color: #0f172a !important;
-        text-align: left !important;
-        text-transform: uppercase !important;
-        letter-spacing: 0.04em !important;
-        font-size: 8pt !important;
-        font-weight: 800 !important;
-      }
-
-      body.daily-checklist-printing #print-container .cl-print-table td {
-        padding: 2.5mm !important;
-        border: 1px solid #94a3b8 !important;
-        vertical-align: top !important;
-        overflow-wrap: anywhere !important;
-      }
-
-      body.daily-checklist-printing #print-container .cl-print-assignment-row {
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
-      }
-
-      body.daily-checklist-printing #print-container .cl-print-batch-start td {
-        border-top-width: 1.5px !important;
-        border-top-color: #334155 !important;
-      }
-
-      body.daily-checklist-printing #print-container .cl-print-batch-cell {
-        display: flex !important;
-        align-items: flex-start !important;
-        gap: 2.5mm !important;
-      }
-
-      body.daily-checklist-printing #print-container .cl-print-batch-info {
-        min-width: 0 !important;
-        flex: 1 1 auto !important;
-      }
-
-      body.daily-checklist-printing #print-container .cl-print-sop {
-        font-weight: 700 !important;
-        color: #334155 !important;
-      }
-
-      body.daily-checklist-printing #print-container .cl-print-meta,
-      body.daily-checklist-printing #print-container .cl-print-count {
-        display: flex !important;
-        flex-wrap: wrap !important;
-        gap: 1.5mm !important;
-        margin-top: 1mm !important;
-        color: #64748b !important;
-        font-size: 7.5pt !important;
-        font-weight: 600 !important;
-      }
-
-      body.daily-checklist-printing #print-container .cl-print-samples + .cl-print-meta {
-        color: #86198f !important;
-      }
-
-      body.daily-checklist-printing #print-container .cl-print-samples {
-        font-size: 9pt !important;
-        font-weight: 400 !important;
-      }
-
-      body.daily-checklist-printing #print-container .cl-print-sample-code {
-        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
-        font-weight: 800 !important;
-      }
-
-      body.daily-checklist-printing #print-container .cl-print-sample-description,
-      body.daily-checklist-printing #print-container .cl-print-sample-separator {
-        font-family: Arial, Helvetica, sans-serif !important;
-        font-weight: 400 !important;
-      }
-
-      body.daily-checklist-printing #print-container .cl-print-targets {
-        margin: 0 !important;
-        padding-left: 4mm !important;
-      }
-
-      body.daily-checklist-printing #print-container .cl-print-targets li {
-        margin: 0 0 0.7mm !important;
-      }
-
-      body.daily-checklist-printing #print-container .cl-print-missing {
-        font-style: italic !important;
-        color: #92400e !important;
-      }
-
-      body.daily-checklist-printing #print-container .cl-print-scope {
-        display: flex !important;
-        flex-direction: column !important;
-        gap: 0.8mm !important;
-        color: #172554 !important;
-      }
-
-      body.daily-checklist-printing #print-container .cl-print-scope strong {
-        font-size: 8.5pt !important;
-        line-height: 1.2 !important;
-      }
-
-      body.daily-checklist-printing #print-container .cl-print-scope span {
-        color: #64748b !important;
-        font-size: 7.5pt !important;
-        font-weight: 700 !important;
-      }
 
     }
+    ${DAILY_PRINT_RENDERER_CSS}
   `]
 })
 export class DailyChecklistComponent implements OnDestroy {
+  private readonly changeDetector = inject(ChangeDetectorRef);
+  private readonly element = inject(ElementRef<HTMLElement>);
+  readonly previewDocument = signal<A4Document | null>(null);
   @Input() embedded = false;
   readonly state = inject(StateService);
   readonly router = inject(Router);
@@ -1052,74 +745,31 @@ export class DailyChecklistComponent implements OnDestroy {
   }
 
   executePrint(): void {
+    if (this.loading() || this.boardBatches().length === 0) return;
     this.showPrintSettings.set(false);
     this.printGeneratedAt.set(new Date());
-
-    const printContainer = document.getElementById('print-container');
-    if (!printContainer) {
-      window.print();
-      return;
-    }
-
-    const source = document.querySelector('.cl-page-shell');
-    if (!source) {
-      console.warn('cl-page-shell not found');
-      return;
-    }
-
-    const orientation = this.printPlan().orientation;
-    if (orientation === 'portrait') {
-      document.body.classList.add('daily-checklist-printing', 'print-portrait-mode');
-    } else {
-      document.body.classList.add('daily-checklist-printing', 'print-landscape-mode');
-    }
-    
-    // SỬA LỖI TRANG TRẮNG: Gỡ bỏ khóa cứng kích thước 210x297mm của thẻ html trong index.html
-    // (CSS class binding không thể target trực tiếp thẻ html outside component ViewEncapsulation)
-    document.documentElement.style.setProperty('height', 'auto', 'important');
-    document.documentElement.style.setProperty('width', 'auto', 'important');
-    document.body.style.setProperty('height', 'auto', 'important');
-    document.body.style.setProperty('width', 'auto', 'important');
-    document.body.style.setProperty('overflow', 'visible', 'important');
-
-    // Thêm dynamic style để khống chế hướng giấy in (Portrait / Landscape)
-    const styleEl = document.createElement('style');
-    styleEl.id = 'print-orientation-style';
-    styleEl.innerHTML = `@page { size: A4 ${orientation}; margin: 8mm; }`;
-    document.head.appendChild(styleEl);
-
-    // Đợi Angular cập nhật nội dung mô tả mẫu trước khi clone vùng in.
-    setTimeout(async () => {
-      const clone = source.cloneNode(true) as HTMLElement;
-      
-      // Khử animation và transform để tránh phá vỡ thuật toán phân trang CSS Columns của trình duyệt
-      clone.style.animation = 'none';
-      clone.style.transform = 'none';
-      const animatedElements = clone.querySelectorAll('.cl-board-enter, .animate-fade-in');
-      animatedElements.forEach((el: any) => {
-        el.style.animation = 'none';
-        el.style.transform = 'none';
+    this.changeDetector.detectChanges();
+      const source = this.element.nativeElement.querySelector('.cl-print-document') as HTMLElement | null;
+      if (!source) { this.toast.show('Không tìm thấy nội dung bản in.', 'error'); return; }
+      const plan = this.printPlan();
+      const selected = source.querySelector(plan.mode === 'compact' ? '.cl-print-compact-layout' : '.cl-print-list-layout')!;
+      const clone = clonePrintContent(selected as HTMLElement);
+      const signatures = document.createElement('div');
+      signatures.className = 'cl-print-signatures';
+      signatures.innerHTML = '<div><strong>Người giao việc</strong><p>(Ký, ghi rõ họ tên)</p></div><div><strong>Người nhận việc</strong><p>(Ký, ghi rõ họ tên)</p></div>';
+      this.previewDocument.set({
+        title: 'Xem & In bảng theo dõi mẫu ngày', subtitle: this.selectedDateLabel(),
+        preparedAt: this.printGeneratedAt().toLocaleString('vi-VN'), notice: '', sections: [],
+        orientation: plan.orientation, fileName: 'LIMS_Checklist.pdf',
+        html: {
+          header: clone.querySelector<HTMLElement>('.cl-print-header')!,
+          table: plan.mode === 'list' ? clone.querySelector<HTMLTableElement>('.cl-print-table')! : undefined,
+          cards: plan.mode === 'compact' ? Array.from(clone.querySelectorAll<HTMLElement>('.cl-print-compact-card')).sort((a, b) => Number(a.querySelector('.cl-print-compact-index')!.textContent) - Number(b.querySelector('.cl-print-compact-index')!.textContent)) : undefined,
+          cardColumns: plan.orientation === 'portrait' ? 2 : 3,
+          after: [signatures],
+          css: DAILY_PRINT_RENDERER_CSS + '\n.a4-html-root .cl-print-signatures{display:grid;grid-template-columns:1fr 1fr;text-align:center;padding-top:5mm;font-size:11px;min-height:25mm}.a4-html-root .cl-print-signatures p{margin-top:10mm}',
+        },
       });
-
-      printContainer.innerHTML = '';
-      printContainer.appendChild(clone);
-
-      const cleanupPrintMode = () => {
-        document.body.classList.remove('daily-checklist-printing', 'print-portrait-mode', 'print-landscape-mode');
-        document.documentElement.style.removeProperty('height');
-        document.documentElement.style.removeProperty('width');
-        document.body.style.removeProperty('height');
-        document.body.style.removeProperty('width');
-        document.body.style.removeProperty('overflow');
-        printContainer.innerHTML = '';
-        
-        const styleElToRemove = document.getElementById('print-orientation-style');
-        if (styleElToRemove) styleElToRemove.remove();
-      };
-
-      window.addEventListener('afterprint', cleanupPrintMode, { once: true });
-      window.print();
-    }, 120);
   }
 
   isBatchExpanded(requestId: string): boolean {

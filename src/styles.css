@@ -481,6 +481,27 @@
   box-shadow: var(--soft-ui-shadow-control);
 }
 
+/* Print workspaces use indigo without migrating legacy consumers. */
+.print-workspace .print-primary > button {
+  @apply bg-indigo-600 text-white hover:bg-indigo-700;
+  background-image: none;
+}
+
+@media print {
+  body.lims-slip-printing,
+  html:has(body.lims-slip-printing) {
+    width: auto !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  body.lims-slip-printing #print-container {
+    position: static !important;
+    width: 210mm !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+}
+
 .soft-ui-panel {
   border: 0;
   border-radius: 1rem;

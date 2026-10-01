@@ -14,14 +14,19 @@ import { parseLocalDateKey } from '../../shared/utils/date-range';
 import { AppDatePickerComponent } from '../../shared/components/ui/date-picker/date-picker.component';
 import { PrintQueueService } from '../../core/services/print-queue.service';
 import { AppPageHeaderComponent } from '../../shared/components/ui/page-header/page-header.component';
+import { AppButtonComponent } from '../../shared/components/ui/button/button.component';
+import { A4DocumentPreviewComponent } from '../../shared/components/a4-document-preview/a4-document-preview.component';
+import { A4Document } from '../../shared/utils/a4-document';
+import { buildSampleHandoverDocument } from '../../shared/utils/business-print-documents';
 
 import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-request-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, SkeletonComponent, PrintQueueComponent, DateRangeFilterComponent, AppPageHeaderComponent, AppDatePickerComponent],
+  imports: [CommonModule, FormsModule, SkeletonComponent, PrintQueueComponent, DateRangeFilterComponent, AppPageHeaderComponent, AppDatePickerComponent, AppButtonComponent, A4DocumentPreviewComponent],
   template: `
+    @if (handoverDocument(); as document) { <app-a4-document-preview [document]="document" (closed)="handoverDocument.set(null)" /> }
     <div class="h-full flex flex-col fade-in relative p-4 md:p-6">
         <app-page-header
             class="mb-4 shrink-0"
@@ -181,6 +186,7 @@ import { Router } from '@angular/router';
                                         </div>
                                     </div>
 
+                                    <app-button variant="secondary" size="sm" [disabled]="!req.sampleList?.length" (click)="printHandover(req)"><i class="fa-solid fa-print" aria-hidden="true"></i> Phiếu bàn giao mẫu</app-button>
                                     @if(state.isAdmin() || (currentTab() === 'approved' && auth.canApprove())) {
                                         <div class="flex flex-row md:flex-col gap-2 shrink-0 md:w-36 mt-2 md:mt-0">
                                             @if (currentTab() === 'pending') {
@@ -333,6 +339,8 @@ import { Router } from '@angular/router';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class RequestListComponent implements OnInit {
+  readonly handoverDocument = signal<A4Document | null>(null);
+  printHandover(request: Request): void { this.handoverDocument.set(buildSampleHandoverDocument(request)); }
   state = inject(StateService);
   auth = inject(AuthService);
   router = inject(Router);

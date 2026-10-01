@@ -39,7 +39,7 @@ describe('requests list shared UI primitive integration', () => {
     assert.match(component, /flex-1 overflow-y-auto p-2 md:hidden/);
     assert.match(component, /hidden flex-1 overflow-y-auto md:block/);
     assert.match(component, /<article class="rounded-xl border border-slate-200 p-3 transition/);
-    assert.match(component, /aria-label="In phiếu này"/);
+    assert.match(component, /aria-label="Xem và in phiếu này"/);
     assert.match(component, /aria-label="Sửa mẻ trước khi in"/);
     assert.match(component, /aria-label="Xóa phiếu này"/);
     assert.match(component, /flex h-10 w-10 items-center justify-center/);
