@@ -1,5 +1,22 @@
 [
   {
+    "version": "v26.10.01-b02",
+    "date": "1/10/2026",
+    "title": "Khôi phục mã QR chất chuẩn và in nhãn",
+    "highlights": [
+      "Mã QR chất chuẩn hiển thị trở lại để quét, phóng to và in nhãn."
+    ],
+    "features": [],
+    "improvements": [
+      "Giữ liên kết trong mã QR chất chuẩn đồng nhất với liên kết chia sẻ."
+    ],
+    "fixes": [
+      "Sửa lỗi ảnh QR chất chuẩn không hiển thị trên bản phát hành chính thức.",
+      "Sửa cùng nguyên nhân gây lỗi tạo QR khi in nhãn và giữ các luồng đăng nhập, truy xuất bằng QR hoạt động ổn định."
+    ],
+    "releaseOrder": 26100100002
+  },
+  {
     "version": "v26.10.01-b01",
     "date": "1/10/2026",
     "title": "Tra cứu và chia sẻ chất chuẩn thuận tiện hơn",

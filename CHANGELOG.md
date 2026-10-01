@@ -2,7 +2,26 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.10.01-b01
+## Phiên bản hiện tại: v26.10.01-b02
+
+### v26.10.01-b02
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Mã QR chất chuẩn hiển thị trở lại để quét, phóng to và in nhãn.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Giữ liên kết trong mã QR chất chuẩn đồng nhất với liên kết chia sẻ.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Sửa lỗi ảnh QR chất chuẩn không hiển thị trên bản phát hành chính thức.
+- Sửa cùng nguyên nhân gây lỗi tạo QR khi in nhãn và giữ các luồng đăng nhập, truy xuất bằng QR hoạt động ổn định.
 
 ### v26.10.01-b01
 

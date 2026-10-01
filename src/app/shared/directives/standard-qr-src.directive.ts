@@ -18,8 +18,8 @@ export class StandardQrSrcDirective implements OnChanges {
 
   private async render(): Promise<void> {
     const version = ++this.renderVersion;
-    const id = this.appStandardQr.trim();
-    if (!id) {
+    const id = this.appStandardQr;
+    if (!id.trim()) {
       this.element.nativeElement.removeAttribute('src');
       return;
     }

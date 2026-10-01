@@ -1,3 +1,5 @@
+import { loadQrCode } from './qr-code';
+
 export function buildStandardQrPayload(origin: string, standardId: string): string {
   const normalizedOrigin = origin.replace(/\/+$/, '');
   return `${normalizedOrigin}/#/standards/${encodeURIComponent(standardId)}`;
@@ -8,7 +10,7 @@ export async function createStandardQrDataUrl(
   standardId: string,
   size = 150
 ): Promise<string> {
-  const QRCode = await import('qrcode');
+  const QRCode = await loadQrCode();
   return QRCode.toDataURL(buildStandardQrPayload(origin, standardId), {
     width: size,
     margin: 1,

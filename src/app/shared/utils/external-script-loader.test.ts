@@ -4,11 +4,11 @@ import { resolve } from 'node:path';
 import test from 'node:test';
 
 const source = readFileSync(resolve(process.cwd(), 'src/app/shared/utils/external-script-loader.ts'), 'utf8');
+const loader = readFileSync(resolve(process.cwd(), 'src/app/shared/utils/qr-code.ts'), 'utf8');
 
 test('QR rendering is bundled from npm and does not inject a CDN script', () => {
-  assert.match(source, /import\('qrcode'\)/);
-  assert.match(source, /QRCodeModule as any\)\.default/);
-  assert.match(source, /typeof \(QRCodeModule as any\)\.toCanvas === 'function'/);
+  assert.match(loader, /import\('qrcode'\)/);
+  assert.match(source, /await loadQrCode\(\)/);
   assert.match(source, /QRCode\.toCanvas/);
   assert.doesNotMatch(source, /cdnjs|createElement\('script'\)|appendChild\(script\)/);
 });

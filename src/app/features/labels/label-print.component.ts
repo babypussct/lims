@@ -8,6 +8,7 @@ import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { timestampToLocalDateKey } from '../../shared/utils/timestamp';
 import { AppButtonComponent, AppDatePickerComponent, AppPageHeaderComponent } from '../../shared/components/ui';
+import { loadQrCode } from '../../shared/utils/qr-code';
 
 type PrintMode = 'brother' | 'tomy_a4' | 'plain_a4';
 type DisplayFormat = 'text' | 'barcode' | 'barcode_text' | 'qrcode' | 'qrcode_text' | 'qrcode_hybrid';
@@ -711,7 +712,7 @@ export class LabelPrintComponent implements AfterViewInit {
   }
 
   private async loadQrLib(): Promise<any> {
-      this.qrLibLoader ??= import('qrcode');
+      this.qrLibLoader ??= loadQrCode();
       return this.qrLibLoader;
   }
 
