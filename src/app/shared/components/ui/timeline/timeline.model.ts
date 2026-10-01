@@ -11,6 +11,14 @@ export interface TimelineItemAction {
 export interface TimelineMetadataItem {
   label: string;
   value: string;
+  routerLink?: string | any[];
+  actionTitle?: string;
+}
+
+export interface TimelinePill {
+  label: string;
+  variant?: 'success' | 'warning' | 'info' | 'danger' | 'neutral';
+  prefix?: string;
 }
 
 export interface TimelineItem {
@@ -20,6 +28,10 @@ export interface TimelineItem {
   timestamp?: string | number | Date | null | { toDate?: () => Date };
   actorName?: string | null;
   actorRole?: string | null;
+  actorAvatarUrl?: string | null;
+  actorFallbackInitials?: string | null;
+  actorSubtext?: string | null;
+  pills?: TimelinePill[];
   icon: string;
   status: TimelineStatus;
   metadata?: TimelineMetadataItem[];

@@ -16,6 +16,9 @@ describe('Soft UI timeline primitive', () => {
     assert.match(model, /interface TimelineItem/);
     assert.match(model, /metadata\?: TimelineMetadataItem\[\]/);
     assert.match(model, /isCurrent\?: boolean/);
+    assert.match(model, /actorAvatarUrl\?: string \| null/);
+    assert.match(model, /actorSubtext\?: string \| null/);
+    assert.match(model, /pills\?: TimelinePill\[\]/);
   });
 
   it('renders an accessible vertical event list with current-state and responsive metadata', () => {
@@ -33,6 +36,9 @@ describe('Soft UI timeline primitive', () => {
     assert.match(source, /\[routerLink\]="action\.routerLink"/);
     assert.match(source, /\[href\]="action\.href"/);
     assert.match(source, /rel="noopener noreferrer"/);
+    assert.match(source, /\[routerLink\]="meta\.routerLink"/);
+    assert.match(source, /\(error\)="avatarFailed\(item\.actorAvatarUrl\)"/);
+    assert.match(source, /soft-ui-timeline__badge/);
   });
 
   it('uses global Soft UI timeline tokens instead of component hex colors', () => {
@@ -47,5 +53,6 @@ describe('Soft UI timeline primitive', () => {
     assert.match(styles, /--soft-ui-timeline-node-danger:/);
     assert.match(styles, /\.soft-ui-timeline__node\[data-current='true'\]::after/);
     assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
+    assert.match(styles, /soft-ui-timeline__node\.soft-ui-timeline__node--avatar[\s\S]*?width: 2\.5rem/);
   });
 });

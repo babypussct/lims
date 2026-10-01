@@ -30,9 +30,8 @@ import { AppButtonComponent } from '../../shared/components/ui/button/button.com
 import { AppEmptyStateComponent } from '../../shared/components/ui/empty-state/empty-state.component';
 import { AppPageHeaderComponent } from '../../shared/components/ui/page-header/page-header.component';
 import { AppUiTimelineComponent } from '../../shared/components/ui/timeline/timeline.component';
+import { buildStandardUsageTimelineItem } from '../../shared/utils/standard-usage-timeline';
 import { TimelineItem } from '../../shared/components/ui/timeline/timeline.model';
-import { AppUiAvatarGroupComponent } from '../../shared/components/ui/avatar-group/avatar-group.component';
-import { AvatarGroupItem } from '../../shared/components/ui/avatar-group/avatar-group.model';
 import { StandardQrSrcDirective } from '../../shared/directives/standard-qr-src.directive';
 import { buildStandardQrPayload } from '../../shared/utils/standard-qr';
 import { AppModalShellComponent } from '../../shared/components/ui/modal-shell/modal-shell.component';
@@ -58,7 +57,6 @@ import {
       AppEmptyStateComponent,
       AppPageHeaderComponent,
       AppUiTimelineComponent,
-      AppUiAvatarGroupComponent,
       StandardQrSrcDirective,
       AppModalShellComponent
   ],
@@ -149,51 +147,16 @@ export class StandardDetailComponent implements OnInit, OnDestroy {
 
     usageTimelineItems = computed<TimelineItem[]>(() => {
         const std = this.standard();
-        return this.usageLogs().map((log, index) => {
-            const unit = log.unit || log.normalized_unit || std?.unit || '';
-            const metadata = [
-                std?.internal_id ? { label: 'Mã chuẩn', value: std.internal_id } : null,
-                log.requestId ? { label: 'Phiếu', value: log.requestId } : null,
-                log.isBackfill ? { label: 'Nguồn', value: 'Nhập bù' } : null,
-            ].filter((item): item is { label: string; value: string } => item !== null);
-
-            return {
-                id: log.id || `${log.timestamp || log.date}-${index}`,
-                title: `Đã sử dụng ${this.formatNum(log.amount_used)} ${unit}`.trim(),
-                description: log.purpose || 'Ghi nhận sử dụng chất chuẩn.',
-                timestamp: log.timestamp || log.date,
-                actorName: log.user,
-                actorRole: log.isBackfill ? 'Nhật ký nhập bù' : 'Người sử dụng chuẩn',
-                icon: log.isDepleted ? 'fa-flask-vial' : 'fa-vial',
-                status: log.isDepleted ? 'warning' : (log.isBackfill ? 'primary' : 'info'),
-                metadata,
-                action: this.canDeleteStandardLogs() && log.id && std?.id ? {
-                    label: 'Hoàn tác & hoàn kho',
-                    icon: 'fa-trash-can',
-                    callback: () => { void this.deleteLog(log, std.id); },
-                } : undefined,
-                isCurrent: index === 0,
-            } satisfies TimelineItem;
-        });
-    });
-
-    usageActors = computed<AvatarGroupItem[]>(() => {
-        const seen = new Set<string>();
-        const actors: AvatarGroupItem[] = [];
-        for (const log of this.usageLogs()) {
-            const name = log.user?.trim() || 'Hệ thống LIMS';
-            const key = (log.userId || name).toLocaleLowerCase('vi-VN');
-            if (seen.has(key)) continue;
-            seen.add(key);
-            const avatarOptions = this.state.getUserAvatarOptions(name);
-            actors.push({
-                id: log.userId || key,
-                name,
-                imageUrl: this.getAvatarUrl(name, avatarOptions.style, avatarOptions.photoURL),
-                subtitle: 'Đã thao tác chất chuẩn',
-            });
-        }
-        return actors;
+        return this.usageLogs().map((log, index) => ({
+            ...buildStandardUsageTimelineItem(log, index, std, (uid, name) => this.state.getUserAvatarOptionsByUid(uid, name)),
+            action: this.canDeleteStandardLogs() && log.id && std?.id ? {
+                label: 'Hoàn tác & hoàn kho', icon: 'fa-trash-can',
+                callback: () => { void this.deleteLog(log, std.id); },
+            } : undefined,
+        })).sort((a, b) => {
+            const time = (value: TimelineItem['timestamp']) => new Date(value as string | number).getTime() || 0;
+            return time(b.timestamp) - time(a.timestamp);
+        }).map((item, index) => ({ ...item, isCurrent: index === 0 }));
     });
 
     // Modals state

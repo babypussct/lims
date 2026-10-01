@@ -337,6 +337,7 @@ export class StandardUsageService {
         metadata: {
           standardId: stdId,
           analysisDate: newLogDate,
+          usageLogId: newLogRef.id,
           amount: usageLog.amount_used,
           unit: usageLog.unit || '',
           internalId: stdData.internal_id || undefined

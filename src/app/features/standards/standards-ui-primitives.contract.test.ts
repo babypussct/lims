@@ -74,6 +74,7 @@ async function createDetailHarness(permissions: string[] = [], audit = false, br
     { provide: state.StateService, useValue: {
       ensureUserInfoCacheListener() {}, usersInfoByUidCache: usersInfo,
       getUserAvatarOptions: () => ({}),
+      getUserAvatarOptionsByUid: (_uid: string, name: string) => ({ displayName: name }),
     } },
     { provide: toast.ToastService, useValue: { show: (message: string, type?: string) => toastMessages.push([message, type]) } },
     { provide: confirmation.ConfirmationService, useValue: { confirm: async (data: unknown) => { confirmations.push(data); return false; } } },
@@ -459,7 +460,7 @@ describe('standards shared UI primitive integration', () => {
     assert.match(component, /AppEmptyStateComponent/);
     assert.match(component, /AppPageHeaderComponent/);
     assert.match(component, /AppUiTimelineComponent/);
-    assert.match(component, /AppUiAvatarGroupComponent/);
+    assert.match(component, /getUserAvatarOptionsByUid/);
     assert.match(template, /<app-page-header\b/);
     assert.match(template, /variant="detail"/);
     assert.match(template, /pageHeaderLeading/);
@@ -474,9 +475,9 @@ describe('standards shared UI primitive integration', () => {
     assert.match(template, />\s*Lọ chuẩn cùng tên/);
     assert.match(template, /<app-ui-timeline\b/);
     assert.match(template, /\[items\]="usageTimelineItems\(\)"/);
-    assert.match(template, /<app-ui-avatar-group\b/);
+    assert.doesNotMatch(template, /<app-ui-avatar-group\b/);
     assert.match(component, /usageTimelineItems = computed<TimelineItem\[]>/);
-    assert.match(component, /usageActors = computed<AvatarGroupItem\[]>/);
+    assert.match(component, /buildStandardUsageTimelineItem/);
     assert.match(component, /callback: \(\) => \{ void this\.deleteLog\(log, std\.id\); \}/);
     assert.doesNotMatch(template, /<h1[^>]*>\s*\{\{std\.name\}\}/);
   });

@@ -4,7 +4,7 @@ const { dirname, join, resolve } = require('node:path');
 const ROOT = resolve(__dirname, '..');
 const PROJECT_ID = 'demo-lims-smart-batch-rules';
 const FIRESTORE_PORT = 8080;
-const TEST_COMMAND = 'npx tsx --test src/app/core/services/smart-batch-firestore-rules.emulator.test.ts';
+const TEST_COMMAND = 'npx tsx --test src/app/core/services/smart-batch-firestore-rules.emulator.test.ts src/app/features/traceability/standard-traceability.emulator.test.ts';
 const FIREBASE_CLI_VERSION = '14.27.0';
 const NPX = process.platform === 'win32'
   ? {

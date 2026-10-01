@@ -1,8 +1,8 @@
 
-import { Component, inject, signal, computed, Input, OnInit, OnDestroy, ElementRef, viewChild } from '@angular/core';
+import { Component, inject, signal, computed, effect, Input, OnInit, OnDestroy, ElementRef, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { StateService } from '../../core/services/state.service';
 import { FirebaseService } from '../../core/services/firebase.service';
@@ -26,6 +26,9 @@ import { AppUiTimelineComponent } from '../../shared/components/ui/timeline/time
 import { TimelineItem, TimelineStatus } from '../../shared/components/ui/timeline/timeline.model';
 import { getActivityActionLabel } from '../../core/activity/activity-feed.utils';
 import { isRegisteredActivityAction } from '../../core/activity/activity-event-registry';
+import { TraceabilityDataService, StandardTraceRecord, StandardHistorySource, isStandardActivity } from './traceability-data.service';
+import { buildStandardTraceTimeline, mergeStandardUsages, standardTraceSummary, standardTraceTitle } from './standard-traceability.utils';
+import { UsageLog } from '../../core/models/standard.model';
 
 export interface TraceabilitySampleRow {
   sampleId: string;
@@ -38,7 +41,7 @@ export interface TraceabilitySampleRow {
 @Component({
   selector: 'app-traceability',
   standalone: true,
-  imports: [CommonModule, FormsModule, AppButtonComponent, AppEmptyStateComponent, AppPageHeaderComponent, AppUiTimelineComponent],
+  imports: [CommonModule, FormsModule, RouterLink, AppButtonComponent, AppEmptyStateComponent, AppPageHeaderComponent, AppUiTimelineComponent],
   template: `
     <div class="relative mx-auto min-h-full w-full max-w-7xl shrink-0 p-4 md:p-6 pb-20 fade-in">
         <app-page-header
@@ -337,6 +340,45 @@ export interface TraceabilitySampleRow {
                   }
                 </app-empty-state>
             </div>
+        } @else if (standardRecord(); as record) {
+          <section class="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900 sm:p-6" aria-labelledby="standard-trace-heading">
+            <div class="mb-4 flex min-w-0 flex-wrap items-start justify-between gap-3">
+              <div class="min-w-0">
+                <p class="mb-1 text-xs font-bold text-sky-700 dark:text-sky-300">{{ record.recordType === 'STANDARD_USAGE' ? 'Nhật ký sử dụng chất chuẩn' : 'Phiếu mượn chất chuẩn' }}</p>
+                <h2 id="standard-trace-heading" class="break-words text-lg font-extrabold text-slate-800 dark:text-slate-100">{{ standardTraceTitle(record) }}</h2>
+                <p class="mt-1 break-all font-mono text-xs text-slate-500">{{ record.id }}</p>
+              </div>
+              @if (record.request?.status) {
+                <span class="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-200">{{ standardStatusLabel(record.request?.status) }}</span>
+              }
+            </div>
+            <dl class="grid min-w-0 grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
+              @for (field of standardSummary(); track field.label) {
+                <div class="min-w-0"><dt class="text-xs text-slate-500 dark:text-slate-400">{{ field.label }}</dt><dd class="mt-1 whitespace-pre-wrap break-words text-sm font-semibold text-slate-800 dark:text-slate-100">{{ field.value }}</dd></div>
+              }
+            </dl>
+            @if (record.usage?.requestId) {
+              <a [routerLink]="['/traceability', record.usage?.requestId]" class="mt-4 inline-flex min-h-10 max-w-full items-center gap-2 rounded-lg bg-sky-50 px-3 py-2 text-sm font-bold text-sky-800 dark:bg-sky-950 dark:text-sky-200">
+                <i class="fa-solid fa-arrow-up-right-from-square shrink-0" aria-hidden="true"></i><span class="break-all">Truy xuất phiếu: {{ record.usage?.requestId }}</span>
+              </a>
+            }
+          </section>
+          <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900 sm:p-6" aria-labelledby="standard-trace-history-heading">
+            <h3 id="standard-trace-history-heading" class="mb-4 text-base font-extrabold text-slate-800 dark:text-slate-100">Lịch sử mượn và sử dụng chất chuẩn</h3>
+            @for (note of standardHistoryNotes(); track note) {
+              <p class="mb-3 rounded-lg bg-amber-50 p-3 text-xs leading-relaxed text-amber-900 dark:bg-amber-950 dark:text-amber-200" role="status">{{ note }}</p>
+            }
+            @if (standardHistoryLoading()) { <p class="mb-3 text-sm text-slate-500" role="status">Đang tải lịch sử được cấp quyền...</p> }
+            @if (timelineItems().length) {
+              <app-ui-timeline [items]="timelineItems()" ariaLabel="Lịch sử mượn, duyệt, sử dụng và trả chất chuẩn" />
+            } @else if (!standardHistoryLoading()) {
+              <app-empty-state icon="fa-clock-rotate-left" title="Chưa có mốc lịch sử được tải" message="Hồ sơ hiện có chưa cung cấp đủ nhật ký để hiển thị các lần sử dụng." />
+            }
+            @if (standardHistoryHasMore()) {
+              <p class="mb-3 text-xs text-slate-500">Đang hiển thị phần lịch sử đã tải, sắp xếp theo thời điểm thực hiện.</p>
+              <app-button variant="secondary" size="sm" [loading]="standardHistoryLoading()" (click)="loadMoreStandardHistory()">Tải thêm / tải lại lịch sử</app-button>
+            }
+          </section>
         } @else if(logData()) {
             <!-- HERO SUMMARY CARD (SoftUI Panel, Shadow mượt) -->
             <section class="mb-6 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-6 lg:p-7 relative overflow-hidden" aria-labelledby="traceability-hero-heading">
@@ -669,6 +711,7 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
   private masterTargetService = inject(MasterTargetService);
   private targetService = inject(TargetService);
   private router = inject(Router);
+  private data = inject(TraceabilityDataService);
   
   formatDate = formatDate;
   formatNum = formatNum;
@@ -678,6 +721,20 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
 
   logData = signal<Log | null>(null);
   timelineItems = signal<TimelineItem[]>([]);
+  recordType = signal<'SOP_REQUEST' | 'STANDARD_REQUEST' | 'STANDARD_USAGE' | 'PRINT_JOB' | 'ACTIVITY_LOG' | null>(null);
+  standardRecord = signal<StandardTraceRecord | null>(null);
+  standardHistoryNotes = signal<string[]>([]);
+  standardHistoryLoading = signal(false);
+  standardHistoryHasMore = signal(false);
+  private standardUsages = signal<UsageLog[]>([]);
+  private standardEvents: Log[] = [];
+  private standardSources: StandardHistorySource[] = [];
+  private standardBaseNotes: string[] = [];
+  standardSummary = computed(() => {
+      const record = this.standardRecord();
+      return record ? standardTraceSummary(record) : [];
+  });
+  standardTraceTitle = standardTraceTitle;
   masterTargets = signal<any[]>([]);
   availableTargetGroups = signal<TargetGroup[]>([]);
   isLoading = signal(false);
@@ -691,6 +748,27 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
   lookupInput = viewChild<ElementRef<HTMLInputElement>>('lookupInput');
 
   private lookupRequest = 0;
+  private viewerScope(): string {
+      return `${this.auth.currentUser()?.uid || ''}|${this.auth.isStandardAuditMode()}|${this.auth.isManager()}|${['standard_view', 'standard_edit', 'standard_approve', 'standard_log_view', 'standard_log_delete', 'report_view'].map(permission => this.auth.hasPermission(permission)).join(',')}`;
+  }
+  private currentScope = this.viewerScope();
+  private scopeWatcher = effect(() => {
+      const next = this.viewerScope();
+      if (next !== this.currentScope) {
+          this.currentScope = next;
+          this.lookupRequest++;
+          this.stopVerificationTimers();
+          this.resetStandardTrace();
+          this.logData.set(null);
+          this.timelineItems.set([]);
+          this.isLoading.set(false);
+          this.isVerifying.set(false);
+          if (this.routeId) this.errorMsg.set('Phiên đăng nhập hoặc quyền truy cập đã thay đổi. Vui lòng tra cứu lại hồ sơ.');
+      }
+  });
+  private lookupIsCurrent(token: number, scope = this.currentScope): boolean {
+      return token === this.lookupRequest && scope === this.viewerScope();
+  }
   private verificationInterval?: ReturnType<typeof setInterval>;
   private verificationTimeout?: ReturnType<typeof setTimeout>;
 
@@ -848,6 +926,7 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
       if (!code) {
           this.lookupRequest++;
           this.stopVerificationTimers();
+          this.resetStandardTrace();
           this.lookupValue = '';
           this.sampleFilterQuery.set('');
           this.expandedSampleIds.set(new Set());
@@ -1069,7 +1148,10 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
 
   async loadData(id: string) {
       const requestToken = ++this.lookupRequest;
+      const viewerScope = this.viewerScope();
+      this.currentScope = viewerScope;
       this.stopVerificationTimers();
+      this.resetStandardTrace();
       this.isLoading.set(true);
       this.isVerifying.set(false);
       this.verifyStep.set(-1);
@@ -1083,10 +1165,36 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
           // log is treated as non-public so it cannot block the public-safe path.
           const logRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/logs/${id}`);
           const snap = await this.getTraceabilityDoc(logRef);
-          if (requestToken !== this.lookupRequest) return;
+          if (!this.lookupIsCurrent(requestToken)) return;
 
           if (snap?.exists()) {
-              this.startVerificationProcess({ id: snap.id, ...snap.data() } as Log, requestToken);
+              const log = { ...snap.data(), id: snap.id } as Log;
+              if (isStandardActivity(log)) {
+                  if (!this.auth.currentUser() || this.auth.isStandardAuditMode()) {
+                      this.errorMsg.set('Hồ sơ chất chuẩn này không thuộc phạm vi được cấp quyền xem.');
+                      return;
+                  }
+                  const requestId = log.requestId || ((log as any).targetType === 'STANDARD_REQUEST' ? log.targetId : undefined);
+                  const record = requestId ? await this.data.findStandardRecord(requestId) : null;
+                  if (!this.lookupIsCurrent(requestToken, viewerScope)) return;
+                  if (record) {
+                      this.displayStandardRecord(record, requestToken, [log]);
+                      this.recordType.set('ACTIVITY_LOG');
+                      this.logData.set(log);
+                  } else {
+                      // Keep the authorized activity without probing a SOP request.
+                      this.recordType.set('ACTIVITY_LOG');
+                      this.logData.set(log);
+                      const options = this.state.getUserAvatarOptionsByUid((log as any).actorUid, (log as any).actorName || log.user);
+                      const item = this.toTimelineItem(log, true);
+                      item.action = undefined;
+                      item.actorAvatarUrl = this.getAvatarUrl(options.displayName, options.style, options.photoURL);
+                      this.timelineItems.set([item]);
+                  }
+              } else {
+                  this.recordType.set('ACTIVITY_LOG');
+                  this.startVerificationProcess(log, requestToken);
+              }
               return;
           }
 
@@ -1095,13 +1203,13 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
           // to a log that Firestore independently marks publicTraceable.
           const projectionRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/public_traceability/${id}`);
           const projectionSnap = await this.getTraceabilityDoc(projectionRef);
-          if (requestToken !== this.lookupRequest) return;
+          if (!this.lookupIsCurrent(requestToken)) return;
           if (projectionSnap?.exists()) {
               const projection = projectionSnap.data() as { logId?: unknown; status?: unknown };
               if (typeof projection.logId === 'string' && projection.logId) {
                   const projectedLogRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/logs/${projection.logId}`);
                   const projectedLogSnap = await this.getTraceabilityDoc(projectedLogRef);
-                  if (requestToken !== this.lookupRequest) return;
+                  if (!this.lookupIsCurrent(requestToken)) return;
                   if (projectedLogSnap?.exists()) {
                       const projectedLog = { id: projectedLogSnap.id, ...projectedLogSnap.data() } as Log;
                       if (typeof projection.status === 'string') projectedLog.status = projection.status;
@@ -1117,12 +1225,22 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
               return;
           }
 
+          if (!this.auth.isStandardAuditMode()) {
+              const standardRecord = await this.data.findStandardRecord(id);
+              if (!this.lookupIsCurrent(requestToken, viewerScope)) return;
+              if (standardRecord) {
+                  this.displayStandardRecord(standardRecord, requestToken);
+                  return;
+              }
+          }
+
           // 2. Try Lookup by Print Job ID (Legacy or linked) (Priority 2)
           const jobRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/print_jobs/${id}`);
           const jobSnap = await this.getTraceabilityDoc(jobRef);
-          if (requestToken !== this.lookupRequest) return;
+          if (!this.lookupIsCurrent(requestToken)) return;
           
           if (jobSnap?.exists()) {
+              this.recordType.set('PRINT_JOB');
               const jobData = jobSnap.data() as any;
               const mockLog: Log = {
                   id: id,
@@ -1140,9 +1258,10 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
           // 3. Try Lookup by REQUEST ID (Dashboard links point here) (Priority 3)
           const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/requests/${id}`);
           const reqSnap = await this.getTraceabilityDoc(reqRef);
-          if (requestToken !== this.lookupRequest) return;
+          if (!this.lookupIsCurrent(requestToken)) return;
 
           if (reqSnap?.exists()) {
+              this.recordType.set('SOP_REQUEST');
               const reqData = reqSnap.data() as any;
               
               // Map Request format to Log format for display consistency
@@ -1196,12 +1315,12 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
           this.errorMsg.set(`Không tìm thấy dữ liệu cho mã: ${id}`);
 
       } catch (e: any) {
-          if (requestToken !== this.lookupRequest) return;
+          if (!this.lookupIsCurrent(requestToken)) return;
           console.error(e);
           console.error('[Traceability] Không thể tải dữ liệu:', e);
           this.errorMsg.set('Không thể kết nối. Vui lòng kiểm tra mạng và thử lại.');
       } finally {
-          if (requestToken === this.lookupRequest) {
+          if (this.lookupIsCurrent(requestToken)) {
               this.isLoading.set(false);
           }
       }
@@ -1209,7 +1328,7 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
 
   private async getTraceabilityDoc(ref: DocumentReference): Promise<DocumentSnapshot | null> {
       try {
-          return await getDoc(ref);
+          return await this.data.readDocument(ref);
       } catch (error: any) {
           if (error?.code === 'permission-denied' || error?.code === 'firestore/permission-denied') {
               return null;
@@ -1219,6 +1338,12 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
   }
 
   startVerificationProcess(log: Log, requestToken = this.lookupRequest) {
+      if (!this.lookupIsCurrent(requestToken)) return;
+      if (!this.recordType()) this.recordType.set('ACTIVITY_LOG');
+      if (isStandardActivity(log) && (!this.auth.currentUser() || this.auth.isStandardAuditMode())) {
+          this.errorMsg.set('Hồ sơ chất chuẩn này không thuộc phạm vi được cấp quyền xem.');
+          return;
+      }
       this.stopVerificationTimers();
       this.isVerifying.set(true);
       this.isLoading.set(false);
@@ -1226,7 +1351,7 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
       
       let step = 0;
       this.verificationInterval = setInterval(() => {
-          if (requestToken !== this.lookupRequest) {
+          if (!this.lookupIsCurrent(requestToken)) {
               this.stopVerificationTimers();
               return;
           }
@@ -1238,7 +1363,7 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
                   this.verificationInterval = undefined;
               }
               this.verificationTimeout = setTimeout(() => {
-                  if (requestToken !== this.lookupRequest) return;
+                  if (!this.lookupIsCurrent(requestToken)) return;
                   this.isVerifying.set(false);
                   this.handleLogData(log, requestToken);
               }, 300);
@@ -1247,10 +1372,11 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
   }
 
   handleLogData(log: Log, requestToken = this.lookupRequest) {
+      const viewerScope = this.viewerScope();
       const getStatusAndHydrate = async () => {
           const canHydratePrivateData = !!this.auth.currentUser();
           // If log has requestId and no status, fetch request status
-          if (canHydratePrivateData && log.requestId && !log.status) {
+          if (canHydratePrivateData && log.requestId && !log.status && !isStandardActivity(log)) {
               try {
                   const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/requests/${log.requestId}`);
                   const reqSnap = await getDoc(reqRef);
@@ -1263,7 +1389,8 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
           }
 
           // Hydrate if printJobId exists but printData is missing (New Arch)
-          if (canHydratePrivateData && log.printJobId && !log.printData) {
+          if (!this.lookupIsCurrent(requestToken, viewerScope)) return;
+          if (canHydratePrivateData && log.printJobId && !log.printData && !isStandardActivity(log)) {
               try {
                   const jobRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/print_jobs/${log.printJobId}`);
                   const jobSnap = await getDoc(jobRef);
@@ -1275,25 +1402,28 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
               }
           }
 
-          if (requestToken !== this.lookupRequest) return;
+          if (!this.lookupIsCurrent(requestToken, viewerScope)) return;
           
           this.logData.set(log);
           this.timelineItems.set([this.toTimelineItem(log, true)]);
           void this.loadAuditTimeline(log, requestToken);
-          setTimeout(() => void this.generateQr(log.id), 100);
+          setTimeout(() => {
+              if (this.lookupIsCurrent(requestToken, viewerScope)) void this.generateQr(log.id, requestToken);
+          }, 100);
       };
 
       getStatusAndHydrate();
   }
 
   private async loadAuditTimeline(currentLog: Log, requestToken: number): Promise<void> {
+      const viewerScope = this.viewerScope();
       const requestId = this.resolveAssociatedRequestId(currentLog);
       if (!requestId || !this.auth.currentUser()) return;
 
       try {
           const logsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/logs`);
           const relatedSnapshot = await getDocs(query(logsRef, where('requestId', '==', requestId)));
-          if (requestToken !== this.lookupRequest) return;
+          if (!this.lookupIsCurrent(requestToken, viewerScope)) return;
 
           const relatedLogs = relatedSnapshot.docs.map(snapshot => ({
               id: snapshot.id,
@@ -1404,8 +1534,8 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
       return Number.isNaN(parsed) ? 0 : parsed;
   }
 
-  async generateQr(text: string) {
-      if (!this.qrCanvas()) return;
+  async generateQr(text: string, requestToken = this.lookupRequest) {
+      if (!this.lookupIsCurrent(requestToken) || !this.qrCanvas()) return;
       let QRious: any;
       try {
           QRious = await ensureQrious();
@@ -1413,7 +1543,7 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
           console.warn('QR library load error:', e);
           return;
       }
-      if (!QRious || !this.qrCanvas()) return;
+      if (!QRious || !this.lookupIsCurrent(requestToken) || this.logData()?.id !== text || !this.qrCanvas()) return;
       
       // Use same URL structure as print layout
       const baseUrl = window.location.origin + window.location.pathname + '#/traceability/';
@@ -1425,5 +1555,88 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
           size: 150,
           level: 'M'
       });
+  }
+
+  private resetStandardTrace(): void {
+      this.recordType.set(null);
+      this.standardRecord.set(null);
+      this.standardUsages.set([]);
+      this.standardEvents = [];
+      this.standardSources = [];
+      this.standardBaseNotes = [];
+      this.standardHistoryNotes.set([]);
+      this.standardHistoryLoading.set(false);
+      this.standardHistoryHasMore.set(false);
+  }
+
+  private displayStandardRecord(record: StandardTraceRecord, requestToken: number, events: Log[] = []): void {
+      if (!this.lookupIsCurrent(requestToken) || this.auth.isStandardAuditMode() || !this.auth.currentUser()) return;
+      this.recordType.set(record.recordType);
+      this.standardRecord.set(record);
+      this.standardUsages.set(mergeStandardUsages(record.request?.usageLogs || [], record.usage ? [record.usage] : []));
+      this.standardEvents = events;
+      this.logData.set({ id: record.id, action: record.recordType, module: 'STANDARD',
+          details: record.request?.standardName || record.usage?.standardName || 'Chất chuẩn đối chiếu',
+          timestamp: record.usage?.timestamp || record.request?.requestDate || null,
+          user: record.usage?.user || record.request?.requestedByName || '',
+          requestId: record.usage?.requestId, status: record.request?.status,
+      });
+      const requestId = record.request?.id || record.usage?.requestId;
+      this.standardSources = requestId ? this.data.historySources(requestId) : [];
+      this.standardBaseNotes = ['Dòng thời gian hiển thị theo dữ liệu phiếu mượn và các nhật ký được cấp quyền.'];
+      if (!record.standard) {
+          this.standardBaseNotes.push('Chưa đọc được hồ sơ kho hiện tại. Hạn dùng và đơn vị kho chưa được bổ sung vào phiếu.');
+      }
+      if (record.usage?.requestId && !record.request) {
+          this.standardBaseNotes.push('Chưa đọc được phiếu mượn liên quan. Nhật ký sử dụng được cấp quyền vẫn được hiển thị.');
+      }
+      this.refreshStandardTimeline();
+      void this.loadMoreStandardHistory();
+  }
+
+  private refreshStandardTimeline(): void {
+      const record = this.standardRecord();
+      if (!record) return;
+      const items = buildStandardTraceTimeline(record, this.standardUsages(), this.standardEvents,
+          (uid, name) => this.state.getUserAvatarOptionsByUid(uid, name));
+      this.timelineItems.set(items);
+      this.standardHistoryHasMore.set(this.standardSources.some(source => !source.done));
+  }
+
+  async loadMoreStandardHistory(): Promise<void> {
+      if (this.standardHistoryLoading() || !this.standardRecord() || this.auth.isStandardAuditMode()) return;
+      const requestToken = this.lookupRequest;
+      const viewerScope = this.viewerScope();
+      this.standardHistoryLoading.set(true);
+      try {
+          const page = await this.data.loadHistory(this.standardSources);
+          if (!this.lookupIsCurrent(requestToken, viewerScope)) return;
+          this.standardSources = page.sources;
+          this.standardUsages.set(mergeStandardUsages(this.standardUsages(), page.usages));
+          this.standardEvents = [...new Map([...this.standardEvents, ...page.events].map(event => [event.id, event])).values()];
+          this.standardBaseNotes = [...new Set([...this.standardBaseNotes, ...page.notes.filter(note => note.includes('cấp quyền'))])];
+          const notes = [...this.standardBaseNotes, ...page.notes.filter(note => !note.includes('cấp quyền'))];
+          if ((this.standardRecord()?.request?.totalAmountUsed || 0) > 0 && !this.standardUsages().length) {
+              notes.push('Phiếu ghi nhận đã sử dụng chất chuẩn, nhưng chưa tải được nhật ký từng lần. Tổng lượng dùng lấy từ phiếu mượn.');
+          }
+          this.standardHistoryNotes.set([...new Set(notes)]);
+          this.refreshStandardTimeline();
+      } catch {
+          if (this.lookupIsCurrent(requestToken, viewerScope)) {
+              this.standardHistoryNotes.set([...this.standardBaseNotes, 'Chưa tải được lịch sử. Vui lòng tải lại.']);
+              this.standardHistoryHasMore.set(true);
+          }
+      } finally {
+          if (this.lookupIsCurrent(requestToken, viewerScope)) this.standardHistoryLoading.set(false);
+      }
+  }
+
+  standardStatusLabel(status: string | undefined): string {
+      const labels: Record<string, string> = {
+          PENDING_APPROVAL: 'Chờ duyệt', APPROVED: 'Đã duyệt', IN_USE: 'Đang sử dụng',
+          IN_PROGRESS: 'Đang sử dụng', PENDING_DEPLETION: 'Chờ xác nhận hết chuẩn',
+          PENDING_RETURN: 'Chờ nhận lại', COMPLETED: 'Đã hoàn tất', REJECTED: 'Đã từ chối', CANCELLED: 'Đã hủy',
+      };
+      return status ? labels[status] || status : 'Chưa ghi nhận trạng thái';
   }
 }

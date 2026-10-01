@@ -237,12 +237,6 @@
                                 @if (loadingHistory()) {
                                     <div class="p-10 text-center text-slate-400" role="status"><i class="fa-solid fa-spinner fa-spin text-2xl" aria-hidden="true"></i><p class="mt-2 text-sm">Đang tải lịch sử...</p></div>
                                 } @else {
-                                    @if (usageActors().length > 0) {
-                                        <div class="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50/70 px-3 py-2.5 dark:border-slate-700 dark:bg-slate-900/35">
-                                            <span class="text-xs font-semibold text-slate-600 dark:text-slate-300">Người sử dụng trong phần nhật ký đã tải</span>
-                                            <app-ui-avatar-group [items]="usageActors()" [maxVisible]="6" size="md" ariaLabel="Người đã sử dụng chất chuẩn" />
-                                        </div>
-                                    }
                                     @if (usageTimelineItems().length) {
                                         <app-ui-timeline [items]="usageTimelineItems()" ariaLabel="Dòng thời gian sử dụng chất chuẩn" />
                                     } @else {

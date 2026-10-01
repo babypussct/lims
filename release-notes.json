@@ -1,15 +1,19 @@
 {
-  "title": "Sao chép nhanh thông tin chất chuẩn",
+  "title": "Truy xuất đầy đủ lịch sử sử dụng chất chuẩn",
   "highlights": [
-    "Nhấn vào số lô, mã sản phẩm, hãng sản xuất hoặc số CAS để sao chép nhanh khi tra cứu chất chuẩn."
+    "Nhận biết người sử dụng ngay tại từng mốc nhật ký và mở phiếu mượn bằng một lần nhấn.",
+    "Tra cứu phiếu mượn hoặc từng lần sử dụng chất chuẩn trong Truy xuất nguồn gốc."
   ],
   "features": [
-    "Sao chép thông tin ngay tại Chi tiết chất chuẩn và cả dạng bảng, dạng thẻ trong Quản lý chất chuẩn."
+    "Hiển thị ảnh đại diện, lượng dùng và cảnh báo hết chuẩn tại từng lần sử dụng; ghi rõ người nhập bù hồ sơ.",
+    "Xem thông tin phiếu mượn cùng lịch sử gửi yêu cầu, phê duyệt, sử dụng và trả chất chuẩn theo quyền được cấp."
   ],
   "improvements": [
-    "Hiển thị gợi ý sao chép và thông báo xác nhận; có thể dùng phím Enter hoặc Space khi chọn trường thông tin."
+    "Sắp xếp nhật ký theo thời điểm sử dụng thực tế và cho phép tải thêm lịch sử của phiếu.",
+    "Thông báo rõ khi chỉ đọc được một phần lịch sử hoặc chưa có đủ thông tin, giúp đối chiếu lượng đã dùng chính xác hơn."
   ],
   "fixes": [
-    "Không cho sao chép trường chưa nhập và thông báo rõ khi trình duyệt không cho phép sao chép."
+    "Mã phiếu mượn và mã nhật ký sử dụng chất chuẩn được nhận diện đúng khi tra cứu.",
+    "Tránh hiển thị lặp cùng một lần sử dụng và tránh nhầm hồ sơ khi đổi mã tra cứu liên tiếp."
   ]
 }

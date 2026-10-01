@@ -2,7 +2,29 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.10.01-b03
+## Phiên bản hiện tại: v26.10.01-b04
+
+### v26.10.01-b04
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Nhận biết người sử dụng ngay tại từng mốc nhật ký và mở phiếu mượn bằng một lần nhấn.
+- Tra cứu phiếu mượn hoặc từng lần sử dụng chất chuẩn trong Truy xuất nguồn gốc.
+
+#### ✨ Tính Năng Mới
+
+- Hiển thị ảnh đại diện, lượng dùng và cảnh báo hết chuẩn tại từng lần sử dụng; ghi rõ người nhập bù hồ sơ.
+- Xem thông tin phiếu mượn cùng lịch sử gửi yêu cầu, phê duyệt, sử dụng và trả chất chuẩn theo quyền được cấp.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Sắp xếp nhật ký theo thời điểm sử dụng thực tế và cho phép tải thêm lịch sử của phiếu.
+- Thông báo rõ khi chỉ đọc được một phần lịch sử hoặc chưa có đủ thông tin, giúp đối chiếu lượng đã dùng chính xác hơn.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Mã phiếu mượn và mã nhật ký sử dụng chất chuẩn được nhận diện đúng khi tra cứu.
+- Tránh hiển thị lặp cùng một lần sử dụng và tránh nhầm hồ sơ khi đổi mã tra cứu liên tiếp.
 
 ### v26.10.01-b03
 
