@@ -1,6 +1,6 @@
 # Bàn giao bỏ Hàng đợi in và tích hợp phiếu phân tích
 
-Ngày thực hiện: **02/10/2026**. Trạng thái: **hoàn thiện mã nguồn và kiểm thử cục bộ**. Chưa phát hành frontend hoặc Firestore Rules lên production trong tác vụ này. Version đang có trong repository là `26.10.01-b06`; đây không phải version phát hành mới của thay đổi này.
+Ngày thực hiện: **02/10/2026**. Thay đổi đã được gom vào release **`26.10.02-b01`** cùng Smart Prep và nền in. **Frontend đã phát hành và xác minh production** từ commit `ff0b9aa335393b47281d90b2dc44ff880a0e2074`. **Firestore Rules chưa deploy được do Firebase CLI chưa đăng nhập**; không coi bước này là hoàn tất. Xem [bằng chứng phát hành](release-26.10.02-b01.md).
 
 ## Phạm vi nghiệp vụ
 
@@ -77,4 +77,4 @@ Chưa xác minh bằng tài khoản production, dữ liệu production hoặc m�
 
 Thực hiện theo `DEPLOYMENT.md`: cập nhật `release-notes.json`, chạy `release:prepare`, `release:verify`, review đúng diff, commit và kiểm tra `release:prepush`, rồi push qua Git Integration/Deployment Checks. Triển khai Firestore Rules mới từ commit đã push và kiểm tra chặn sửa/đổi SOP trước nghiệm thu. Không cần deploy composite index cho thay đổi này.
 
-Checkout có nhiều thay đổi chưa commit từ trước tác vụ, gồm Smart Prep và nền in. Tác vụ giữ nguyên các thay đổi đó và chưa gom chúng thành một release. Chưa commit, push, deploy frontend hoặc deploy Rules; các nhận định production trong tài liệu release cũ không xác nhận bản thay đổi này đã phát hành.
+Tác vụ phát triển ban đầu giữ lại các thay đổi Smart Prep và nền in trong checkout. Theo yêu cầu phát hành toàn bộ thay đổi trên `main`, đã gom đủ 75 file vào commit release `ff0b9aa3`, chạy gate, push và phát hành frontend qua Git Integration. GitHub Release Gate, Vercel Deployment Check và kiểm tra public runtime đã đạt cho đúng SHA release. Bộ Rules mới đã qua emulator nhưng deploy production dừng ở lỗi xác thực Firebase; cần hoàn tất bước này và kiểm tra bằng tài khoản production trước nghiệm thu nghiệp vụ.
