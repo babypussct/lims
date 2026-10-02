@@ -1,6 +1,6 @@
 # Bàn giao bỏ Hàng đợi in và tích hợp phiếu phân tích
 
-Ngày thực hiện: **02/10/2026**. Thay đổi đã được gom vào release **`26.10.02-b01`** cùng Smart Prep và nền in. **Frontend đã phát hành và xác minh production** từ commit `ff0b9aa335393b47281d90b2dc44ff880a0e2074`. **Firestore Rules chưa deploy được do Firebase CLI chưa đăng nhập**; không coi bước này là hoàn tất. Xem [bằng chứng phát hành](release-26.10.02-b01.md).
+Ngày thực hiện: **02/10/2026**. Thay đổi đã được gom vào release **`26.10.02-b01`** cùng Smart Prep và nền in. **Frontend đã phát hành và xác minh production** từ commit `ff0b9aa335393b47281d90b2dc44ff880a0e2074`. **Firestore Rules đã deploy thành công** từ `main` đã push; nội dung Rules production được đối chiếu qua API và khớp commit release đã kiểm thử. Xem [bằng chứng phát hành](release-26.10.02-b01.md).
 
 ## Phạm vi nghiệp vụ
 
@@ -77,4 +77,4 @@ Chưa xác minh bằng tài khoản production, dữ liệu production hoặc m�
 
 Thực hiện theo `DEPLOYMENT.md`: cập nhật `release-notes.json`, chạy `release:prepare`, `release:verify`, review đúng diff, commit và kiểm tra `release:prepush`, rồi push qua Git Integration/Deployment Checks. Triển khai Firestore Rules mới từ commit đã push và kiểm tra chặn sửa/đổi SOP trước nghiệm thu. Không cần deploy composite index cho thay đổi này.
 
-Tác vụ phát triển ban đầu giữ lại các thay đổi Smart Prep và nền in trong checkout. Theo yêu cầu phát hành toàn bộ thay đổi trên `main`, đã gom đủ 75 file vào commit release `ff0b9aa3`, chạy gate, push và phát hành frontend qua Git Integration. GitHub Release Gate, Vercel Deployment Check và kiểm tra public runtime đã đạt cho đúng SHA release. Bộ Rules mới đã qua emulator nhưng deploy production dừng ở lỗi xác thực Firebase; cần hoàn tất bước này và kiểm tra bằng tài khoản production trước nghiệm thu nghiệp vụ.
+Tác vụ phát triển ban đầu giữ lại các thay đổi Smart Prep và nền in trong checkout. Theo yêu cầu phát hành toàn bộ thay đổi trên `main`, đã gom đủ 75 file vào commit release `ff0b9aa3`, chạy gate, push và phát hành frontend qua Git Integration. GitHub Release Gate, Vercel Deployment Check và kiểm tra public runtime đã đạt cho đúng SHA release. Bộ Rules mới đã qua emulator, deploy production thành công và được đọc lại qua Rules API để xác nhận khớp mã nguồn release. Kiểm tra nghiệp vụ bằng tài khoản production và máy in thực tế vẫn thuộc nghiệm thu vận hành.

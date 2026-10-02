@@ -2,7 +2,7 @@
 
 Ngày phát hành: **02/10/2026**, theo giờ Việt Nam. Tiêu đề: **In phiếu phân tích trực tiếp và đơn giản hóa Trạm Pha Chế**.
 
-**Frontend đã phát hành và xác minh trên production. Firestore Rules chưa triển khai được do thiếu xác thực Firebase CLI.**
+**Frontend và Firestore Rules đã triển khai thành công trên production.** Frontend được xác minh qua public runtime; Rules được đọc lại qua API và đối chiếu nội dung với mã nguồn release.
 
 ## Phạm vi và nguồn phát hành
 
@@ -40,8 +40,18 @@ Fixture trình duyệt dùng dữ liệu giả lập; không ghi dữ liệu pro
 
 Kiểm tra public runtime bắt đầu lúc **13:39:45 ngày 02/10/2026** (`2026-10-02T06:39:45.621Z`). Ảnh desktop/mobile đã được xem lại. Chưa kiểm tra nghiệp vụ với tài khoản production hoặc máy in vật lý.
 
-## Firestore Rules còn chờ
+## Firestore Rules production
 
-Đã chạy `npm run deploy:rules` từ commit release sau push. `release:predeploy` xác nhận `main`, working tree sạch và `HEAD` trùng SHA remote. Firebase deploy trả exit code **1** với lỗi **`Failed to authenticate, have you run firebase login?`**. `firebase login:list` xác nhận chưa có tài khoản được ủy quyền. Rules production chưa được cập nhật bởi tác vụ này.
+Lần đầu deploy dừng ở lỗi xác thực Firebase. Sau khi đăng nhập bằng `npx.cmd --yes --package firebase-tools@14.27.0 firebase login`, đã chạy lại `npm.cmd run deploy:rules` từ `85f8f786d63c3bbeeff8fb2eac6028748e713f67`. Đây là commit tài liệu sau release; nội dung `firestore.rules` không thay đổi so với `ff0b9aa3`. `release:predeploy` xác nhận `main`, working tree sạch và `HEAD` trùng SHA remote.
 
-Sau khi đăng nhập tài khoản có quyền với project `lims-cloud-by-otada`, chạy lại `npm run deploy:rules`, lưu output CLI thành công và cập nhật bằng chứng. Không cần deploy index hoặc migration dữ liệu cho release này. Đặc biệt cần hoàn tất Rules để áp dụng kiểm soát sửa worksheet tại database; kết quả emulator không chứng minh Rules production đã thay đổi.
+| Bằng chứng Rules | Kết quả |
+| --- | --- |
+| Project | `lims-cloud-by-otada` |
+| Firebase CLI | Exit code **0**; `rules file firestore.rules compiled successfully`, `released rules firestore.rules to cloud.firestore`, `Deploy complete!` |
+| Release production | `projects/lims-cloud-by-otada/releases/cloud.firestore` |
+| Ruleset | `projects/lims-cloud-by-otada/rulesets/8fd50ee1-908b-40b7-a7e9-e6b3e37a81b2` |
+| Thời gian cập nhật | **13:52:10 ngày 02/10/2026** (`2026-10-02T06:52:10.051785Z`) |
+| Đối chiếu Rules API | Nội dung production khớp `main` và commit frontend release; chỉ chuẩn hóa CRLF/LF và khoảng trắng cuối file trước khi so sánh |
+| SHA-256 nội dung đã chuẩn hóa | `baa8083d98509e22b22a6df19b6b0c0caeafe5f1996acc5f4ff308a254a8404a` |
+
+Đối chiếu Rules production hoàn tất lúc **13:53:06 ngày 02/10/2026**. Log CLI được lưu tại `.codex-tmp/release-2026-10-02/firebase-deploy-authenticated.log`; metadata và checksum tại `firebase-rules-evidence.json` trong cùng thư mục, không chứa token. Không deploy index hoặc migration dữ liệu vì release không có thay đổi tương ứng. Kiểm tra bằng tài khoản nghiệp vụ production và máy in thực tế vẫn thuộc nghiệm thu vận hành.
