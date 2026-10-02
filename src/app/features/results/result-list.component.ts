@@ -14,10 +14,7 @@ import {
   setDoc, where, writeBatch
 } from 'firebase/firestore';
 import { PrintService } from '../../core/services/print.service';
-import { BatchWorksheetService } from '../../core/services/batch-worksheet.service';
-import { BatchWorksheetPickerComponent } from '../../shared/components/batch-worksheet-picker/batch-worksheet-picker.component';
 import { RequestHistoryLoaderComponent } from '../../shared/components/request-history-loader/request-history-loader.component';
-import { worksheetReference } from '../../shared/utils/batch-worksheet';
 import { timestampToLocalDateKey } from '../../shared/utils/timestamp';
 import { ActivityEventService } from '../../core/services/activity-event.service';
 import { openInNewTab } from '../../shared/utils/browser-navigation';
@@ -40,7 +37,6 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
     AppEmptyStateComponent,
     AppPageHeaderComponent,
     AppToolbarComponent,
-    BatchWorksheetPickerComponent,
     RequestHistoryLoaderComponent,
   ],
   template: `
@@ -55,7 +51,6 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
           title="Tra cứu và quản lý kết quả mẻ chạy"
           subtitle="Nhập kết quả, kiểm soát chất lượng (QC) và tạo phiếu kết quả tự động."
           icon="fa-square-poll-vertical">
-          <app-batch-worksheet-picker pageHeaderActions [requests]="displayedRuns()" />
           <!-- Status Filter Tabs -->
           <div pageHeaderActions class="inline-flex items-center soft-ui-segmented" role="group" aria-label="Lọc trạng thái mẻ phân tích">
             <button type="button"
@@ -411,9 +406,6 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
 
                   <!-- Card Footer: Action Buttons -->
                   <div class="border-t border-slate-100 dark:border-slate-800/80 px-4 py-3 flex items-center gap-2.5 bg-slate-50/30 dark:bg-slate-950/10 shrink-0">
-                    @if (!run.isVirtualMaster && worksheets.canRead()) {
-                      <app-button variant="secondary" size="sm" [disabled]="worksheets.loading()" (click)="printWorksheet(run); $event.stopPropagation()"><i class="fa-solid fa-print" aria-hidden="true"></i> Phiếu phân tích</app-button>
-                    }
                     @if (run.analysisResultSummary?.reports || run.analysisResultSummary?.pdfUrl || run.analysisResultSummary?.pdfViewUrl || run.analysisResult?.reports || run.analysisResult?.pdfUrl) {
                       <app-button variant="secondary" size="sm" (click)="openReportHub(run); $event.stopPropagation()">
                         <i class="fa-solid fa-file-pdf text-red-500 text-[11px]"></i>
@@ -532,9 +524,6 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
 
                         <td class="p-4">
                           <div class="flex items-center justify-end gap-2">
-                            @if (!run.isVirtualMaster && worksheets.canRead()) {
-                              <app-button variant="secondary" size="sm" [disabled]="worksheets.loading()" (click)="printWorksheet(run); $event.stopPropagation()"><i class="fa-solid fa-print" aria-hidden="true"></i> Phiếu phân tích</app-button>
-                            }
                             @if (run.analysisResultSummary?.reports || run.analysisResultSummary?.pdfUrl || run.analysisResultSummary?.pdfViewUrl || run.analysisResult?.reports || run.analysisResult?.pdfUrl) {
                               <app-button variant="secondary" size="sm" (click)="openReportHub(run); $event.stopPropagation()">
                                 <i class="fa-solid fa-file-pdf text-red-500 text-[11px]"></i>
@@ -660,8 +649,6 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ResultListComponent implements OnInit, OnDestroy {
-  readonly worksheets = inject(BatchWorksheetService);
-  printWorksheet(request: any): void { void this.worksheets.open([worksheetReference(request)]); }
   private state = inject(StateService);
   private router = inject(Router);
   private resultService = inject(ResultService);

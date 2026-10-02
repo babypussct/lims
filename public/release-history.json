@@ -1,5 +1,22 @@
 [
   {
+    "version": "v26.10.02-b02",
+    "date": "2/10/2026",
+    "title": "Ổn định luồng in và tinh gọn trang Kết quả",
+    "highlights": [
+      "Hiển thị đầy đủ thông báo, trạng thái xử lý và cửa sổ xem trước khi in hoặc xuất PDF từ trang truy xuất."
+    ],
+    "features": [],
+    "improvements": [
+      "Tinh gọn trang Kết quả bằng cách bỏ bộ chọn và nút Phiếu phân tích bị trùng lặp với luồng thao tác đã chuẩn hóa."
+    ],
+    "fixes": [
+      "Hiển thị lại thông báo và cửa sổ xem trước khi in hoặc xuất PDF từ trang truy xuất, giúp người dùng theo dõi kết quả thao tác.",
+      "Hiển thị trạng thái đang tạo tài liệu trên toàn màn hình, tránh bấm in nhiều lần khi hệ thống đang xử lý."
+    ],
+    "releaseOrder": 26100200002
+  },
+  {
     "version": "v26.10.02-b01",
     "date": "2/10/2026",
     "title": "In phiếu phân tích trực tiếp và đơn giản hóa Trạm Pha Chế",

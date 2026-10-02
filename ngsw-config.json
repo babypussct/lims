@@ -2,14 +2,13 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.10.02-b01",
-    "title": "In phiếu phân tích trực tiếp và đơn giản hóa Trạm Pha Chế",
+    "version": "v26.10.02-b02",
+    "title": "Ổn định luồng in và tinh gọn trang Kết quả",
     "features": [
-      "Xem, in và tải PDF phiếu phân tích ngay từ mẻ đã duyệt; chọn nhiều mẻ để in cùng một đợt.",
-      "Tra cứu và in lại đúng phiên bản phiếu trước hoặc sau khi sửa thông số, chuyển SOP.",
-      "Trạm Pha Chế gọn hơn, hỗ trợ chọn hóa chất hoặc nhập công thức để điền thông số tính toán.",
-      "Duyệt & xem phiếu tại Yêu cầu, mở phiếu các mẻ vừa tạo tại SmartBatch và in phiếu từ Kết quả hoặc Chi tiết mẻ.",
-      "Chọn In nhiều phiếu tại Yêu cầu → Đã duyệt hoặc Kết quả; dùng Tải thêm mẻ để tìm các mẻ cũ."
+      "Hiển thị đầy đủ thông báo, trạng thái xử lý và cửa sổ xem trước khi in hoặc xuất PDF từ trang truy xuất.",
+      "Tinh gọn trang Kết quả bằng cách bỏ bộ chọn và nút Phiếu phân tích bị trùng lặp với luồng thao tác đã chuẩn hóa.",
+      "Hiển thị lại thông báo và cửa sổ xem trước khi in hoặc xuất PDF từ trang truy xuất, giúp người dùng theo dõi kết quả thao tác.",
+      "Hiển thị trạng thái đang tạo tài liệu trên toàn màn hình, tránh bấm in nhiều lần khi hệ thống đang xử lý."
     ]
   },
   "assetGroups": [

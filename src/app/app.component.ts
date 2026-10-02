@@ -65,6 +65,11 @@ import { claimServiceWorkerRecoveryReload } from './core/utils/service-worker-re
     ForgotPasswordModalComponent
   ],
   template: `
+    <ng-template #printProcessingOverlay>
+      <div class="fixed inset-0 z-[120] flex items-center justify-center bg-gray-900/20 backdrop-blur-sm no-print">
+        <i class="fa-solid fa-spinner fa-spin text-3xl text-white"></i>
+      </div>
+    </ng-template>
     @if (isPrintMode()) {
        @if (isTraceabilityRoute()) {
          <div
@@ -72,6 +77,13 @@ import { claimServiceWorkerRecoveryReload } from './core/utils/service-worker-re
            class="h-[100dvh] min-h-0 overflow-y-auto overscroll-y-contain touch-pan-y bg-slate-50 dark:bg-slate-950 custom-scrollbar">
            <router-outlet></router-outlet>
          </div>
+         <app-toast-host></app-toast-host>
+         @if (printService.isProcessing()) {
+           <ng-container [ngTemplateOutlet]="printProcessingOverlay"></ng-container>
+         }
+         @defer (when printService.isPreviewOpen() || printService.isPreviewPdfOpen()) {
+           <app-print-preview-modal></app-print-preview-modal>
+         }
        } @else {
          <router-outlet></router-outlet>
        }
@@ -134,7 +146,9 @@ import { claimServiceWorkerRecoveryReload } from './core/utils/service-worker-re
       }
 
       <!-- Loaders & Modals -->
-      @if (printService.isProcessing()) { <div class="fixed inset-0 z-[120] flex items-center justify-center bg-gray-900/20 backdrop-blur-sm no-print"><i class="fa-solid fa-spinner fa-spin text-3xl text-white"></i></div> }
+      @if (printService.isProcessing()) {
+        <ng-container [ngTemplateOutlet]="printProcessingOverlay"></ng-container>
+      }
       
       @defer (when confirmationService.state().isVisible) {
         <app-confirmation-modal></app-confirmation-modal>

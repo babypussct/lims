@@ -2,7 +2,26 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.10.02-b01
+## Phiên bản hiện tại: v26.10.02-b02
+
+### v26.10.02-b02
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Hiển thị đầy đủ thông báo, trạng thái xử lý và cửa sổ xem trước khi in hoặc xuất PDF từ trang truy xuất.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Tinh gọn trang Kết quả bằng cách bỏ bộ chọn và nút Phiếu phân tích bị trùng lặp với luồng thao tác đã chuẩn hóa.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Hiển thị lại thông báo và cửa sổ xem trước khi in hoặc xuất PDF từ trang truy xuất, giúp người dùng theo dõi kết quả thao tác.
+- Hiển thị trạng thái đang tạo tài liệu trên toàn màn hình, tránh bấm in nhiều lần khi hệ thống đang xử lý.
 
 ### v26.10.02-b01
 
