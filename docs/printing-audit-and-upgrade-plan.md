@@ -1,5 +1,7 @@
 # Rà soát và kế hoạch nâng cấp chức năng in LIMS
 
+> Quyết định kiến trúc ngày 02/10/2026: bỏ luồng Hàng đợi in, tích hợp worksheet vào các module nghiệp vụ, không theo dõi trạng thái/số lần in. Xem [bàn giao luồng mới và tối ưu Spark](worksheet-printing-handover.md). Những tham chiếu Hàng đợi in bên dưới là hiện trạng của đợt rà soát trước thay đổi này.
+
 Ngày rà soát: **01/10/2026**. Mã nguồn đối chiếu: **`dc6e1e5e`**.
 
 Trạng thái cập nhật: **Đã triển khai đợt 1–2, phần mềm của đợt 3 và các biểu mẫu đợt 4 dựa trên dữ liệu hiện có; đã phát hành và xác minh production `26.10.01-b06`.** Kết quả cuối, hướng dẫn vận hành và bằng chứng triển khai được tập hợp ở [tài liệu bàn giao](printing-handover.md).
@@ -52,6 +54,8 @@ Giới hạn nghiệm thu của đợt 1: fixture không gọi Firebase hoặc D
 
 ## Kết quả đợt 2 — Smart Prep ngày 01/10/2026
 
+Cập nhật 02/10/2026: Smart Prep đã chuyển sang máy tính tại bàn thí nghiệm, bỏ metadata và luồng in/TXT. Kết quả dưới đây ghi nhận phiên bản trước; kiểm tra hiện tại dùng `scripts/prep-bench-smoke.js` và `npm run test:prep`.
+
 Đã thực hiện:
 
 - **Luồng thao tác:** nút `Xem & In phiếu` mở preview A4 trong ứng dụng, có zoom/vừa chiều rộng, trạng thái chuẩn bị, thử lại, In và Tải PDF. Giữ chặn xuất khi phép tính chưa hợp lệ; không gọi in ngay từ nút trên màn hình pha chế.
@@ -76,7 +80,7 @@ Kết quả kiểm tra:
 | QA PDF cuối | Render và xem đủ 28 trang của năm PDF tải xuống và hai PDF native; xem thêm trang ở độ phóng lớn. Không thấy cắt chữ, chồng nội dung, mất dòng hoặc lỗi glyph. Text native xác nhận thông tin phương pháp, vùng kiểm tra và điểm chuẩn cuối |
 | Tương tác | Mobile 390×844, light/dark, Escape, footer thao tác, khôi phục DOM sau in và chặn xuất khi một dòng quá dài đều đạt |
 
-Nguồn thay đổi: [Smart Prep](../src/app/features/preparation/smart-prep.component.ts), [adapter phiếu](../src/app/features/preparation/prep-print-document.ts), [preview A4](../src/app/shared/components/a4-document-preview/a4-document-preview.component.ts), [phân trang](../src/app/shared/utils/a4-document-pagination.ts), [helper xuất](../src/app/shared/utils/a4-output.ts). Script và cách chạy được ghi tại [TESTING_GUIDE.md](../TESTING_GUIDE.md).
+Nguồn thay đổi: [Smart Prep](../src/app/features/preparation/smart-prep.component.ts), adapter phiếu đã được gỡ ngày 02/10/2026, [preview A4](../src/app/shared/components/a4-document-preview/a4-document-preview.component.ts), [phân trang](../src/app/shared/utils/a4-document-pagination.ts), [helper xuất](../src/app/shared/utils/a4-output.ts). Script và cách chạy được ghi tại [TESTING_GUIDE.md](../TESTING_GUIDE.md).
 
 Giới hạn: các kết quả trên dùng fixture, chưa nghiệm thu phiên đăng nhập, dữ liệu thật/Drive hoặc máy in vật lý. Vùng chữ ký là ô ghi nhận thủ công; phiếu hỗ trợ tính toán chưa phải hồ sơ được phê duyệt hay xác nhận tuân thủ ISO/GLP. Preview lịch trực và Checklist sau đó đã được triển khai, như phần cập nhật ở đầu tài liệu.
 

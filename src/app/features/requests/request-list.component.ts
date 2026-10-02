@@ -7,31 +7,33 @@ import { AuthService } from '../../core/services/auth.service';
 import { cleanName, formatNum, formatDate, formatSampleList } from '../../shared/utils/utils';
 import { Request, RequestItem } from '../../core/models/request.model';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
-import { PrintQueueComponent } from './print-queue.component';
 import { DateRangeFilterComponent } from '../../shared/components/date-range-filter/date-range-filter.component';
 import { timestampToDate, timestampToLocalDateKey } from '../../shared/utils/timestamp';
 import { parseLocalDateKey } from '../../shared/utils/date-range';
 import { AppDatePickerComponent } from '../../shared/components/ui/date-picker/date-picker.component';
-import { PrintQueueService } from '../../core/services/print-queue.service';
+import { BatchWorksheetService } from '../../core/services/batch-worksheet.service';
+import { BatchWorksheetPickerComponent } from '../../shared/components/batch-worksheet-picker/batch-worksheet-picker.component';
+import { RequestHistoryLoaderComponent } from '../../shared/components/request-history-loader/request-history-loader.component';
+import { canEditWorksheet, worksheetReference } from '../../shared/utils/batch-worksheet';
 import { AppPageHeaderComponent } from '../../shared/components/ui/page-header/page-header.component';
 import { AppButtonComponent } from '../../shared/components/ui/button/button.component';
 import { A4DocumentPreviewComponent } from '../../shared/components/a4-document-preview/a4-document-preview.component';
 import { A4Document } from '../../shared/utils/a4-document';
 import { buildSampleHandoverDocument } from '../../shared/utils/business-print-documents';
 
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 
 @Component({
   selector: 'app-request-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, SkeletonComponent, PrintQueueComponent, DateRangeFilterComponent, AppPageHeaderComponent, AppDatePickerComponent, AppButtonComponent, A4DocumentPreviewComponent],
+  imports: [CommonModule, FormsModule, SkeletonComponent, BatchWorksheetPickerComponent, RequestHistoryLoaderComponent, DateRangeFilterComponent, AppPageHeaderComponent, AppDatePickerComponent, AppButtonComponent, A4DocumentPreviewComponent],
   template: `
     @if (handoverDocument(); as document) { <app-a4-document-preview [document]="document" (closed)="handoverDocument.set(null)" /> }
     <div class="h-full flex flex-col fade-in relative p-4 md:p-6">
         <app-page-header
             class="mb-4 shrink-0"
             title="Quản lý yêu cầu"
-            subtitle="Phê duyệt yêu cầu, theo dõi lịch sử và quản lý hàng đợi in."
+            subtitle="Phê duyệt yêu cầu, tra cứu mẻ và mở phiếu phân tích."
             icon="fa-list-check">
           <div pageHeaderActions class="inline-flex items-center soft-ui-segmented" role="group" aria-label="Trạng thái yêu cầu">
                <button type="button"
@@ -48,23 +50,16 @@ import { Router } from '@angular/router';
                        class="soft-ui-segmented__item flex items-center gap-2"
                        [class.soft-ui-segmented__item--active]="currentTab() === 'approved'"
                        [attr.aria-pressed]="currentTab() === 'approved'">
-                   <i class="fa-solid fa-check-double"></i> Lịch Sử
+                   <i class="fa-solid fa-check-double"></i> Đã duyệt
                </button>
 
-               <button type="button"
-                       (click)="setCurrentTab('printing')"
-                       class="soft-ui-segmented__item flex items-center gap-2"
-                       [class.soft-ui-segmented__item--active]="currentTab() === 'printing'"
-                       [attr.aria-pressed]="currentTab() === 'printing'">
-                   <i class="fa-solid fa-print"></i> Hàng đợi In
-                   @if(printQueue.printableLogs().length > 0) { <span class="bg-fuchsia-100 dark:bg-fuchsia-900/30 text-fuchsia-700 dark:text-fuchsia-400 px-1.5 rounded-md text-[10px]">{{printQueue.printableLogs().length}}</span> }
-               </button>
           </div>
         </app-page-header>
 
         <!-- DATE FILTER (Only for History Tab) -->
         @if (currentTab() === 'approved') {
-            <div class="mb-4 flex justify-end">
+            <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <app-batch-worksheet-picker [requests]="displayRequests()" />
                 <app-date-range-filter 
                     [initStart]="startDate()" 
                     [initEnd]="endDate()" 
@@ -74,21 +69,10 @@ import { Router } from '@angular/router';
         }
 
         <!-- CONTENT AREA -->
+        <app-request-history-loader [startDate]="startDate()" [endDate]="endDate()" [enabled]="currentTab() === 'approved'" />
         <div class="flex-1 min-h-0 relative">
             
-            <!-- TAB: PRINT QUEUE -->
-            @if (currentTab() === 'printing') {
-                @defer {
-                    <app-print-queue class="h-full block"></app-print-queue>
-                } @placeholder {
-                    <div class="h-full rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 text-sm font-bold">
-                        Đang tải hàng đợi in...
-                    </div>
-                }
-            } 
-            
             <!-- TAB: LISTS (Pending / Approved) -->
-            @else {
                 <div class="h-full overflow-y-auto custom-scrollbar pb-20 pr-2">
                     <div class="grid gap-4 w-full">
                         @if(isLoading()) {
@@ -187,13 +171,18 @@ import { Router } from '@angular/router';
                                     </div>
 
                                     <app-button variant="secondary" size="sm" [disabled]="!req.sampleList?.length" (click)="printHandover(req)"><i class="fa-solid fa-print" aria-hidden="true"></i> Phiếu bàn giao mẫu</app-button>
-                                    @if(state.isAdmin() || (currentTab() === 'approved' && auth.canApprove())) {
+                                    @if (currentTab() === 'approved' && !req.isVirtualMaster && worksheets.canRead()) {
+                                      <app-button variant="secondary" size="sm" [loading]="worksheets.loading()" (click)="printWorksheet(req)"><i class="fa-solid fa-print" aria-hidden="true"></i> Phiếu phân tích</app-button>
+                                      <app-button variant="ghost" size="sm" (click)="viewTrace(req)">Truy xuất</app-button>
+                                    }
+                                    @if(auth.canApprove()) {
                                         <div class="flex flex-row md:flex-col gap-2 shrink-0 md:w-36 mt-2 md:mt-0">
                                             @if (currentTab() === 'pending') {
                                                 <button (click)="approve(req)" [disabled]="!!processingId() || !getPendingAnalysisDate(req)"
                                                         class="flex-1 px-4 py-2.5 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-xl font-bold shadow-sm hover:shadow-md dark:shadow-none transition text-xs uppercase tracking-wide flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                                                     <i class="fa-solid fa-check"></i> Duyệt
                                                 </button>
+                                                <app-button variant="secondary" size="sm" [disabled]="!!processingId() || !getPendingAnalysisDate(req) || worksheets.loading()" (click)="approve(req, true)">Duyệt & xem phiếu</app-button>
                                                 <button (click)="reject(req)" [disabled]="!!processingId()" 
                                                         class="flex-1 px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-200 dark:hover:border-red-800/50 hover:text-red-600 dark:hover:text-red-400 text-slate-600 dark:text-slate-400 rounded-xl font-bold transition text-xs uppercase tracking-wide flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                                                     <i class="fa-solid fa-xmark"></i> Từ Chối
@@ -204,11 +193,11 @@ import { Router } from '@angular/router';
                                                              class="flex-1 px-4 py-2.5 bg-fuchsia-600 hover:bg-fuchsia-700 text-white rounded-xl font-bold shadow-sm hover:shadow-md transition text-xs uppercase tracking-wide flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                                                         <i class="fa-solid fa-square-poll-vertical"></i> Nhập Kết Quả
                                                     </button>
-                                                    <button (click)="editApproved(req)" [disabled]="!!processingId()"
+                                                }
+                                                    <button (click)="editApproved(req)" [disabled]="!!processingId() || !canEdit(req)"
                                                              class="flex-1 px-4 py-2.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 text-blue-600 dark:text-blue-400 hover:bg-blue-600 dark:hover:bg-blue-500 hover:text-white rounded-xl font-bold shadow-sm dark:shadow-none transition text-xs uppercase tracking-wide flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                                                         <i class="fa-solid fa-pen"></i> Chỉnh Sửa
                                                     </button>
-                                                }
                                                 @if (auth.canApprove()) {
                                                   <button (click)="reassignSop(req)" [disabled]="!!processingId()"
                                                           class="flex-1 px-4 py-2.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 text-blue-600 dark:text-blue-400 hover:bg-blue-600 dark:hover:bg-blue-500 hover:text-white rounded-xl font-bold shadow-sm dark:shadow-none transition text-xs uppercase tracking-wide flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
@@ -250,7 +239,6 @@ import { Router } from '@angular/router';
                         }
                     </div>
                 </div>
-            }
         </div>
 
         <!-- PREMIUM GLASSMORPHIC SMART CONFIRMATION MODAL -->
@@ -344,10 +332,11 @@ export class RequestListComponent implements OnInit {
   state = inject(StateService);
   auth = inject(AuthService);
   router = inject(Router);
-  printQueue = inject(PrintQueueService);
+  worksheets = inject(BatchWorksheetService);
+  private route = inject(ActivatedRoute);
   cleanName = cleanName; formatNum = formatNum; formatDate = formatDate; formatSampleList = formatSampleList;
   
-  currentTab = signal<'pending' | 'approved' | 'printing'>('pending');
+  currentTab = signal<'pending' | 'approved'>('pending');
   processingId = signal<string | null>(null);
   pendingAnalysisDates = signal<Record<string, string>>({});
   isLoading = signal(true);
@@ -355,11 +344,11 @@ export class RequestListComponent implements OnInit {
   selectedRevokeRequest = signal<Request | null>(null);
 
   // Date Filters for History
-  startDate = signal<string>(this.getFirstDayOfMonth());
+  startDate = signal<string>(this.getToday());
   endDate = signal<string>(this.getToday());
 
   ngOnInit() {
-      this.printQueue.ensureListener();
+      if (this.route.snapshot.queryParamMap.get('tab') === 'approved') this.currentTab.set('approved');
       this.ensureDataForCurrentTab();
       // Check data loaded
       if(this.state.requests().length > 0) {
@@ -378,9 +367,6 @@ export class RequestListComponent implements OnInit {
   onDateRangeChange(range: { start: string, end: string, label: string }) {
       this.startDate.set(range.start);
       this.endDate.set(range.end);
-      if (this.currentTab() === 'approved') {
-          void this.state.loadApprovedRequestsForDateRange(range.start, range.end);
-      }
   }
 
   filteredHistory = computed(() => {
@@ -406,8 +392,8 @@ export class RequestListComponent implements OnInit {
           if (end && d > end) return false;
 
           // User Filter
-          if (this.auth.isManager()) return true;
-          return req.user === user?.displayName;
+          if (this.auth.isManager() || this.auth.canApprove()) return true;
+          return req.createdByUid ? req.createdByUid === user?.uid : req.user === user?.displayName;
       });
   });
 
@@ -434,18 +420,19 @@ export class RequestListComponent implements OnInit {
       this.pendingAnalysisDates.update(current => ({ ...current, [requestId]: analysisDate }));
   }
 
-  async approve(req: Request) {
+  async approve(req: Request, showWorksheet = false) {
       if (this.processingId()) return;
       const analysisDate = this.getPendingAnalysisDate(req);
       this.processingId.set(req.id);
       try {
-          await this.state.approveRequest({ ...req, analysisDate });
+          const result = await this.state.approveRequest({ ...req, analysisDate });
+          if (showWorksheet && result) await this.worksheets.open([{ requestId: result.requestId, printJobId: result.printJobId }]);
       } finally {
           this.processingId.set(null);
       }
   }
 
-  setCurrentTab(tab: 'pending' | 'approved' | 'printing') {
+  setCurrentTab(tab: 'pending' | 'approved') {
       this.currentTab.set(tab);
       this.ensureDataForCurrentTab();
   }
@@ -453,7 +440,6 @@ export class RequestListComponent implements OnInit {
   private ensureDataForCurrentTab() {
       if (this.currentTab() === 'approved') {
           this.state.ensureApprovedRequestsListener();
-          void this.state.loadApprovedRequestsForDateRange(this.startDate(), this.endDate());
       }
   }
 
@@ -488,8 +474,13 @@ export class RequestListComponent implements OnInit {
   }
 
   editApproved(req: Request) {
+      if (!this.canEdit(req)) return;
       this.router.navigate(['/calculator'], { queryParams: { editRequestId: req.id } });
   }
+
+  canEdit(req: Request): boolean { return this.auth.canApprove() && canEditWorksheet(req, this.auth.currentUser()?.email); }
+  printWorksheet(req: Request): void { void this.worksheets.open([worksheetReference(req)]); }
+  viewTrace(req: Request): void { void this.router.navigate(['/traceability', req.id]); }
 
   reassignSop(req: Request) {
       this.router.navigate(['/results', req.id], { queryParams: { action: 'reassign-sop' } });

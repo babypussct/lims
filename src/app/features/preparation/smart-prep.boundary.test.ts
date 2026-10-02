@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -9,18 +9,30 @@ const templateSource = readFileSync(resolve(preparationDir, 'smart-prep.componen
 const engineSource = readFileSync(resolve(preparationDir, 'prep-calculation.engine.ts'), 'utf8');
 const domainSource = readFileSync(resolve(preparationDir, 'prep-domain.types.ts'), 'utf8');
 
-test('prep helper has no inventory, standard, or persistence dependency', () => {
-  const forbiddenRuntimeTokens = /InventoryService|FirebaseService|Firestore|updateStock|getInventoryPage|canEditInventory|confirmTransaction|referenceStandard|standardId|inventoryItemId|stockAfter/i;
-  assert.doesNotMatch(componentSource, forbiddenRuntimeTokens);
-  assert.doesNotMatch(engineSource, forbiddenRuntimeTokens);
-  assert.doesNotMatch(domainSource, forbiddenRuntimeTokens);
+test('prep calculator has no inventory, standards catalog or Firestore dependency', () => {
+  const forbiddenRuntimeTokens = /PrepReferenceService|StandardCacheService|ReferenceStandard|AuthService|StateService|HttpClient|PubChemService|InventoryService|StandardService|StandardCrudService|StandardUsageService|StandardRequestService|FirebaseService|Firestore|firebase\/|reference_standards|standard\.model|features\/standards|updateStock|getInventoryPage|canEditInventory|confirmTransaction|inventoryItemId|stockAfter/i;
+  const productionFiles = readdirSync(preparationDir).filter(file => file.endsWith('.ts') && !/\.(test|spec)\.ts$/.test(file));
+  for (const file of productionFiles) {
+    assert.doesNotMatch(readFileSync(resolve(preparationDir, file), 'utf8'), forbiddenRuntimeTokens, file);
+  }
+  assert.doesNotMatch(templateSource, /Chất chuẩn LIMS|Đang tìm chất chuẩn|referenceLoading|referenceError|mã AA01/);
+});
+
+test('calculator only injects presentation feedback and never reads business or browser data', () => {
+  assert.deepEqual([...componentSource.matchAll(/inject\((\w+)\)/g)].map(match => match[1]), ['ToastService']);
+  assert.doesNotMatch(componentSource, /getItem\s*\(|setItem\s*\(|sessionStorage|indexedDB|fetch\s*\(|XMLHttpRequest|HttpClient|BroadcastChannel/);
+  assert.doesNotMatch(templateSource, /routerLink|href=|innerHTML|draftRestoreNotice/);
+  const appSource = readFileSync(resolve(process.cwd(), 'src/app/app.component.ts'), 'utf8');
+  const publicRouteDeclaration = appSource.match(/isPublicRoute = computed\(\(\) => \{[\s\S]*?\n {2}\}\);/)?.[0];
+  assert.ok(publicRouteDeclaration);
+  assert.doesNotMatch(publicRouteDeclaration, /prep|preparation/);
 });
 
 test('prep helper exposes simulation-only actions', () => {
   assert.match(componentSource, /calculatePrep/);
   assert.match(componentSource, /copyResult/);
-  assert.match(componentSource, /exportSimulation/);
-  assert.match(componentSource, /printSimulation/);
+  assert.doesNotMatch(componentSource, /exportSimulation|printSimulation|printDocument|sheetMethod/);
+  assert.doesNotMatch(templateSource, /app-a4-document-preview|Xuất TXT|Xem & In|Thông tin kèm phiếu/);
   assert.doesNotMatch(componentSource, /stockAfter|transactionId|auditLog|writeBatch|setDoc|updateDoc/i);
   assert.doesNotMatch(templateSource, /Dùng tồn kho|Trừ kho|tồn kho|Đủ hàng|Thiếu hàng/i);
 });
@@ -49,7 +61,7 @@ test('ppm (mg/L) stays in the UI and its reminder is tooltip-only', () => {
   assert.match(templateSource, /\[attr\.title\]="concentrationTooltip\(concentrationSourceChoice\(\)\)"/);
   assert.match(templateSource, /\[attr\.title\]="concentrationTooltip\(resultInstrumentChoice\(\)\)"/);
   assert.match(templateSource, /\[attr\.title\]="concentrationTooltip\(item\.unit\)"/);
-  assert.ok((templateSource.match(/\[attr\.title\]="concentrationTooltip/g) ?? []).length >= 14);
+  assert.ok((templateSource.match(/\[attr\.title\]="concentrationTooltip/g) ?? []).length >= 10);
 });
 
 test('all equivalent mass concentration families have tooltip groups', () => {

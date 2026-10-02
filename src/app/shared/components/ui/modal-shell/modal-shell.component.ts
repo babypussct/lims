@@ -22,18 +22,26 @@ let nextModalShellId = 0;
         class="ui-modal-enter flex max-h-[calc(100vh-2rem)] w-full flex-col overflow-hidden rounded-2xl border border-white/70 bg-white shadow-soft-xl dark:border-slate-700/70 dark:bg-slate-900"
         [class]="panelClasses()"
       >
-        <header class="flex items-start gap-4 border-b border-slate-100 px-6 py-4 dark:border-slate-800">
+        <header
+          class="flex shrink-0 border-b border-slate-100 dark:border-slate-800"
+          [class]="variant() === 'viewer' ? 'flex flex-wrap shrink-0 items-center gap-x-3 gap-y-2 border-b border-slate-100 px-3 py-2 dark:border-slate-800' : 'flex shrink-0 items-start gap-4 border-b border-slate-100 px-6 py-4 dark:border-slate-800'"
+        >
           <div class="min-w-0 flex-1">
-            <h2 [id]="titleId" class="text-lg font-bold tracking-tight text-gray-700 dark:text-slate-100">
+            <h2 [id]="titleId" class="font-bold tracking-tight text-gray-700 dark:text-slate-100"
+              [class.text-lg]="variant() === 'default'" [class.text-sm]="variant() === 'viewer'"
+              [class.truncate]="variant() === 'viewer'" [attr.title]="variant() === 'viewer' ? title() : null">
               {{ title() }}
             </h2>
             @if (description()) {
-              <p [id]="descriptionId" class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              <p [id]="descriptionId" class="mt-1 text-slate-500 dark:text-slate-400"
+                [class.text-sm]="variant() === 'default'" [class.text-xs]="variant() === 'viewer'"
+                [class.truncate]="variant() === 'viewer'" [attr.title]="variant() === 'viewer' ? description() : null">
                 {{ description() }}
               </p>
             }
             <ng-content select="[modalHeader]" />
           </div>
+          <ng-content select="[modalHeaderActions]" />
           <button
             type="button"
             class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-40 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
@@ -45,7 +53,8 @@ let nextModalShellId = 0;
           </button>
         </header>
 
-        <div class="min-h-0 flex-1 overflow-y-auto px-6 py-5">
+        <div class="min-h-0 flex-1"
+          [class]="variant() === 'viewer' ? 'flex min-h-0 flex-1 flex-col overflow-hidden p-2' : 'min-h-0 flex-1 overflow-y-auto px-6 py-5'">
           <ng-content select="[modalBody]" />
         </div>
 
@@ -84,6 +93,7 @@ export class AppModalShellComponent {
   title = input('Hộp thoại');
   description = input('');
   size = input<AppModalSize>('md');
+  variant = input<'default' | 'viewer'>('default');
   showFooter = input(true);
   closeOnBackdrop = input(true);
   closeDisabled = input(false);
@@ -100,7 +110,8 @@ export class AppModalShellComponent {
       xl: 'max-w-6xl',
       '2xl': 'max-w-[96rem]',
     };
-    return `ui-modal-enter flex max-h-[calc(100vh-2rem)] w-full flex-col overflow-hidden rounded-2xl border border-white/70 bg-white shadow-soft-xl dark:border-slate-700/70 dark:bg-slate-900 ${sizeClasses[this.size()]}`;
+    const heightClass = this.variant() === 'viewer' ? 'h-[calc(100dvh-2rem)]' : '';
+    return `ui-modal-enter flex max-h-[calc(100vh-2rem)] w-full flex-col overflow-hidden rounded-2xl border border-white/70 bg-white shadow-soft-xl dark:border-slate-700/70 dark:bg-slate-900 ${sizeClasses[this.size()]} ${heightClass}`;
   });
 
   protected onBackdropClick(event: MouseEvent): void {

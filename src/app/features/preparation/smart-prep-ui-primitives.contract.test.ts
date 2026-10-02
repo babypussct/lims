@@ -24,7 +24,7 @@ describe('preparation shared UI primitive integration', () => {
     assert.match(template, /<app-button[^>]*\(click\)="addStep\(\)"/);
     assert.match(template, /<app-button[^>]*\(click\)="showTrace\.set\(!showTrace\(\)\)"/);
     assert.match(template, /<app-button[^>]*\[fullWidth\]="true"[^>]*\(click\)="copyResult\(\)"/);
-    assert.match(template, /<app-button[^>]*variant="secondary"[^>]*\[fullWidth\]="true"[^>]*\(click\)="exportSimulation\(\)"/);
+    assert.doesNotMatch(template, /exportSimulation|printSimulation|app-a4-document-preview/);
 
     assert.doesNotMatch(template, /<button[^>]*\(click\)="addAddition\(\)"/);
     assert.doesNotMatch(template, /<button[^>]*\(click\)="addStep\(\)"/);

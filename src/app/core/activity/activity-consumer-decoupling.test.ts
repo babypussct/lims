@@ -12,22 +12,13 @@ test('Statistics reads audit data independently from Activity Feed state', () =>
   assert.doesNotMatch(source, /ensureActivityFeedListeners\(\)/);
 });
 
-test('Print Queue and request badge use the canonical UID-owned read model', () => {
-  const queue = readFileSync('src/app/features/requests/print-queue.component.ts', 'utf8');
+test('worksheet printing has no listener or queue badge and does not consume Activity Feed state', () => {
   const requests = readFileSync('src/app/features/requests/request-list.component.ts', 'utf8');
-  const service = readFileSync('src/app/core/services/print-queue.service.ts', 'utf8');
-
-  assert.match(queue, /PrintQueueService/);
-  assert.match(queue, /this\.queue\.printableLogs\(\)/);
-  assert.doesNotMatch(queue, /state\.printableLogs\(\)/);
-  assert.doesNotMatch(queue, /ensureActivityFeedListeners\(\)/);
-
-  assert.match(requests, /PrintQueueService/);
-  assert.match(requests, /printQueue\.printableLogs\(\)/);
-  assert.doesNotMatch(requests, /state\.printableLogs\(\)/);
-
-  assert.match(service, /where\('actorUid', '==', user\.uid\)/);
-  assert.doesNotMatch(service, /where\('user', '==', displayName\)/);
+  const service = readFileSync('src/app/core/services/batch-worksheet.service.ts', 'utf8');
+  assert.match(requests, /BatchWorksheetPickerComponent/);
+  assert.doesNotMatch(requests, /PrintQueue|printableLogs|setCurrentTab\('printing'\)/);
+  assert.match(service, /where\(documentId\(\), 'in'/);
+  assert.doesNotMatch(service, /onSnapshot|ensureActivityFeedListeners|updateDoc|writeBatch|addDoc/);
 });
 
 test('InventoryService no longer owns audit date-range reads', () => {

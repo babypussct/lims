@@ -1,23 +1,18 @@
 import '@angular/compiler';
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {
-  Injector,
-  runInInjectionContext,
-  ɵChangeDetectionScheduler as ChangeDetectionScheduler,
-  ɵEffectScheduler as EffectScheduler,
-  ɵMicrotaskEffectScheduler as MicrotaskEffectScheduler,
-  ɵPendingTasksInternal as PendingTasksInternal
-} from '@angular/core';
+import { Injector, runInInjectionContext } from '@angular/core';
+import { Router, type ActivatedRouteSnapshot, type RouterStateSnapshot } from '@angular/router';
+import { routes } from '../../app.routes';
+import { AuthService } from '../../core/services/auth.service';
+import { permissionGuard } from '../../core/guards/permission.guard';
 import { ToastService } from '../../core/services/toast.service';
+import { PREP_SUBSTANCE_LIBRARY, formulaSubstanceOption } from './prep-substance-catalog';
 import { SmartPrepComponent } from './smart-prep.component';
 
 function setup() {
   const injector = Injector.create({ providers: [
-    { provide: ToastService, useValue: { show() {} } },
-    { provide: ChangeDetectionScheduler, useValue: { notify() {}, runningTick: false } },
-    PendingTasksInternal,
-    { provide: EffectScheduler, useClass: MicrotaskEffectScheduler }
+    { provide: ToastService, useValue: { show() {} } }
   ] });
   return runInInjectionContext(injector, () => new SmartPrepComponent());
 }
@@ -31,56 +26,231 @@ function dilution() {
   return ui;
 }
 
-test('print preview rejects an incomplete calculation and snapshots valid data without opening a print dialog', () => {
-  const empty = setup();
-  empty.printSimulation();
-  assert.equal(empty.printDocument(), null);
+test('offline substance selection clears stale source constants and actual quantities', () => {
   const ui = dilution();
-  ui.sheetMethod.set('SOP-01 v2');
-  ui.sheetSource.set('LOT-2026');
-  ui.showTrace.set(false);
-  ui.printSimulation();
-  const snapshot = ui.printDocument();
-  assert.ok(snapshot);
-  assert.match(JSON.stringify(snapshot), /SOP-01 v2/);
-  assert.ok(snapshot.sections.some(section => section.title === 'Công thức và phép thế số'));
-  ui.sheetSource.set('LOT-CHANGED');
-  ui.targetValue.set(20);
-  assert.equal(ui.printDocument(), snapshot);
-  assert.doesNotMatch(JSON.stringify(snapshot), /LOT-CHANGED/);
+  ui.targetActualValue.set(98);
+  ui.targetMolecularWeight.set(100);
+  ui.targetSourceDensity.set(1.2);
+  ui.selectSubstance(formulaSubstanceOption('NaCl')!);
+  assert.equal(ui.targetSourceType(), 'solid');
+  assert.equal(ui.targetSourceValue(), null);
+  assert.equal(ui.targetActualValue(), null);
+  assert.ok(Math.abs(ui.targetMolecularWeight()! - 58.44) < 0.001);
+  assert.equal(ui.targetSourceDensity(), null);
+  assert.equal(ui.targetPotency(), null);
+  assert.equal(ui.canExport(), false);
+  ui.targetPotency.set(100);
+  assert.equal(ui.calculation().status, 'valid');
+  ui.resetDraft();
+  assert.equal(ui.targetSourceNote(), '');
+});
+
+test('offline concentrate applies source density while leaving target solution density independent', () => {
+  const ui = setup();
+  ui.applyPresetChemical('hno3-65');
+  ui.targetValue.set(0.1);
+  ui.targetChoice.set('molar_m');
+  ui.targetFinalVolume.set(100);
+  const output = ui.calculation().output;
+  assert.equal(output?.kind, 'target');
+  if (output?.kind !== 'target') return;
+  assert.ok(Math.abs(output.plannedQuantity.canonicalValue - 0.69241758) < 1e-7);
+  assert.equal(ui.targetDensity(), null);
+});
+
+test('hydrate defaults to whole salt and explicit copper selection changes both f and analyte M', () => {
+  const ui = setup();
+  ui.selectSubstance(PREP_SUBSTANCE_LIBRARY.find(option => option.formula === 'CuSO4.5H2O')!);
+  assert.equal(ui.useTargetConversion(), false);
+  assert.equal(ui.targetPotency(), null);
+  ui.targetPotency.set(100);
+  ui.targetChoice.set('molar_m');
+  ui.targetValue.set(0.1);
+  ui.targetFinalVolume.set(100);
+  ui.selectSpecies('Cu');
+  assert.equal(ui.targetMolecularWeight(), 63.546);
+  assert.ok(Math.abs(ui.targetConversionFactor()! - 0.254506) < 0.00001);
+  const output = ui.calculation().output;
+  assert.equal(output?.kind, 'target');
+  if (output?.kind !== 'target') return;
+  assert.ok(Math.abs(output.plannedQuantity.canonicalValue - 2.49677) < 0.00001);
+  ui.selectSubstance(formulaSubstanceOption('NaCl')!);
+  assert.equal(ui.useTargetConversion(), false);
+  assert.equal(ui.targetSpecies(), '');
+  assert.equal(ui.targetConversionFactor(), 1);
+  assert.equal(ui.targetPotency(), null);
+});
+
+test('concentration mode includes molar alternatives from a parsed formula while reporting mass concentration', () => {
+  const ui = setup();
+  ui.setCalcMode('concentration');
+  ui.selectSubstance(formulaSubstanceOption('NaCl')!);
+  ui.concentrationPotency.set(100);
+  ui.concentrationActualValue.set(58.44);
+  ui.concentrationFinalVolume.set(100);
+  const output = ui.calculation().output;
+  assert.equal(output?.kind, 'concentration');
+  if (output?.kind !== 'concentration') return;
+  assert.ok(Math.abs(output.actualConcentration.molarM! - 0.01) < 1e-7);
+});
+
+test('spike and direct series use manually entered stock concentrations without sample metadata', () => {
+  const ui = setup();
+  ui.setCalcMode('spike');
+  ui.spikeStandardName.set('Chuẩn Cu đã pha');
+  ui.spikeStandardValue.set(10);
+  ui.spikeStandardChoice.set('mg_l');
+  ui.spikeSampleValue.set(5);
+  ui.spikeTargetValue.set(0.05);
+  const spike = ui.calculation().output;
+  assert.equal(spike?.kind, 'spike');
+  if (spike?.kind !== 'spike') return;
+  assert.ok(Math.abs(spike.spikeVolumeMl - 0.025) < 1e-12);
+  ui.setCalcMode('series');
+  const sourceId = ui.seriesSources()[0].id;
+  ui.updateSeriesSource(sourceId, 'name', 'Chuẩn Cu đã pha');
+  ui.updateSeriesSource(sourceId, 'concentration', 1);
+  ui.updateSeriesSource(sourceId, 'concentrationChoice', 'mg_ml');
+  ui.quickSeriesText.set('1, 2, 5, 10, 20');
+  ui.quickSeriesVolume.set(100);
+  ui.applyQuickSeries();
+  const series = ui.calculation().output;
+  assert.equal(series?.kind, 'series');
+  if (series?.kind !== 'series') return;
+  assert.deepEqual(series.pointRows.map(row => row.sourceVolumeMl), [0.1, 0.2, 0.5, 1, 2]);
+});
+
+test('simple result conversion applies C V F / m and optional recovery with correct units', () => {
+  const ui = setup();
+  ui.setCalcMode('result_conversion');
+  ui.resultSampleValue.set(5);
+  ui.resultInstrumentValue.set(2);
+  ui.resultFinalVolume.set(50);
+  ui.resultDilutionFactor.set(10);
+  ui.resultRecoveryPercent.set(80);
+  const output = ui.calculation().output;
+  assert.equal(output?.kind, 'result_conversion');
+  if (output?.kind !== 'result_conversion') return;
+  assert.ok(Math.abs(output.resultValue - 250) < 1e-10);
+  assert.equal(output.finalVolumeMl, 50);
+  assert.equal(ui.calculation().issues.length, 0);
+  ui.resultRecoveryPercent.set(null);
+  assert.equal((ui.calculation().output as typeof output).resultValue, 200);
+  ui.resultDilutionFactor.set(0);
+  assert.equal(ui.canExport(), false);
+  ui.resultDilutionFactor.set(1);
+  ui.resultRecoveryPercent.set(0);
+  assert.equal(ui.canExport(), false);
+  ui.resultRecoveryPercent.set(null);
+  ui.setResultSampleBase('volume');
+  ui.resultSampleValue.set(10);
+  ui.resultUnit.set('mg/L');
+  assert.equal((ui.calculation().output as typeof output).resultValue, 10);
+});
+
+test('advanced result conversion uses only steps entered in the current calculation', () => {
+  const ui = setup();
+  ui.setCalcMode('result_conversion');
+  ui.advancedResultSteps.set(true);
+  ui.resultSampleValue.set(5);
+  ui.resultInstrumentValue.set(2);
+  ui.updateStep('step-extract', 'volume', 50);
+  const output = ui.calculation().output;
+  assert.equal(output?.kind, 'result_conversion');
+  if (output?.kind === 'result_conversion') assert.equal(output.resultValue, 20);
+});
+
+test('offline search immediately resolves names and formulas without an external service', () => {
+  const ui = setup();
+  ui.searchSubstance('Đồng sulfat');
+  assert.ok(ui.substanceOptions().some(option => option.formula === 'CuSO4.5H2O' && option.origin === 'library'));
+  ui.searchSubstance('MgSO4.7H2O');
+  assert.ok(ui.substanceOptions().some(option => option.formula === 'MgSO4.7H2O' && option.origin === 'formula'));
+  ui.searchSubstance('Không có chất này');
+  assert.deepEqual(ui.substanceOptions(), []);
+  ui.setCalcMode('spike');
+  assert.equal(ui.substanceQuery(), '');
+  assert.ok(ui.substanceOptions().every(option => option.sourceType !== 'solid'));
+});
+
+test('copy text contains the bench operation and includes formulas only when requested', () => {
+  assert.equal(setup().resultText(), '');
+  const ui = dilution();
+  assert.match(ui.resultText(), /Pha 10 mL/);
+  assert.match(ui.resultText(), /Hút 100 µL/);
+  assert.match(ui.resultText(), /P100/);
+  assert.doesNotMatch(ui.resultText(), /PHIẾU|CÔNG THỨC|C_target/);
+  ui.showTrace.set(true);
+  assert.ok(ui.resultText().split('\n').length > 1);
 });
 
 class MemoryStorage implements Storage {
   private readonly values = new Map<string, string>();
+  readonly reads: string[] = [];
+  readonly writes: string[] = [];
 
   get length(): number { return this.values.size; }
   clear(): void { this.values.clear(); }
-  getItem(key: string): string | null { return this.values.get(key) ?? null; }
+  getItem(key: string): string | null { this.reads.push(key); return this.values.get(key) ?? null; }
   key(index: number): string | null { return [...this.values.keys()][index] ?? null; }
   removeItem(key: string): void { this.values.delete(key); }
-  setItem(key: string, value: string): void { this.values.set(key, value); }
+  setItem(key: string, value: string): void { this.writes.push(key); this.values.set(key, value); }
 }
 
-async function flushEffects(): Promise<void> {
-  await Promise.resolve();
-}
-
-async function withLocalStorage(run: (storage: MemoryStorage) => Promise<void>): Promise<void> {
-  const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+async function withBrowserStorage(name: 'localStorage' | 'sessionStorage', run: (storage: MemoryStorage) => Promise<void>): Promise<void> {
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, name);
   const storage = new MemoryStorage();
-  Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: storage });
+  Object.defineProperty(globalThis, name, { configurable: true, value: storage });
   try {
     await run(storage);
-    await flushEffects();
+    await Promise.resolve();
   } finally {
-    if (descriptor) Object.defineProperty(globalThis, 'localStorage', descriptor);
-    else delete (globalThis as typeof globalThis & { localStorage?: Storage }).localStorage;
+    if (descriptor) Object.defineProperty(globalThis, name, descriptor);
+    else Reflect.deleteProperty(globalThis, name);
   }
 }
 
-function draftState(ui: SmartPrepComponent): Record<string, unknown> {
-  return (ui as unknown as { snapshotDraftState(): Record<string, unknown> }).snapshotDraftState();
+function checkRouteAccess(path: string, signedIn: boolean) {
+  const route = routes.find(candidate => candidate.path === path)!;
+  assert.ok(route.canActivate?.includes(permissionGuard), path + ' must use the permission guard');
+  const navigations: { commands: string[]; options?: unknown }[] = [];
+  const injector = Injector.create({ providers: [
+    { provide: AuthService, useValue: {
+      currentUser: () => signedIn ? { uid: 'calculator-user', role: 'staff' } : null,
+      isManager: () => false,
+      isStandardAuditMode: () => false,
+      hasPermission: () => false,
+      getPermissionName: (permission: string) => permission
+    } },
+    { provide: Router, useValue: { navigate(commands: string[], options?: unknown) { navigations.push({ commands, options }); return Promise.resolve(true); } } },
+    { provide: ToastService, useValue: { show() {} } }
+  ] });
+  const decision = runInInjectionContext(injector, () => permissionGuard(
+    { data: route.data ?? {} } as ActivatedRouteSnapshot,
+    { url: '/' + path } as RouterStateSnapshot
+  ));
+  return { decision, navigations };
 }
+
+test('anonymous users cannot open prep through a direct link', async () => {
+  await withBrowserStorage('sessionStorage', async storage => {
+    const access = checkRouteAccess('prep', false);
+    assert.equal(access.decision, false);
+    assert.deepEqual(access.navigations.map(item => item.commands), [['/']]);
+    assert.equal(storage.getItem('__lims_intended_route'), '#/prep');
+  });
+});
+
+test('signed-in users without operational permissions can calculate but cannot open business data', () => {
+  const access = checkRouteAccess('prep', true);
+  assert.equal(access.decision, true);
+  assert.deepEqual(access.navigations, []);
+  for (const path of ['inventory', 'standards', 'results']) {
+    const denied = checkRouteAccess(path, true);
+    assert.equal(denied.decision, false, path);
+    assert.deepEqual(denied.navigations.map(item => item.commands), [['/403']], path);
+  }
+});
 
 test('new preparation starts empty and cannot be exported as a completed calculation', () => {
   const ui = setup();
@@ -91,57 +261,47 @@ test('new preparation starts empty and cannot be exported as a completed calcula
   assert.deepEqual(ui.seriesAdditions(), []);
 });
 
-test('blank stored draft roundtrips with empty additions and is cleaned after restore', async () => {
-  await withLocalStorage(async storage => {
-    const seed = setup();
-    await flushEffects();
-    storage.setItem('lims.smart-prep.draft.v1', JSON.stringify({
-      version: 1,
-      savedAt: '2026-09-07T00:00:00.000Z',
-      state: draftState(seed)
-    }));
-
-    const restored = setup();
-    assert.equal(restored.draftRestoreNotice(), null);
-    assert.equal(restored.calcMode(), 'target');
-    assert.deepEqual(restored.seriesAdditions(), []);
-    assert.deepEqual(restored.seriesSources(), seed.seriesSources());
-
-    await flushEffects();
+test('calculator never reads another user cache and removes only its legacy shared draft', async () => {
+  await withBrowserStorage('localStorage', async storage => {
+    storage.setItem('lims.smart-prep.draft.v1', JSON.stringify({ version: 1, state: { targetName: 'Private lot from previous user', targetSourceValue: 1000, targetValue: 10 } }));
+    storage.setItem('private-lims-cache', 'Other protected data');
+    storage.writes.length = 0;
+    const ui = setup();
+    assert.deepEqual(storage.reads, []);
+    assert.deepEqual(storage.writes, []);
+    assert.equal(ui.targetName(), '');
+    assert.equal(ui.targetSourceValue(), null);
+    assert.equal(ui.calculation().output, null);
     assert.equal(storage.getItem('lims.smart-prep.draft.v1'), null);
+    assert.equal(storage.getItem('private-lims-cache'), 'Other protected data');
   });
 });
 
-test('unfinished series draft keeps a stale source reference so the user can repair it', async () => {
-  await withLocalStorage(async storage => {
-    const seed = setup();
-    await flushEffects();
-    const state = draftState(seed);
-    state['calcMode'] = 'series';
-    state['seriesPoints'] = seed.seriesPoints().map(point => ({
-      ...point,
-      targetConcentration: 10,
-      finalVolume: 10,
-      sourceId: 'source-deleted'
-    }));
-    storage.setItem('lims.smart-prep.draft.v1', JSON.stringify({
-      version: 1,
-      savedAt: '2026-09-07T00:00:00.000Z',
-      state
-    }));
-
-    const restored = setup();
-    assert.equal(restored.draftRestoreNotice(), null);
-    assert.equal(restored.calcMode(), 'series');
-    assert.equal(restored.seriesPoints()[0].sourceId, 'source-deleted');
-    assert.equal(restored.canExport(), false);
-
-    await flushEffects();
-    const saved = storage.getItem('lims.smart-prep.draft.v1');
-    assert.ok(saved);
-    const savedState = JSON.parse(saved).state as { seriesPoints: { sourceId: string }[] };
-    assert.equal(savedState.seriesPoints[0].sourceId, 'source-deleted');
+test('calculation stays in memory and a new calculator cannot inherit the previous input', async () => {
+  await withBrowserStorage('localStorage', async storage => {
+    const first = dilution();
+    assert.equal(first.calculation().status, 'valid');
+    await Promise.resolve();
+    assert.deepEqual(storage.reads, []);
+    assert.deepEqual(storage.writes, []);
+    assert.equal(storage.length, 0);
+    const next = setup();
+    assert.equal(next.targetName(), '');
+    assert.equal(next.targetValue(), null);
+    assert.equal(next.calculation().output, null);
+    assert.equal(next.resultText(), '');
   });
+});
+
+test('denied browser storage does not prevent calculation', () => {
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+  Object.defineProperty(globalThis, 'localStorage', { configurable: true, get() { throw new Error('Storage denied'); } });
+  try {
+    assert.equal(dilution().calculation().status, 'valid');
+  } finally {
+    if (descriptor) Object.defineProperty(globalThis, 'localStorage', descriptor);
+    else Reflect.deleteProperty(globalThis, 'localStorage');
+  }
 });
 
 test('dilution ignores hidden solid corrections and uses optional actual input when entered', () => {
@@ -230,19 +390,14 @@ test('switching source type clears quantities whose physical meaning changed', (
   assert.equal(ui.targetQuantityUnit(), 'mg');
 });
 
-test('new sheet clears optional corrections, metadata, dynamic rows and all old results', () => {
+test('reset clears selected substance, optional corrections, dynamic rows and all old results', () => {
   const ui = dilution();
   ui.targetActualValue.set(98);
-  ui.sheetSource.set('LOT-TEST');
-  ui.sheetMethod.set('SOP-TEST v1');
   ui.targetSourceDensity.set(1.2);
   ui.addSeriesSource();
   ui.addAddition();
-  assert.match(ui.resultText(), /LOT-TEST/);
-  assert.match(ui.resultText(), /SOP-TEST v1/);
   ui.resetDraft();
   assert.equal(ui.canExport(), false);
-  assert.equal(ui.sheetSource(), '');
   assert.equal(ui.targetActualValue(), null);
   assert.equal(ui.targetSourceDensity(), null);
   assert.equal(ui.seriesSources().length, 1);

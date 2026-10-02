@@ -16,8 +16,8 @@ const smartBatchTemplate = readFileSync(
   resolve(process.cwd(), 'src/app/features/batch/smart-batch.component.html'),
   'utf8'
 );
-const printQueueSource = readFileSync(
-  resolve(process.cwd(), 'src/app/features/requests/print-queue.component.ts'),
+const worksheetSource = readFileSync(
+  resolve(process.cwd(), 'src/app/core/services/batch-worksheet.service.ts'),
   'utf8'
 );
 const configGeneralSource = readFileSync(
@@ -140,11 +140,9 @@ test('SmartBatch wizard defaults to the food matrix and the obsolete parent spli
   assert.match(smartBatchSource, /createEmptyBlock\(`Nhóm mẫu #\$\{b\.length \+ 1\}`\)/);
 });
 
-test('print queue owns its independent listener instead of consuming Activity Feed state', () => {
-  assert.match(printQueueSource, /this\.queue\.ensureListener\(\)/);
-  assert.match(printQueueSource, /this\.queue\.printableLogs\(\)/);
-  assert.doesNotMatch(printQueueSource, /this\.state\.ensureActivityFeedListeners\(\)/);
-  assert.doesNotMatch(printQueueSource, /this\.state\.ensureLogsListener\(\)/);
+test('worksheets load by snapshot ID on demand and never track print state', () => {
+  assert.match(worksheetSource, /BatchWorksheetLoader/);
+  assert.doesNotMatch(worksheetSource, /onSnapshot|ensureActivityFeedListeners|ensureLogsListener|updateDoc|writeBatch/);
 });
 
 test('config screen no longer embeds or copies a deployable Firestore ruleset', () => {

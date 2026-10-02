@@ -79,30 +79,37 @@ import { openInNewTab } from '../../utils/browser-navigation';
     }
 
     @if (printService.isPreviewPdfOpen()) {
-      <app-modal-shell [title]="printService.pdfTitle() || 'Xem tài liệu'" [size]="isFullscreen() ? '2xl' : 'xl'"
-        [description]="pdfDescription()" [closeDisabled]="printService.isPrinting() || isPublishing()" (closed)="closePdfModal()">
-        <div modalBody class="print-workspace flex min-h-0 flex-col gap-3" [style.height]="isFullscreen() ? '72vh' : '60vh'">
-          <div class="flex flex-wrap items-center gap-2">
-            @if (printService.docsUrl()) {
-              <a [href]="printService.docsUrl()" target="_blank" rel="noopener noreferrer"
-                class="rounded-xl border border-slate-200 px-3 py-2 text-sm font-bold text-indigo-600 dark:border-slate-700 dark:text-indigo-300">
-                <i class="fa-solid fa-file-word" aria-hidden="true"></i> Google Docs
-              </a>
-            }
-            <app-button variant="secondary" size="sm" (click)="copyPdfLink()">
-              <i class="fa-solid fa-copy" aria-hidden="true"></i> {{isCopying() ? 'Đã sao chép' : 'Sao chép liên kết'}}
-            </app-button>
-            <app-button variant="ghost" size="sm" (click)="toggleFullscreen()">{{isFullscreen() ? 'Thu gọn' : 'Mở rộng'}}</app-button>
-            @if (printService.onRepublishCallback()) {
-              <app-button variant="secondary" size="sm" (click)="triggerRepublishFromModal()" [loading]="isPublishing()" [disabled]="printService.isPrinting()">
-                <i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i> Tạo lại báo cáo
-              </app-button>
-            }
-          </div>
+      <app-modal-shell [title]="printService.pdfTitle() || 'Xem tài liệu'" size="2xl" variant="viewer" [showFooter]="false"
+        [description]="pdfDescription()" [closeDisabled]="printService.isPrinting()" (closed)="closePdfModal()">
+        <div modalHeaderActions class="print-workspace order-last flex w-full flex-wrap items-center gap-2 lg:order-none lg:w-auto">
+          @if (printService.docsUrl()) {
+            <a [href]="printService.docsUrl()" target="_blank" rel="noopener noreferrer" title="Google Docs"
+              class="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 px-3 text-sm font-bold text-indigo-600 hover:bg-slate-50 dark:border-slate-700 dark:text-indigo-300 dark:hover:bg-slate-800 sm:h-9">
+              <i class="fa-solid fa-file-word" aria-hidden="true"></i>
+              <span class="sr-only sm:hidden">Google Docs</span><span class="hidden sm:inline">Google Docs</span>
+            </a>
+          }
+          <app-button variant="secondary" size="sm" (click)="copyPdfLink()" [disabled]="!printService.pdfUrl()"
+            [title]="isCopying() ? 'Đã sao chép' : 'Sao chép liên kết'">
+            <i class="fa-solid fa-copy" aria-hidden="true"></i>
+            <span class="sr-only sm:hidden">{{isCopying() ? 'Đã sao chép' : 'Sao chép liên kết'}}</span>
+            <span class="hidden sm:inline">{{isCopying() ? 'Đã sao chép' : 'Sao chép liên kết'}}</span>
+          </app-button>
+          <app-button variant="secondary" size="sm" (click)="downloadPdf()" [loading]="printService.isDownloading()"
+            [disabled]="printService.isPdfBlobLoading()" title="Tải tài liệu">
+            <i class="fa-solid fa-download" aria-hidden="true"></i>
+            <span class="sr-only sm:hidden">Tải tài liệu</span><span class="hidden sm:inline">Tải tài liệu</span>
+          </app-button>
+          <app-button class="print-primary" size="sm" (click)="printPdf()" [loading]="printService.isPrinting()"
+            [disabled]="printService.isPdfBlobLoading() || !pdfModalSafeUrl()">
+            <i class="fa-solid fa-print" aria-hidden="true"></i> {{printService.pdfPreviewType() === 'image' ? 'Mở để in' : 'In PDF'}}
+          </app-button>
+        </div>
+        <div modalBody class="print-workspace flex min-h-0 flex-1 flex-col">
           <div class="min-h-0 flex-1 overflow-auto rounded-xl bg-slate-100 dark:bg-slate-950">
-            @if (printService.isPdfBlobLoading() || isPublishing()) {
+            @if (printService.isPdfBlobLoading()) {
               <div role="status" class="flex h-full items-center justify-center gap-3 p-6 text-slate-600 dark:text-slate-300">
-                <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> {{isPublishing() ? 'Đang tạo báo cáo…' : 'Đang tải tài liệu…'}}
+                <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Đang tải tài liệu…
               </div>
             } @else if (pdfModalSafeUrl()) {
               @if (printService.pdfPreviewType() === 'image') {
@@ -118,16 +125,6 @@ import { openInNewTab } from '../../utils/browser-navigation';
               </div>
             }
           </div>
-        </div>
-        <div modalFooter class="print-workspace flex w-full flex-wrap justify-end gap-2">
-          <app-button variant="secondary" (click)="closePdfModal()" [disabled]="printService.isPrinting() || isPublishing()">Đóng</app-button>
-          <app-button variant="secondary" (click)="downloadPdf()" [loading]="printService.isDownloading()" [disabled]="printService.isPdfBlobLoading() || isPublishing()">
-            <i class="fa-solid fa-download" aria-hidden="true"></i> Tải tài liệu
-          </app-button>
-          <app-button class="print-primary" (click)="printPdf()" [loading]="printService.isPrinting()"
-            [disabled]="printService.isPdfBlobLoading() || isPublishing() || !pdfModalSafeUrl()">
-            <i class="fa-solid fa-print" aria-hidden="true"></i> {{printService.pdfPreviewType() === 'image' ? 'Mở để in' : 'In PDF'}}
-          </app-button>
         </div>
       </app-modal-shell>
     }
@@ -147,9 +144,7 @@ export class PrintPreviewModalComponent implements OnDestroy {
     { key: 'showHeader', label: 'Tiêu đề' }, { key: 'showFooter', label: 'Chân trang' },
     { key: 'showSignature', label: 'Người duyệt' }, { key: 'showCutLine', label: 'Đường cắt' },
   ];
-  isFullscreen = signal(false);
   isCopying = signal(false);
-  isPublishing = signal(false);
   busy = computed(() => this.isGeneratingPdf() || this.printService.isPrinting());
   private printController?: AbortController;
   pdfModalSafeUrl = computed(() => {
@@ -162,6 +157,9 @@ export class PrintPreviewModalComponent implements OnDestroy {
     : 'Chứng chỉ phân tích');
 
   constructor() {
+    effect(() => {
+      if (this.printService.isPreviewPdfOpen()) this.isCopying.set(false);
+    });
     effect(() => {
       if (this.printService.isPreviewOpen()) {
         this.options = { ...this.printService.defaultOptions };
@@ -214,8 +212,7 @@ export class PrintPreviewModalComponent implements OnDestroy {
     }
   }
 
-  closePdfModal() { if (!this.printService.isPrinting() && !this.isPublishing()) { this.printService.closePdfPreview(); this.isFullscreen.set(false); } }
-  toggleFullscreen() { this.isFullscreen.update(value => !value); }
+  closePdfModal() { if (!this.printService.isPrinting()) this.printService.closePdfPreview(); }
   printPdf() {
     const url = this.printService.pdfUrl();
     if (!url) return;
@@ -232,14 +229,6 @@ export class PrintPreviewModalComponent implements OnDestroy {
     if (!url) return;
     try { await navigator.clipboard.writeText(url); this.isCopying.set(true); this.toast.show('Đã sao chép liên kết.', 'success'); }
     catch { this.toast.show('Không sao chép được liên kết.', 'error'); }
-  }
-  async triggerRepublishFromModal() {
-    const callback = this.printService.onRepublishCallback();
-    if (!callback || this.isPublishing() || this.printService.isPrinting()) return;
-    this.isPublishing.set(true);
-    try { await callback(); this.toast.show('Đã tạo lại báo cáo.', 'success'); }
-    catch { this.toast.show('Không tạo lại được báo cáo.', 'error'); }
-    finally { this.isPublishing.set(false); }
   }
   formatPublishDate(value: unknown): string { return timestampToDate(value)?.toLocaleString('vi-VN') || 'Chưa rõ ngày phát hành'; }
 }

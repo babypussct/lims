@@ -52,7 +52,6 @@ export const ROUTE_TITLES: Record<string, string> = {
   'master-devices': 'Thiết Bị Phân Tích',
   'sample-description-master': 'Mô Tả Mẫu',
   'results-view': 'Xem Kết Quả',
-  'printing': 'In Ấn',
 };
 
 /** Shared page-icon map — FA icon class for each route segment */
@@ -82,7 +81,6 @@ export const ROUTE_ICONS: Record<string, string> = {
   'master-devices': 'fa-microscope',
   'sample-description-master': 'fa-tags',
   'results-view': 'fa-square-poll-vertical',
-  'printing': 'fa-print',
 };
 
 /** Quyền truy cập route dùng chung cho guard-aware navigation/search. */
@@ -103,7 +101,6 @@ export const ROUTE_ACCESS: Partial<Record<string, NavigationAccess>> = {
   'requests': PERMISSIONS.SOP_VIEW,
   'results': PERMISSIONS.SOP_VIEW,
   'stats': PERMISSIONS.REPORT_VIEW,
-  'printing': PERMISSIONS.SOP_VIEW,
   'labels': PERMISSIONS.INVENTORY_VIEW,
   'editor': PERMISSIONS.SOP_EDIT
 };
@@ -148,7 +145,7 @@ export const NAVIGATION_GROUPS: NavigationGroup[] = [
     title: 'Quản trị',
     icon: 'fa-screwdriver-wrench',
     items: [
-      { id: 'requests', name: 'Quản Lý Yêu Cầu', icon: 'fa-clipboard-list', path: 'requests', activeMatch: ['/requests', '/printing'], access: PERMISSIONS.SOP_VIEW, lockPermission: PERMISSIONS.SOP_VIEW, badgeKey: 'requests' },
+      { id: 'requests', name: 'Quản Lý Yêu Cầu', icon: 'fa-clipboard-list', path: 'requests', activeMatch: ['/requests'], access: PERMISSIONS.SOP_VIEW, lockPermission: PERMISSIONS.SOP_VIEW, badgeKey: 'requests' },
       { id: 'editor', name: 'Trình Soạn SOP', icon: 'fa-pen-ruler', path: 'editor', activeMatch: ['/editor'], access: PERMISSIONS.SOP_EDIT, lockPermission: PERMISSIONS.SOP_EDIT }
     ]
   }

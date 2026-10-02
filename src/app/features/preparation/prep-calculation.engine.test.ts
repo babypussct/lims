@@ -526,8 +526,8 @@ test('benchtop: small volume warnings, usable badge and tenfold intermediate exa
 });
 
 test('benchtop: six concentrate presets normalize %w/w once using source density', () => {
-  assert.equal(PRESET_CHEMICALS.length, 6);
-  assert.equal(new Set(PRESET_CHEMICALS.map(item => item.id)).size, 6);
+  assert.equal(PRESET_CHEMICALS.length, 9);
+  assert.equal(new Set(PRESET_CHEMICALS.map(item => item.id)).size, 9);
   for (const preset of PRESET_CHEMICALS) {
     const result = calculatePrep({ mode: 'target', sourceType: 'concentrate',
       substance: { name: preset.name, molecularWeight: preset.molarMass, densityGPerMl: preset.densityGPerMl },

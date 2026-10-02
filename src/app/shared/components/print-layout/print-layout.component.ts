@@ -51,10 +51,10 @@ export interface PrintLayoutState { ready: boolean; pageCount: number; error: st
                             <div class="header-right">
                                 <div class="id-container">
                                     <div class="id-label">MÃ TRUY XUẤT</div>
-                                    <div class="id-text">{{job.requestId || '---'}}</div>
+                                    <div class="id-text">{{job.traceLogId || job.requestId || job.printJobId || '---'}}</div>
                                 </div>
                                 <div class="qr-wrapper">
-                                    <canvas #qrCanvas [attr.data-qr]="job.requestId || job.sop?.id"></canvas>
+                                    <canvas #qrCanvas [attr.data-qr]="job.traceLogId || job.requestId || job.printJobId || job.sop?.id"></canvas>
                                 </div>
                             </div>
                         </div>

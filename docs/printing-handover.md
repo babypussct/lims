@@ -1,5 +1,7 @@
 # Bàn giao nâng cấp chức năng in LIMS
 
+> Cập nhật mã nguồn ngày 02/10/2026: luồng Hàng đợi in được thay thế bằng tác vụ phiếu phân tích trong Yêu cầu, SmartBatch, Kết quả, Calculator và Truy xuất. Xem [bàn giao luồng mới](worksheet-printing-handover.md) để biết cách sử dụng, tối ưu Spark và trạng thái phát hành. Nội dung bên dưới ghi nhận release 26.10.01-b06 trước thay đổi này; xác minh production của release đó không áp dụng cho luồng mới.
+
 Bản phát hành **26.10.01-b06 — Nâng cấp xem trước và in hồ sơ LIMS**, ngày **01/10/2026**, **đã triển khai và xác minh production**. Baseline đối chiếu: `dc6e1e5e454d4ddd8609bea6da3abb99de8de358`. Hệ thống production: [nafiqpm6.vercel.app](https://nafiqpm6.vercel.app).
 
 Phạm vi bàn giao gồm nền in chung, các đường in hiện có và biểu mẫu đọc dữ liệu hiện tại. Các biểu mẫu có chỗ ký/ghi thực tế hỗ trợ ghi nhận thủ công; không tự tạo trạng thái phê duyệt, tiếp nhận hoặc chữ ký mật mã. Xem [bản rà soát và kế hoạch](printing-audit-and-upgrade-plan.md) để đối chiếu yêu cầu ban đầu.

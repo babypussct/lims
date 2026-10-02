@@ -45,7 +45,9 @@ export const routes: Routes = [
   },
   {
     path: 'prep',
-    loadComponent: () => import('./features/preparation/smart-prep.component').then(m => m.SmartPrepComponent)
+    loadComponent: () => import('./features/preparation/smart-prep.component').then(m => m.SmartPrepComponent),
+    // Available to signed-in users without requiring an operational permission.
+    canActivate: [permissionGuard]
   },
   {
     path: 'inventory',
@@ -167,9 +169,8 @@ export const routes: Routes = [
   },
   {
     path: 'printing',
-    loadComponent: () => import('./features/requests/print-queue.component').then(m => m.PrintQueueComponent),
-    canActivate: [permissionGuard],
-    data: { permission: PERMISSIONS.SOP_VIEW }
+    redirectTo: 'results',
+    pathMatch: 'full'
   },
   {
     path: 'labels',

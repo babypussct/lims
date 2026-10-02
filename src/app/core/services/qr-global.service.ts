@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { ToastService } from './toast.service';
 import { StateService } from './state.service';
 import { parseGs1Data } from '../../shared/utils/gs1-parser';
+import { getTraceabilitySearchCandidate } from '../../shared/utils/traceability-lookup';
 
 @Injectable({ providedIn: 'root' })
 export class QrGlobalService {
@@ -63,6 +64,15 @@ export class QrGlobalService {
     if (cleanCode.startsWith('SESS_')) {
         this.router.navigate(['/mobile-login'], { queryParams: { qr: code } });
         return;
+    }
+
+    // Printed traceability URLs select their module explicitly, including 20-character worksheet IDs.
+    if (/(?:#\/|\/)traceability\//i.test(rawValue)) {
+        const candidate = getTraceabilitySearchCandidate(rawValue);
+        if (candidate) {
+            this.router.navigate(['/traceability', candidate.code]);
+            return;
+        }
     }
 
     // 2.6. Check for GS1 Data Matrix (Merck, etc.)

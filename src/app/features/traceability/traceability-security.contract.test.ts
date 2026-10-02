@@ -19,7 +19,7 @@ test('anonymous request-id traceability resolves through exact-get public projec
 
 test('anonymous hydration never reads private request or print-job payloads', () => {
   assert.match(source, /const canHydratePrivateData = !!this\.auth\.currentUser\(\)/);
-  assert.match(source, /canHydratePrivateData && log\.requestId && !log\.status/);
+  assert.match(source, /canHydratePrivateData && log\.requestId && !isStandardActivity\(log\)/);
   assert.match(source, /canHydratePrivateData && log\.printJobId && !log\.printData/);
 });
 

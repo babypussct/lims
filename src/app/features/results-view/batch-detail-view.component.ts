@@ -8,6 +8,8 @@ import { StateService } from '../../core/services/state.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ResultService } from '../results/services/result.service';
 import { PrintService } from '../../core/services/print.service';
+import { BatchWorksheetService } from '../../core/services/batch-worksheet.service';
+import { worksheetReference } from '../../shared/utils/batch-worksheet';
 import { ToastService } from '../../core/services/toast.service';
 import { GoogleDriveService } from '../../core/services/google-drive.service';
 import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
@@ -19,11 +21,12 @@ import { MasterTargetService } from '../targets/master-target.service';
 import { timestampToDate } from '../../shared/utils/timestamp';
 import { ConfirmationService } from '../../core/services/confirmation.service';
 import { AppPageHeaderComponent } from '../../shared/components/ui/page-header/page-header.component';
+import { AppButtonComponent } from '../../shared/components/ui/button/button.component';
 
 @Component({
   selector: 'app-batch-detail-view',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, AppPageHeaderComponent],
+  imports: [CommonModule, FormsModule, RouterModule, AppPageHeaderComponent, AppButtonComponent],
   template: `
     <div class="h-full flex flex-col animate-fade-in p-4 lg:p-6 space-y-4 lg:space-y-5">
       
@@ -43,6 +46,9 @@ import { AppPageHeaderComponent } from '../../shared/components/ui/page-header/p
           <i class="fa-solid fa-arrow-left text-xs transition-transform group-hover:-translate-x-0.5" aria-hidden="true"></i>
         </button>
 
+        @if (run() && !run().isVirtualMaster && worksheets.canRead()) {
+          <app-button pageHeaderActions variant="secondary" size="sm" [loading]="worksheets.loading()" (click)="printWorksheet()"><i class="fa-solid fa-print" aria-hidden="true"></i> Phiếu phân tích</app-button>
+        }
         @if (run() && draft() && config()) {
           <div pageHeaderActions class="flex items-center gap-2">
             <button
@@ -573,6 +579,8 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
   private state = inject(StateService);
   private resultService = inject(ResultService);
   private printService = inject(PrintService);
+  readonly worksheets = inject(BatchWorksheetService);
+  printWorksheet(): void { const run = this.run(); if (run) void this.worksheets.open([worksheetReference(run)]); }
   private toast = inject(ToastService);
   private masterTargetService = inject(MasterTargetService);
   private auth = inject(AuthService);

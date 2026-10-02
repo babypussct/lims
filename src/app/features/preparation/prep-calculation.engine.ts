@@ -36,7 +36,14 @@ export const PRESET_CHEMICALS: readonly QuickChemicalPreset[] = [
   { id: 'h2so4-98', name: 'H₂SO₄ 98%', massPercent: 98, densityGPerMl: 1.84, molarMass: 98.08 },
   { id: 'acetic-99-8', name: 'CH₃COOH băng 99,8%', massPercent: 99.8, densityGPerMl: 1.05, molarMass: 60.05 },
   { id: 'nh3-25', name: 'NH₃ 25%', massPercent: 25, densityGPerMl: 0.91, molarMass: 17.03 },
-  { id: 'h3po4-85', name: 'H₃PO₄ 85%', massPercent: 85, densityGPerMl: 1.685, molarMass: 98.00 }
+  { id: 'h3po4-85', name: 'H₃PO₄ 85%', massPercent: 85, densityGPerMl: 1.685, molarMass: 98.00 },
+  // Supplier nominal references; actual lot assay and temperature remain editable.
+  // https://www.sigmaaldrich.com/AU/en/product/aldrich/311421
+  { id: 'hclo4-70', name: 'HClO₄ 70%', massPercent: 70, densityGPerMl: 1.67, molarMass: 100.46 },
+  // https://www.sigmaaldrich.com/US/en/product/mm/100338 (20 °C)
+  { id: 'hf-40', name: 'HF 40%', massPercent: 40, densityGPerMl: 1.13, molarMass: 20.01 },
+  // https://www.sigmaaldrich.com/US/en/product/mm/822287 (20 °C)
+  { id: 'h2o2-30', name: 'H₂O₂ 30%', massPercent: 30, densityGPerMl: 1.11, molarMass: 34.01 }
 ];
 
 /** Mass fraction of the measured species in one formula unit of salt/hydrate. */

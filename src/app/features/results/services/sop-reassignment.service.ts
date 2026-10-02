@@ -116,12 +116,6 @@ export class SopReassignmentService {
     }));
     const newItems = calculatedItemsToRequestItems(preview.calculatedItems, this.state.inventoryMap());
     const inventoryDelta = calculateInventoryDelta(sourceRequest.items || [], newItems);
-    const previousPrintableLogs = (await getDocs(query(
-      collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs'),
-      where('requestId', '==', requestId),
-      where('printable', '==', true)
-    ))).docs;
-
     const requestRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', requestId);
     const detailRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'results_details', requestId);
     const printJobRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs'));
@@ -137,6 +131,7 @@ export class SopReassignmentService {
     const newInputs = sanitizeForFirebase(preview.formInputs);
     const updatedProjection: Request = {
       ...sourceRequest,
+      currentPrintJobId: printJobRef.id,
       sopId: preview.targetSop.id,
       sopName: preview.targetSop.name,
       sopVersion: preview.targetSop.version || 1,
@@ -198,6 +193,7 @@ export class SopReassignmentService {
 
       transaction.update(requestRef, sanitizeForFirebase({
         sopId: preview.targetSop.id,
+        currentPrintJobId: printJobRef.id,
         sopName: preview.targetSop.name,
         sopVersion: preview.targetSop.version || 1,
         sopRef: preview.targetSop.ref || '',
@@ -261,13 +257,8 @@ export class SopReassignmentService {
         }
       }
 
-      previousPrintableLogs.forEach(logDoc => transaction.update(logDoc.ref, {
-        printable: false,
-        supersededBy: activityRef.id,
-        lastUpdated: serverTimestamp()
-      }));
-
       const printData: PrintData = {
+        traceLogId: activityRef.id,
         sop: preview.targetSop,
         inputs: newInputs,
         margin: Number(newInputs['safetyMargin'] ?? 0),
@@ -291,7 +282,6 @@ export class SopReassignmentService {
         targetId: requestId,
         targetName: preview.targetSop.name,
         requestId,
-        printable: true,
         printJobId: printJobRef.id,
         publicTraceable: true,
         metadata: {
@@ -309,7 +299,7 @@ export class SopReassignmentService {
         },
         legacyFields: {
           inventoryDeltas: inventoryDelta,
-          supersedesLogIds: previousPrintableLogs.map(item => item.id),
+          previousPrintJobId: sourceRequest.currentPrintJobId || null,
           sopBasicInfo: { name: preview.targetSop.name, category: preview.targetSop.category, ref: preview.targetSop.ref }
         }
       });

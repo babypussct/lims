@@ -3,6 +3,9 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router'; 
 import { StateService } from '../../../core/services/state.service';
+import { FirebaseService } from '../../../core/services/firebase.service';
+import { doc, getDoc } from 'firebase/firestore';
+import { FirestoreReadMonitor } from '../../../core/services/firestore-read-monitor.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { InventoryService } from '../../inventory/inventory.service';
 import { RecipeService } from '../../recipes/recipe.service';
@@ -10,6 +13,9 @@ import { SopService } from '../services/sop.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { ConfirmationService } from '../../../core/services/confirmation.service';
 import { PrintService, PrintJob } from '../../../core/services/print.service';
+import { BatchWorksheetService } from '../../../core/services/batch-worksheet.service';
+import { canEditWorksheet } from '../../../shared/utils/batch-worksheet';
+import { timestampToMillis } from '../../../shared/utils/timestamp';
 import { Sop, CalculatedItem, CalculatedIngredient, TargetGroup } from '../../../core/models/sop.model';
 import { InventoryItem } from '../../../core/models/inventory.model';
 import { Recipe } from '../../../core/models/recipe.model';
@@ -326,25 +332,60 @@ export class CalculatorComponent implements OnDestroy {
   formatDate = formatDate;
 
   editRequestIdSignal = signal<string | null>(null);
+  private readonly editSource = signal<Request | null>(null);
+  private readonly firebase = inject(FirebaseService);
+  private readonly readMonitor = inject(FirestoreReadMonitor);
+  private editLoad = 0;
+  private routeQuerySub?: Subscription;
+
+  private async loadEditRequest(id: string | null): Promise<void> {
+    const revision = ++this.editLoad;
+    this.editSource.set(null);
+    this.editingRequest.set(null);
+    if (!id || !this.auth.canApprove()) return;
+    const scope = this.auth.getDeltaCacheScope();
+    try {
+      const path = `artifacts/${this.firebase.APP_ID}/requests`;
+      const snapshot = await getDoc(doc(this.firebase.db, `${path}/${id}`));
+      this.readMonitor.record('getDoc', path, 1, { fromCache: snapshot.metadata.fromCache });
+      if (revision !== this.editLoad || scope !== this.auth.getDeltaCacheScope()) return;
+      if (snapshot.exists()) this.editSource.set({ ...snapshot.data(), id: snapshot.id } as Request);
+      else this.toast.show('Không tìm thấy mẻ cần sửa.', 'error');
+    } catch {
+      if (revision === this.editLoad && scope === this.auth.getDeltaCacheScope()) this.toast.show('Không tải được mẻ cần sửa. Vui lòng thử lại.', 'error');
+    }
+  }
 
   constructor() {
     this.targetService.getAllGroups().then(groups => this.targetGroups.set(groups));
 
-    this.route.queryParams.subscribe(params => {
+    this.routeQuerySub = this.route.queryParams.subscribe(params => {
         const editRequestId = params['editRequestId'] || null;
-        if (editRequestId) {
-            this.state.ensureApprovedRequestsListener();
-        }
         this.editRequestIdSignal.set(editRequestId);
+    });
+
+    effect(() => {
+        this.auth.getDeltaCacheScope();
+        const id = this.editRequestIdSignal();
+        untracked(() => { void this.loadEditRequest(id); });
     });
 
     effect(() => {
         const editId = this.editRequestIdSignal();
         if (editId) {
             const reqs = this.state.approvedRequests();
-            if (reqs.length > 0) { // Wait until loaded
-                const req = reqs.find(r => r.id === editId);
+            {
+                const exact = this.editSource();
+                const recent = reqs.find(r => r.id === editId);
+                const req = exact && (recent && (timestampToMillis(recent.lastUpdated) ?? 0) > (timestampToMillis(exact.lastUpdated) ?? 0) ? recent : exact);
                 if (req) {
+                    if (!this.auth.canApprove() || !canEditWorksheet(req, this.auth.currentUser()?.email)) {
+                        if (this.editingRequest()?.id === req.id || this.editSource()?.id === req.id) {
+                            untracked(() => this.toast.show('Mẻ đã có kết quả hoặc đang bị khóa; không thể sửa thông số.', 'warning'));
+                        }
+                        this.editingRequest.set(null);
+                        return;
+                    }
                     if (this.editingRequest()?.id !== req.id) {
                         this.editingRequest.set(req);
                         const sop = this.state.sops().find(s => s.id === req.sopId);
@@ -487,7 +528,7 @@ export class CalculatorComponent implements OnDestroy {
     });
   }
   
-  ngOnDestroy(): void { this.formValueSub?.unsubscribe(); }
+  ngOnDestroy(): void { this.editLoad++; this.routeQuerySub?.unsubscribe(); this.formValueSub?.unsubscribe(); }
   getTodayDate(): string {
     const today = new Date();
     const year = today.getFullYear();
@@ -899,13 +940,15 @@ export class CalculatorComponent implements OnDestroy {
     }
   }
 
-  async approveAndQueuePrintJob(sop: Sop) {
+  readonly worksheets = inject(BatchWorksheetService);
+  async approveAndViewWorksheet(sop: Sop) {
     if (!this.auth.canApprove()) return;
     if (this.isProcessing()) return;
     this.isProcessing.set(true);
     try {
         const payload = this.getPayloadData();
-        await this.state.directApproveAndQueuePrint(sop, this.calculatedItems(), payload, this.localInventoryMap());
+        const result = await this.state.directApproveWithWorksheet(sop, this.calculatedItems(), payload, this.localInventoryMap());
+        if (result) await this.worksheets.open([result]);
     } catch (e: any) { } finally {
         this.isProcessing.set(false);
     }
@@ -931,6 +974,7 @@ export class CalculatorComponent implements OnDestroy {
           const payload = this.getPayloadData();
           const success = await this.state.updateApprovedRequest(req, sop, this.calculatedItems(), payload, this.localInventoryMap());
           if (success) {
+              await this.worksheets.open([success]);
               this.router.navigate(['/requests']);
           }
       } finally {

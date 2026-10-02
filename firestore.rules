@@ -852,6 +852,23 @@ service cloud.firestore {
         (validResultUpdate() || validLockUpdate(appId) || validVirtualMasterUpdate());
     }
 
+    function validWorksheetParameterUpdate(appId, reqId) {
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      let worksheetFields = ['currentPrintJobId', 'items', 'inputs', 'margin', 'analysisDate',
+        'sampleList', 'sampleDescriptionMap', 'targetIds', 'sampleTargetMap', 'targetNames', 'targetScopeSnapshots'];
+      let revoke = ['pending', 'rejected'].hasAny([request.resource.data.get('status', '')]) &&
+        changed.hasOnly(['status', 'approvedAt', 'rejectedAt', 'lastUpdated', 'currentPrintJobId']);
+      return !changed.hasAny(worksheetFields) || resource.data.get('status', '') == 'pending' ||
+        validVirtualMasterUpdate() || revoke || (
+          resource.data.get('status', '') == 'approved' && request.resource.data.get('status', '') == 'approved' &&
+          resource.data.get('_isDeleted', false) != true && resource.data.get('isVirtualMaster', false) != true &&
+          resource.data.get('parentMasterId', '') == '' &&
+          resource.data.get('analysisResult', null) == null && resource.data.get('analysisResultSummary', null) == null &&
+          (resource.data.get('lockedBy', '') == '' || resource.data.get('lockedBy', '') == request.auth.token.get('email', '')) &&
+          !exists(/databases/$(database)/documents/artifacts/$(appId)/results_details/$(reqId))
+        );
+    }
+
     // Chuyển SOP là một protocol nguyên tử: request phải đổi SOP và đồng thời
     // xóa mọi kết quả đang hoạt động. Các collection phụ dùng helper này để
     // chứng minh chúng thuộc cùng một transaction hợp lệ.
@@ -884,6 +901,7 @@ service cloud.firestore {
         after.lastUpdated == request.time &&
         changed.hasOnly([
           'sopId', 'sopName', 'sopVersion', 'sopRef',
+          'currentPrintJobId',
           'items', 'inputs', 'margin', 'analysisDate',
           'sampleList', 'sampleDescriptionMap', 'targetIds', 'sampleTargetMap',
           'targetNames', 'targetScopeSnapshots',
@@ -2027,6 +2045,7 @@ service cloud.firestore {
       allow create: if validRequestCreate(appId, request.resource.data);
       allow update: if (
           request.resource.data.get('sopId', '') == resource.data.get('sopId', '') &&
+          validWorksheetParameterUpdate(appId, reqId) &&
           (isManager(appId) || hasPermission(appId, 'sop_approve') || validBatchRequestUpdate(appId))
         ) || validSopReassignmentTransition(appId, reqId);
       allow delete: if isManager(appId);

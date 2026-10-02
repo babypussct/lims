@@ -14,6 +14,11 @@ import {
   setDoc, where, writeBatch
 } from 'firebase/firestore';
 import { PrintService } from '../../core/services/print.service';
+import { BatchWorksheetService } from '../../core/services/batch-worksheet.service';
+import { BatchWorksheetPickerComponent } from '../../shared/components/batch-worksheet-picker/batch-worksheet-picker.component';
+import { RequestHistoryLoaderComponent } from '../../shared/components/request-history-loader/request-history-loader.component';
+import { worksheetReference } from '../../shared/utils/batch-worksheet';
+import { timestampToLocalDateKey } from '../../shared/utils/timestamp';
 import { ActivityEventService } from '../../core/services/activity-event.service';
 import { openInNewTab } from '../../shared/utils/browser-navigation';
 import { AppButtonComponent, AppEmptyStateComponent, AppPageHeaderComponent, AppToolbarComponent } from '../../shared/components/ui';
@@ -35,6 +40,8 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
     AppEmptyStateComponent,
     AppPageHeaderComponent,
     AppToolbarComponent,
+    BatchWorksheetPickerComponent,
+    RequestHistoryLoaderComponent,
   ],
   template: `
     <div class="h-full flex flex-col fade-in relative p-4 md:p-6">
@@ -48,6 +55,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
           title="Tra cứu và quản lý kết quả mẻ chạy"
           subtitle="Nhập kết quả, kiểm soát chất lượng (QC) và tạo phiếu kết quả tự động."
           icon="fa-square-poll-vertical">
+          <app-batch-worksheet-picker pageHeaderActions [requests]="displayedRuns()" />
           <!-- Status Filter Tabs -->
           <div pageHeaderActions class="inline-flex items-center soft-ui-segmented" role="group" aria-label="Lọc trạng thái mẻ phân tích">
             <button type="button"
@@ -108,7 +116,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
             </div>
             <div class="text-left">
               <div class="text-xl font-black text-slate-800 dark:text-slate-100 leading-none tabular-nums">{{ allApprovedRuns().length }}</div>
-              <div class="text-[11px] font-bold text-slate-400 dark:text-slate-500 mt-0.5 whitespace-nowrap">Mẻ hoạt động</div>
+              <div class="text-[11px] font-bold text-slate-400 dark:text-slate-500 mt-0.5 whitespace-nowrap">Mẻ đã tải</div>
             </div>
           </button>
 
@@ -123,7 +131,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
             </div>
             <div class="text-left">
               <div class="text-xl font-black leading-none tabular-nums" [class.text-amber-500]="pendingCount() > 0" [class.text-slate-800]="pendingCount() === 0" [class.dark:text-slate-100]="pendingCount() === 0">{{ pendingCount() }}</div>
-              <div class="text-[11px] font-bold text-slate-400 dark:text-slate-500 mt-0.5 whitespace-nowrap">Chờ nhập</div>
+              <div class="text-[11px] font-bold text-slate-400 dark:text-slate-500 mt-0.5 whitespace-nowrap">Chờ nhập · đã tải</div>
             </div>
           </button>
 
@@ -301,6 +309,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
       <!-- ══════════════════════════════════════════════════════
            MAIN CONTENT: Cards / Table
       ══════════════════════════════════════════════════════ -->
+      <app-request-history-loader class="shrink-0 px-6" [startDate]="startDate()" [endDate]="endDate()" />
       <div class="flex-1 overflow-y-auto px-6 pb-6 custom-scrollbar">
 
         @if (isLoading()) {
@@ -402,6 +411,9 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
 
                   <!-- Card Footer: Action Buttons -->
                   <div class="border-t border-slate-100 dark:border-slate-800/80 px-4 py-3 flex items-center gap-2.5 bg-slate-50/30 dark:bg-slate-950/10 shrink-0">
+                    @if (!run.isVirtualMaster && worksheets.canRead()) {
+                      <app-button variant="secondary" size="sm" [disabled]="worksheets.loading()" (click)="printWorksheet(run); $event.stopPropagation()"><i class="fa-solid fa-print" aria-hidden="true"></i> Phiếu phân tích</app-button>
+                    }
                     @if (run.analysisResultSummary?.reports || run.analysisResultSummary?.pdfUrl || run.analysisResultSummary?.pdfViewUrl || run.analysisResult?.reports || run.analysisResult?.pdfUrl) {
                       <app-button variant="secondary" size="sm" (click)="openReportHub(run); $event.stopPropagation()">
                         <i class="fa-solid fa-file-pdf text-red-500 text-[11px]"></i>
@@ -520,6 +532,9 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
 
                         <td class="p-4">
                           <div class="flex items-center justify-end gap-2">
+                            @if (!run.isVirtualMaster && worksheets.canRead()) {
+                              <app-button variant="secondary" size="sm" [disabled]="worksheets.loading()" (click)="printWorksheet(run); $event.stopPropagation()"><i class="fa-solid fa-print" aria-hidden="true"></i> Phiếu phân tích</app-button>
+                            }
                             @if (run.analysisResultSummary?.reports || run.analysisResultSummary?.pdfUrl || run.analysisResultSummary?.pdfViewUrl || run.analysisResult?.reports || run.analysisResult?.pdfUrl) {
                               <app-button variant="secondary" size="sm" (click)="openReportHub(run); $event.stopPropagation()">
                                 <i class="fa-solid fa-file-pdf text-red-500 text-[11px]"></i>
@@ -645,6 +660,8 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ResultListComponent implements OnInit, OnDestroy {
+  readonly worksheets = inject(BatchWorksheetService);
+  printWorksheet(request: any): void { void this.worksheets.open([worksheetReference(request)]); }
   private state = inject(StateService);
   private router = inject(Router);
   private resultService = inject(ResultService);
@@ -751,7 +768,6 @@ export class ResultListComponent implements OnInit, OnDestroy {
       version,
       analyst,
       publishDate,
-      undefined,
       'iframe',
       docPreviewUrl
     );
@@ -892,8 +908,8 @@ export class ResultListComponent implements OnInit, OnDestroy {
       
       return { start: toStr(start), end: toStr(today) };
   }
-  startDate = signal<string>('');
-  endDate = signal<string>('');
+  startDate = signal<string>(timestampToLocalDateKey(new Date()) || '');
+  endDate = signal<string>(timestampToLocalDateKey(new Date()) || '');
   showAdvancedFilters = signal<boolean>(false);
 
   // Dynamic history loading states
@@ -1057,9 +1073,6 @@ export class ResultListComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.state.ensureApprovedRequestsListener();
     this.restoreState();
-    if (this.startDate() && this.endDate()) {
-      void this.state.loadApprovedRequestsForDateRange(this.startDate(), this.endDate());
-    }
     this.isLoading.set(false);
 
     setTimeout(() => {
@@ -1350,7 +1363,6 @@ export class ResultListComponent implements OnInit, OnDestroy {
   onDateRangeChange(range: { start: string, end: string, label: string }) {
     this.startDate.set(range.start);
     this.endDate.set(range.end);
-    void this.state.loadApprovedRequestsForDateRange(range.start, range.end);
     this.resetPaging();
   }
 

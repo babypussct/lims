@@ -34,6 +34,8 @@ import { ActivityEventService } from './activity-event.service';
 import { NotificationService } from './notification.service';
 import { isFeatureEnabledForUser, normalizeFeatureCanaryUids, resolveActivityFeedEnabled } from './feature-rollout';
 import { resolveRequestStatsCounts } from './request-stats.utils';
+import { canEditWorksheet } from '../../shared/utils/batch-worksheet';
+import { requestDateKey } from '../../shared/utils/request-history-page';
 
 export interface DirectBatchPlanItem {
   sop: Sop;
@@ -91,7 +93,7 @@ export class StateService implements OnDestroy {
   private allStandardRequestsLoadedAt = 0;
   private referenceStandardsLoad?: Promise<ReportCollectionLoadResult>;
   private referenceStandardsLoadedAt = 0;
-  private readonly APPROVED_REQUEST_RECENT_LIMIT = 300;
+  private readonly APPROVED_REQUEST_RECENT_LIMIT = 100;
   private readonly APPROVED_REQUEST_HISTORY_PAGE_SIZE = 100;
   private readonly APPROVED_REQUEST_HISTORY_MAX_PAGES = 1000;
   private readonly APPROVED_REQUEST_HISTORY_CACHE_TTL_MS = 30_000;
@@ -282,7 +284,7 @@ export class StateService implements OnDestroy {
     protectedAdmin: boolean;
   }>>(new Map());
 
-  systemVersion = signal<string>('v26.10.01-b06');
+  systemVersion = signal<string>('v26.10.02-b01');
   maintenanceMode = signal<boolean>(false);
   maintenanceMessage = signal<string>('Hệ thống đang được bảo trì. Vui lòng quay lại sau ít phút.');
   maintenanceScheduledTime = signal<string | null>(null);
@@ -861,11 +863,27 @@ export class StateService implements OnDestroy {
     // in both maps because it reflects status/summary changes immediately.
     this.approvedRecentRequests.forEach((request, id) => merged.set(id, request));
     this.approvedRequests.set(
-      Array.from(merged.values()).sort((a, b) =>
+      Array.from(merged.values()).filter(request => this.isApprovedRequest(request) && !request._isDeleted).sort((a, b) =>
         (timestampToMillis(b.approvedAt ?? b.timestamp ?? b.lastUpdated) ?? 0) -
         (timestampToMillis(a.approvedAt ?? a.timestamp ?? a.lastUpdated) ?? 0)
       )
     );
+  }
+
+  mergeApprovedHistoryPage(requests: readonly Request[], startDate: string, endDate: string): void {
+    // A page is cumulative for this range. Replace its previous history copy so
+    // refresh does not retain deleted records or records moved to another date.
+    const start = startDate || '0001-01-01';
+    const end = endDate || '9999-12-31';
+    for (const [id, request] of this.approvedHistoryRequests) {
+      const date = requestDateKey(request);
+      if (date >= start && date <= end) this.approvedHistoryRequests.delete(id);
+    }
+    this.invalidateApprovedHistoryRangeCache();
+    for (const request of requests) {
+      if (this.isApprovedRequest(request) && !request._isDeleted) this.approvedHistoryRequests.set(request.id, request);
+    }
+    this.publishApprovedRequests();
   }
 
   private normalizeDateRange(startDate: string, endDate: string): { start: string; end: string } | null {
@@ -1555,8 +1573,7 @@ export class StateService implements OnDestroy {
     return user?.displayName || user?.email || user?.uid || 'Người dùng không xác định';
   }
 
-  // ... (Rest of the file remains unchanged: mapToRequestItems, submitRequest, directApproveAndQueuePrint, approveRequest, revokeApproval, etc.)
-  // Omitted for brevity as no logic changed there
+  // Request approval and worksheet snapshots share the same business transaction.
 
   private getItemsToDeduct(calculatedItems: CalculatedItem[]) {
     const itemsToDeduct = new Map<string, number>();
@@ -1729,13 +1746,13 @@ export class StateService implements OnDestroy {
     }
   }
 
-  async directApproveAndQueuePrint(
+  async directApproveWithWorksheet(
     sop: Sop,
     calculatedItems: CalculatedItem[],
     formInputs: any,
     invMap: Record<string, InventoryItem> = {},
     options: { showSuccessToast?: boolean } = {}
-  ): Promise<{ logId: string, printJobId: string } | null> {
+  ): Promise<DirectBatchPlanResult | null> {
     if (!this.auth.canApprove()) { this.toast.show('Bạn không có quyền duyệt!', 'error'); return null; }
     if (!this.hasValidAnalysisDate(formInputs.analysisDate)) {
       this.toast.show('Vui lòng chọn ngày kiểm nghiệm hợp lệ trước khi duyệt.', 'error');
@@ -1772,6 +1789,7 @@ export class StateService implements OnDestroy {
 
         const reqData: any = {
           sopId: sop.id,
+          currentPrintJobId: printJobRef.id,
           sopName: sop.name,
           items: requestItems,
           status: 'approved',
@@ -1799,6 +1817,7 @@ export class StateService implements OnDestroy {
         } as Request;
 
         const printData: PrintData = {
+          traceLogId: logRef.id,
           sop,
           inputs: formInputs,
           margin: formInputs.safetyMargin || 0,
@@ -1817,12 +1836,11 @@ export class StateService implements OnDestroy {
         const activityEvent = this.activityEvents.build({
           eventId: logRef.id,
           action: 'DIRECT_APPROVE',
-          details: `Duyệt trực tiếp và đưa vào hàng đợi in SOP: ${sop.name}`,
+          details: `Duyệt trực tiếp SOP: ${sop.name}`,
           targetType: 'REQUEST',
           targetId: reqRef.id,
           targetName: sop.name,
           requestId: reqRef.id,
-          printable: true,
           printJobId: printJobRef.id,
           publicTraceable: true,
           metadata: { sopId: sop.id, analysisDate: formInputs.analysisDate },
@@ -1843,11 +1861,11 @@ export class StateService implements OnDestroy {
       if (dailyProjection) {
         await this.dailyChecklistMaterializer.materializeRequestBestEffort(
           dailyProjection,
-          'directApproveAndQueuePrint'
+          'directApproveWithWorksheet'
         );
       }
       if (options.showSuccessToast !== false) {
-        this.toast.show(`Duyệt thành công và đã đưa vào hàng đợi in: "${sop.name}"`, 'success');
+        this.toast.show(`Đã duyệt mẻ và lưu phiếu phân tích: "${sop.name}"`, 'success');
       }
 
       const { samples, qcs } = resolveRequestStatsCounts({ sampleList: formInputs?.sampleList, inputs: formInputs });
@@ -1857,7 +1875,7 @@ export class StateService implements OnDestroy {
         { requestId: reqRef.id, operation: 'direct-approve' }
       );
 
-      return { logId: logRef.id, printJobId: printJobRef.id };
+      return { requestId: reqRef.id, logId: logRef.id, printJobId: printJobRef.id };
 
     } catch (e: any) {
       console.error('[StateService] Không thể duyệt yêu cầu:', e);
@@ -1946,6 +1964,7 @@ export class StateService implements OnDestroy {
         );
         const reqData: any = {
           sopId: item.sop.id,
+          currentPrintJobId: printJobRef.id,
           sopName: item.sop.name,
           items: requestItems,
           status: 'approved',
@@ -2014,6 +2033,7 @@ export class StateService implements OnDestroy {
           dailyProjections.push({ id: item.requestRef.id, ...reqData } as Request);
 
           const printData: PrintData = {
+            traceLogId: item.logRef.id,
             sop: item.sop,
             inputs: item.formInputs,
             margin: item.formInputs.safetyMargin || 0,
@@ -2037,7 +2057,6 @@ export class StateService implements OnDestroy {
             targetId: item.requestRef.id,
             targetName: item.sop.name,
             requestId: item.requestRef.id,
-            printable: true,
             printJobId: item.printJobRef.id,
             publicTraceable: true,
             metadata: {
@@ -2086,7 +2105,7 @@ export class StateService implements OnDestroy {
     }
   }
 
-  async approveRequest(req: Request) {
+  async approveRequest(req: Request): Promise<{ requestId: string; printJobId?: string; logId: string } | undefined> {
     if (!this.auth.canApprove()) return;
     if (!this.hasValidAnalysisDate(req.analysisDate)) {
       this.toast.show('Yêu cầu chưa có ngày kiểm nghiệm hợp lệ. Hãy bổ sung trước khi duyệt.', 'error');
@@ -2094,6 +2113,8 @@ export class StateService implements OnDestroy {
     }
     if (!await this.confirmationService.confirm('Xác nhận duyệt và trừ kho?')) return;
     const currentSop = this.sops().find(sop => sop.id === req.sopId);
+    const printJobRef = currentSop && req.inputs
+      ? doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs')) : null;
     const activityRef = this.activityEvents.createRef(`TRC-${Date.now()}-${Math.floor(Math.random() * 1000)}`);
 
     try {
@@ -2104,6 +2125,7 @@ export class StateService implements OnDestroy {
         analysisDate: req.analysisDate,
         inputs: { ...(req.inputs || {}), analysisDate: req.analysisDate },
         approvedAt: serverTimestamp(),
+        currentPrintJobId: printJobRef?.id,
         targetScopeSnapshots,
         ...(currentSop ? {
           sopVersion: req.sopVersion ?? currentSop.version ?? 1,
@@ -2112,6 +2134,11 @@ export class StateService implements OnDestroy {
         } : {})
       };
       await runTransaction(this.fb.db, async (transaction) => {
+        const freshRequest = await transaction.get(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', req.id));
+        if (!freshRequest.exists() || freshRequest.data()['status'] !== 'pending'
+          || timestampToMillis(freshRequest.data()['lastUpdated']) !== timestampToMillis(req.lastUpdated)) {
+          throw new Error('Yêu cầu đã thay đổi trạng thái. Vui lòng tải lại danh sách.');
+        }
         const invRefs = req.items.map(item => doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'inventory', item.name));
         const invSnaps = await Promise.all(invRefs.map(ref => transaction.get(ref)));
 
@@ -2132,6 +2159,7 @@ export class StateService implements OnDestroy {
           analysisDate: req.analysisDate,
           inputs: { ...(req.inputs || {}), analysisDate: req.analysisDate },
           approvedAt: serverTimestamp(),
+          currentPrintJobId: printJobRef?.id ?? deleteField(),
           lastUpdated: serverTimestamp(),
           targetScopeSnapshots,
           ...(currentSop ? {
@@ -2142,7 +2170,7 @@ export class StateService implements OnDestroy {
         });
         const sop = currentSop;
 
-        if (sop && req.inputs) {
+        if (sop && req.inputs && printJobRef) {
           const calcService = this.injector.get(CalculatorService);
 
           const calculatedItems = calcService.calculateSopNeeds(
@@ -2166,14 +2194,14 @@ export class StateService implements OnDestroy {
             }
           });
 
-          const extendedInputs = { ...req.inputs };
+          const extendedInputs = { ...req.inputs, analysisDate: req.analysisDate };
           if (req.sampleList) extendedInputs.sampleList = req.sampleList;
           if (req.targetIds) extendedInputs.targetIds = req.targetIds;
           if (req.sampleTargetMap) extendedInputs.sampleTargetMap = req.sampleTargetMap;
           if (req.sampleDescriptionMap) extendedInputs.sampleDescriptionMap = req.sampleDescriptionMap;
 
-          const printJobRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs'));
           const printData: PrintData = {
+            traceLogId: activityRef.id,
             sop,
             inputs: extendedInputs,
             margin: req.margin || 0,
@@ -2197,7 +2225,6 @@ export class StateService implements OnDestroy {
             targetId: req.id,
             targetName: req.sopName,
             requestId: req.id,
-            printable: true,
             printJobId: printJobRef.id,
             publicTraceable: true,
             metadata: { sopId: req.sopId, analysisDate: req.analysisDate },
@@ -2240,9 +2267,11 @@ export class StateService implements OnDestroy {
       );
 
       this.toast.show(`Duyệt thành công yêu cầu "${req.sopName}"`, 'success');
+      return { requestId: req.id, printJobId: printJobRef?.id, logId: activityRef.id };
     } catch (e: any) {
       console.error('[StateService] Không thể duyệt yêu cầu:', e);
       this.toast.show('Không thể lưu thay đổi. Vui lòng thử lại.', 'error');
+      return undefined;
     }
   }
 
@@ -2266,6 +2295,7 @@ export class StateService implements OnDestroy {
 
         const updates: any = {
           status: targetStatus,
+          currentPrintJobId: deleteField(),
           approvedAt: deleteField(),
           lastUpdated: serverTimestamp()
         };
@@ -2316,6 +2346,10 @@ export class StateService implements OnDestroy {
 
   async updateApprovedRequest(req: Request, sop: Sop, calculatedItems: CalculatedItem[], formInputs: any, invMap: Record<string, InventoryItem> = {}) {
     if (!this.auth.canApprove()) return;
+    if (!canEditWorksheet(req, this.auth.currentUser()?.email)) {
+      this.toast.show('Chỉ sửa thông số mẻ đã duyệt, chưa có kết quả và không bị khóa bởi người khác.', 'warning');
+      return false;
+    }
     if (sop.id !== req.sopId) {
       this.toast.show('Đổi SOP của phiếu đã duyệt phải thực hiện bằng nghiệp vụ “Chuyển SOP”.', 'warning');
       return false;
@@ -2330,14 +2364,11 @@ export class StateService implements OnDestroy {
       const oldItems = req.items;
       const newItems = this.mapToRequestItems(calculatedItems, invMap);
       const targetScopeSnapshots = await this.buildTargetScopeTraceability(sop, formInputs);
-      const previousPrintableLogDocs = (await getDocs(query(
-        collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs'),
-        where('requestId', '==', req.id),
-        where('printable', '==', true)
-      ))).docs;
+      const printJobRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs'));
       const editDiff = this.buildRequestEditDiff(req, formInputs, newItems);
       const updatedProjection: Request = {
         ...req,
+        currentPrintJobId: printJobRef.id,
         items: newItems,
         inputs: formInputs,
         margin: formInputs.safetyMargin || 0,
@@ -2370,6 +2401,15 @@ export class StateService implements OnDestroy {
       });
 
       await runTransaction(this.fb.db, async (transaction) => {
+        const freshRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', req.id);
+        const freshSnap = await transaction.get(freshRef);
+        const detailsSnap = await transaction.get(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'results_details', req.id));
+        if (!freshSnap.exists() || detailsSnap.exists()
+          || !canEditWorksheet({ id: req.id, ...freshSnap.data() } as Request, this.auth.currentUser()?.email)
+          || (freshSnap.data()['currentPrintJobId'] || '') !== (req.currentPrintJobId || '')
+          || timestampToMillis(freshSnap.data()['lastUpdated']) !== timestampToMillis(req.lastUpdated)) {
+          throw new Error('Mẻ đã thay đổi hoặc đã bắt đầu nhập kết quả. Vui lòng mở lại hồ sơ.');
+        }
         // 1. Check inventory for negative diffs
         const invRefs: Record<string, DocumentReference> = {};
         const invSnaps: Record<string, any> = {};
@@ -2399,6 +2439,7 @@ export class StateService implements OnDestroy {
         const reqRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', req.id);
         const reqData: any = {
           items: newItems,
+          currentPrintJobId: printJobRef.id,
           inputs: formInputs,
           margin: formInputs.safetyMargin || 0,
           analysisDate: formInputs.analysisDate || null,
@@ -2425,16 +2466,8 @@ export class StateService implements OnDestroy {
         const logId = `TRC-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
         const logRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', logId);
 
-        previousPrintableLogDocs.forEach(logDoc => {
-          transaction.update(logDoc.ref, {
-            printable: false,
-            supersededBy: logId,
-            lastUpdated: serverTimestamp()
-          });
-        });
-
-        const printJobRef = doc(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'print_jobs'));
         const printData: PrintData = {
+          traceLogId: logRef.id,
           sop,
           inputs: formInputs,
           margin: formInputs.safetyMargin || 0,
@@ -2458,14 +2491,13 @@ export class StateService implements OnDestroy {
           targetId: req.id,
           targetName: req.sopName,
           requestId: req.id,
-          printable: true,
           printJobId: printJobRef.id,
           publicTraceable: true,
           metadata: { sopId: req.sopId, analysisDate: formInputs.analysisDate },
           legacyFields: {
             diff: editDiff,
             inventoryDeltas: inventoryDiff,
-            supersedesLogIds: previousPrintableLogDocs.map(d => d.id),
+            previousPrintJobId: req.currentPrintJobId || null,
             sopBasicInfo: {
               name: sop.name,
               category: sop.category,
@@ -2504,7 +2536,7 @@ export class StateService implements OnDestroy {
       }
 
       this.toast.show('Đã cập nhật phiếu thành công.', 'success');
-      return true;
+      return { requestId: req.id, printJobId: printJobRef.id };
     } catch (e: any) {
       console.error('[StateService] Không thể cập nhật phiếu:', e);
       this.toast.show('Không thể lưu thay đổi. Vui lòng thử lại.', 'error');
@@ -2562,30 +2594,4 @@ export class StateService implements OnDestroy {
     } catch (e) { this.toast.show('Lỗi xử lý', 'error'); }
   }
 
-  async deletePrintLog(logId: string, sopName: string, printJobId?: string) {
-    try {
-      const batch = writeBatch(this.fb.db);
-      const logRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', logId);
-      batch.update(logRef, { printable: false, lastUpdated: serverTimestamp() });
-      await batch.commit();
-      this.toast.show('Đã xóa phiếu in khỏi hàng đợi');
-    } catch (e: any) {
-      console.error('[StateService] Không thể xóa phiếu khỏi hàng đợi:', e);
-      this.toast.show('Không thể xóa dữ liệu. Vui lòng thử lại.', 'error');
-    }
-  }
-
-  async deleteSelectedPrintLogs(logs: Log[]) {
-    try {
-      const batch = writeBatch(this.fb.db);
-      logs.forEach(log => {
-        batch.update(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'logs', log.id), { printable: false, lastUpdated: serverTimestamp() });
-      });
-      await batch.commit();
-      this.toast.show(`Đã xóa ${logs.length} phiếu khỏi hàng đợi`);
-    } catch (e: any) {
-      console.error('[StateService] Không thể xóa các phiếu khỏi hàng đợi:', e);
-      this.toast.show('Không thể xóa dữ liệu. Vui lòng thử lại.', 'error');
-    }
-  }
 }

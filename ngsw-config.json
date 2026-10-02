@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.10.01-b06",
-    "title": "Nâng cấp xem trước và in hồ sơ LIMS",
+    "version": "v26.10.02-b01",
+    "title": "In phiếu phân tích trực tiếp và đơn giản hóa Trạm Pha Chế",
     "features": [
-      "Xem trước trang giấy trước khi in phiếu pha chế, lịch trực, bảng theo dõi mẫu và các hồ sơ nghiệp vụ.",
-      "Phiếu dài tự phân trang, giữ đầy đủ nội dung và hỗ trợ tải PDF theo bố cục đã xem.",
-      "Phiếu Smart Prep cho năm chế độ tính, có thông tin phương pháp, lượng dự tính/thực tế, công thức, cảnh báo và vùng ký tay.",
-      "In thẻ kho đã đối soát, phiếu kiểm kê theo phạm vi đang lọc và nhãn hóa chất sang chiết A4 tự cắt.",
-      "In phiếu bàn giao mẫu để ghi nhận thực tế, thông tin cấu hình SOP và hồ sơ truy xuất trong phạm vi dữ liệu đã tải."
+      "Xem, in và tải PDF phiếu phân tích ngay từ mẻ đã duyệt; chọn nhiều mẻ để in cùng một đợt.",
+      "Tra cứu và in lại đúng phiên bản phiếu trước hoặc sau khi sửa thông số, chuyển SOP.",
+      "Trạm Pha Chế gọn hơn, hỗ trợ chọn hóa chất hoặc nhập công thức để điền thông số tính toán.",
+      "Duyệt & xem phiếu tại Yêu cầu, mở phiếu các mẻ vừa tạo tại SmartBatch và in phiếu từ Kết quả hoặc Chi tiết mẻ.",
+      "Chọn In nhiều phiếu tại Yêu cầu → Đã duyệt hoặc Kết quả; dùng Tải thêm mẻ để tìm các mẻ cũ."
     ]
   },
   "assetGroups": [

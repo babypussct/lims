@@ -311,7 +311,7 @@
                           <div class="min-w-0">
                             <div class="text-xs font-black text-slate-800 dark:text-slate-100 uppercase tracking-wide">Xem trước thay đổi</div>
                             <div class="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                              Khi lưu, hệ thống sẽ cập nhật mẻ, điều chỉnh tồn kho theo chênh lệch và tạo lại phiếu trong hàng đợi in.
+                              Khi lưu, hệ thống sẽ cập nhật mẻ, điều chỉnh tồn kho theo chênh lệch và lưu phiên bản phiếu phân tích mới.
                             </div>
                           </div>
                         </div>
@@ -381,9 +381,9 @@
                         Gửi yêu cầu duyệt
                       </app-button>
 
-                      <app-button [appLockPermission]="'sop_approve'" [fullWidth]="true" (click)="approveAndQueuePrintJob(currentSop)" [disabled]="isProcessing() || form().invalid" [loading]="isProcessing()">
+                      <app-button [appLockPermission]="'sop_approve'" [fullWidth]="true" (click)="approveAndViewWorksheet(currentSop)" [disabled]="isProcessing() || form().invalid" [loading]="isProcessing()">
                         @if (!isProcessing()) { <i class="fa-solid fa-check-double" aria-hidden="true"></i> }
-                        Duyệt và đưa vào hàng đợi in
+                        Duyệt & xem phiếu phân tích
                       </app-button>
                     }
                   </div>

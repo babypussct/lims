@@ -18,6 +18,8 @@ export interface PrintJob {
   user?: string; 
   analysisDate?: string;
   requestId?: string; 
+  printJobId?: string;
+  traceLogId?: string;
   batchCode?: string;
 }
 
@@ -64,7 +66,6 @@ export class PrintService {
   pdfAnalyst = signal<string>('Chưa rõ');
   pdfPublishDate = signal<any>(null);
   pdfPreviewType = signal<'iframe' | 'image'>('iframe');
-  onRepublishCallback = signal<(() => Promise<void>) | null>(null);
 
   // Default options resolve from the global print policy at preview-open time.
   get defaultOptions(): PrintOptions {
@@ -95,7 +96,7 @@ export class PrintService {
   }
 
   // --- 2. ENTRY POINT: OPEN PDF CLOUD PREVIEW ---
-  openPdfPreview(url: string, title: string, version: number, analyst: string, publishDate: any, onRepublish?: () => Promise<void>, previewType: 'iframe' | 'image' = 'iframe', docsUrl?: string) {
+  openPdfPreview(url: string, title: string, version: number, analyst: string, publishDate: any, previewType: 'iframe' | 'image' = 'iframe', docsUrl?: string) {
       if (this.isPrinting()) return;
       this.closePreview();
       this.closePdfPreview();
@@ -107,11 +108,6 @@ export class PrintService {
       this.pdfAnalyst.set(analyst);
       this.pdfPublishDate.set(publishDate);
       this.pdfPreviewType.set(previewType);
-      if (onRepublish) {
-          this.onRepublishCallback.set(onRepublish);
-      } else {
-          this.onRepublishCallback.set(null);
-      }
       this.isPreviewPdfOpen.set(true);
       
       // Load Blob URL for iframe to avoid Google Drive CSP frame restrictions
@@ -133,7 +129,6 @@ export class PrintService {
           0,
           'Hệ thống',
           null,
-          undefined,
           isImage ? 'image' : 'iframe'
       );
   }
@@ -153,7 +148,6 @@ export class PrintService {
       this.isPdfBlobLoading.set(false);
       
       this.docsUrl.set(null);
-      this.onRepublishCallback.set(null);
   }
 
   /** Restores the document after redirect OAuth returns to the application. */
@@ -171,7 +165,6 @@ export class PrintService {
               pending.version || 1,
               pending.analyst || 'Chưa rõ',
               pending.publishDate ?? null,
-              undefined,
               pending.previewType === 'image' ? 'image' : 'iframe',
               pending.docsUrl
           );

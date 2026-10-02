@@ -32,7 +32,6 @@ async function main() {
     import { bootstrapApplication } from '@angular/platform-browser';
     import { PrintPreviewModalComponent } from './src/app/shared/components/print-preview-modal/print-preview-modal.component';
     import { PrintService } from './src/app/core/services/print.service';
-    import { SmartPrepComponent } from './src/app/features/preparation/smart-prep.component';
     import { DailyChecklistComponent } from './src/app/features/checklist/daily-checklist.component';
     import { DutyStatsComponent } from './src/app/features/duty-stats/duty-stats.component';
     import { StandardsPrintModalComponent } from './src/app/features/standards/components/standards-print-modal.component';
@@ -41,9 +40,9 @@ async function main() {
     import { InventoryComponent } from './src/app/features/inventory/inventory.component';
     import { LabelPrintComponent } from './src/app/features/labels/label-print.component';
     import { A4DocumentPreviewComponent } from './src/app/shared/components/a4-document-preview/a4-document-preview.component';
-    @Component({selector:'print-fixture',standalone:true,imports:[PrintPreviewModalComponent,SmartPrepComponent,DailyChecklistComponent,A4DocumentPreviewComponent,StandardsPrintModalComponent,LabelPrintComponent],template:'<button id="launch">Mở xem trước</button><app-smart-prep /><app-daily-checklist [embedded]="true"/><app-print-preview-modal />@if(doc();as document){<app-a4-document-preview [document]="document" (closed)="doc.set(null)"/>}<app-standards-print-modal [isOpen]="stdOpen()" [standards]="standards()" (closeModal)="stdOpen.set(false)"/><app-label-print />'})
+    @Component({selector:'print-fixture',standalone:true,imports:[PrintPreviewModalComponent,DailyChecklistComponent,A4DocumentPreviewComponent,StandardsPrintModalComponent,LabelPrintComponent],template:'<button id="launch">Mở xem trước</button><app-daily-checklist [embedded]="true"/><app-print-preview-modal />@if(doc();as document){<app-a4-document-preview [document]="document" (closed)="doc.set(null)"/>}<app-standards-print-modal [isOpen]="stdOpen()" [standards]="standards()" (closeModal)="stdOpen.set(false)"/><app-label-print />'})
     class Fixture {
-      service=inject(PrintService); doc=signal(null); stdOpen=signal(false); standards=signal([]); @ViewChild(StandardsPrintModalComponent) std; @ViewChild(LabelPrintComponent) labels; @ViewChild(SmartPrepComponent) prep; @ViewChild(DailyChecklistComponent) checklist;
+      service=inject(PrintService); doc=signal(null); stdOpen=signal(false); standards=signal([]); @ViewChild(StandardsPrintModalComponent) std; @ViewChild(LabelPrintComponent) labels; @ViewChild(DailyChecklistComponent) checklist;
       constructor(){
         window.printFixture=this.service;
         window.openBusinessFixture=kind=>{
@@ -63,7 +62,7 @@ async function main() {
           fixture.printSchedule();
         };
       }
-      ngAfterViewInit(){window.prepFixture=this.prep;window.checklistFixture=this.checklist; window.stdFixture=this.std; window.labelsFixture=this.labels; window.openStandards=(count=2)=>{this.standards.set(Array.from({length:count},(_,i)=>({id:'std-'+i,internal_id:'AA-'+i,name:'Chuẩn thử '+i,lot_number:'LOT-'+i,purity:'99%',storage_condition:'2–8°C',expiry_date:'2027-10-01'})));this.stdOpen.set(true);};}
+      ngAfterViewInit(){window.checklistFixture=this.checklist; window.stdFixture=this.std; window.labelsFixture=this.labels; window.openStandards=(count=2)=>{this.standards.set(Array.from({length:count},(_,i)=>({id:'std-'+i,internal_id:'AA-'+i,name:'Chuẩn thử '+i,lot_number:'LOT-'+i,purity:'99%',storage_condition:'2–8°C',expiry_date:'2027-10-01'})));this.stdOpen.set(true);};}
     }
     bootstrapApplication(Fixture,{providers:[provideZonelessChangeDetection(),provideRouter([])]}).then(()=>window.fixtureReady=true);
   `;
@@ -121,7 +120,7 @@ async function main() {
   try {
     await page.goto(`http://127.0.0.1:${server.address().port}`);
     await page.waitForFunction(() => window.fixtureReady);
-    if(process.env.PRINT_SMOKE_SCOPE !== 'prep') {
+    {
     for (const counts of [[2], [2,2], [2,2,2], [2,80,2], [160]]) {
       await open(counts);
       const metrics = await page.locator(visibleRoot).evaluate(root => ({
@@ -223,7 +222,7 @@ async function main() {
     assert.ok((await page.evaluate(()=>window.revokedUrls)).includes(currentBlob));
     }
 
-    if(process.env.PRINT_SMOKE_SCOPE !== 'prep') {
+    {
     // Exercise the actual schedule method and checklist renderer with detached snapshots.
     const htmlRoot = 'app-a4-document-preview .a4-html-root';
     const closeDocument = async () => {
@@ -275,7 +274,7 @@ async function main() {
       const actual=await page.locator(htmlRoot+' .cl-print-samples, '+htmlRoot+' .cl-print-compact-samples').evaluateAll(nodes=>nodes.map(node=>node.textContent));
       for(const samples of expected)for(const sample of samples)assert.ok(actual.some(text=>text.includes(sample)),sample);
       assert.equal(actual.length,expected.length);
-      assert.match(await page.locator(htmlRoot).innerText(),/Người giao việc/);
+      assert.doesNotMatch(await page.locator(htmlRoot).innerText(),/Người giao việc|Người nhận việc|Ký, ghi rõ họ tên/);
       await captureDocument('checklist-'+mode+'-'+orientation);
       await closeDocument();
     }
@@ -343,99 +342,8 @@ async function main() {
     }
 
     }
-    const prepRoot = 'app-a4-document-preview [class="origin-top-left"] > .a4-document-root';
-    const openPrep = async (mode, strategy='direct', count=3) => {
-      await page.evaluate(({mode,strategy,count})=>{
-        const ui=window.prepFixture;
-        ui.printDocument.set(null);
-        ui.resetDraft();
-        ui.calcMode.set(mode);
-        ui.sheetMethod.set('SOP-PHA-01 v2');
-        ui.sheetSource.set('Chất chuẩn thử / LOT-2026 / CoA-01');
-        ui.sheetSolvent.set('Nước tinh khiết');
-        ui.sheetEquipment.set('CÂN-01 / PIPET-02 / BĐM-10');
-        ui.sheetPreparedBy.set('Người pha thử nghiệm');
-        ui.sheetPreparedOn.set('2026-10-01');
-        ui.sheetNotes.set('Đối chiếu số lô và lượng thực tế theo SOP.');
-        if(mode==='target') {
-          ui.targetName.set('Dung dịch chuẩn A'); ui.targetSourceValue.set(1000); ui.targetValue.set(10); ui.targetFinalVolume.set(10); ui.targetActualValue.set(110);
-        } else if(mode==='concentration') {
-          ui.concentrationName.set('Chất chuẩn A'); ui.concentrationActualValue.set(10.2); ui.concentrationPotency.set(98.5); ui.concentrationFinalVolume.set(10);
-        } else if(mode==='spike') {
-          ui.spikeSampleName.set('Mẫu thử A'); ui.spikeStandardName.set('Dung dịch chuẩn A'); ui.spikeStandardValue.set(1000); ui.spikeTargetValue.set(1); ui.spikeSampleValue.set(10);
-        } else if(mode==='series') {
-          ui.seriesStrategy.set(strategy); ui.seriesResidualPercent.set(10); ui.showSeriesActual.set(true); ui.seriesFinalVolume.set(10);
-          const root={id:'root',name:'Chuẩn gốc A',concentration:1000,concentrationChoice:'mg_l',preparedVolume:null,preparedVolumeUnit:'mL',sourceId:'',actualSourceVolume:null};
-          ui.seriesSources.set(strategy==='multi_intermediate' ? [root,{...root,id:'mid',name:'Chuẩn trung gian',concentration:100,preparedVolume:100,sourceId:'root',actualSourceVolume:10.1}] : [root]);
-          ui.seriesComponents.set(strategy==='multi_component' ? [{id:'mix-A',name:'Thành phần A',sourceId:'root',targetConcentration:10,targetChoice:'mg_l'}] : []);
-          ui.seriesPoints.set(strategy==='multi_component' ? [] : Array.from({length:count},(_,index)=>({id:'point-'+index,label:'Điểm '+index,objectType:index===0?'blank':index%3===0?'qc':'standard',targetConcentration:index===0?0:strategy==='serial_dilution'?100/10**(index-1):index,targetChoice:'mg_l',finalVolume:10,finalVolumeUnit:'mL',sourceId:strategy==='serial_dilution'&&index>1?'point-'+(index-1):strategy==='multi_intermediate'?'mid':'root',actualSourceVolume:index===1?0.011:null})));
-        } else {
-          ui.resultSampleName.set('Mẫu thử C'); ui.resultSampleValue.set(10); ui.resultInstrumentValue.set(1);
-          ui.resultSteps.set([{id:'extract',label:'Chiết mẫu',type:'extract',volume:10,volumeUnit:'mL',fraction:null,recoveryPercent:null},{id:'aliquot',label:'Lấy phần dịch',type:'aliquot',volume:1,volumeUnit:'mL',fraction:null,recoveryPercent:null},{id:'dilution',label:'Pha loãng',type:'dilution',volume:10,volumeUnit:'mL',fraction:null,recoveryPercent:null}]);
-        }
-        ui.showTrace.set(false);
-        if(!ui.canExport()) throw new Error(JSON.stringify(ui.calculation().issues));
-        ui.printSimulation();
-      }, {mode,strategy,count});
-      await page.locator('app-a4-document-preview [role="status"]').filter({hasText:'Bản in đã sẵn sàng'}).waitFor();
-      const expected=await page.evaluate(()=>window.prepFixture.printDocument().sections.flatMap(section=>section.rows.map(row=>row.cells)));
-      const actual=await page.locator(prepRoot+' tbody > tr').evaluateAll(rows=>rows.map(row=>Array.from(row.children).map(cell=>cell.textContent)));
-      assert.deepEqual(actual,expected);
-      const metrics=await page.locator(prepRoot).evaluate(root=>({pages:root.children.length,overflow:Array.from(root.querySelectorAll('.a4-document-body')).filter(body=>body.scrollHeight>body.clientHeight+1).length}));
-      assert.equal(metrics.overflow,0);
-      assert.match(await page.locator(prepRoot).innerText(),/Công thức và phép thế số/);
-      console.log('Prep fixture',mode,strategy,count,metrics.pages+' pages',expected.length+' rows');
-      return metrics.pages;
-    };
-    for(const [mode,strategy,count] of [['target','direct',3],['concentration','direct',3],['spike','direct',3],['series','direct',40],['series','multi_intermediate',3],['series','serial_dilution',3],['series','multi_component',0],['result_conversion','direct',3]]) {
-      const pageCount=await openPrep(mode,strategy,count);
-      if(strategy==='direct') {
-        const started=Date.now();
-        const downloadPromise=page.waitForEvent('download',{timeout:90000});
-        await page.getByRole('button',{name:'Tải PDF',exact:true}).click();
-        let download;
-        try { download=await downloadPromise; }
-        catch(error) { console.error('PDF export messages:',await page.evaluate(()=>window.printMessages)); throw error; }
-        const file=path.join(output,`prep-${mode}.pdf`);
-        await download.saveAs(file);
-        assert.equal(countPdfPages(await fs.readFile(file)),pageCount);
-        console.log('Prep PDF',mode,(await fs.stat(file)).size+' bytes',((Date.now()-started)/1000).toFixed(1)+' seconds');
-        await page.waitForFunction(()=>!document.querySelector('app-a4-document-preview button[aria-busy="true"]'));
-      }
-      if(mode==='target'||(mode==='series'&&strategy==='direct')) {
-        await page.evaluate(()=>{window.print=()=>{window.prepPrinted=true;};window.prepPrinted=false;});
-        await page.getByRole('button',{name:'In',exact:true}).click();
-        await page.waitForFunction(()=>window.prepPrinted);
-        await page.emulateMedia({media:'print'});
-        const pdf=await page.pdf({preferCSSPageSize:true,printBackground:true});
-        assert.equal(countPdfPages(pdf),pageCount);
-        await fs.writeFile(path.join(output,`prep-${mode}-native.pdf`),pdf);
-        await page.emulateMedia({media:'screen'});
-        await page.evaluate(()=>window.dispatchEvent(new Event('afterprint')));
-        await page.waitForFunction(()=>!document.querySelector('app-a4-document-preview button[aria-busy="true"]'));
-        assert.equal(await page.locator('#print-container').innerHTML(),'');
-      }
-      await page.getByRole('button',{name:'Đóng',exact:true}).last().click();
-      await page.waitForFunction(()=>!document.querySelector('app-a4-document-preview'));
-    }
-    await page.setViewportSize({width:390,height:844});
-    await openPrep('target');
-    await page.evaluate(()=>document.documentElement.classList.add('dark'));
-    await page.screenshot({path:path.join(output,'prep-mobile-dark.png'),animations:'disabled'});
-    await page.evaluate(()=>document.documentElement.classList.remove('dark'));
-    await page.screenshot({path:path.join(output,'prep-mobile.png'),animations:'disabled'});
-    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true);
-    await page.keyboard.press('Escape');
-    await page.waitForFunction(()=>window.prepFixture.printDocument()===null);
-    await page.setViewportSize({width:1366,height:900});
-    await openPrep('target');
-    await page.evaluate(()=>{const snapshot=structuredClone(window.prepFixture.printDocument());snapshot.sections[0].rows[0].cells[1]='Nội dung quá dài '.repeat(3000);window.prepFixture.printDocument.set(snapshot);});
-    await page.locator('app-a4-document-preview [role="alert"]').waitFor();
-    assert.equal(await page.getByRole('button',{name:'In',exact:true}).isDisabled(),true);
-    assert.equal(await page.getByRole('button',{name:'Tải PDF',exact:true}).isDisabled(),true);
-    await page.getByRole('button',{name:'Đóng',exact:true}).last().click();
     assert.deepEqual(errors, []);
-    console.log('PASS: '+(process.env.PRINT_SMOKE_SCOPE === 'prep' ? '' : 'SOP/PDF, duty/checklist, standard/sample labels, six business forms and ')+'all five Smart Prep modes/four series strategies, complete ordered rows, exported/native pages, mobile/dark/Escape and oversized-row blocking.');
+    console.log('PASS: SOP/PDF, duty/checklist, standard/sample labels and six business print forms.');
     console.log('Artifacts:', output);
   } finally {
     await browser.close();

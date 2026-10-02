@@ -2254,6 +2254,68 @@ test('print jobs are immutable historical snapshots and cannot be deleted by cli
   await assertFails(deleteDoc(doc(dbFor(users.manager), `artifacts/${APP_ID}/print_jobs/manager-delete`)));
 });
 
+test('worksheet parameters and current snapshot cannot change after results, completion or another actor lock', async () => {
+  const db = dbFor(users.manager);
+  const base = { sopId: 'worksheet-sop', sopName: 'Worksheet', status: 'approved', inputs: { n: 1 }, currentPrintJobId: 'old' };
+  await env.withSecurityRulesDisabled(async context => {
+    const seedDb = context.firestore();
+    for (const [id, change] of Object.entries({ available: {}, completed: { status: 'completed' },
+      draft: { status: 'draft' }, locked: { lockedBy: users.batchA.email }, result: { analysisResultSummary: { total: 1 } }, details: {} })) {
+      await setDoc(doc(seedDb, `artifacts/${APP_ID}/requests/worksheet-${id}`), { ...base, ...change });
+    }
+    await setDoc(doc(seedDb, `artifacts/${APP_ID}/results_details/worksheet-details`), { values: [1] });
+  });
+  const update = { inputs: { n: 2 }, currentPrintJobId: 'new', lastUpdated: serverTimestamp() };
+  await assertSucceeds(updateDoc(doc(db, `artifacts/${APP_ID}/requests/worksheet-available`), update));
+  for (const id of ['completed', 'draft', 'locked', 'result', 'details']) {
+    await assertFails(updateDoc(doc(db, `artifacts/${APP_ID}/requests/worksheet-${id}`), update));
+  }
+  // Ordinary result lifecycle writes remain available; the guard applies to worksheet parameters.
+  await assertSucceeds(updateDoc(doc(db, `artifacts/${APP_ID}/requests/worksheet-completed`), {
+    status: 'draft', resultStatusReason: 'reopened', lastUpdated: serverTimestamp(),
+  }));
+  await assertSucceeds(updateDoc(doc(db, `artifacts/${APP_ID}/requests/worksheet-available`), {
+    status: 'rejected', currentPrintJobId: deleteField(), approvedAt: deleteField(), rejectedAt: serverTimestamp(), lastUpdated: serverTimestamp(),
+  }));
+});
+
+test('approval can atomically store a worksheet pointer while snapshot content remains immutable', async () => {
+  const db = dbFor(users.approver);
+  const jobRef = doc(db, `artifacts/${APP_ID}/print_jobs/approval-worksheet`);
+  const requestRef = doc(db, `artifacts/${APP_ID}/requests/pending-request`);
+  const batch = writeBatch(db);
+  batch.update(requestRef, { status: 'approved', currentPrintJobId: jobRef.id, approvedAt: serverTimestamp(), lastUpdated: serverTimestamp() });
+  batch.set(jobRef, { requestId: requestRef.id, sop: { name: 'Worksheet' }, inputs: {}, items: [], margin: 0,
+    createdByUid: users.approver.uid, createdBy: users.approver.displayName, createdAt: serverTimestamp(), lastUpdated: serverTimestamp() });
+  await assertSucceeds(batch.commit());
+  assert.equal((await getDoc(requestRef)).data()?.currentPrintJobId, jobRef.id);
+  await assertFails(updateDoc(jobRef, { inputs: { modified: true } }));
+});
+
+test('SOP reassignment can atomically switch the current worksheet while retaining the previous snapshot', async () => {
+  const db = dbFor(users.manager);
+  const requestRef = doc(db, `artifacts/${APP_ID}/requests/worksheet-reassign`);
+  const oldRef = doc(db, `artifacts/${APP_ID}/print_jobs/worksheet-before-reassign`);
+  const detailRef = doc(db, `artifacts/${APP_ID}/results_details/worksheet-reassign`);
+  await env.withSecurityRulesDisabled(async context => {
+    const seedDb = context.firestore();
+    await setDoc(doc(seedDb, requestRef.path), { status: 'draft', sopId: 'old-sop', sopName: 'Old SOP', analysisDate: '2026-10-02',
+      sampleList: ['sample'], inputs: { n: 1 }, items: [], currentPrintJobId: oldRef.id, analysisResultSummary: { total: 1 } });
+    await setDoc(doc(seedDb, oldRef.path), { sop: { name: 'Old SOP' }, requestId: requestRef.id });
+    await setDoc(doc(seedDb, detailRef.path), { values: [1] });
+  });
+  const newRef = doc(db, `artifacts/${APP_ID}/print_jobs/worksheet-after-reassign`);
+  const batch = writeBatch(db);
+  batch.update(requestRef, { sopId: 'new-sop', sopName: 'New SOP', currentPrintJobId: newRef.id, status: 'approved',
+    resultStatusReason: 'sop_reassigned', analysisResultSummary: deleteField(), lastUpdated: serverTimestamp() });
+  batch.delete(detailRef);
+  batch.set(newRef, { sop: { name: 'New SOP' }, requestId: requestRef.id, createdByUid: users.manager.uid,
+    createdBy: users.manager.displayName, createdAt: serverTimestamp(), lastUpdated: serverTimestamp() });
+  await assertSucceeds(batch.commit());
+  assert.equal((await getDoc(requestRef)).data()?.currentPrintJobId, newRef.id);
+  assert.equal((await getDoc(oldRef)).data()?.sop.name, 'Old SOP');
+});
+
 test('batch_run cannot promote pending to approved, while sop_approve and manager can', async () => {
   const pendingPath = `artifacts/${APP_ID}/requests/pending-request`;
   await assertFails(updateDoc(doc(dbFor(users.batchA), pendingPath), {

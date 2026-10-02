@@ -1,12 +1,11 @@
 import { CommonModule } from '@angular/common';
-import { Component, WritableSignal, computed, effect, inject, signal } from '@angular/core';
+import { Component, WritableSignal, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ToastService } from '../../core/services/toast.service';
 import { AppButtonComponent } from '../../shared/components/ui/button/button.component';
 import { AppPageHeaderComponent } from '../../shared/components/ui/page-header/page-header.component';
-import { A4DocumentPreviewComponent } from '../../shared/components/a4-document-preview/a4-document-preview.component';
-import { A4Document } from '../../shared/utils/a4-document';
-import { buildPrepPrintDocument } from './prep-print-document';
+import { PREP_SUBSTANCE_LIBRARY, PrepSubstanceOption, formulaSubstanceOption, normalizeSubstanceSearch } from './prep-substance-catalog';
+import { formulaSpeciesFactor, parseChemicalFormula } from './chemical-formula';
 import { PRESET_CHEMICALS, calculatePrep, calculateSaltHydrateFactor as calculateSaltHydrateFactorEngine, concentrationToGPerL } from './prep-calculation.engine';
 import {
   AdditionDraft,
@@ -191,7 +190,7 @@ const MASS_OPTIONS = [
 const TASKS: readonly TaskDefinition[] = [
   {
     id: 'target',
-    label: 'Pha dung dịch',
+    label: 'Pha nồng độ đích',
     question: 'Cần cân hoặc hút lượng bao nhiêu để chuẩn bị dung dịch?',
     description: 'Xác định lượng chất rắn, dung dịch nguồn hoặc hóa chất đậm đặc cần sử dụng.',
     icon: 'fa-bullseye',
@@ -199,7 +198,7 @@ const TASKS: readonly TaskDefinition[] = [
   },
   {
     id: 'concentration',
-    label: 'Kiểm tra nồng độ đã pha',
+    label: 'Nồng độ thực tế',
     question: 'Dung dịch cần xác định có nồng độ bao nhiêu?',
     description: 'Từ lượng chất hoặc dung dịch đã sử dụng, độ tinh khiết/hàm lượng công bố và thể tích định mức.',
     icon: 'fa-flask-vial',
@@ -207,15 +206,15 @@ const TASKS: readonly TaskDefinition[] = [
   },
   {
     id: 'series',
-    label: 'Pha dãy chuẩn & QC',
+    label: 'Dãy chuẩn & QC',
     question: 'Cần chuẩn bị dung dịch nguồn, điểm chuẩn, QC và nội chuẩn theo trình tự nào?',
-    description: 'Khai báo chuẩn trung gian, pha nối tiếp, hỗn hợp và phạm vi áp dụng của nội chuẩn.',
+    description: 'Chọn chuẩn gốc, nhập dãy nồng độ và thể tích bình để tính lượng hút từng điểm.',
     icon: 'fa-diagram-project',
     activeClass: 'border-violet-500 bg-violet-600 text-white shadow-lg shadow-violet-200 dark:shadow-none'
   },
   {
     id: 'spike',
-    label: 'Thêm chuẩn vào mẫu',
+    label: 'Thêm chuẩn',
     question: 'Cần thêm bao nhiêu dung dịch chuẩn vào mẫu?',
     description: 'Xác định lượng dung dịch chuẩn và vị trí áp dụng trên mẫu ban đầu hoặc thể tích cuối.',
     icon: 'fa-vial',
@@ -223,30 +222,42 @@ const TASKS: readonly TaskDefinition[] = [
   },
   {
     id: 'result_conversion',
-    label: 'Quy đổi kết quả mẫu',
+    label: 'Quy đổi kết quả',
     question: 'Kết quả đo được quy đổi về mẫu ban đầu như thế nào?',
-    description: 'Tính theo các bước chiết, chia mẫu, cô đặc, hoàn nguyên, pha loãng và độ thu hồi (recovery).',
+    description: 'Quy về mẫu ban đầu từ kết quả máy, thể tích định mức, hệ số pha loãng và độ thu hồi.',
     icon: 'fa-route',
     activeClass: 'border-rose-500 bg-rose-600 text-white shadow-lg shadow-rose-200 dark:shadow-none'
   }
 ];
 
-import { AppDatePickerComponent } from '../../shared/components/ui/date-picker/date-picker.component';
-
 @Component({
   selector: 'app-smart-prep',
   standalone: true,
-  imports: [CommonModule, FormsModule, AppButtonComponent, AppPageHeaderComponent, AppDatePickerComponent, A4DocumentPreviewComponent],
+  imports: [CommonModule, FormsModule, AppButtonComponent, AppPageHeaderComponent],
   templateUrl: './smart-prep.component.html',
   styles: [
-    ".field-label{display:block;margin-bottom:.45rem;font-size:.8rem;font-weight:600;color:#64748b}.field-input{width:100%;min-width:0;border:1px solid #cbd5e1;border-radius:.75rem;background:#fff;padding:.62rem .72rem;font-size:.875rem;outline:0;transition:border-color .15s,box-shadow .15s}.field-input.unit-input{width:9rem;flex-shrink:0}details>summary{cursor:pointer;font-weight:600;font-size:.875rem}details[open]>summary{margin-bottom:1rem}details:focus-within{border-color:#94a3b8}.field-input:focus{border-color:#cb0c9f;box-shadow:0 0 0 3px rgba(203,12,159,.12)}.field-help{display:block;margin-top:.35rem;font-size:.75rem;line-height:1.5;color:#64748b}.result-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem}.result-grid>div{border-radius:.75rem;background:#f8fafc;padding:.75rem}.result-grid span{display:block;font-size:.625rem;font-weight:700;color:#94a3b8}.result-grid strong{display:block;margin-top:.25rem;font-size:.8rem;line-height:1.35}@media (prefers-color-scheme:dark){.field-label{color:#94a3b8}.field-input{border-color:#334155;background:#0f172a;color:#e2e8f0}.field-help{color:#94a3b8}.result-grid>div{background:rgba(30,41,59,.7)}}"
+    ".field-label{display:block;margin-bottom:.45rem;font-size:.8rem;font-weight:600;color:#64748b}.field-input{width:100%;min-width:0;border:1px solid #cbd5e1;border-radius:.75rem;background:#fff;padding:.62rem .72rem;font-size:.875rem;outline:0;transition:border-color .15s,box-shadow .15s}.field-input.unit-input{width:9rem;flex-shrink:0}details>summary{cursor:pointer;font-weight:600;font-size:.875rem}details[open]>summary{margin-bottom:1rem}details:focus-within{border-color:#94a3b8}.field-input:focus{border-color:#cb0c9f;box-shadow:0 0 0 3px rgba(203,12,159,.12)}.field-help{display:block;margin-top:.35rem;font-size:.75rem;line-height:1.5;color:#64748b}.result-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem}.result-grid>div{border-radius:.75rem;background:#f8fafc;padding:.75rem}.result-grid>div>span:first-child{display:block;font-size:.625rem;font-weight:700;color:#94a3b8}.result-grid strong{display:block;margin-top:.25rem;font-size:.8rem;line-height:1.35}:host-context(.dark) .field-label{color:#94a3b8}:host-context(.dark) .field-input{border-color:#334155;background:#0f172a;color:#e2e8f0}:host-context(.dark) .field-help{color:#94a3b8}:host-context(.dark) .result-grid>div{background:rgba(30,41,59,.7)}"
   ]
 })
 export class SmartPrepComponent {
-  readonly printDocument = signal<A4Document | null>(null);
   private readonly toast = inject(ToastService);
-  private readonly draftStorageKey = 'lims.smart-prep.draft.v1';
-  private readonly baselineDraftState: Record<string, unknown>;
+  readonly substanceQuery = signal('');
+  readonly sourceParametersOpen = signal(false);
+  readonly targetFormula = signal('');
+  readonly concentrationFormula = signal('');
+  readonly targetSpecies = signal('');
+  readonly concentrationSpecies = signal('');
+  readonly targetSourceNote = signal('');
+  readonly concentrationSourceNote = signal('');
+  readonly spikeSourceNote = signal('');
+  readonly seriesSourceNote = signal('');
+  readonly substanceOptions = computed(() => {
+    const query = normalizeSubstanceSearch(this.substanceQuery());
+    const library = PREP_SUBSTANCE_LIBRARY.filter(item => !query || item.searchText.includes(query));
+    const parsed = formulaSubstanceOption(this.substanceQuery());
+    const options = [...library, ...(parsed && !library.some(item => item.formula === parsed.formula) ? [parsed] : [])];
+    return this.calcMode() === 'spike' || this.calcMode() === 'series' ? options.filter(option => option.sourceType !== 'solid') : options;
+  });
 
   readonly tasks = TASKS;
   private readonly allConcentrationOptions = CONCENTRATION_OPTIONS;
@@ -338,15 +349,14 @@ export class SmartPrepComponent {
     { id: 'component-1', name: '', sourceId: 'source-root', targetConcentration: null, targetChoice: 'mg_l' }
   ]);
   readonly seriesAdditions = signal<UiAddition[]>([]);
-  readonly quickSeriesOpen = signal(false);
+  readonly quickSeriesOpen = signal(true);
   readonly quickSeriesText = signal('');
   readonly quickSeriesVolume = signal<number | null>(10);
   readonly quickSeriesVolumeUnit = signal('mL');
   readonly quickSeriesChoice = signal('mg_l');
   readonly quickSeriesSourceId = signal('source-root');
-  readonly quickSeriesApplyMode = signal<QuickSeriesApplyMode>('append');
+  readonly quickSeriesApplyMode = signal<QuickSeriesApplyMode>('replace');
   readonly quickSeriesError = signal<string | null>(null);
-  readonly draftRestoreNotice = signal<string | null>(null);
 
   readonly resultSampleName = signal('');
   readonly resultSampleBase = signal<SampleBase>('mass');
@@ -355,6 +365,10 @@ export class SmartPrepComponent {
   readonly resultInstrumentValue = signal<number | null>(null);
   readonly resultInstrumentChoice = signal('mg_l');
   readonly resultUnit = signal<ResultConcentrationUnit>('mg/kg');
+  readonly advancedResultSteps = signal(false);
+  readonly resultFinalVolume = signal<number | null>(null);
+  readonly resultDilutionFactor = signal<number | null>(1);
+  readonly resultRecoveryPercent = signal<number | null>(null);
   readonly resultSteps = signal<UiStep[]>([
     { id: 'step-extract', label: 'Chiết và định mức', type: 'extract', volume: null, volumeUnit: 'mL', fraction: null, recoveryPercent: null }
   ]);
@@ -363,26 +377,127 @@ export class SmartPrepComponent {
   readonly useTargetConversion = signal(false);
   readonly useConcentrationConversion = signal(false);
   readonly showSeriesActual = signal(false);
-  readonly sheetMethod = signal('');
-  readonly sheetSource = signal('');
-  readonly sheetSolvent = signal('');
-  readonly sheetEquipment = signal('');
-  readonly sheetPreparedBy = signal('');
-  readonly sheetPreparedOn = signal('');
-  readonly sheetExpiry = signal('');
-  readonly sheetStorage = signal('');
-  readonly sheetNotes = signal('');
 
   constructor() {
-    this.baselineDraftState = this.snapshotDraftState();
-    this.restoreDraft();
-    effect(() => {
-      this.persistDraft(this.snapshotDraftState());
-    });
-    // Persist once synchronously as well as through the reactive effect. This
-    // keeps restored blank drafts clean even when a custom test injector has
-    // not flushed the effect scheduler's initial pass yet.
-    this.persistDraft(this.snapshotDraftState());
+    this.clearLegacyDraft();
+  }
+
+  searchSubstance(raw: string): void {
+    this.substanceQuery.set(raw);
+  }
+
+  currentSubstanceName(): string {
+    switch (this.calcMode()) {
+      case 'target': return this.targetName();
+      case 'concentration': return this.concentrationName();
+      case 'spike': return this.spikeStandardName();
+      case 'series': return this.seriesSources()[0]?.name ?? '';
+      default: return '';
+    }
+  }
+
+  currentSourceNote(): string {
+    switch (this.calcMode()) {
+      case 'target': return this.targetSourceNote();
+      case 'concentration': return this.concentrationSourceNote();
+      case 'spike': return this.spikeSourceNote();
+      case 'series': return this.seriesSourceNote();
+      default: return '';
+    }
+  }
+
+  parameterBadges(): string[] {
+    const badges: string[] = [];
+    const mode = this.calcMode();
+    const mass = mode === 'target' ? this.targetMolecularWeight() : mode === 'concentration' ? this.concentrationMolecularWeight() : mode === 'spike' ? this.spikeMolecularWeight() : null;
+    const density = mode === 'target' ? this.targetSourceDensity() : mode === 'concentration' ? this.concentrationDensity() : mode === 'spike' ? this.spikeStandardDensity() : null;
+    const purity = mode === 'target' ? this.targetPotency() : mode === 'concentration' ? this.concentrationPotency() : null;
+    const source = mode === 'target' ? this.targetSourceValue() : mode === 'concentration' ? this.concentrationSourceValue() : mode === 'spike' ? this.spikeStandardValue() : this.seriesSources()[0]?.concentration ?? null;
+    const choice = mode === 'target' ? this.targetSourceChoice() : mode === 'concentration' ? this.concentrationSourceChoice() : mode === 'spike' ? this.spikeStandardChoice() : this.seriesSources()[0]?.concentrationChoice ?? 'mg_l';
+    if (mass !== null) badges.push('M = ' + this.formatNum(mass, 3) + ' g/mol');
+    if (density !== null) badges.push('d = ' + this.formatNum(density, 3) + ' g/mL');
+    if (purity !== null) badges.push('P = ' + this.formatNum(purity, 3) + '%');
+    if (source !== null) badges.push('C nguồn = ' + this.formatNum(source, 6) + ' ' + this.concentrationOption(choice).label);
+    if ((mode === 'target' && this.targetSourceType() === 'solid') || (mode === 'concentration' && this.concentrationSourceType() === 'solid')) {
+      if (purity === null) badges.push('Nhập P% theo CoA');
+      const factor = mode === 'target' ? this.useTargetConversion() ? this.targetConversionFactor() : 1 : this.useConcentrationConversion() ? this.concentrationConversionFactor() : 1;
+      badges.push('f = ' + this.formatNum(factor, 6));
+    }
+    if (!badges.length) badges.push('Nhập thông số nguồn');
+    return badges;
+  }
+
+  private optionChoice(value: ConcentrationDraft | null): string {
+    if (!value) return 'mg_l';
+    const aliases: Record<string, string> = { 'mol/L': 'M', 'mmol/L': 'mM', 'µmol/L': 'µM' };
+    return this.allConcentrationOptions.find(option => option.unit === (aliases[value.unit] ?? value.unit) && option.basis === value.basis)?.key ?? 'mg_l';
+  }
+
+  selectSubstance(option: PrepSubstanceOption): void {
+    const mode = this.calcMode();
+    if ((mode === 'spike' || mode === 'series') && option.sourceType === 'solid') {
+      this.toast.show('Chọn dung dịch chuẩn hoặc nhập nồng độ dung dịch đã pha từ chất rắn.', 'warning');
+      return;
+    }
+    this.substanceQuery.set('');
+    this.sourceParametersOpen.set(option.sourceType === 'solid' ? option.potencyPercent === null : option.concentration === null);
+    const sourceChoice = this.optionChoice(option.concentration);
+    if (mode === 'target' || mode === 'concentration') {
+      const target = mode === 'target';
+      if (target) this.setTargetSourceType(option.sourceType); else this.setConcentrationSourceType(option.sourceType);
+      (target ? this.targetName : this.concentrationName).set(option.name);
+      (target ? this.targetFormula : this.concentrationFormula).set(option.formula ?? '');
+      (target ? this.targetSpecies : this.concentrationSpecies).set('');
+      (target ? this.targetSourceNote : this.concentrationSourceNote).set(option.detail);
+      (target ? this.targetMolecularWeight : this.concentrationMolecularWeight).set(option.molarMass);
+      (target ? this.targetPotency : this.concentrationPotency).set(option.potencyPercent);
+      (target ? this.targetSourceValue : this.concentrationSourceValue).set(option.concentration?.value ?? null);
+      (target ? this.targetSourceChoice : this.concentrationSourceChoice).set(sourceChoice);
+      (target ? this.targetSourceDensity : this.concentrationDensity).set(option.densityGPerMl);
+      if (target) this.targetDensity.set(null); else this.concentrationTargetDensity.set(null);
+      (target ? this.useTargetConversion : this.useConcentrationConversion).set(false);
+      (target ? this.targetConversionFactor : this.concentrationConversionFactor).set(1);
+      (target ? this.targetActualValue : this.concentrationActualValue).set(null);
+      (target ? this.targetSaltBaseMolarMass : this.concentrationSaltBaseMolarMass).set(null);
+      (target ? this.targetSaltMolarMass : this.concentrationSaltMolarMass).set(option.molarMass);
+      (target ? this.targetSaltStoichiometricCount : this.concentrationSaltStoichiometricCount).set(1);
+    } else if (mode === 'spike') {
+      this.spikeStandardName.set(option.name);
+      this.spikeSourceNote.set(option.detail);
+      this.spikeStandardValue.set(option.concentration?.value ?? null);
+      this.spikeStandardChoice.set(sourceChoice);
+      this.spikeMolecularWeight.set(option.molarMass);
+      this.spikeStandardDensity.set(option.densityGPerMl);
+    } else if (mode === 'series') {
+      // Series sources use mass/volume units: normalize molar/fraction stocks once at selection.
+      const normalized = option.concentration ? concentrationToGPerL({ ...option.concentration, molecularWeight: option.molarMass, densityGPerMl: option.densityGPerMl }, 'source', 'nồng độ nguồn', []) : null;
+      this.seriesSources.update(rows => rows.map((row, i) => i === 0 ? { ...row, name: option.name, concentration: normalized !== null ? normalized * 1000 : null, concentrationChoice: 'mg_l', sourceId: '', actualSourceVolume: null } : { ...row, actualSourceVolume: null }));
+      this.seriesPoints.update(rows => rows.map(row => ({ ...row, actualSourceVolume: null })));
+      this.seriesSourceNote.set(option.detail);
+      if (normalized === null) this.sourceParametersOpen.set(true);
+    }
+  }
+
+  speciesOptions(): string[] {
+    const formula = this.calcMode() === 'concentration' ? this.concentrationFormula() : this.targetFormula();
+    const parsed = parseChemicalFormula(formula);
+    const builtIn = PREP_SUBSTANCE_LIBRARY.find(item => item.formula === formula)?.species ?? [];
+    return [...new Set([...builtIn, ...(parsed?.anhydrousFormula ? [parsed.anhydrousFormula] : [])])];
+  }
+
+  selectSpecies(species: string): void {
+    const target = this.calcMode() === 'target';
+    const formula = target ? this.targetFormula() : this.concentrationFormula();
+    const salt = parseChemicalFormula(formula);
+    const conversion = species ? formulaSpeciesFactor(formula, species) : null;
+    if (!salt || (species && !conversion)) return;
+    (target ? this.targetSpecies : this.concentrationSpecies).set(species);
+    (target ? this.targetConversionFactor : this.concentrationConversionFactor).set(conversion?.factor ?? 1);
+    (target ? this.useTargetConversion : this.useConcentrationConversion).set(!!species);
+    (target ? this.targetMolecularWeight : this.concentrationMolecularWeight).set(conversion?.molarMass ?? salt.molarMass);
+    (target ? this.targetSaltBaseMolarMass : this.concentrationSaltBaseMolarMass).set(conversion?.molarMass ?? null);
+    (target ? this.targetSaltMolarMass : this.concentrationSaltMolarMass).set(salt.molarMass);
+    (target ? this.targetSaltStoichiometricCount : this.concentrationSaltStoichiometricCount).set(conversion?.count ?? 1);
   }
 
   needsMolar(...choices: string[]): boolean {
@@ -401,6 +516,12 @@ export class SmartPrepComponent {
   readonly calculation = computed<PrepCalculationResult<PrepOutput>>(() => {
     const result = calculatePrep(this.buildDraft());
     const required: CalculationIssue[] = [];
+    if (this.calcMode() === 'result_conversion' && !this.advancedResultSteps() && !(this.resultDilutionFactor()! >= 1)) {
+      required.push({ code: 'INVALID_DILUTION_FACTOR', path: 'dilutionFactor', severity: 'error', message: 'Hệ số pha loãng F phải lớn hơn hoặc bằng 1.' });
+    }
+    if (this.calcMode() === 'result_conversion' && !this.resultUnit().endsWith(this.resultSampleBase() === 'mass' ? '/kg' : '/L')) {
+      required.push({ code: 'INVALID_RESULT_UNIT', path: 'resultUnit', severity: 'error', message: 'Chọn đơn vị /kg cho mẫu rắn hoặc /L cho mẫu lỏng.' });
+    }
     if (this.calcMode() === 'spike' && this.spikeSemantic() === 'final_total' && this.spikeInitialValue() === null) {
       required.push({ code: 'MISSING_BACKGROUND', path: 'initialConcentration', severity: 'error', message: 'Nhập nồng độ có sẵn trong mẫu; nhập 0 nếu đã xác định mẫu không có chất phân tích.' });
     }
@@ -410,7 +531,7 @@ export class SmartPrepComponent {
     if (this.calcMode() === 'concentration' && this.needsMolar(this.concentrationResultChoice()) && !(this.concentrationMolecularWeight()! > 0)) {
       required.push({ code: 'MISSING_MOLAR_MASS', path: 'substance.molecularWeight', severity: 'error', message: 'Nhập khối lượng mol lớn hơn 0 để tính nồng độ mol/L.' });
     }
-    return required.length ? { ...result, status: 'incomplete', output: null, issues: [...result.issues, ...required] } : result;
+    return required.length ? { ...result, status: required.some(issue => issue.code.startsWith('INVALID_')) ? 'invalid' : 'incomplete', output: null, issues: [...result.issues, ...required] } : result;
   });
 
   getTask(id: PrepMode): TaskDefinition {
@@ -418,6 +539,8 @@ export class SmartPrepComponent {
   }
 
   setCalcMode(mode: PrepMode): void {
+    this.substanceQuery.set('');
+    this.sourceParametersOpen.set(false);
     this.calcMode.set(mode);
     this.showTrace.set(false);
   }
@@ -428,6 +551,13 @@ export class SmartPrepComponent {
       this.concentrationActualValue.set(null);
       this.concentrationSourceValue.set(null);
       this.concentrationDensity.set(null);
+      this.concentrationFormula.set('');
+      this.concentrationSpecies.set('');
+      this.concentrationSourceNote.set('');
+      this.concentrationMolecularWeight.set(null);
+      this.concentrationPotency.set(null);
+      this.useConcentrationConversion.set(false);
+      this.concentrationConversionFactor.set(1);
     }
     this.concentrationSourceType.set(sourceType);
     this.keepDimensionUnit(this.concentrationQuantityUnit, sourceType === 'solid' ? 'mass' : 'volume', sourceType === 'solid' ? 'mg' : 'µL');
@@ -439,6 +569,14 @@ export class SmartPrepComponent {
       this.targetActualValue.set(null);
       this.targetSourceValue.set(null);
       this.targetDensity.set(null);
+      this.targetSourceDensity.set(null);
+      this.targetFormula.set('');
+      this.targetSpecies.set('');
+      this.targetSourceNote.set('');
+      this.targetMolecularWeight.set(null);
+      this.targetPotency.set(null);
+      this.useTargetConversion.set(false);
+      this.targetConversionFactor.set(1);
     }
     this.targetSourceType.set(sourceType);
     this.keepDimensionUnit(this.targetQuantityUnit, sourceType === 'solid' ? 'mass' : 'volume', sourceType === 'solid' ? 'mg' : 'µL');
@@ -448,6 +586,7 @@ export class SmartPrepComponent {
     const sampleBase: SampleBase = raw === 'volume' ? 'volume' : 'mass';
     this.resultSampleBase.set(sampleBase);
     this.keepDimensionUnit(this.resultSampleUnit, sampleBase === 'mass' ? 'mass' : 'volume', sampleBase === 'mass' ? 'g' : 'mL');
+    this.resultUnit.set(this.resultUnit().startsWith('µg') ? sampleBase === 'mass' ? 'µg/kg' : 'µg/L' : sampleBase === 'mass' ? 'mg/kg' : 'mg/L');
   }
 
   concentrationOption(key: string): ConcentrationOption {
@@ -552,25 +691,10 @@ export class SmartPrepComponent {
   }
 
   applyPresetChemical(presetId: string, mode: 'target' | 'concentration' = this.calcMode() === 'concentration' ? 'concentration' : 'target'): void {
-    const preset = this.presetChemicals.find(item => item.id === presetId);
-    if (!preset) return;
-    if (mode === 'concentration') {
-      this.concentrationSourceType.set('concentrate');
-      this.concentrationName.set(preset.name);
-      this.concentrationSourceValue.set(preset.massPercent);
-      this.concentrationSourceChoice.set('percent_ww');
-      this.concentrationDensity.set(preset.densityGPerMl);
-      this.concentrationMolecularWeight.set(preset.molarMass);
-      this.keepDimensionUnit(this.concentrationQuantityUnit, 'volume', 'µL');
-      return;
-    }
-    this.targetSourceType.set('concentrate');
-    this.targetName.set(preset.name);
-    this.targetSourceValue.set(preset.massPercent);
-    this.targetSourceChoice.set('percent_ww');
-    this.targetSourceDensity.set(preset.densityGPerMl);
-    this.targetMolecularWeight.set(preset.molarMass);
-    this.keepDimensionUnit(this.targetQuantityUnit, 'volume', 'µL');
+    const option = PREP_SUBSTANCE_LIBRARY.find(item => item.id === presetId);
+    if (!option) return;
+    this.calcMode.set(mode);
+    this.selectSubstance(option);
   }
 
   saltHydrateFactor(baseMolarMass: number | null, saltMolarMass: number | null, stoichiometricCount: number | null): number | null {
@@ -681,7 +805,7 @@ export class SmartPrepComponent {
     }));
     this.seriesPoints.set(mode === 'replace' ? rows : [...appendBase, ...rows]);
     this.quickSeriesError.set(null);
-    this.quickSeriesOpen.set(false);
+    this.quickSeriesOpen.set(true);
     this.toast.show((mode === 'replace' ? 'Đã thay thế dãy bằng ' : 'Đã thêm ') + rows.length + ' điểm chuẩn.', 'success');
     return true;
   }
@@ -914,6 +1038,20 @@ export class SmartPrepComponent {
   }
 
   resetDraft(): void {
+    this.substanceQuery.set('');
+    this.sourceParametersOpen.set(false);
+    this.targetFormula.set('');
+    this.concentrationFormula.set('');
+    this.targetSpecies.set('');
+    this.concentrationSpecies.set('');
+    this.targetSourceNote.set('');
+    this.concentrationSourceNote.set('');
+    this.spikeSourceNote.set('');
+    this.seriesSourceNote.set('');
+    this.advancedResultSteps.set(false);
+    this.resultFinalVolume.set(null);
+    this.resultDilutionFactor.set(1);
+    this.resultRecoveryPercent.set(null);
     this.concentrationResultChoice.set('mg_l');
     this.spikeStandardDensity.set(null);
     this.concentrationTargetDensity.set(null);
@@ -989,9 +1127,8 @@ export class SmartPrepComponent {
     this.quickSeriesVolumeUnit.set('mL');
     this.quickSeriesChoice.set('mg_l');
     this.quickSeriesSourceId.set('source-root');
-    this.quickSeriesApplyMode.set('append');
+    this.quickSeriesApplyMode.set('replace');
     this.quickSeriesError.set(null);
-    this.draftRestoreNotice.set(null);
     this.resultSampleName.set('');
     this.resultSampleBase.set('mass');
     this.resultSampleValue.set(null);
@@ -1006,89 +1143,36 @@ export class SmartPrepComponent {
     this.useTargetConversion.set(false);
     this.useConcentrationConversion.set(false);
     this.showSeriesActual.set(false);
-    this.sheetMethod.set('');
-    this.sheetSource.set('');
-    this.sheetSolvent.set('');
-    this.sheetEquipment.set('');
-    this.sheetPreparedBy.set('');
-    this.sheetPreparedOn.set('');
-    this.sheetExpiry.set('');
-    this.sheetStorage.set('');
-    this.sheetNotes.set('');
-    this.clearStoredDraft();
-    this.toast.show('Đã tạo phiếu tính mới.', 'success');
-  }
-
-  sheetFields(): string[][] {
-    return [
-      ['Phương pháp / SOP và phiên bản', this.sheetMethod()], ['Mã nguồn / số lô / chứng chỉ', this.sheetSource()],
-      ['Dung môi', this.sheetSolvent()], ['Mã cân, pipet, bình định mức', this.sheetEquipment()],
-      ['Người pha', this.sheetPreparedBy()], ['Ngày pha', this.sheetPreparedOn()],
-      ['Hạn sử dụng theo SOP / dữ liệu độ ổn định', this.sheetExpiry()], ['Điều kiện bảo quản', this.sheetStorage()],
-      ['Ghi chú / kiểm tra theo SOP', this.sheetNotes()]
-    ];
-  }
-
-  private inputSummary(): string {
-    const draft = this.buildDraft();
-    if (draft.mode === 'target' || draft.mode === 'concentration') {
-      const concentration = (value: ConcentrationDraft) => this.formatNum(value.value, 8) + ' ' + value.unit;
-      return [
-        'Nguồn pha: ' + this.sourceTypeLabel(draft.sourceType),
-        'Thể tích định mức: ' + this.formatNum(draft.finalVolume.value, 8) + ' ' + draft.finalVolume.unit,
-        draft.sourceConcentration ? 'Nồng độ nguồn: ' + concentration(draft.sourceConcentration) : '',
-        draft.targetConcentration ? 'Nồng độ cần pha / đối chiếu: ' + concentration(draft.targetConcentration) : '',
-        draft.sourceType === 'solid' ? 'Độ tinh khiết / hàm lượng: ' + this.formatNum(draft.substance.potencyPercent, 8) + ' %' : '',
-        draft.sourceType === 'solid' ? 'Hệ số quy đổi dạng chất: ' + this.formatNum(draft.substance.conversionFactor, 8) : '',
-        draft.substance.molecularWeight != null ? 'Khối lượng mol: ' + this.formatNum(draft.substance.molecularWeight, 8) + ' g/mol' : '',
-        draft.sourceConcentration?.densityGPerMl != null ? 'Khối lượng riêng nguồn: ' + this.formatNum(draft.sourceConcentration.densityGPerMl, 8) + ' g/mL' : '',
-        draft.targetConcentration?.densityGPerMl != null ? 'Khối lượng riêng dung dịch đích: ' + this.formatNum(draft.targetConcentration.densityGPerMl, 8) + ' g/mL' : '',
-        draft.actualQuantity?.value != null ? 'Lượng đã cân / hút: ' + this.formatNum(draft.actualQuantity.value, 8) + ' ' + draft.actualQuantity.unit : 'Chưa nhập lượng thực tế; kết quả là dự tính.'
-      ].filter(Boolean).join('\n');
-    }
-    return 'Xem công thức và phép thế số bên dưới.';
+    this.clearLegacyDraft();
+    this.toast.show('Đã bắt đầu phép tính mới.', 'success');
   }
 
   resultText(): string {
     const result = this.calculation();
-    const lines = ['PHIẾU TÍNH CHUẨN BỊ DUNG DỊCH', 'Trạng thái: ' + this.statusLabel(),
-      'Phiếu hỗ trợ tính toán; việc kiểm tra và lưu hồ sơ thực hiện theo SOP của phòng thí nghiệm.',
-      ...this.sheetFields().filter(([, value]) => value.trim()).map(([label, value]) => label + ': ' + value),
-      '', this.outputText(result.output), '', 'SỐ LIỆU DÙNG ĐỂ TÍNH', this.inputSummary(), '', 'CÔNG THỨC / PHÉP THẾ'];
-    lines.push(...(result.trace.length ? result.trace.flatMap(step => [step.label + ': ' + step.expression, step.substitution ? '  Thế số: ' + step.substitution : '']) : ['Chưa có phép tính.']));
-    if (result.issues.length) {
-      lines.push('', 'CẢNH BÁO');
-      lines.push(...result.issues.map(issue => '- ' + issue.message + (issue.suggestedAction ? ' ' + issue.suggestedAction : '')));
+    if (result.status !== 'valid' || !result.output) return '';
+    const output = result.output;
+    const lines: string[] = [];
+    if (output.kind === 'target') {
+      const verb = output.sourceType === 'solid' ? 'Cân' : 'Hút';
+      lines.push('Pha ' + this.displayVolume(output.finalVolumeMl) + ' ' + output.name + ' ' + this.formatNum(this.targetValue(), 8) + ' ' + this.concentrationOption(this.targetChoice()).label
+        + ' → ' + verb + ' ' + this.displayQuantity(output.plannedQuantity) + (output.pipette ? ' (' + output.pipette.id + ')' : '') + '; định mức đến vạch.');
+      if (output.actualConcentration) lines.push('Lượng đã cân / hút: ' + this.displayQuantity(output.actualQuantity!) + '; nồng độ thực tế: ' + this.displaySnapshot(output.actualConcentration, this.targetChoice()) + '; độ lệch ' + this.deviationPercent(output.actualConcentration.massPerVolumeGPerL, output.plannedConcentration.massPerVolumeGPerL));
+    } else {
+      lines.push(this.outputText(output));
     }
-    return lines.filter(Boolean).join('\n');
+    if (this.showTrace()) lines.push(...result.trace.map(step => step.label + ': ' + (step.substitution || step.expression) + (step.value !== undefined ? ' = ' + this.formatNum(step.value, 8) + ' ' + (step.unit || '') : '')));
+    lines.push(...result.issues.filter(issue => issue.severity === 'warning').map(issue => 'Lưu ý: ' + issue.message));
+    return lines.join('\n');
   }
 
   async copyResult(): Promise<void> {
-    if (!this.canExport()) { this.toast.show('Nhập đủ và kiểm tra số liệu trước khi xuất phiếu.', 'warning'); return; }
+    if (!this.canExport()) { this.toast.show('Nhập đủ và kiểm tra số liệu trước khi sao chép.', 'warning'); return; }
     try {
       await navigator.clipboard.writeText(this.resultText());
-      this.toast.show('Đã sao chép phiếu tính.', 'success');
+      this.toast.show('Đã sao chép kết quả.', 'success');
     } catch {
       this.toast.show('Không thể sao chép kết quả.', 'error');
     }
-  }
-
-  exportSimulation(): void {
-    if (!this.canExport()) { this.toast.show('Nhập đủ và kiểm tra số liệu trước khi xuất phiếu.', 'warning'); return; }
-    const blob = new Blob([this.resultText()], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'prep-calculation.txt';
-    link.click();
-    URL.revokeObjectURL(url);
-    this.toast.show('Đã xuất phiếu tính dạng TXT.', 'success');
-  }
-
-  printSimulation(): void {
-    if (!this.canExport()) { this.toast.show('Nhập đủ và kiểm tra số liệu trước khi xuất phiếu.', 'warning'); return; }
-    const unit = this.concentrationOption(this.calcMode() === 'concentration' ? this.concentrationResultChoice() : this.targetChoice()).unit;
-    this.printDocument.set(buildPrepPrintDocument(this.buildDraft(), this.calculation(), this.sheetFields(), new Date(), unit));
   }
 
   private buildDraft(): PrepDraft {
@@ -1098,10 +1182,10 @@ export class SmartPrepComponent {
           mode: 'concentration',
           sourceType: this.concentrationSourceType(),
           substance: {
-            name: this.concentrationName(),
+            name: this.concentrationName() + (this.useConcentrationConversion() && this.concentrationSpecies() ? ' (tính theo ' + this.concentrationSpecies() + ')' : ''),
             potencyPercent: this.concentrationPotency(),
             conversionFactor: this.concentrationSourceType() === 'solid' && this.useConcentrationConversion() ? this.concentrationConversionFactor() : 1,
-            molecularWeight: this.needsMolar(this.concentrationSourceType() === 'solid' ? '' : this.concentrationSourceChoice(), this.useConcentrationComparison() ? this.concentrationTargetChoice() : '', this.concentrationResultChoice()) ? this.concentrationMolecularWeight() : null,
+            molecularWeight: this.needsMolar(this.concentrationResultChoice(), this.concentrationSourceType() === 'solid' ? '' : this.concentrationSourceChoice(), this.useConcentrationComparison() ? this.concentrationTargetChoice() : '') || this.concentrationMolecularWeight()! > 0 ? this.concentrationMolecularWeight() : null,
             densityGPerMl: this.concentrationDensity()
           },
           plannedQuantity: this.makeQuantity(this.concentrationActualValue(), this.concentrationQuantityUnit(), this.concentrationSourceType() === 'solid' ? 'mass' : 'volume'),
@@ -1115,10 +1199,10 @@ export class SmartPrepComponent {
           mode: 'target',
           sourceType: this.targetSourceType(),
           substance: {
-            name: this.targetName(),
+            name: this.targetName() + (this.useTargetConversion() && this.targetSpecies() ? ' (tính theo ' + this.targetSpecies() + ')' : ''),
             potencyPercent: this.targetPotency(),
             conversionFactor: this.targetSourceType() === 'solid' && this.useTargetConversion() ? this.targetConversionFactor() : 1,
-            molecularWeight: this.needsMolar(this.targetChoice(), this.targetSourceType() === 'solid' ? '' : this.targetSourceChoice()) ? this.targetMolecularWeight() : null,
+            molecularWeight: this.needsMolar(this.targetChoice(), this.targetSourceType() === 'solid' ? '' : this.targetSourceChoice()) || this.targetMolecularWeight()! > 0 ? this.targetMolecularWeight() : null,
             densityGPerMl: this.targetDensity()
           },
           targetConcentration: this.makeConcentration(this.targetValue(), this.targetChoice(), this.targetMolecularWeight(), this.targetDensity()),
@@ -1133,7 +1217,7 @@ export class SmartPrepComponent {
           location: this.spikeLocation(),
           semantic: this.spikeSemantic(),
           standardName: this.spikeStandardName(),
-          sampleName: this.spikeSampleName(),
+          sampleName: this.spikeSampleName().trim() || 'Mẫu',
           standard: this.makeConcentration(this.spikeStandardValue(), this.spikeStandardChoice(), this.spikeMolecularWeight(), this.spikeStandardDensity()),
           target: this.makeConcentration(this.spikeTargetValue(), this.spikeTargetChoice(), this.spikeMolecularWeight(), this.spikeDensity()),
           sampleQuantity: this.makeQuantity(this.spikeSampleValue(), this.spikeSampleUnit(), this.spikeMatrix() === 'solid' ? 'mass' : 'volume'),
@@ -1153,14 +1237,24 @@ export class SmartPrepComponent {
       case 'result_conversion':
         return {
           mode: 'result_conversion',
-          sampleName: this.resultSampleName(),
+          sampleName: this.resultSampleName().trim() || 'Mẫu',
           sampleBase: this.resultSampleBase(),
           sampleAmount: this.makeQuantity(this.resultSampleValue(), this.resultSampleUnit(), this.resultSampleBase() === 'mass' ? 'mass' : 'volume'),
           instrument: this.makeConcentration(this.resultInstrumentValue(), this.resultInstrumentChoice()),
           resultUnit: this.resultUnit(),
-          steps: this.resultSteps().map(step => ({ id: step.id, label: step.label, type: step.type, volume: ['split', 'recovery', 'transfer_all'].includes(step.type) ? null : this.makeQuantity(step.volume, step.volumeUnit, 'volume'), fraction: step.type === 'split' ? step.fraction : null, recoveryPercent: step.type === 'recovery' ? step.recoveryPercent : null }))
+          steps: this.advancedResultSteps() ? this.resultSteps().map(step => ({ id: step.id, label: step.label, type: step.type, volume: ['split', 'recovery', 'transfer_all'].includes(step.type) ? null : this.makeQuantity(step.volume, step.volumeUnit, 'volume'), fraction: step.type === 'split' ? step.fraction : null, recoveryPercent: step.type === 'recovery' ? step.recoveryPercent : null })) : this.simpleResultSteps()
         };
     }
+  }
+
+  private simpleResultSteps(): SampleProcessingStepDraft[] {
+    const steps: SampleProcessingStepDraft[] = [{ id: 'final-volume', label: 'Thể tích định mức cuối', type: 'extract', volume: this.makeQuantity(this.resultFinalVolume(), 'mL', 'volume') }];
+    const factor = this.resultDilutionFactor();
+    if (factor !== null && factor > 1) steps.push({ id: 'dilution-factor', label: 'Hệ số pha loãng F = ' + factor, type: 'split', fraction: 1 / factor });
+    // The split represents only analytical retention; restore the declared measured volume.
+    if (factor !== null && factor > 1) steps.push({ id: 'measured-volume', label: 'Thể tích dung dịch đo', type: 'dilution', volume: this.makeQuantity(this.resultFinalVolume(), 'mL', 'volume') });
+    if (this.resultRecoveryPercent() !== null) steps.push({ id: 'recovery', label: 'Hiệu chỉnh độ thu hồi', type: 'recovery', recoveryPercent: this.resultRecoveryPercent() });
+    return steps;
   }
 
   private toAdditionDraft(addition: UiAddition): AdditionDraft {
@@ -1193,7 +1287,7 @@ export class SmartPrepComponent {
     if (!output) return 'Chưa có kết quả. Vui lòng kiểm tra đầu vào và cảnh báo.';
     switch (output.kind) {
       case 'concentration':
-        return ['Nội dung: Tính nồng độ đã pha', 'Tên chất/dung dịch: ' + output.name, 'Nồng độ xác định: ' + this.displaySnapshot(output.actualConcentration, this.concentrationResultChoice()), ...output.actualConcentration.alternatives.map(item => this.formatNum(item.value, 8) + ' ' + item.unit), 'Hướng dẫn thao tác: ' + output.operation, output.targetConcentration ? 'Độ lệch so với yêu cầu: ' + this.deviationPercent(output.actualConcentration.massPerVolumeGPerL, output.targetConcentration.massPerVolumeGPerL) : ''].filter(Boolean).join('\n');
+        return ['Nồng độ đã pha', 'Tên chất/dung dịch: ' + output.name, 'Nồng độ xác định: ' + this.displaySnapshot(output.actualConcentration, this.concentrationResultChoice()), ...output.actualConcentration.alternatives.map(item => this.formatNum(item.value, 8) + ' ' + item.unit), 'Hướng dẫn thao tác: ' + output.operation, output.targetConcentration ? 'Độ lệch so với yêu cầu: ' + this.deviationPercent(output.actualConcentration.massPerVolumeGPerL, output.targetConcentration.massPerVolumeGPerL) : ''].filter(Boolean).join('\n');
       case 'target':
         return ['Nội dung: Pha dung dịch', 'Nồng độ cần pha: ' + this.formatNum(this.targetValue(), 8) + ' ' + this.concentrationOption(this.targetChoice()).label, 'Tên chất/dung dịch: ' + output.name, 'Lượng dự kiến: ' + this.displayQuantity(output.plannedQuantity), 'Hướng dẫn thao tác: ' + output.operation, output.actualConcentration ? 'Nồng độ xác định theo lượng thực tế: ' + this.displayConcentration(output.actualConcentration.massPerVolumeGPerL) + '\nĐộ lệch so với yêu cầu: ' + this.deviationPercent(output.actualConcentration.massPerVolumeGPerL, output.plannedConcentration.massPerVolumeGPerL) : ''].filter(Boolean).join('\n');
       case 'spike':
@@ -1201,420 +1295,22 @@ export class SmartPrepComponent {
       case 'series':
         return ['Nội dung: Pha dãy chuẩn và QC', ...output.intermediateRows.map(row => row.name + ': ' + this.displayConcentration(row.concentrationGPerL) + (row.sourceId ? ' · thể tích pha ' + this.displayVolume(row.preparedVolumeMl) : ' · dung dịch có sẵn')), ...output.pointRows.map(row => row.label + ': từ ' + this.sourceDisplayName(row.sourceId) + ' · hút ' + this.displayVolume(row.sourceVolumeMl) + '; định mức đến ' + this.displayVolume(row.finalVolumeMl) + (row.actualConcentrationGPerL !== null ? '; nồng độ từ thể tích đã hút: ' + this.displayConcentration(row.actualConcentrationGPerL) + ' (theo nguồn khai báo)' : '')), ...output.additionRows.map(row => row.pointLabel + ': thêm ' + this.displayVolume(row.volumeMl) + ' ' + row.name), ...output.sourceDemand.map(row => 'Nhu cầu chuẩn bị ' + row.name + ': ' + this.displayVolume(row.requiredWithResidualMl))].join('\n');
       case 'result_conversion':
-        return ['Nội dung: Quy đổi kết quả mẫu', 'Tên mẫu: ' + output.sampleName, 'Tỷ lệ chất còn lại sau xử lý: ' + this.formatNum(output.overallRetentionFraction, 8), 'Kết quả quy đổi về mẫu ban đầu: ' + this.formatNum(output.resultValue, 8) + ' ' + output.resultUnit, 'Hướng dẫn thao tác: ' + output.operation].join('\n');
+        if (!this.advancedResultSteps()) return output.sampleName + ': C máy = ' + this.formatNum(this.resultInstrumentValue(), 8) + ' ' + this.concentrationOption(this.resultInstrumentChoice()).label
+          + '; V = ' + this.displayVolume(output.finalVolumeMl) + '; lượng mẫu = ' + this.displayQuantity(output.sampleAmount)
+          + '; F = ' + this.formatNum(this.resultDilutionFactor(), 8) + (this.resultRecoveryPercent() !== null ? '; R = ' + this.formatNum(this.resultRecoveryPercent(), 8) + '%' : '')
+          + ' → X = ' + this.formatNum(output.resultValue, 8) + ' ' + output.resultUnit;
+        return output.sampleName + ': ' + this.formatNum(output.resultValue, 8) + ' ' + output.resultUnit + '; ' + output.operation;
     }
   }
 
-  private snapshotDraftState(): Record<string, unknown> {
-    return {
-      calcMode: this.calcMode(),
-      concentrationSourceType: this.concentrationSourceType(),
-      concentrationResultChoice: this.concentrationResultChoice(),
-      concentrationName: this.concentrationName(),
-      concentrationActualValue: this.concentrationActualValue(),
-      concentrationQuantityUnit: this.concentrationQuantityUnit(),
-      concentrationPotency: this.concentrationPotency(),
-      concentrationConversionFactor: this.concentrationConversionFactor(),
-      concentrationFinalVolume: this.concentrationFinalVolume(),
-      concentrationFinalVolumeUnit: this.concentrationFinalVolumeUnit(),
-      concentrationSourceValue: this.concentrationSourceValue(),
-      concentrationSourceChoice: this.concentrationSourceChoice(),
-      concentrationTargetValue: this.concentrationTargetValue(),
-      concentrationTargetChoice: this.concentrationTargetChoice(),
-      concentrationMolecularWeight: this.concentrationMolecularWeight(),
-      concentrationDensity: this.concentrationDensity(),
-      concentrationTargetDensity: this.concentrationTargetDensity(),
-      concentrationSaltBaseMolarMass: this.concentrationSaltBaseMolarMass(),
-      concentrationSaltMolarMass: this.concentrationSaltMolarMass(),
-      concentrationSaltStoichiometricCount: this.concentrationSaltStoichiometricCount(),
-      targetSourceType: this.targetSourceType(),
-      targetName: this.targetName(),
-      targetValue: this.targetValue(),
-      targetChoice: this.targetChoice(),
-      targetFinalVolume: this.targetFinalVolume(),
-      targetFinalVolumeUnit: this.targetFinalVolumeUnit(),
-      targetPotency: this.targetPotency(),
-      targetConversionFactor: this.targetConversionFactor(),
-      targetMolecularWeight: this.targetMolecularWeight(),
-      targetDensity: this.targetDensity(),
-      targetSourceValue: this.targetSourceValue(),
-      targetSourceChoice: this.targetSourceChoice(),
-      targetSourceDensity: this.targetSourceDensity(),
-      targetActualValue: this.targetActualValue(),
-      targetQuantityUnit: this.targetQuantityUnit(),
-      targetSaltBaseMolarMass: this.targetSaltBaseMolarMass(),
-      targetSaltMolarMass: this.targetSaltMolarMass(),
-      targetSaltStoichiometricCount: this.targetSaltStoichiometricCount(),
-      spikeMatrix: this.spikeMatrix(),
-      spikeLocation: this.spikeLocation(),
-      spikeSemantic: this.spikeSemantic(),
-      spikeStandardName: this.spikeStandardName(),
-      spikeSampleName: this.spikeSampleName(),
-      spikeSampleValue: this.spikeSampleValue(),
-      spikeSampleUnit: this.spikeSampleUnit(),
-      spikeStandardValue: this.spikeStandardValue(),
-      spikeStandardChoice: this.spikeStandardChoice(),
-      spikeTargetValue: this.spikeTargetValue(),
-      spikeTargetChoice: this.spikeTargetChoice(),
-      spikeInitialValue: this.spikeInitialValue(),
-      spikeInitialChoice: this.spikeInitialChoice(),
-      spikeMolecularWeight: this.spikeMolecularWeight(),
-      spikeStandardDensity: this.spikeStandardDensity(),
-      spikeDensity: this.spikeDensity(),
-      seriesStrategy: this.seriesStrategy(),
-      seriesFinalVolume: this.seriesFinalVolume(),
-      seriesFinalVolumeUnit: this.seriesFinalVolumeUnit(),
-      seriesResidualPercent: this.seriesResidualPercent(),
-      seriesSources: this.seriesSources().map(row => ({ ...row })),
-      seriesPoints: this.seriesPoints().map(row => ({ ...row })),
-      seriesComponents: this.seriesComponents().map(row => ({ ...row })),
-      seriesAdditions: this.seriesAdditions().map(row => ({ ...row })),
-      quickSeriesText: this.quickSeriesText(),
-      quickSeriesVolume: this.quickSeriesVolume(),
-      quickSeriesVolumeUnit: this.quickSeriesVolumeUnit(),
-      quickSeriesChoice: this.quickSeriesChoice(),
-      quickSeriesSourceId: this.quickSeriesSourceId(),
-      quickSeriesApplyMode: this.quickSeriesApplyMode(),
-      resultSampleName: this.resultSampleName(),
-      resultSampleBase: this.resultSampleBase(),
-      resultSampleValue: this.resultSampleValue(),
-      resultSampleUnit: this.resultSampleUnit(),
-      resultInstrumentValue: this.resultInstrumentValue(),
-      resultInstrumentChoice: this.resultInstrumentChoice(),
-      resultUnit: this.resultUnit(),
-      resultSteps: this.resultSteps().map(row => ({ ...row })),
-      useConcentrationComparison: this.useConcentrationComparison(),
-      useTargetConversion: this.useTargetConversion(),
-      useConcentrationConversion: this.useConcentrationConversion(),
-      showSeriesActual: this.showSeriesActual(),
-      sheetMethod: this.sheetMethod(),
-      sheetSource: this.sheetSource(),
-      sheetSolvent: this.sheetSolvent(),
-      sheetEquipment: this.sheetEquipment(),
-      sheetPreparedBy: this.sheetPreparedBy(),
-      sheetPreparedOn: this.sheetPreparedOn(),
-      sheetExpiry: this.sheetExpiry(),
-      sheetStorage: this.sheetStorage(),
-      sheetNotes: this.sheetNotes()
-    };
-  }
-
-  private persistDraft(state: Record<string, unknown>): void {
-    const storage = this.getDraftStorage();
-    if (!storage) return;
+  private clearLegacyDraft(): void {
+    // Previous versions used a browser-wide draft. Never read or restore it:
+    // its contents can belong to another signed-in user on a shared device.
     try {
-      if (!this.hasMeaningfulDraft(state)) {
-        storage.removeItem(this.draftStorageKey);
-        return;
-      }
-      storage.setItem(this.draftStorageKey, JSON.stringify({ version: 1, savedAt: new Date().toISOString(), state }));
+      (globalThis as typeof globalThis & { localStorage?: Storage }).localStorage?.removeItem('lims.smart-prep.draft.v1');
     } catch {
-      // Browser storage can be unavailable or full; calculation remains usable in memory.
+      // Storage access can be denied; the calculator still works in memory.
     }
-  }
-
-  private clearStoredDraft(): void {
-    const storage = this.getDraftStorage();
-    if (!storage) return;
-    try {
-      storage.removeItem(this.draftStorageKey);
-    } catch {
-      // Ignore denied storage during reset; the in-memory draft is still reset.
-    }
-  }
-
-  private getDraftStorage(): Storage | null {
-    try {
-      const storage = (globalThis as typeof globalThis & { localStorage?: Storage }).localStorage;
-      return storage ?? null;
-    } catch {
-      return null;
-    }
-  }
-
-  private hasMeaningfulDraft(state: Record<string, unknown>): boolean {
-    return JSON.stringify(state) !== JSON.stringify(this.baselineDraftState);
-  }
-
-  private isValidStoredDraftState(state: Record<string, unknown>): boolean {
-    const baselineKeys = Object.keys(this.baselineDraftState);
-    if (!baselineKeys.every(key => Object.prototype.hasOwnProperty.call(state, key))) return false;
-    const nullableNumber = (value: unknown): boolean => value === null || (typeof value === 'number' && Number.isFinite(value));
-    const stringValue = (value: unknown): boolean => typeof value === 'string';
-    const booleanValue = (value: unknown): boolean => typeof value === 'boolean';
-    const choiceValue = (value: unknown): boolean => typeof value === 'string' && this.allConcentrationOptions.some(option => option.key === value);
-    const volumeUnit = (value: unknown): boolean => typeof value === 'string' && this.volumeOptions.some(option => option.unit === value);
-    const oneOf = (value: unknown, options: readonly string[]): boolean => typeof value === 'string' && options.includes(value);
-
-    for (const key of baselineKeys) {
-      const baseline = this.baselineDraftState[key];
-      const value = state[key];
-      if (Array.isArray(baseline)) continue;
-      if (typeof baseline === 'number' && (typeof value !== 'number' || !Number.isFinite(value))) return false;
-      if (baseline === null && !nullableNumber(value)) return false;
-      if (typeof baseline === 'string' && !stringValue(value)) return false;
-      if (typeof baseline === 'boolean' && !booleanValue(value)) return false;
-    }
-    if (!oneOf(state['calcMode'], ['target', 'concentration', 'series', 'spike', 'result_conversion'])) return false;
-    if (!oneOf(state['concentrationSourceType'], ['solid', 'solution', 'concentrate']) || !oneOf(state['targetSourceType'], ['solid', 'solution', 'concentrate'])) return false;
-    if (!oneOf(state['spikeMatrix'], ['solid', 'liquid', 'extract', 'vial']) || !oneOf(state['spikeLocation'], ['sample_initial', 'extract', 'after_cleanup', 'final_vial']) || !oneOf(state['spikeSemantic'], ['added_on_initial', 'final_total'])) return false;
-    if (!oneOf(state['seriesStrategy'], ['direct', 'multi_intermediate', 'serial_dilution', 'multi_component']) || !oneOf(state['quickSeriesApplyMode'], ['append', 'replace'])) return false;
-    if (!oneOf(state['resultSampleBase'], ['mass', 'volume']) || !oneOf(state['resultUnit'], ['mg/kg', 'µg/kg', 'mg/L', 'µg/L'])) return false;
-    for (const key of ['concentrationResultChoice', 'concentrationSourceChoice', 'concentrationTargetChoice', 'targetChoice', 'targetSourceChoice', 'spikeStandardChoice', 'spikeTargetChoice', 'spikeInitialChoice', 'quickSeriesChoice', 'resultInstrumentChoice']) {
-      if (!choiceValue(state[key])) return false;
-    }
-    for (const key of ['concentrationFinalVolumeUnit', 'targetFinalVolumeUnit', 'seriesFinalVolumeUnit', 'quickSeriesVolumeUnit']) {
-      if (!volumeUnit(state[key])) return false;
-    }
-    if (!oneOf(state['concentrationQuantityUnit'], ['mg', 'g', 'µL', 'mL']) || !oneOf(state['targetQuantityUnit'], ['mg', 'g', 'µL', 'mL']) || !oneOf(state['spikeSampleUnit'], ['mg', 'g', 'µL', 'mL']) || !oneOf(state['resultSampleUnit'], ['mg', 'g', 'µL', 'mL'])) return false;
-    if (state['concentrationSourceType'] === 'solid' && !oneOf(state['concentrationQuantityUnit'], ['mg', 'g'])) return false;
-    if (state['concentrationSourceType'] !== 'solid' && !oneOf(state['concentrationQuantityUnit'], ['µL', 'mL'])) return false;
-    if (state['targetSourceType'] === 'solid' && !oneOf(state['targetQuantityUnit'], ['mg', 'g'])) return false;
-    if (state['targetSourceType'] !== 'solid' && !oneOf(state['targetQuantityUnit'], ['µL', 'mL'])) return false;
-    if (state['spikeMatrix'] === 'solid' && !oneOf(state['spikeSampleUnit'], ['mg', 'g'])) return false;
-    if (state['spikeMatrix'] !== 'solid' && !oneOf(state['spikeSampleUnit'], ['µL', 'mL'])) return false;
-    if (state['resultSampleBase'] === 'mass' && !oneOf(state['resultSampleUnit'], ['mg', 'g'])) return false;
-    if (state['resultSampleBase'] === 'volume' && !oneOf(state['resultSampleUnit'], ['µL', 'mL'])) return false;
-
-    const usedIds = new Set<string>();
-    const rowsWithIds = (value: unknown, validate: (row: Record<string, unknown>) => boolean, allowEmpty = false): boolean => {
-      if (!Array.isArray(value) || (!allowEmpty && value.length === 0)) return false;
-      return value.every(item => {
-        if (!this.isRecord(item) || typeof item['id'] !== 'string' || !item['id'].trim() || usedIds.has(item['id'])) return false;
-        usedIds.add(item['id']);
-        return validate(item);
-      });
-    };
-    if (!rowsWithIds(state['seriesSources'], row => stringValue(row['name']) && nullableNumber(row['concentration']) && choiceValue(row['concentrationChoice']) && nullableNumber(row['preparedVolume']) && volumeUnit(row['preparedVolumeUnit']) && stringValue(row['sourceId']) && nullableNumber(row['actualSourceVolume']))) return false;
-    if (!rowsWithIds(state['seriesPoints'], row => stringValue(row['label']) && oneOf(row['objectType'], ['standard', 'blank', 'qc', 'sample']) && nullableNumber(row['targetConcentration']) && choiceValue(row['targetChoice']) && nullableNumber(row['finalVolume']) && volumeUnit(row['finalVolumeUnit']) && stringValue(row['sourceId']) && nullableNumber(row['actualSourceVolume']))) return false;
-    if (!rowsWithIds(state['seriesComponents'], row => stringValue(row['name']) && stringValue(row['sourceId']) && nullableNumber(row['targetConcentration']) && choiceValue(row['targetChoice']))) return false;
-    if (!rowsWithIds(state['seriesAdditions'], row => oneOf(row['dosing'], ['volume', 'concentration']) && oneOf(row['type'], ['internal_standard', 'surrogate', 'analyte']) && stringValue(row['name']) && stringValue(row['sourceId']) && nullableNumber(row['sourceConcentration']) && choiceValue(row['sourceChoice']) && nullableNumber(row['fixedVolume']) && volumeUnit(row['fixedVolumeUnit']) && nullableNumber(row['targetLevel']) && choiceValue(row['targetChoice']) && ['standard', 'blank', 'qc', 'sample', 'exceptionStandard', 'exceptionBlank', 'exceptionQc', 'exceptionSample', 'includeInFinalVolume'].every(key => booleanValue(row[key])), true)) return false;
-    if (!rowsWithIds(state['resultSteps'], row => stringValue(row['label']) && oneOf(row['type'], ['extract', 'aliquot', 'transfer_all', 'dilution', 'concentration', 'reconstitution', 'split', 'recovery']) && nullableNumber(row['volume']) && volumeUnit(row['volumeUnit']) && nullableNumber(row['fraction']) && nullableNumber(row['recoveryPercent']))) return false;
-    return true;
-  }
-
-  private restoreDraft(): void {
-    const storage = this.getDraftStorage();
-    if (!storage) return;
-    let parsed: unknown;
-    try {
-      const raw = storage.getItem(this.draftStorageKey);
-      if (!raw) return;
-      parsed = JSON.parse(raw);
-    } catch {
-      return;
-    }
-    if (!this.isRecord(parsed) || parsed['version'] !== 1 || !this.isRecord(parsed['state'])) {
-      this.draftRestoreNotice.set('Bản nháp cũ hoặc không đầy đủ đã được bỏ qua; dữ liệu hiện tại vẫn an toàn.');
-      return;
-    }
-    const state = parsed['state'];
-    if (!this.isValidStoredDraftState(state)) {
-      this.draftRestoreNotice.set('Bản nháp không hợp lệ hoặc không đầy đủ đã được bỏ qua; dữ liệu hiện tại vẫn an toàn.');
-      return;
-    }
-    const text = (key: string, fallback: string): string => typeof state[key] === 'string' ? state[key] as string : fallback;
-    const number = (key: string, fallback: number | null): number | null => typeof state[key] === 'number' && Number.isFinite(state[key]) ? state[key] as number : fallback;
-    const bool = (key: string, fallback: boolean): boolean => typeof state[key] === 'boolean' ? state[key] as boolean : fallback;
-    const choice = (key: string, fallback: string, options: readonly { key: string }[] = this.allConcentrationOptions): string => {
-      const candidate = state[key];
-      return typeof candidate === 'string' && options.some(option => option.key === candidate) ? candidate : fallback;
-    };
-    const oneOf = <T extends string>(key: string, fallback: T, options: readonly T[]): T => {
-      const candidate = state[key];
-      return typeof candidate === 'string' && options.includes(candidate as T) ? candidate as T : fallback;
-    };
-
-    this.calcMode.set(oneOf('calcMode', 'target', ['target', 'concentration', 'series', 'spike', 'result_conversion']));
-    this.concentrationSourceType.set(oneOf('concentrationSourceType', 'solid', ['solid', 'solution', 'concentrate']));
-    this.concentrationResultChoice.set(choice('concentrationResultChoice', 'mg_l'));
-    this.concentrationName.set(text('concentrationName', ''));
-    this.concentrationActualValue.set(number('concentrationActualValue', null));
-    this.concentrationQuantityUnit.set(oneOf('concentrationQuantityUnit', 'mg', ['mg', 'g', 'µL', 'mL']));
-    this.concentrationPotency.set(number('concentrationPotency', null));
-    this.concentrationConversionFactor.set(number('concentrationConversionFactor', 1));
-    this.concentrationFinalVolume.set(number('concentrationFinalVolume', null));
-    this.concentrationFinalVolumeUnit.set(oneOf('concentrationFinalVolumeUnit', 'mL', ['µL', 'mL']));
-    this.concentrationSourceValue.set(number('concentrationSourceValue', null));
-    this.concentrationSourceChoice.set(choice('concentrationSourceChoice', 'mg_l'));
-    this.concentrationTargetValue.set(number('concentrationTargetValue', null));
-    this.concentrationTargetChoice.set(choice('concentrationTargetChoice', 'mg_l'));
-    this.concentrationMolecularWeight.set(number('concentrationMolecularWeight', null));
-    this.concentrationDensity.set(number('concentrationDensity', null));
-    this.concentrationTargetDensity.set(number('concentrationTargetDensity', null));
-    this.concentrationSaltBaseMolarMass.set(number('concentrationSaltBaseMolarMass', null));
-    this.concentrationSaltMolarMass.set(number('concentrationSaltMolarMass', null));
-    this.concentrationSaltStoichiometricCount.set(number('concentrationSaltStoichiometricCount', 1));
-    this.targetSourceType.set(oneOf('targetSourceType', 'solution', ['solid', 'solution', 'concentrate']));
-    this.targetName.set(text('targetName', ''));
-    this.targetValue.set(number('targetValue', null));
-    this.targetChoice.set(choice('targetChoice', 'mg_l'));
-    this.targetFinalVolume.set(number('targetFinalVolume', null));
-    this.targetFinalVolumeUnit.set(oneOf('targetFinalVolumeUnit', 'mL', ['µL', 'mL']));
-    this.targetPotency.set(number('targetPotency', null));
-    this.targetConversionFactor.set(number('targetConversionFactor', 1));
-    this.targetMolecularWeight.set(number('targetMolecularWeight', null));
-    this.targetDensity.set(number('targetDensity', null));
-    this.targetSourceValue.set(number('targetSourceValue', null));
-    this.targetSourceChoice.set(choice('targetSourceChoice', 'mg_l'));
-    this.targetSourceDensity.set(number('targetSourceDensity', null));
-    this.targetActualValue.set(number('targetActualValue', null));
-    this.targetQuantityUnit.set(oneOf('targetQuantityUnit', 'µL', ['µL', 'mL', 'mg', 'g']));
-    this.targetSaltBaseMolarMass.set(number('targetSaltBaseMolarMass', null));
-    this.targetSaltMolarMass.set(number('targetSaltMolarMass', null));
-    this.targetSaltStoichiometricCount.set(number('targetSaltStoichiometricCount', 1));
-    this.spikeMatrix.set(oneOf('spikeMatrix', 'solid', ['solid', 'liquid', 'extract', 'vial']));
-    this.spikeLocation.set(oneOf('spikeLocation', 'sample_initial', ['sample_initial', 'extract', 'after_cleanup', 'final_vial']));
-    this.spikeSemantic.set(oneOf('spikeSemantic', 'added_on_initial', ['added_on_initial', 'final_total']));
-    this.spikeStandardName.set(text('spikeStandardName', ''));
-    this.spikeSampleName.set(text('spikeSampleName', ''));
-    this.spikeSampleValue.set(number('spikeSampleValue', null));
-    this.spikeSampleUnit.set(oneOf('spikeSampleUnit', 'g', ['mg', 'g', 'µL', 'mL']));
-    this.spikeStandardValue.set(number('spikeStandardValue', null));
-    this.spikeStandardChoice.set(choice('spikeStandardChoice', 'mg_l'));
-    this.spikeTargetValue.set(number('spikeTargetValue', null));
-    this.spikeTargetChoice.set(choice('spikeTargetChoice', 'mg_kg'));
-    this.spikeInitialValue.set(number('spikeInitialValue', null));
-    this.spikeInitialChoice.set(choice('spikeInitialChoice', 'mg_kg'));
-    this.spikeMolecularWeight.set(number('spikeMolecularWeight', null));
-    this.spikeStandardDensity.set(number('spikeStandardDensity', null));
-    this.spikeDensity.set(number('spikeDensity', null));
-    this.seriesStrategy.set(oneOf('seriesStrategy', 'direct', ['direct', 'multi_intermediate', 'serial_dilution', 'multi_component']));
-    this.seriesFinalVolume.set(number('seriesFinalVolume', null));
-    this.seriesFinalVolumeUnit.set(oneOf('seriesFinalVolumeUnit', 'mL', ['µL', 'mL']));
-    this.seriesResidualPercent.set(number('seriesResidualPercent', 0));
-    this.quickSeriesText.set(text('quickSeriesText', ''));
-    this.quickSeriesVolume.set(number('quickSeriesVolume', 10));
-    this.quickSeriesVolumeUnit.set(oneOf('quickSeriesVolumeUnit', 'mL', ['µL', 'mL']));
-    this.quickSeriesChoice.set(choice('quickSeriesChoice', 'mg_l'));
-    this.quickSeriesSourceId.set(text('quickSeriesSourceId', 'source-root'));
-    this.quickSeriesApplyMode.set(oneOf('quickSeriesApplyMode', 'append', ['append', 'replace']));
-    this.resultSampleName.set(text('resultSampleName', ''));
-    this.resultSampleBase.set(oneOf('resultSampleBase', 'mass', ['mass', 'volume']));
-    this.resultSampleValue.set(number('resultSampleValue', null));
-    this.resultSampleUnit.set(oneOf('resultSampleUnit', 'g', ['mg', 'g', 'µL', 'mL']));
-    this.resultInstrumentValue.set(number('resultInstrumentValue', null));
-    this.resultInstrumentChoice.set(choice('resultInstrumentChoice', 'mg_l'));
-    this.resultUnit.set(oneOf('resultUnit', 'mg/kg', ['mg/kg', 'µg/kg', 'mg/L', 'µg/L']));
-    this.useConcentrationComparison.set(bool('useConcentrationComparison', false));
-    this.useTargetConversion.set(bool('useTargetConversion', false));
-    this.useConcentrationConversion.set(bool('useConcentrationConversion', false));
-    this.showSeriesActual.set(bool('showSeriesActual', false));
-    this.sheetMethod.set(text('sheetMethod', ''));
-    this.sheetSource.set(text('sheetSource', ''));
-    this.sheetSolvent.set(text('sheetSolvent', ''));
-    this.sheetEquipment.set(text('sheetEquipment', ''));
-    this.sheetPreparedBy.set(text('sheetPreparedBy', ''));
-    this.sheetPreparedOn.set(text('sheetPreparedOn', ''));
-    this.sheetExpiry.set(text('sheetExpiry', ''));
-    this.sheetStorage.set(text('sheetStorage', ''));
-    this.sheetNotes.set(text('sheetNotes', ''));
-
-    const sources = this.readStoredRows(state['seriesSources'], (row, index): UiSeriesSource | null => {
-      if (typeof row['id'] !== 'string' || !row['id'].trim()) return null;
-      return {
-        id: row['id'],
-        name: typeof row['name'] === 'string' ? row['name'] : 'Nguồn ' + (index + 1),
-        concentration: this.storedNullableNumber(row['concentration']),
-        concentrationChoice: this.storedChoice(row['concentrationChoice'], 'mg_l'),
-        preparedVolume: this.storedNullableNumber(row['preparedVolume']),
-        preparedVolumeUnit: this.storedVolumeUnit(row['preparedVolumeUnit']),
-        sourceId: typeof row['sourceId'] === 'string' ? row['sourceId'] : '',
-        actualSourceVolume: this.storedNullableNumber(row['actualSourceVolume'])
-      };
-    });
-    if (sources?.length) this.seriesSources.set(sources);
-    const points = this.readStoredRows(state['seriesPoints'], (row, index): UiSeriesPoint | null => {
-      if (typeof row['id'] !== 'string' || !row['id'].trim()) return null;
-      return {
-        id: row['id'],
-        label: typeof row['label'] === 'string' ? row['label'] : 'Chuẩn ' + (index + 1),
-        objectType: this.storedOneOf(row['objectType'], 'standard', ['standard', 'blank', 'qc', 'sample']),
-        targetConcentration: this.storedNullableNumber(row['targetConcentration']),
-        targetChoice: this.storedChoice(row['targetChoice'], 'mg_l'),
-        finalVolume: this.storedNullableNumber(row['finalVolume']),
-        finalVolumeUnit: this.storedVolumeUnit(row['finalVolumeUnit']),
-        sourceId: typeof row['sourceId'] === 'string' ? row['sourceId'] : 'source-root',
-        actualSourceVolume: this.storedNullableNumber(row['actualSourceVolume'])
-      };
-    });
-    if (points?.length) this.seriesPoints.set(points);
-    const components = this.readStoredRows(state['seriesComponents'], (row, index): UiSeriesComponent | null => {
-      if (typeof row['id'] !== 'string' || !row['id'].trim()) return null;
-      return {
-        id: row['id'],
-        name: typeof row['name'] === 'string' ? row['name'] : 'Chất ' + (index + 1),
-        sourceId: typeof row['sourceId'] === 'string' ? row['sourceId'] : 'source-root',
-        targetConcentration: this.storedNullableNumber(row['targetConcentration']),
-        targetChoice: this.storedChoice(row['targetChoice'], 'mg_l')
-      };
-    });
-    if (components?.length) this.seriesComponents.set(components);
-    const additions = this.readStoredRows(state['seriesAdditions'], (row, index): UiAddition | null => {
-      if (typeof row['id'] !== 'string' || !row['id'].trim()) return null;
-      return {
-        id: row['id'],
-        dosing: this.storedOneOf(row['dosing'], 'volume', ['volume', 'concentration']),
-        type: this.storedOneOf(row['type'], 'internal_standard', ['internal_standard', 'surrogate', 'analyte']),
-        name: typeof row['name'] === 'string' ? row['name'] : 'Chuẩn thêm ' + (index + 1),
-        sourceId: typeof row['sourceId'] === 'string' ? row['sourceId'] : '',
-        sourceConcentration: this.storedNullableNumber(row['sourceConcentration']),
-        sourceChoice: this.storedChoice(row['sourceChoice'], 'mg_l'),
-        fixedVolume: this.storedNullableNumber(row['fixedVolume']),
-        fixedVolumeUnit: this.storedVolumeUnit(row['fixedVolumeUnit']),
-        targetLevel: this.storedNullableNumber(row['targetLevel']),
-        targetChoice: this.storedChoice(row['targetChoice'], 'mg_l'),
-        standard: row['standard'] === true,
-        blank: row['blank'] === true,
-        qc: row['qc'] === true,
-        sample: row['sample'] === true,
-        exceptionStandard: row['exceptionStandard'] === true,
-        exceptionBlank: row['exceptionBlank'] === true,
-        exceptionQc: row['exceptionQc'] === true,
-        exceptionSample: row['exceptionSample'] === true,
-        includeInFinalVolume: row['includeInFinalVolume'] !== false
-      };
-    });
-    if (additions) this.seriesAdditions.set(additions);
-    const steps = this.readStoredRows(state['resultSteps'], (row, index): UiStep | null => {
-      if (typeof row['id'] !== 'string' || !row['id'].trim()) return null;
-      return {
-        id: row['id'],
-        label: typeof row['label'] === 'string' ? row['label'] : 'Bước ' + (index + 1),
-        type: this.storedOneOf(row['type'], 'extract', ['extract', 'aliquot', 'transfer_all', 'dilution', 'concentration', 'reconstitution', 'split', 'recovery']),
-        volume: this.storedNullableNumber(row['volume']),
-        volumeUnit: this.storedVolumeUnit(row['volumeUnit']),
-        fraction: this.storedNullableNumber(row['fraction']),
-        recoveryPercent: this.storedNullableNumber(row['recoveryPercent'])
-      };
-    });
-    if (steps?.length) this.resultSteps.set(steps);
-  }
-
-  private readStoredRows<T>(value: unknown, mapper: (row: Record<string, unknown>, index: number) => T | null): T[] | null {
-    if (!Array.isArray(value)) return null;
-    const rows = value.map((item, index) => this.isRecord(item) ? mapper(item, index) : null);
-    return rows.length && rows.every(row => row !== null) ? rows as T[] : null;
-  }
-
-  private storedNullableNumber(value: unknown): number | null {
-    return typeof value === 'number' && Number.isFinite(value) ? value : null;
-  }
-
-  private storedChoice(value: unknown, fallback: string): string {
-    return typeof value === 'string' && this.allConcentrationOptions.some(option => option.key === value) ? value : fallback;
-  }
-
-  private storedVolumeUnit(value: unknown): string {
-    return typeof value === 'string' && this.volumeOptions.some(option => option.unit === value) ? value : 'mL';
-  }
-
-  private storedOneOf<T extends string>(value: unknown, fallback: T, options: readonly T[]): T {
-    return typeof value === 'string' && options.includes(value as T) ? value as T : fallback;
-  }
-
-  private isRecord(value: unknown): value is Record<string, unknown> {
-    return typeof value === 'object' && value !== null && !Array.isArray(value);
   }
 
   private parseNumber(raw: unknown): number | null {

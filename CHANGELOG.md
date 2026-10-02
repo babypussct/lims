@@ -2,7 +2,37 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.10.01-b06
+## Phiên bản hiện tại: v26.10.02-b01
+
+### v26.10.02-b01
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Xem, in và tải PDF phiếu phân tích ngay từ mẻ đã duyệt; chọn nhiều mẻ để in cùng một đợt.
+- Tra cứu và in lại đúng phiên bản phiếu trước hoặc sau khi sửa thông số, chuyển SOP.
+- Trạm Pha Chế gọn hơn, hỗ trợ chọn hóa chất hoặc nhập công thức để điền thông số tính toán.
+
+#### ✨ Tính Năng Mới
+
+- Duyệt & xem phiếu tại Yêu cầu, mở phiếu các mẻ vừa tạo tại SmartBatch và in phiếu từ Kết quả hoặc Chi tiết mẻ.
+- Chọn In nhiều phiếu tại Yêu cầu → Đã duyệt hoặc Kết quả; dùng Tải thêm mẻ để tìm các mẻ cũ.
+- Sửa thông số mẻ đã duyệt theo quyền khi chưa có kết quả và không bị người khác khóa; giữ phiếu của các phiên bản trước để truy xuất.
+- Tra cứu hóa chất thường dùng và nhập công thức muối, chất ngậm nước để hỗ trợ tính khối lượng mol và quy đổi về chất cần xác định.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Thay Hàng đợi in bằng thao tác Phiếu phân tích tại các màn hình nghiệp vụ; liên kết cũ mở danh sách Kết quả.
+- Danh sách mẻ tải từng phần và dùng lại dữ liệu đã xem, giúp mở trang và quay lại khoảng ngày nhanh hơn.
+- Trạm Pha Chế tập trung vào năm công việc tính toán và sao chép kết quả; bỏ lưu nháp tự động và phiếu in riêng.
+- Nhập nhanh dãy chuẩn & QC, quy đổi kết quả bằng thể tích định mức và hệ số pha loãng, mở thêm bước xử lý khi cần.
+- Cửa sổ xem báo cáo dành nhiều diện tích cho tài liệu, gom thao tác ở phía trên; mã mẫu và chỉ tiêu trên bảng theo dõi ngày dễ đọc hơn.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- QR trên phiếu mới mở đúng nhật ký của phiên bản đã duyệt hoặc sửa; phiếu cũ tiếp tục truy xuất theo mã mẻ.
+- Chặn in cả nhóm khi thiếu phiếu hoặc dữ liệu gốc, tránh in thiếu mẻ hay nhầm sang phiên bản khác.
+- Xóa phiếu đang xem khi đổi tài khoản hoặc quyền truy cập, tránh giữ nội dung của phiên làm việc trước.
+- Chặn sửa thông số khi mẻ đã có kết quả, là mẻ tổng hợp hoặc đang bị người khác khóa.
 
 ### v26.10.01-b06
 

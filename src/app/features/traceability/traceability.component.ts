@@ -20,6 +20,9 @@ import { ensureQrious } from '../../shared/utils/external-script-loader';
 import { normalizeTraceabilityLookup } from '../../shared/utils/traceability-lookup';
 import { QrGlobalService } from '../../core/services/qr-global.service';
 import { AppButtonComponent } from '../../shared/components/ui/button/button.component';
+import { BatchWorksheetService } from '../../core/services/batch-worksheet.service';
+import { Request } from '../../core/models/request.model';
+import { canEditWorksheet, isWorksheetData, worksheetReference } from '../../shared/utils/batch-worksheet';
 import { AppEmptyStateComponent } from '../../shared/components/ui/empty-state/empty-state.component';
 import { AppPageHeaderComponent } from '../../shared/components/ui/page-header/page-header.component';
 import { AppUiTimelineComponent } from '../../shared/components/ui/timeline/timeline.component';
@@ -73,6 +76,11 @@ export interface TraceabilitySampleRow {
                 Tra cứu mã khác
               </app-button>
             </div>
+          } @else {
+            <app-button pageHeaderActions variant="secondary" size="sm" (click)="returnToApp()" [disabled]="!auth.isAuthReady()">
+              <i class="fa-solid" [ngClass]="auth.currentUser() ? 'fa-house' : 'fa-right-to-bracket'" aria-hidden="true"></i>
+              {{ auth.currentUser() ? 'Về Dashboard' : 'Đăng nhập' }}
+            </app-button>
           }
 
           @if (logData(); as headerLog) {
@@ -107,7 +115,15 @@ export interface TraceabilitySampleRow {
             </div>
           }
           @if (auth.currentUser() && logData() && !isLoading() && !isVerifying()) {
+            <ng-container pageHeaderActions>
+            @if (canPrintWorksheet()) {
+              <app-button pageHeaderActions variant="secondary" size="sm" [loading]="worksheets.loading()" (click)="printWorksheet()"><i class="fa-solid fa-print" aria-hidden="true"></i> Phiếu phân tích</app-button>
+              @if (canEditBatch()) {
+                <app-button pageHeaderActions variant="secondary" size="sm" (click)="editBatch()"><i class="fa-solid fa-pen" aria-hidden="true"></i> Sửa thông số mẻ</app-button>
+              }
+            }
             <app-button pageHeaderActions variant="secondary" size="sm" (click)="printTraceRecord()"><i class="fa-solid fa-print" aria-hidden="true"></i> Xem & In hồ sơ</app-button>
+            </ng-container>
           }
         </app-page-header>
 
@@ -727,6 +743,38 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
   objectKeys = Object.keys;
 
   logData = signal<Log | null>(null);
+  readonly worksheets = inject(BatchWorksheetService);
+  readonly worksheetRequest = signal<Request | null>(null);
+  canPrintWorksheet(): boolean {
+    if (this.standardRecord() || !this.worksheets.canRead()) return false;
+    const request = this.worksheetRequest();
+    const log = this.logData();
+    const eligible = !!request && !request.isVirtualMaster && !request._isDeleted
+      && ['approved', 'draft', 'completed'].includes(request.status);
+    if (this.recordType() === 'SOP_REQUEST' || (!!request && this.worksheetLookupId === request.id)) return eligible;
+    return eligible || !!log?.printJobId || isWorksheetData(log?.printData);
+  }
+  canEditBatch(): boolean {
+    const request = this.worksheetRequest();
+    return !!request && this.auth.canApprove() && canEditWorksheet(request, this.auth.currentUser()?.email);
+  }
+  editBatch(): void {
+    const request = this.worksheetRequest();
+    if (request && this.canEditBatch()) void this.router.navigate(['/calculator'], { queryParams: { editRequestId: request.id } });
+  }
+  printWorksheet(): void {
+    const log = this.logData();
+    if (!log || this.standardRecord() || !this.worksheets.canRead()) return;
+    if (this.worksheetRequest() && (this.recordType() === 'SOP_REQUEST' || this.worksheetLookupId === this.worksheetRequest()!.id
+      || (!log.printJobId && !isWorksheetData(log.printData)))) {
+      void this.worksheets.open([worksheetReference(this.worksheetRequest()!)]);
+    } else {
+      void this.worksheets.open([{ requestId: log.requestId || log.printData?.requestId,
+        traceLogId: this.recordType() === 'ACTIVITY_LOG' ? log.id : undefined,
+        printJobId: log.printJobId || (this.recordType() === 'PRINT_JOB' ? log.id : undefined),
+        printData: log.printData, timestamp: log.timestamp, user: log.user }]);
+    }
+  }
   readonly tracePrintDocument = signal<A4Document | null>(null);
   printTraceRecord(): void {
     const log = this.logData();
@@ -767,8 +815,9 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
   lookupInput = viewChild<ElementRef<HTMLInputElement>>('lookupInput');
 
   private lookupRequest = 0;
+  private worksheetLookupId = '';
   private viewerScope(): string {
-      return `${this.auth.currentUser()?.uid || ''}|${this.auth.isStandardAuditMode()}|${this.auth.isManager()}|${['standard_view', 'standard_edit', 'standard_approve', 'standard_log_view', 'standard_log_delete', 'report_view'].map(permission => this.auth.hasPermission(permission)).join(',')}`;
+      return `${this.auth.currentUser()?.uid || ''}|${this.auth.isStandardAuditMode()}|${this.auth.isManager()}|${['standard_view', 'standard_edit', 'standard_approve', 'standard_log_view', 'standard_log_delete', 'report_view', 'sop_view', 'sop_approve', 'batch_run'].map(permission => this.auth.hasPermission(permission)).join(',')}`;
   }
   private currentScope = this.viewerScope();
   private scopeWatcher = effect(() => {
@@ -781,6 +830,7 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
           this.stopVerificationTimers();
           this.resetStandardTrace();
           this.logData.set(null);
+          this.worksheetRequest.set(null);
           this.timelineItems.set([]);
           this.isLoading.set(false);
           this.isVerifying.set(false);
@@ -946,6 +996,11 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
       void this.router.navigate(['/traceability']);
   }
 
+  returnToApp(): void {
+      if (!this.auth.isAuthReady()) return;
+      void this.router.navigate([this.auth.currentUser() ? '/dashboard' : '/']);
+  }
+
   private handleRouteId(value: string | undefined) {
       const code = this.normalizeLookupValue(value || '');
 
@@ -957,6 +1012,7 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
           this.sampleFilterQuery.set('');
           this.expandedSampleIds.set(new Set());
           this.logData.set(null);
+          this.worksheetRequest.set(null);
           this.timelineItems.set([]);
           this.errorMsg.set('');
           this.inputError.set('');
@@ -1173,6 +1229,7 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
   }
 
   async loadData(id: string) {
+      this.worksheetLookupId = id;
       const requestToken = ++this.lookupRequest;
       const viewerScope = this.viewerScope();
       this.currentScope = viewerScope;
@@ -1183,6 +1240,7 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
       this.verifyStep.set(-1);
       this.errorMsg.set('');
       this.logData.set(null);
+      this.worksheetRequest.set(null);
       this.timelineItems.set([]);
       
       try {
@@ -1266,15 +1324,17 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
           if (!this.lookupIsCurrent(requestToken)) return;
           
           if (jobSnap?.exists()) {
+              this.worksheets.rememberSnapshot({ id: jobSnap.id, data: jobSnap.data() });
               this.recordType.set('PRINT_JOB');
               const jobData = jobSnap.data() as any;
               const mockLog: Log = {
                   id: id,
                   action: 'PRINT_JOB_RECORD',
+                  printJobId: jobSnap.id,
+                  requestId: jobData.requestId,
                   details: 'Hồ sơ in ấn lưu trữ',
                   timestamp: jobData.createdAt || new Date(),
                   user: jobData.createdBy || 'System',
-                  printable: true,
                   printData: jobData // Embed full data
               };
               this.startVerificationProcess(mockLog, requestToken);
@@ -1289,6 +1349,7 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
           if (reqSnap?.exists()) {
               this.recordType.set('SOP_REQUEST');
               const reqData = reqSnap.data() as any;
+              this.worksheetRequest.set({ ...reqData, id: reqSnap.id } as Request);
               
               // Map Request format to Log format for display consistency
               // RequestItem needs to be mapped to CalculatedItem-like structure for the template
@@ -1311,7 +1372,6 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
                   details: `Yêu cầu phân tích: ${reqData.sopName}`,
                   timestamp: reqData.approvedAt || reqData.timestamp,
                   user: reqData.user || 'Unknown',
-                  printable: true,
                   status: reqData.status, // Custom field stored in Log type!
                   sopBasicInfo: {
                       name: reqData.sopName,
@@ -1402,12 +1462,14 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
       const getStatusAndHydrate = async () => {
           const canHydratePrivateData = !!this.auth.currentUser();
           // If log has requestId and no status, fetch request status
-          if (canHydratePrivateData && log.requestId && !log.status && !isStandardActivity(log)) {
+          if (canHydratePrivateData && log.requestId && !isStandardActivity(log)) {
               try {
                   const reqRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/requests/${log.requestId}`);
-                  const reqSnap = await getDoc(reqRef);
-                  if (reqSnap.exists()) {
+                  const reqSnap = await this.getTraceabilityDoc(reqRef);
+                  if (!this.lookupIsCurrent(requestToken, viewerScope)) return;
+                  if (reqSnap?.exists()) {
                       log.status = reqSnap.data()['status'];
+                      this.worksheetRequest.set({ ...reqSnap.data(), id: reqSnap.id } as Request);
                   }
               } catch (e) {
                   console.warn('Failed to fetch request status in Traceability', e);
@@ -1419,8 +1481,10 @@ export class TraceabilityComponent implements OnInit, OnDestroy {
           if (canHydratePrivateData && log.printJobId && !log.printData && !isStandardActivity(log)) {
               try {
                   const jobRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/print_jobs/${log.printJobId}`);
-                  const jobSnap = await getDoc(jobRef);
-                  if (jobSnap.exists()) {
+                  const jobSnap = await this.getTraceabilityDoc(jobRef);
+                  if (!this.lookupIsCurrent(requestToken, viewerScope)) return;
+                  if (jobSnap?.exists()) {
+                      this.worksheets.rememberSnapshot({ id: jobSnap.id, data: jobSnap.data() });
                       log.printData = jobSnap.data() as any;
                   }
               } catch (e) {

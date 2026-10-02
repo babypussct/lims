@@ -1,6 +1,6 @@
 {
   "name": "lims-cloud-pro",
-  "version": "26.10.01-b06",
+  "version": "26.10.02-b01",
   "packageManager": "npm@10.9.8",
   "engines": {
     "node": "22.x"
@@ -47,7 +47,7 @@
     "test:ui-dashboard": "tsx --test src/app/features/dashboard/dashboard-ui-primitives.contract.test.ts src/app/features/dashboard/statistics-report.utils.test.ts src/app/features/duty-stats/duty-stats-ui-primitives.contract.test.ts src/app/features/duty-stats/duty-schedule.utils.test.ts src/app/features/duty-stats/duty-shift-swap.utils.test.ts src/app/features/duty-stats/duty-stats.utils.test.ts src/app/features/duty-stats/duty-tsv-import.test.ts",
     "test:ui-inventory": "tsx --test src/app/features/inventory/inventory-ui-primitives.contract.test.ts",
     "test:ui-results": "tsx --test src/app/features/results/result-list-ui-primitives.contract.test.ts",
-    "test:printing": "tsx --test src/app/features/requests/print-queue.utils.test.ts src/app/shared/utils/print-dom.test.ts src/app/shared/utils/label-paper-catalog.test.ts src/app/shared/utils/business-print-documents.test.ts",
+    "test:printing": "tsx --test src/app/core/services/qr-global.service.test.ts src/app/core/services/request-history-state.test.ts src/app/shared/utils/batch-worksheet.test.ts src/app/shared/utils/request-history-page.test.ts src/app/shared/utils/print-dom.test.ts src/app/shared/utils/label-paper-catalog.test.ts src/app/shared/utils/business-print-documents.test.ts",
     "test:ui-requests": "npm run test:printing && tsx --test src/app/features/requests/request-list-ui-primitives.contract.test.ts",
     "test:ui-batch": "tsx --test src/app/features/batch/smart-batch-ui-primitives.contract.test.ts",
     "test:ui-recipes": "tsx --test src/app/features/recipes/recipe-ui-primitives.contract.test.ts",
@@ -74,7 +74,7 @@
     "test:gas": "tsx --test scripts/gas-report-regression.test.ts",
     "gas:push": "npm run test:gas && npx clasp push",
     "gas:watch": "npx clasp push --watch",
-    "test:prep": "tsx --test src/app/features/preparation/prep-calculation.engine.test.ts src/app/features/preparation/smart-prep.boundary.test.ts src/app/features/preparation/smart-prep.workflow.test.ts src/app/features/preparation/prep-print-document.test.ts",
+    "test:prep": "tsx --test src/app/features/preparation/prep-calculation.engine.test.ts src/app/features/preparation/smart-prep.boundary.test.ts src/app/features/preparation/smart-prep.workflow.test.ts src/app/features/preparation/chemical-formula.test.ts src/app/features/preparation/prep-substance-catalog.test.ts",
     "test:release": "node --test scripts/release-pipeline.test.js scripts/release-gate.test.js scripts/release-discipline.test.js scripts/vercel-ignore-build.test.js scripts/vercel-security-headers.test.js scripts/verify-runtime.test.js && tsx --test src/app/core/services/changelog-fallback.test.ts api/_lib/qr-rate-limit.test.ts api/_lib/qr-session-auth.test.ts",
     "test:changelog": "npm run test:release",
     "verify:runtime": "node scripts/verify-runtime.js",

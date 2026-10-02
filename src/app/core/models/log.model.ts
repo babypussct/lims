@@ -7,6 +7,7 @@ export interface PrintData {
   items: CalculatedItem[];
   analysisDate?: string;
   requestId?: string; // Reference to 'requests' collection
+  traceLogId?: string; // Public-safe audit record bound to this immutable worksheet revision
 }
 
 export interface LogDiff {

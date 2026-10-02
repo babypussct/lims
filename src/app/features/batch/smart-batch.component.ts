@@ -4,7 +4,8 @@ import { Router } from '@angular/router';
 import { getCanonicalId, normalizeSampleCode, resolveTargetMasterInfo } from '../results/shared/compound-id-resolver';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { StateService } from '../../core/services/state.service';
+import { StateService, DirectBatchPlanResult } from '../../core/services/state.service';
+import { BatchWorksheetService } from '../../core/services/batch-worksheet.service';
 import { AuthService } from '../../core/services/auth.service';
 import { CalculatorService } from '../../core/services/calculator.service';
 import { RecipeService } from '../recipes/recipe.service';
@@ -180,6 +181,10 @@ import {
 export class SmartBatchComponent {
   state = inject(StateService);
   auth = inject(AuthService);
+  readonly worksheets = inject(BatchWorksheetService);
+  readonly createdBatches = signal<DirectBatchPlanResult[]>([]);
+  printCreatedBatches(): void { void this.worksheets.open(this.createdBatches()); }
+  openCreatedBatch(id: string): void { void this.router.navigate(['/results-view', id]); }
   router = inject(Router);
   calculator = inject(CalculatorService);
   recipeService = inject(RecipeService);
@@ -1111,9 +1116,10 @@ export class SmartBatchComponent {
           const result = await this.state.directApproveBatchPlan(planItems, freshInventoryMap);
           if (result && result.length === planItems.length) {
               this.toast.show(
-                  `Hoàn tất! Đã tạo thành công ${result.length} mẻ cho mẫu ${draft.sampleCode} và đưa vào hàng đợi in.`,
+                  `Đã tạo thành công ${result.length} mẻ cho mẫu ${draft.sampleCode}.`,
                   'success'
               );
+              this.createdBatches.set(result);
               this.goBackToStep0();
           }
       } catch (e: any) {
@@ -1991,7 +1997,7 @@ export class SmartBatchComponent {
           return;
       }
       
-      if (await this.confirmation.confirm({ message: `Xác nhận tạo đồng thời ${this.batches().length} phiếu yêu cầu, trừ kho và đưa toàn bộ vào hàng đợi in? Nếu một mẻ lỗi, toàn bộ kế hoạch sẽ không được ghi.`, confirmText: 'Duyệt Toàn Bộ' })) {
+      if (await this.confirmation.confirm({ message: `Xác nhận tạo đồng thời ${this.batches().length} mẻ và trừ kho? Nếu một mẻ lỗi, toàn bộ kế hoạch sẽ không được ghi.`, confirmText: 'Duyệt Toàn Bộ' })) {
           this.isProcessing.set(true);
           const inventoryMap = this.state.inventoryMap();
           
@@ -2000,7 +2006,8 @@ export class SmartBatchComponent {
 
               const result = await this.state.directApproveBatchPlan(planItems, inventoryMap);
               if (result && result.length === planItems.length) {
-                  this.toast.show(`Hoàn tất! Đã duyệt đồng thời ${result.length} mẻ và đưa phiếu vào hàng đợi in.`, 'success');
+                  this.createdBatches.set(result);
+                  this.toast.show(`Đã duyệt đồng thời ${result.length} mẻ. Có thể mở phiếu phân tích ngay.`, 'success');
                   this.reset();
               }
           } catch (e: any) {

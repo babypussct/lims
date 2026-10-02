@@ -1,23 +1,27 @@
 {
-  "title": "Nâng cấp xem trước và in hồ sơ LIMS",
+  "title": "In phiếu phân tích trực tiếp và đơn giản hóa Trạm Pha Chế",
   "highlights": [
-    "Xem trước trang giấy trước khi in phiếu pha chế, lịch trực, bảng theo dõi mẫu và các hồ sơ nghiệp vụ.",
-    "Phiếu dài tự phân trang, giữ đầy đủ nội dung và hỗ trợ tải PDF theo bố cục đã xem."
+    "Xem, in và tải PDF phiếu phân tích ngay từ mẻ đã duyệt; chọn nhiều mẻ để in cùng một đợt.",
+    "Tra cứu và in lại đúng phiên bản phiếu trước hoặc sau khi sửa thông số, chuyển SOP.",
+    "Trạm Pha Chế gọn hơn, hỗ trợ chọn hóa chất hoặc nhập công thức để điền thông số tính toán."
   ],
   "features": [
-    "Phiếu Smart Prep cho năm chế độ tính, có thông tin phương pháp, lượng dự tính/thực tế, công thức, cảnh báo và vùng ký tay.",
-    "In thẻ kho đã đối soát, phiếu kiểm kê theo phạm vi đang lọc và nhãn hóa chất sang chiết A4 tự cắt.",
-    "In phiếu bàn giao mẫu để ghi nhận thực tế, thông tin cấu hình SOP và hồ sơ truy xuất trong phạm vi dữ liệu đã tải."
+    "Duyệt & xem phiếu tại Yêu cầu, mở phiếu các mẻ vừa tạo tại SmartBatch và in phiếu từ Kết quả hoặc Chi tiết mẻ.",
+    "Chọn In nhiều phiếu tại Yêu cầu → Đã duyệt hoặc Kết quả; dùng Tải thêm mẻ để tìm các mẻ cũ.",
+    "Sửa thông số mẻ đã duyệt theo quyền khi chưa có kết quả và không bị người khác khóa; giữ phiếu của các phiên bản trước để truy xuất.",
+    "Tra cứu hóa chất thường dùng và nhập công thức muối, chất ngậm nước để hỗ trợ tính khối lượng mol và quy đổi về chất cần xác định."
   ],
   "improvements": [
-    "Preview hỗ trợ zoom vừa chiều rộng, thao tác trên điện thoại, giao diện sáng/tối và thông báo khi nội dung chưa sẵn sàng.",
-    "Lịch trực có preview A4 ngang; bảng theo dõi mẫu giữ lựa chọn danh sách/lưới gọn, dọc/ngang và mô tả mẫu.",
-    "Nhãn chất chuẩn hiển thị mã nội bộ; kiểm tra kích thước A4 và đợi QR/ảnh sẵn sàng trước khi in."
+    "Thay Hàng đợi in bằng thao tác Phiếu phân tích tại các màn hình nghiệp vụ; liên kết cũ mở danh sách Kết quả.",
+    "Danh sách mẻ tải từng phần và dùng lại dữ liệu đã xem, giúp mở trang và quay lại khoảng ngày nhanh hơn.",
+    "Trạm Pha Chế tập trung vào năm công việc tính toán và sao chép kết quả; bỏ lưu nháp tự động và phiếu in riêng.",
+    "Nhập nhanh dãy chuẩn & QC, quy đổi kết quả bằng thể tích định mức và hệ số pha loãng, mở thêm bước xử lý khi cần.",
+    "Cửa sổ xem báo cáo dành nhiều diện tích cho tài liệu, gom thao tác ở phía trên; mã mẫu và chỉ tiêu trên bảng theo dõi ngày dễ đọc hơn."
   ],
   "fixes": [
-    "Hàng đợi giữ thứ tự phiếu và chặn in khi chưa tải đủ dữ liệu.",
-    "Tránh cắt nội dung phiếu SOP dài; lặp đầu bảng và thông tin nhận diện khi sang trang.",
-    "Giữ nội dung đến khi hộp thoại in kết thúc và dọn đúng vùng in khi hủy, đóng hoặc gặp lỗi.",
-    "Giữ đúng phiên bản và thông tin báo cáo khi tải PDF liên tiếp hoặc gặp lỗi in."
+    "QR trên phiếu mới mở đúng nhật ký của phiên bản đã duyệt hoặc sửa; phiếu cũ tiếp tục truy xuất theo mã mẻ.",
+    "Chặn in cả nhóm khi thiếu phiếu hoặc dữ liệu gốc, tránh in thiếu mẻ hay nhầm sang phiên bản khác.",
+    "Xóa phiếu đang xem khi đổi tài khoản hoặc quyền truy cập, tránh giữ nội dung của phiên làm việc trước.",
+    "Chặn sửa thông số khi mẻ đã có kết quả, là mẻ tổng hợp hoặc đang bị người khác khóa."
   ]
 }

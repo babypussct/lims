@@ -276,6 +276,13 @@ export const DAILY_PRINT_RENDERER_CSS = `
       .a4-html-root .cl-print-sample-code {
         font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
         font-weight: 800 !important;
+        font-size: 1.05em !important;
+        color: #0f172a !important;
+        background: #f1f5f9 !important;
+        padding: 0 0.6mm !important;
+        border-radius: 0.6mm !important;
+        -webkit-box-decoration-break: clone !important;
+        box-decoration-break: clone !important;
       }
 
       .a4-html-root .cl-print-sample-description,
@@ -291,6 +298,12 @@ export const DAILY_PRINT_RENDERER_CSS = `
 
       .a4-html-root .cl-print-targets li {
         margin: 0 0 0.7mm !important;
+      }
+
+      .a4-html-root .cl-print-targets li,
+      .a4-html-root .cl-print-compact-targets li {
+        font-weight: 700 !important;
+        color: #0f172a !important;
       }
 
       .a4-html-root .cl-print-missing {

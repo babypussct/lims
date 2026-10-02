@@ -133,7 +133,8 @@ function harness() {
   c.state = { getUserAvatarOptionsByUid: avatar };
   c.lookupRequest = 0; c.currentScope = c.viewerScope();
   for (const key of ['isLoading', 'isVerifying', 'standardHistoryLoading', 'standardHistoryHasMore']) c[key] = signal(false);
-  for (const key of ['logData', 'standardRecord', 'recordType', 'tracePrintDocument']) c[key] = signal(null);
+  for (const key of ['logData', 'standardRecord', 'recordType', 'tracePrintDocument', 'worksheetRequest']) c[key] = signal(null);
+  c.worksheets = { canRead: () => true, rememberSnapshot: () => {}, open: async () => true };
   for (const key of ['timelineItems', 'standardHistoryNotes', 'standardUsages']) c[key] = signal([]);
   c.verifyStep = signal(-1); c.errorMsg = signal('');
   const reads: string[] = [];
@@ -142,6 +143,30 @@ function harness() {
     loadHistory: async () => ({ usages: [], events: [], sources: [], notes: [] }) };
   return { c, user, audit, reads };
 }
+
+test('request lookups print the current worksheet while historical log and snapshot lookups retain their own revision', () => {
+  const { c } = harness();
+  const calls: any[] = []; c.worksheets.open = async (refs: any[]) => { calls.push(refs); return true; };
+  c.worksheetRequest.set({ id: 'batch', currentPrintJobId: 'current' });
+  c.logData.set({ id: 'event-old', requestId: 'batch', printJobId: 'old' });
+  c.recordType.set('ACTIVITY_LOG'); c.worksheetLookupId = 'batch'; c.printWorksheet();
+  c.worksheetLookupId = 'event-old'; c.printWorksheet();
+  c.recordType.set('PRINT_JOB'); c.worksheetLookupId = 'old'; c.printWorksheet();
+  assert.deepEqual(calls.map(refs => refs[0].printJobId), ['current', 'old', 'old']);
+  c.standardRecord.set(record); c.printWorksheet(); assert.equal(calls.length, 3);
+});
+
+test('request projections do not offer worksheets for pending or virtual batches and unrelated logs do not offer printing', () => {
+  const { c } = harness(); c.recordType.set('SOP_REQUEST'); c.worksheetLookupId = 'batch';
+  c.worksheetRequest.set({ id: 'batch', status: 'pending' });
+  c.logData.set({ id: 'batch', printData: { sop: { name: 'Request projection' }, inputs: {}, items: [] } });
+  assert.equal(c.canPrintWorksheet(), false);
+  c.worksheetRequest.set({ id: 'batch', status: 'approved', isVirtualMaster: true });
+  assert.equal(c.canPrintWorksheet(), false);
+  c.worksheetRequest.set({ id: 'batch', status: 'approved' }); assert.equal(c.canPrintWorksheet(), true);
+  c.worksheetRequest.set(null); c.recordType.set('ACTIVITY_LOG'); c.logData.set({ id: 'inventory-event' });
+  assert.equal(c.canPrintWorksheet(), false);
+});
 
 test('direct requests and direct usages resolve their own record types without SOP hydration', async () => {
   const { c, reads } = harness();

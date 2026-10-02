@@ -40,6 +40,8 @@ export interface Request {
   timestamp: any;
   lastUpdated?: any;
   approvedAt?: any;
+  /** Immutable worksheet currently applicable to this request. Not a print status. */
+  currentPrintJobId?: string;
   rejectedAt?: any;
   user?: string;
   /** Stable owner/requester identity for notification and audit workflows. */

@@ -30,9 +30,12 @@ export class ResultEntryHeaderComponent {
   @Input() currentPdfUrl: string | null = null;
   @Input() currentDocsUrl: string | null = null;
   @Input() printButtonLabel = 'Xuất báo cáo';
+  @Input() canPrintWorksheet = false;
+  @Input() worksheetLoading = false;
 
   // ── Action Outputs ────────────────────────────────────────────────────────
   @Output() goBack = new EventEmitter<void>();
+  @Output() printWorksheet = new EventEmitter<void>();
   @Output() saveDraft = new EventEmitter<void>();
   @Output() publishReport = new EventEmitter<void>();
   @Output() unlockToEdit = new EventEmitter<void>();

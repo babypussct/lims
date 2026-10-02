@@ -57,7 +57,10 @@ const systemUpdateUrl = (event: ActivityEvent): string =>
     ? event.actionUrl
     : '/settings/system';
 
-const printingUrl = (): string => '/printing';
+const worksheetUrl = (event: ActivityEvent): string => {
+  const id = event.printJobId || event.requestId || event.targetId;
+  return id ? `/traceability/${encodeURIComponent(id)}` : '/results';
+};
 
 const none = (): ActivityActionDefinition['notification'] => ({ mode: 'NONE' });
 
@@ -152,7 +155,7 @@ export const ACTIVITY_ACTION_REGISTRY = {
   }),
   DIRECT_APPROVE: define('DIRECT_APPROVE', {
     module: 'RESULT', audience: 'RESULT_VIEW', importance: 'IMPORTANT', activityVisible: true,
-    label: 'đã duyệt và đưa phiếu vào hàng đợi in', iconKey: 'circle-check', defaultActionUrl: requestUrl,
+    label: 'đã duyệt mẻ và lưu phiếu phân tích', iconKey: 'circle-check', defaultActionUrl: requestUrl,
     publicTraceableAllowed: true,
     notification: workflow('SYSTEM_INFO')
   }),
@@ -429,11 +432,11 @@ export const ACTIVITY_ACTION_REGISTRY = {
 
   PRINT: define('PRINT', {
     module: 'RESULT', audience: 'RESULT_VIEW', importance: 'NORMAL', activityVisible: false,
-    label: 'đã tạo hồ sơ in', iconKey: 'print', defaultActionUrl: printingUrl, notification: none()
+    label: 'đã tạo hồ sơ in', iconKey: 'print', defaultActionUrl: worksheetUrl, notification: none()
   }),
   PRINT_JOB_RECORD: define('PRINT_JOB_RECORD', {
     module: 'RESULT', audience: 'RESULT_VIEW', importance: 'NORMAL', activityVisible: false,
-    label: 'hồ sơ in ấn lưu trữ', iconKey: 'print', defaultActionUrl: printingUrl, notification: none()
+    label: 'hồ sơ in ấn lưu trữ', iconKey: 'print', defaultActionUrl: worksheetUrl, notification: none()
   })
 } satisfies Record<string, ActivityActionDefinition>;
 

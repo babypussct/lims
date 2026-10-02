@@ -19,6 +19,8 @@ import {
 import { getSafeGoogleUrl, getSafeGooglePreviewUrl, formatSampleList } from '../../shared/utils/utils';
 import { timestampToDate, timestampToLocalDateKey } from '../../shared/utils/timestamp';
 import { PrintService } from '../../core/services/print.service';
+import { BatchWorksheetService } from '../../core/services/batch-worksheet.service';
+import { worksheetReference } from '../../shared/utils/batch-worksheet';
 import { ReloadSafetyService } from '../../core/services/reload-safety.service';
 import { openInNewTab } from '../../shared/utils/browser-navigation';
 import { Subject, Subscription } from 'rxjs';
@@ -94,6 +96,8 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   private sopReassignment = inject(SopReassignmentService);
   private reloadSafety = inject(ReloadSafetyService);
   printService = inject(PrintService);
+  readonly worksheets = inject(BatchWorksheetService);
+  printWorksheet(): void { const request = this.run(); if (request) void this.worksheets.open([worksheetReference(request)]); }
 
   // Locking mechanism variables
   private heartbeatInterval: any;
@@ -1497,9 +1501,6 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
       versionOverride ?? this.draft()?.version ?? 1,
       analystOverride ?? this.draft()?.updatedBy ?? 'Chưa rõ',
       publishDateOverride ?? this.draft()?.updatedAt,
-      async () => {
-        await this.triggerPublishReport();
-      },
       'iframe',
       docPreviewUrl
     );

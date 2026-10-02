@@ -754,9 +754,6 @@ export class DailyChecklistComponent implements OnDestroy {
       const plan = this.printPlan();
       const selected = source.querySelector(plan.mode === 'compact' ? '.cl-print-compact-layout' : '.cl-print-list-layout')!;
       const clone = clonePrintContent(selected as HTMLElement);
-      const signatures = document.createElement('div');
-      signatures.className = 'cl-print-signatures';
-      signatures.innerHTML = '<div><strong>Người giao việc</strong><p>(Ký, ghi rõ họ tên)</p></div><div><strong>Người nhận việc</strong><p>(Ký, ghi rõ họ tên)</p></div>';
       this.previewDocument.set({
         title: 'Xem & In bảng theo dõi mẫu ngày', subtitle: this.selectedDateLabel(),
         preparedAt: this.printGeneratedAt().toLocaleString('vi-VN'), notice: '', sections: [],
@@ -766,8 +763,7 @@ export class DailyChecklistComponent implements OnDestroy {
           table: plan.mode === 'list' ? clone.querySelector<HTMLTableElement>('.cl-print-table')! : undefined,
           cards: plan.mode === 'compact' ? Array.from(clone.querySelectorAll<HTMLElement>('.cl-print-compact-card')).sort((a, b) => Number(a.querySelector('.cl-print-compact-index')!.textContent) - Number(b.querySelector('.cl-print-compact-index')!.textContent)) : undefined,
           cardColumns: plan.orientation === 'portrait' ? 2 : 3,
-          after: [signatures],
-          css: DAILY_PRINT_RENDERER_CSS + '\n.a4-html-root .cl-print-signatures{display:grid;grid-template-columns:1fr 1fr;text-align:center;padding-top:5mm;font-size:11px;min-height:25mm}.a4-html-root .cl-print-signatures p{margin-top:10mm}',
+          css: DAILY_PRINT_RENDERER_CSS,
         },
       });
   }
