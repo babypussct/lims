@@ -30,7 +30,7 @@ import {
 import { buildTargetScopeSnapshots } from '../../targets/target-scope-classifier';
 import { TargetService } from '../../targets/target.service';
 import { RecipeService } from '../../recipes/recipe.service';
-import { ANGULAR_SOP_CONFIG, resolveConfigKey } from '../config/sop-configs';
+import { resolveConfigKey } from '../config/sop-configs';
 import { getCanonicalId } from '../shared/compound-id-resolver';
 import { validateCalculatedItems } from '../../batch/smart-batch.utils';
 import {
@@ -38,9 +38,11 @@ import {
   buildReassignmentTargetMetadata,
   calculateInventoryDelta,
   calculatedItemsToRequestItems,
-  getMissingTargetIds,
   getSopReassignmentBlockReason,
+  getSopReassignmentOptions,
   getSopReassignmentSourceSignature,
+  getSopReassignmentTargetBlockReason,
+  SopReassignmentOption,
   transferSopStatsForDay
 } from './sop-reassignment.utils';
 
@@ -65,15 +67,8 @@ export class SopReassignmentService {
   private readonly targetService = inject(TargetService);
   private readonly activityEvents = inject(ActivityEventService);
 
-  async getCandidates(request: Request): Promise<Sop[]> {
-    const blockReason = getSopReassignmentBlockReason(request);
-    if (blockReason) return [];
-    return this.state.sops().filter(sop => {
-      if (sop.id === request.sopId || sop.isArchived) return false;
-      const configKey = resolveConfigKey(sop.id, sop.name, sop);
-      if (!configKey || !ANGULAR_SOP_CONFIG[configKey]) return false;
-      return getMissingTargetIds(request, sop).length === 0;
-    });
+  async getOptions(request: Request): Promise<SopReassignmentOption[]> {
+    return getSopReassignmentOptions(request, this.state.sops());
   }
 
   async preview(requestId: string, targetSopId: string): Promise<SopReassignmentPreview> {
@@ -100,7 +95,7 @@ export class SopReassignmentService {
     const sourceSignature = getSopReassignmentSourceSignature(sourceRequest);
 
     const preview = await this.preparePreview(sourceRequest, targetSopId, true);
-    const targetMetadata = buildReassignmentTargetMetadata(sourceRequest, preview.targetSop);
+    const targetMetadata = buildReassignmentTargetMetadata(sourceRequest, preview.targetSop, preview.sourceSop);
     const targetNames = Object.fromEntries((preview.targetSop.targets || []).map(target => [
       getCanonicalId(target.name || target.id), target.name
     ]));
@@ -335,14 +330,12 @@ export class SopReassignmentService {
     const sourceSop = this.state.sops().find(sop => sop.id === request.sopId);
     const targetSop = this.state.sops().find(sop => sop.id === targetSopId);
     if (!sourceSop) throw new Error('Không tìm thấy SOP hiện tại trong danh mục đang hoạt động.');
-    if (!targetSop || targetSop.isArchived) throw new Error('SOP đích không tồn tại hoặc đã ngừng sử dụng.');
-    if (targetSop.id === request.sopId) throw new Error('SOP đích phải khác SOP hiện tại.');
-    const configKey = resolveConfigKey(targetSop.id, targetSop.name, targetSop);
-    if (!configKey || !ANGULAR_SOP_CONFIG[configKey]) throw new Error('SOP đích chưa có biểu mẫu nhập kết quả tương ứng.');
-    const missingTargets = getMissingTargetIds(request, targetSop);
-    if (missingTargets.length) throw new Error(`SOP đích chưa phủ đủ ${missingTargets.length} chỉ tiêu của mẻ.`);
+    if (!targetSop) throw new Error('SOP đích không tồn tại hoặc đã ngừng sử dụng.');
+    const targetBlockReason = getSopReassignmentTargetBlockReason(request, targetSop, sourceSop);
+    if (targetBlockReason) throw new Error(targetBlockReason);
+    const configKey = resolveConfigKey(targetSop.id, targetSop.name, targetSop)!;
 
-    const formInputs = buildReassignmentInputs(request, targetSop);
+    const formInputs = buildReassignmentInputs(request, targetSop, sourceSop);
     const recipeList = await this.recipes.getAllRecipes();
     const recipeMap = Object.fromEntries(recipeList.map(recipe => [recipe.id, recipe]));
     const calculatedItems = this.calculator.calculateSopNeeds(

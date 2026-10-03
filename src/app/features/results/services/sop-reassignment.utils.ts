@@ -1,12 +1,42 @@
 import { InventoryItem } from '../../../core/models/inventory.model';
 import { Request, RequestItem } from '../../../core/models/request.model';
 import { CalculatedItem, Sop } from '../../../core/models/sop.model';
-import { getCanonicalId } from '../shared/compound-id-resolver';
+import { getAssignedTargetsForSample, getCanonicalId } from '../shared/compound-id-resolver';
 import { getSopTargetKey, sopCoversTarget } from '../../batch/smart-batch.utils';
+import { ANGULAR_SOP_CONFIG, resolveConfigKey } from '../config/sop-configs';
 
 export interface SopReassignmentTargetMetadata {
   targetIds: string[];
   sampleTargetMap: Record<string, string[]>;
+}
+
+export interface SopReassignmentOption {
+  sop: Sop;
+  blockReason: string | null;
+}
+
+type ReassignmentTargetSource = Pick<Request, 'sampleTargetMap' | 'targetIds' | 'targetNames' | 'inputs'>;
+
+function getReassignmentSampleTargetMap(request: ReassignmentTargetSource): Record<string, string[]> {
+  const topLevel = request.sampleTargetMap || {};
+  return Object.values(topLevel).some(targetIds => targetIds.length > 0)
+    ? topLevel
+    : request.inputs?.['sampleTargetMap'] || topLevel;
+}
+
+function buildReassignmentTargetResolver(request: ReassignmentTargetSource, sourceSop?: Sop) {
+  const aliases = new Map<string, string>();
+  const addAlias = (id: string, name: string) => {
+    const canonical = getCanonicalId(name || id);
+    if (canonical) aliases.set(getCanonicalId(id), canonical);
+  };
+  (sourceSop?.targets || []).forEach(target => addAlias(target.id, target.name));
+  // The saved names describe the source batch even when the current SOP has changed.
+  Object.entries(request.targetNames || {}).forEach(([id, name]) => addAlias(id, name));
+  return (value: string): string => {
+    const canonical = getCanonicalId(String(value || ''));
+    return aliases.get(canonical) || canonical;
+  };
 }
 
 function stableStringify(value: unknown): string {
@@ -27,23 +57,26 @@ function stableStringify(value: unknown): string {
 }
 
 export function getSopReassignmentSourceSignature(
-  request: Pick<Request, 'analysisDate' | 'sampleList' | 'sampleTargetMap' | 'items'>
+  request: Pick<Request, 'analysisDate' | 'sampleList' | 'sampleTargetMap' | 'targetIds' | 'targetNames' | 'inputs' | 'items'>
 ): string {
   return stableStringify({
     analysisDate: request.analysisDate,
     sampleList: request.sampleList || [],
     sampleTargetMap: request.sampleTargetMap || {},
+    targetIds: request.targetIds || [],
+    targetNames: request.targetNames || {},
+    inputs: request.inputs || {},
     items: request.items || []
   });
 }
 
-export function getRequiredTargetIds(request: Pick<Request, 'sampleTargetMap' | 'targetIds' | 'inputs'>): string[] {
-  const inputTargetMap = (request.inputs?.['sampleTargetMap'] || {}) as Record<string, string[]>;
-  const fromMap: string[] = Object.values(request.sampleTargetMap || inputTargetMap).flat();
+export function getRequiredTargetIds(request: ReassignmentTargetSource, sourceSop?: Sop): string[] {
+  const fromMap = Object.values(getReassignmentSampleTargetMap(request)).flat();
   const source: string[] = fromMap.length > 0
     ? fromMap
-    : (request.targetIds || request.inputs?.['targetIds'] || []);
-  return Array.from(new Set(source.map(value => getCanonicalId(String(value || ''))).filter(Boolean))).sort();
+    : (request.targetIds?.length ? request.targetIds : request.inputs?.['targetIds'] || []);
+  const resolveTarget = buildReassignmentTargetResolver(request, sourceSop);
+  return Array.from(new Set(source.map(resolveTarget).filter(Boolean))).sort();
 }
 
 export function getSopReassignmentBlockReason(request: Request): string | null {
@@ -65,23 +98,48 @@ export function getSopReassignmentBlockReason(request: Request): string | null {
   return null;
 }
 
-export function getMissingTargetIds(request: Request, targetSop: Sop): string[] {
-  return getRequiredTargetIds(request).filter(targetId => !sopCoversTarget(targetSop, targetId));
+export function getMissingTargetIds(request: Request, targetSop: Sop, sourceSop?: Sop): string[] {
+  return getRequiredTargetIds(request, sourceSop).filter(targetId => !sopCoversTarget(targetSop, targetId));
 }
 
-export function buildReassignmentTargetMetadata(request: Request, targetSop: Sop): SopReassignmentTargetMetadata {
-  const required = new Set(getRequiredTargetIds(request));
+export function getSopReassignmentTargetBlockReason(request: Request, targetSop: Sop, sourceSop?: Sop): string | null {
+  if (targetSop.isArchived) return 'SOP đã ngừng sử dụng.';
+  if (targetSop.id === request.sopId) return 'SOP đích phải khác SOP hiện tại.';
+  const configKey = resolveConfigKey(targetSop.id, targetSop.name, targetSop);
+  if (!configKey || !ANGULAR_SOP_CONFIG[configKey]) return 'SOP chưa có biểu mẫu nhập kết quả tương ứng.';
+  const missingTargets = getMissingTargetIds(request, targetSop, sourceSop);
+  if (!missingTargets.length) return null;
+  const names = new Map<string, string>();
+  (sourceSop?.targets || []).forEach(target => names.set(getSopTargetKey(target), target.name));
+  Object.entries(request.targetNames || {}).forEach(([id, name]) => names.set(getCanonicalId(name || id), name || id));
+  const missingNames = missingTargets.slice(0, 5).map(id => names.get(id) || id).join(', ');
+  const remaining = missingTargets.length > 5 ? ` và ${missingTargets.length - 5} chỉ tiêu khác` : '';
+  return `SOP chưa phủ đủ ${missingTargets.length} chỉ tiêu của mẻ: ${missingNames}${remaining}.`;
+}
+
+export function getSopReassignmentOptions(request: Request, sops: readonly Sop[]): SopReassignmentOption[] {
+  if (getSopReassignmentBlockReason(request)) return [];
+  const sourceSop = sops.find(sop => sop.id === request.sopId);
+  return sops.filter(sop => sop.id !== request.sopId && !sop.isArchived).map(sop => ({
+    sop,
+    blockReason: getSopReassignmentTargetBlockReason(request, sop, sourceSop)
+  }));
+}
+
+export function buildReassignmentTargetMetadata(request: Request, targetSop: Sop, sourceSop?: Sop): SopReassignmentTargetMetadata {
+  const required = new Set(getRequiredTargetIds(request, sourceSop));
   const targetIds = (targetSop.targets || [])
     .filter(target => required.has(getSopTargetKey(target)))
     .map(target => target.id);
 
-  const sourceMap = (request.sampleTargetMap || request.inputs?.['sampleTargetMap'] || {}) as Record<string, string[]>;
+  const sourceMap = getReassignmentSampleTargetMap(request);
+  const resolveTarget = buildReassignmentTargetResolver(request, sourceSop);
   const sampleList = (request.sampleList || request.inputs?.['sampleList'] || []) as string[];
   const sampleTargetMap: Record<string, string[]> = {};
   sampleList.forEach((sample: string) => {
-    const assigned = sourceMap[sample] || [];
+    const assigned = getAssignedTargetsForSample(sample, sourceMap) || [];
     const canonical = Array.from(new Set((assigned.length ? assigned : Array.from(required))
-      .map((value: string) => getCanonicalId(String(value || '')))
+      .map(resolveTarget)
       .filter((value: string) => required.has(value))));
     sampleTargetMap[sample] = canonical;
   });
@@ -89,14 +147,14 @@ export function buildReassignmentTargetMetadata(request: Request, targetSop: Sop
   return { targetIds, sampleTargetMap };
 }
 
-export function buildReassignmentInputs(request: Request, targetSop: Sop): Record<string, any> {
+export function buildReassignmentInputs(request: Request, targetSop: Sop, sourceSop?: Sop): Record<string, any> {
   const oldInputs = request.inputs || {};
   const inputs: Record<string, any> = {};
   (targetSop.inputs || []).forEach(input => {
     inputs[input.var] = oldInputs[input.var] !== undefined ? oldInputs[input.var] : input.default;
   });
 
-  const targets = buildReassignmentTargetMetadata(request, targetSop);
+  const targets = buildReassignmentTargetMetadata(request, targetSop, sourceSop);
   const sampleList = [...(request.sampleList || oldInputs['sampleList'] || [])];
   inputs['analysisDate'] = request.analysisDate || oldInputs['analysisDate'];
   inputs['n_sample'] = sampleList.length;

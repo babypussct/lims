@@ -31,7 +31,7 @@ import {
   SopReassignmentPreview,
   SopReassignmentService
 } from './services/sop-reassignment.service';
-import { getSopReassignmentBlockReason } from './services/sop-reassignment.utils';
+import { getSopReassignmentBlockReason, SopReassignmentOption } from './services/sop-reassignment.utils';
 import { 
   buildTrifluralinPdfPayload, 
   buildFipronilPdfPayload, 
@@ -206,6 +206,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   showResetModal = signal(false);
   showSopReassignmentModal = signal(false);
   sopReassignmentCandidates = signal<Sop[]>([]);
+  sopReassignmentUnavailableOptions = signal<SopReassignmentOption[]>([]);
   selectedReassignmentSopId = signal('');
   sopReassignmentPreview = signal<SopReassignmentPreview | null>(null);
   sopReassignmentNote = signal('');
@@ -275,14 +276,17 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     this.sopReassignmentNote.set('');
     this.sopReassignmentError.set('');
     this.sopReassignmentCandidates.set([]);
+    this.sopReassignmentUnavailableOptions.set([]);
     this.showSopReassignmentModal.set(true);
     this.isLoadingSopReassignment.set(true);
     try {
-      const candidates = await this.sopReassignment.getCandidates(request);
+      const options = await this.sopReassignment.getOptions(request);
+      const candidates = options.filter(option => !option.blockReason).map(option => option.sop);
       this.sopReassignmentCandidates.set(candidates);
+      this.sopReassignmentUnavailableOptions.set(options.filter(option => option.blockReason));
       if (candidates.length === 0) {
         this.sopReassignmentError.set(
-          'Không có SOP đích đang hoạt động vừa có biểu mẫu kết quả, vừa phủ đủ toàn bộ chỉ tiêu của mẻ này.'
+          'Chưa có SOP đích đáp ứng điều kiện chuyển. Xem lý do của từng SOP bên dưới.'
         );
         return;
       }

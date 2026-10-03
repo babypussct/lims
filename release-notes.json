@@ -1,14 +1,15 @@
 {
-  "title": "Ổn định luồng in và tinh gọn trang Kết quả",
+  "title": "Chuyển SOP thủ công rõ ràng và chính xác hơn",
   "highlights": [
-    "Hiển thị đầy đủ thông báo, trạng thái xử lý và cửa sổ xem trước khi in hoặc xuất PDF từ trang truy xuất."
+    "Chọn đúng SOP chỉ định thủ công khi chuyển quy trình kiểm nghiệm cho mẻ."
   ],
   "features": [],
   "improvements": [
-    "Tinh gọn trang Kết quả bằng cách bỏ bộ chọn và nút Phiếu phân tích bị trùng lặp với luồng thao tác đã chuẩn hóa."
+    "Nhận biết SOP chỉ định thủ công ngay trong danh sách SOP chuyển đến.",
+    "Xem lý do SOP chưa đủ điều kiện chuyển, gồm chỉ tiêu còn thiếu hoặc biểu mẫu kết quả chưa có."
   ],
   "fixes": [
-    "Hiển thị lại thông báo và cửa sổ xem trước khi in hoặc xuất PDF từ trang truy xuất, giúp người dùng theo dõi kết quả thao tác.",
-    "Hiển thị trạng thái đang tạo tài liệu trên toàn màn hình, tránh bấm in nhiều lần khi hệ thống đang xử lý."
+    "Khắc phục SOP phù hợp bị ẩn khi cùng chỉ tiêu được lưu bằng mã khác nhau ở mẻ cũ và SOP chuyển đến.",
+    "Giữ đúng chỉ tiêu được giao cho từng mẫu khi chuyển SOP của mẻ cũ."
   ]
 }

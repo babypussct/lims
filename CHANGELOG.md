@@ -2,7 +2,27 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.10.02-b02
+## Phiên bản hiện tại: v26.10.03-b01
+
+### v26.10.03-b01
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Chọn đúng SOP chỉ định thủ công khi chuyển quy trình kiểm nghiệm cho mẻ.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Nhận biết SOP chỉ định thủ công ngay trong danh sách SOP chuyển đến.
+- Xem lý do SOP chưa đủ điều kiện chuyển, gồm chỉ tiêu còn thiếu hoặc biểu mẫu kết quả chưa có.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Khắc phục SOP phù hợp bị ẩn khi cùng chỉ tiêu được lưu bằng mã khác nhau ở mẻ cũ và SOP chuyển đến.
+- Giữ đúng chỉ tiêu được giao cho từng mẫu khi chuyển SOP của mẻ cũ.
 
 ### v26.10.02-b02
 
