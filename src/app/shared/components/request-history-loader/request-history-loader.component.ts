@@ -2,6 +2,7 @@ import { Component, DestroyRef, effect, inject, input, signal } from '@angular/c
 import { StateService } from '../../../core/services/state.service';
 import { RequestHistoryPageService } from '../../../core/services/request-history-page.service';
 import { AppButtonComponent } from '../ui/button/button.component';
+import { RequestDateBasis } from '../../utils/request-history-page';
 
 @Component({
   selector: 'app-request-history-loader', standalone: true, imports: [AppButtonComponent],
@@ -22,6 +23,7 @@ export class RequestHistoryLoaderComponent {
   readonly startDate = input.required<string>();
   readonly endDate = input.required<string>();
   readonly enabled = input(true);
+  readonly dateBasis = input<RequestDateBasis>('analysisDate');
   readonly loading = signal(false);
   readonly complete = signal(true);
   readonly error = signal('');
@@ -31,16 +33,16 @@ export class RequestHistoryLoaderComponent {
 
   constructor() {
     inject(DestroyRef).onDestroy(() => this.revision++);
-    effect(() => { this.startDate(); this.endDate(); if (this.enabled()) void this.load(); else this.revision++; });
+    effect(() => { this.startDate(); this.endDate(); this.dateBasis(); if (this.enabled()) void this.load(); else this.revision++; });
   }
 
   async load(more = false, refresh = false): Promise<void> {
     const revision = ++this.revision;
     this.loading.set(true); this.error.set('');
     try {
-      const page = await this.history.load(this.startDate(), this.endDate(), more, refresh);
+      const page = await this.history.load(this.startDate(), this.endDate(), more, refresh, this.dateBasis());
       if (revision !== this.revision) return;
-      this.state.mergeApprovedHistoryPage(page.items, this.startDate(), this.endDate());
+      this.state.mergeApprovedHistoryPage(page.items, this.startDate(), this.endDate(), this.dateBasis());
       this.complete.set(page.complete);
     } catch (error) {
       if (revision === this.revision) this.error.set(error instanceof Error ? error.message : 'Không tải được danh sách mẻ.');

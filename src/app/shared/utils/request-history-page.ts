@@ -2,6 +2,7 @@ import type { Request } from '../../core/models/request.model';
 import { timestampToLocalDateKey } from './timestamp';
 
 export type RequestDateField = 'analysisDate' | 'approvedAt' | 'timestamp';
+export type RequestDateBasis = 'analysisDate' | 'approvedAt';
 export interface RequestHistoryPage {
   items: Request[];
   complete: boolean;
@@ -13,24 +14,26 @@ export interface RequestHistoryChunk {
   complete: boolean;
 }
 
-export function requestDateKey(request: Request): string {
-  return request.analysisDate || timestampToLocalDateKey(request.approvedAt ?? request.timestamp) || '';
+export function requestDateKey(request: Request, basis: RequestDateBasis = 'analysisDate'): string {
+  return (basis === 'analysisDate' ? request.analysisDate : '') || timestampToLocalDateKey(request.approvedAt ?? request.timestamp) || '';
 }
 
-function primaryField(request: Request): RequestDateField {
-  return request.analysisDate ? 'analysisDate' : request.approvedAt ? 'approvedAt' : 'timestamp';
+function primaryField(request: Request, basis: RequestDateBasis): RequestDateField {
+  return basis === 'analysisDate' && request.analysisDate ? 'analysisDate' : request.approvedAt ? 'approvedAt' : 'timestamp';
 }
 
 /** A user-requested load reads at most one bounded chunk from each legacy date shape. */
 export class RequestHistoryPager {
   private readonly rows = new Map<string, Request>();
-  private readonly sources = (['analysisDate', 'approvedAt', 'timestamp'] as RequestDateField[])
-    .map(field => ({ field, cursor: undefined as unknown, complete: false }));
+  private readonly sources: { field: RequestDateField; cursor: unknown; complete: boolean }[];
   private pending?: Promise<RequestHistoryPage>;
 
   constructor(private readonly start: string, private readonly end: string,
     private readonly reader: (field: RequestDateField, cursor: unknown, size: number) => Promise<RequestHistoryChunk>,
-    private readonly pageSize = 24) {}
+    private readonly pageSize = 24, private readonly basis: RequestDateBasis = 'analysisDate') {
+    const fields: RequestDateField[] = basis === 'approvedAt' ? ['approvedAt', 'timestamp'] : ['analysisDate', 'approvedAt', 'timestamp'];
+    this.sources = fields.map(field => ({ field, cursor: undefined, complete: false }));
+  }
 
   load(): Promise<RequestHistoryPage> {
     if (this.pending) return this.pending;
@@ -41,8 +44,8 @@ export class RequestHistoryPager {
       source.cursor = chunk.cursor;
       source.complete = chunk.complete;
       for (const request of chunk.items) {
-        const date = requestDateKey(request);
-        if (primaryField(request) === source.field && !request._isDeleted
+        const date = requestDateKey(request, this.basis);
+        if (primaryField(request, this.basis) === source.field && !request._isDeleted
           && ['approved', 'draft', 'completed'].includes(request.status) && date >= this.start && date <= this.end) {
           this.rows.set(request.id, request);
         }
@@ -53,7 +56,7 @@ export class RequestHistoryPager {
   }
 
   snapshot(reads = 0): RequestHistoryPage {
-    return { items: [...this.rows.values()].sort((a, b) => requestDateKey(b).localeCompare(requestDateKey(a)) || b.id.localeCompare(a.id)),
+    return { items: [...this.rows.values()].sort((a, b) => requestDateKey(b, this.basis).localeCompare(requestDateKey(a, this.basis)) || b.id.localeCompare(a.id)),
       complete: this.sources.every(source => source.complete), reads };
   }
 }

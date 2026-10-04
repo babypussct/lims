@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.10.04-b01",
-    "title": "Chuyển SOP cho một vài mã mẫu trong mẻ",
+    "version": "v26.10.04-b02",
+    "title": "Chọn khoảng ngày duyệt trong Kết Quả Phân Tích",
     "features": [
-      "Chọn một vài mã mẫu để tách sang mẻ mới dùng SOP khách hàng chỉ định.",
-      "Giữ SOP, kết quả nháp và số liệu QC của các mẫu còn lại trong mẻ gốc.",
-      "Trong Kết quả → Chuyển SOP, chọn Chọn mã mẫu, đánh dấu mẫu cần chuyển rồi chọn SOP đích.",
-      "Tìm mã mẫu, chọn tất cả hoặc bỏ chọn; xem số mẫu chuyển và số mẫu giữ lại trước khi xác nhận.",
-      "Mở mẻ mới ngay từ thông báo sau khi tách mẫu và chuyển SOP thành công."
+      "Mở Kết Quả Phân Tích với Tất cả thời gian, chỉ lọc ngày khi tự chọn.",
+      "Chọn nhanh hoặc nhập khoảng ngày duyệt để tra cứu đúng các mẻ cần xử lý.",
+      "Giữ lựa chọn Tất cả thời gian hoặc khoảng ngày đã chọn khi quay lại danh sách từ mẻ phân tích.",
+      "Giữ trang đang xem khi mở lại Lọc nâng cao mà chưa thay đổi khoảng ngày.",
+      "Sửa lịch và danh sách chọn nhanh bị che khuất trong Lọc nâng cao; chọn ngày được trên máy tính và điện thoại."
     ]
   },
   "assetGroups": [

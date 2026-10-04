@@ -6,6 +6,20 @@ import { RequestHistoryPager, RequestHistoryChunk, RequestDateField } from './re
 const row = (id: string, fields: Partial<Request> = {}): Request => ({ id, sopId: 'sop', sopName: 'SOP',
   items: [], status: 'approved', timestamp: new Date(2026, 9, 1), ...fields });
 
+test('approval history ignores analysis date and only reads approval and legacy timestamp sources', async () => {
+  const calls: RequestDateField[] = [];
+  const pager = new RequestHistoryPager('2026-10-02', '2026-10-02', async field => {
+    calls.push(field);
+    return { items: [row('approved', { analysisDate: '2026-09-30', approvedAt: new Date(2026, 9, 2, 23, 59) }),
+      row('legacy', { analysisDate: '2026-09-30', timestamp: new Date(2026, 9, 2) }),
+      row('analysis-only', { analysisDate: '2026-10-02', approvedAt: new Date(2026, 8, 30) })], complete: true };
+  }, 24, 'approvedAt');
+  const page = await pager.load();
+  assert.deepEqual(calls, ['approvedAt', 'timestamp']);
+  assert.deepEqual(page.items.map(item => item.id), ['legacy', 'approved']);
+  assert.equal(page.complete, true);
+});
+
 test('each click reads one bounded chunk per active date shape, even when no rows qualify', async () => {
   const calls: { field: RequestDateField; size: number; cursor: unknown }[] = [];
   const pager = new RequestHistoryPager('2026-10-01', '2026-10-02', async (field, cursor, size) => {

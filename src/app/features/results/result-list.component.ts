@@ -171,7 +171,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
         <!-- ══════════════════════════════════════════════════════
              FILTER & SEARCH BAR
         ══════════════════════════════════════════════════════ -->
-        <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-sm mb-5 overflow-hidden">
+        <div class="relative z-20 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-sm mb-5 overflow-visible">
           <!-- Row 1: Search + Actions -->
           <app-toolbar class="block">
             <!-- Search -->
@@ -304,7 +304,8 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
       <!-- ══════════════════════════════════════════════════════
            MAIN CONTENT: Cards / Table
       ══════════════════════════════════════════════════════ -->
-      <app-request-history-loader class="shrink-0 px-6" [startDate]="startDate()" [endDate]="endDate()" />
+      <app-request-history-loader class="shrink-0 px-6" [startDate]="startDate()" [endDate]="endDate()"
+        dateBasis="approvedAt" [enabled]="!!startDate() || !!endDate()" />
       <div class="flex-1 overflow-y-auto px-6 pb-6 custom-scrollbar">
 
         @if (isLoading()) {
@@ -883,20 +884,8 @@ export class ResultListComponent implements OnInit, OnDestroy {
   });
 
   // Date Filters
-  private getInitialThisMonthRange() {
-      const today = new Date();
-      const start = new Date(today.getFullYear(), today.getMonth(), 1);
-      
-      const toStr = (d: Date) => {
-          const offset = d.getTimezoneOffset();
-          const local = new Date(d.getTime() - (offset * 60 * 1000));
-          return local.toISOString().split('T')[0];
-      };
-      
-      return { start: toStr(start), end: toStr(today) };
-  }
-  startDate = signal<string>(timestampToLocalDateKey(new Date()) || '');
-  endDate = signal<string>(timestampToLocalDateKey(new Date()) || '');
+  startDate = signal<string>('');
+  endDate = signal<string>('');
   showAdvancedFilters = signal<boolean>(false);
 
   // Dynamic history loading states
@@ -999,6 +988,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
         showAdvancedFilters: this.showAdvancedFilters(),
         startDate: this.startDate(),
         endDate: this.endDate(),
+        dateFilterBasis: 'approvedAt',
         isMergeModeActive: this.isMergeModeActive(),
         selectedRunsMap: this.selectedRunsMap(),
         scrollTop
@@ -1021,8 +1011,12 @@ export class ResultListComponent implements OnInit, OnDestroy {
         if (state.selectedSopId) this.selectedSopId.set(state.selectedSopId);
         if (state.selectedAnalyst) this.selectedAnalyst.set(state.selectedAnalyst);
         if (state.showAdvancedFilters !== undefined) this.showAdvancedFilters.set(state.showAdvancedFilters);
-        if (state.startDate) this.startDate.set(state.startDate);
-        if (state.endDate) this.endDate.set(state.endDate);
+        // Older sessions saved an automatic Today range using analysis date.
+        // Start those sessions without a date filter when switching to approval date.
+        if (state.dateFilterBasis === 'approvedAt') {
+          if (typeof state.startDate === 'string') this.startDate.set(state.startDate);
+          if (typeof state.endDate === 'string') this.endDate.set(state.endDate);
+        }
         if (state.isMergeModeActive !== undefined) this.isMergeModeActive.set(state.isMergeModeActive);
         if (state.selectedRunsMap) this.selectedRunsMap.set(state.selectedRunsMap);
       }
@@ -1133,7 +1127,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
     const end = this.endDate();
     if (start || end) {
       list = list.filter((run: any) => {
-        const runDate = this.getRunDate(run);
+        const runDate = this.getRunApprovalDate(run);
         if (!runDate) return false;
         if (start && runDate < start) return false;
         if (end && runDate > end) return false;
@@ -1229,7 +1223,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
     const end = this.endDate();
     if (start || end) {
       list = list.filter((run: any) => {
-        const runDate = this.getRunDate(run);
+        const runDate = this.getRunApprovalDate(run);
         if (!runDate) return false;
         if (start && runDate < start) return false;
         if (end && runDate > end) return false;
@@ -1279,6 +1273,10 @@ export class ResultListComponent implements OnInit, OnDestroy {
       }
     }
     return true;
+  }
+
+  getRunApprovalDate(run: any): string {
+    return timestampToLocalDateKey(run.approvedAt ?? run.timestamp) || '';
   }
 
   getRunDate(run: any): string {
@@ -1348,6 +1346,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
   }
 
   onDateRangeChange(range: { start: string, end: string, label: string }) {
+    if (range.start === this.startDate() && range.end === this.endDate()) return;
     this.startDate.set(range.start);
     this.endDate.set(range.end);
     this.resetPaging();

@@ -1,20 +1,18 @@
 {
-  "title": "Chuyển SOP cho một vài mã mẫu trong mẻ",
+  "title": "Chọn khoảng ngày duyệt trong Kết Quả Phân Tích",
   "highlights": [
-    "Chọn một vài mã mẫu để tách sang mẻ mới dùng SOP khách hàng chỉ định.",
-    "Giữ SOP, kết quả nháp và số liệu QC của các mẫu còn lại trong mẻ gốc."
+    "Mở Kết Quả Phân Tích với Tất cả thời gian, chỉ lọc ngày khi tự chọn.",
+    "Chọn nhanh hoặc nhập khoảng ngày duyệt để tra cứu đúng các mẻ cần xử lý."
   ],
   "features": [
-    "Trong Kết quả → Chuyển SOP, chọn Chọn mã mẫu, đánh dấu mẫu cần chuyển rồi chọn SOP đích.",
-    "Tìm mã mẫu, chọn tất cả hoặc bỏ chọn; xem số mẫu chuyển và số mẫu giữ lại trước khi xác nhận.",
-    "Mở mẻ mới ngay từ thông báo sau khi tách mẫu và chuyển SOP thành công."
   ],
   "improvements": [
-    "Danh sách SOP chuyển đến xét đúng chỉ tiêu được giao cho các mẫu đã chọn, gồm SOP chỉ định thủ công.",
-    "Tính lại vật tư, QC, phiếu thao tác và kiểm tra hằng ngày cho cả hai mẻ sau khi tách.",
-    "Lưu bản nháp trước khi tách; từ chối chuyển nếu thiếu tồn kho, mẻ đã thay đổi hoặc có báo cáo được phát hành."
+    "Giữ lựa chọn Tất cả thời gian hoặc khoảng ngày đã chọn khi quay lại danh sách từ mẻ phân tích.",
+    "Giữ trang đang xem khi mở lại Lọc nâng cao mà chưa thay đổi khoảng ngày."
   ],
   "fixes": [
-    "Giữ kết quả mẫu còn lại khi tách chuyển SOP và ghi rõ mẫu đã chuyển để tra cứu sau này."
+    "Sửa lịch và danh sách chọn nhanh bị che khuất trong Lọc nâng cao; chọn ngày được trên máy tính và điện thoại.",
+    "Lọc danh sách, số mẻ theo trạng thái và lịch sử theo ngày duyệt, kể cả khi ngày phân tích khác ngày duyệt.",
+    "Bỏ giới hạn Hôm nay khi mở Kết Quả Phân Tích lần đầu."
   ]
 }

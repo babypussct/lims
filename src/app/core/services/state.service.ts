@@ -35,7 +35,7 @@ import { NotificationService } from './notification.service';
 import { isFeatureEnabledForUser, normalizeFeatureCanaryUids, resolveActivityFeedEnabled } from './feature-rollout';
 import { resolveRequestStatsCounts } from './request-stats.utils';
 import { canEditWorksheet } from '../../shared/utils/batch-worksheet';
-import { requestDateKey } from '../../shared/utils/request-history-page';
+import { RequestDateBasis, requestDateKey } from '../../shared/utils/request-history-page';
 
 export interface DirectBatchPlanItem {
   sop: Sop;
@@ -284,7 +284,7 @@ export class StateService implements OnDestroy {
     protectedAdmin: boolean;
   }>>(new Map());
 
-  systemVersion = signal<string>('v26.10.04-b01');
+  systemVersion = signal<string>('v26.10.04-b02');
   maintenanceMode = signal<boolean>(false);
   maintenanceMessage = signal<string>('Hệ thống đang được bảo trì. Vui lòng quay lại sau ít phút.');
   maintenanceScheduledTime = signal<string | null>(null);
@@ -870,13 +870,13 @@ export class StateService implements OnDestroy {
     );
   }
 
-  mergeApprovedHistoryPage(requests: readonly Request[], startDate: string, endDate: string): void {
+  mergeApprovedHistoryPage(requests: readonly Request[], startDate: string, endDate: string, basis: RequestDateBasis = 'analysisDate'): void {
     // A page is cumulative for this range. Replace its previous history copy so
     // refresh does not retain deleted records or records moved to another date.
     const start = startDate || '0001-01-01';
     const end = endDate || '9999-12-31';
     for (const [id, request] of this.approvedHistoryRequests) {
-      const date = requestDateKey(request);
+      const date = requestDateKey(request, basis);
       if (date >= start && date <= end) this.approvedHistoryRequests.delete(id);
     }
     this.invalidateApprovedHistoryRangeCache();

@@ -2,7 +2,29 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.10.04-b01
+## Phiên bản hiện tại: v26.10.04-b02
+
+### v26.10.04-b02
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Mở Kết Quả Phân Tích với Tất cả thời gian, chỉ lọc ngày khi tự chọn.
+- Chọn nhanh hoặc nhập khoảng ngày duyệt để tra cứu đúng các mẻ cần xử lý.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Giữ lựa chọn Tất cả thời gian hoặc khoảng ngày đã chọn khi quay lại danh sách từ mẻ phân tích.
+- Giữ trang đang xem khi mở lại Lọc nâng cao mà chưa thay đổi khoảng ngày.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Sửa lịch và danh sách chọn nhanh bị che khuất trong Lọc nâng cao; chọn ngày được trên máy tính và điện thoại.
+- Lọc danh sách, số mẻ theo trạng thái và lịch sử theo ngày duyệt, kể cả khi ngày phân tích khác ngày duyệt.
+- Bỏ giới hạn Hôm nay khi mở Kết Quả Phân Tích lần đầu.
 
 ### v26.10.04-b01
 
