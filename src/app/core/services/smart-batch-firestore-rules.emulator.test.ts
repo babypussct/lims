@@ -26,6 +26,10 @@ import {
   where
 } from 'firebase/firestore';
 import { StatsService } from './stats.service';
+import { SopReassignmentService } from '../../features/results/services/sop-reassignment.service';
+import { CalculatorService } from './calculator.service';
+import { ActivityEventService } from './activity-event.service';
+import type { Sop } from '../models/sop.model';
 import { persistDutyMonthImport } from '../../features/duty-stats/duty-tsv-import.persistence';
 import { DUTY_TSV_HEADER, parseDutyTsv } from '../../features/duty-stats/duty-tsv-import';
 import type { DutyScheduleEntry } from '../../features/duty-stats/duty-schedule.model';
@@ -2290,6 +2294,189 @@ test('approval can atomically store a worksheet pointer while snapshot content r
   await assertSucceeds(batch.commit());
   assert.equal((await getDoc(requestRef)).data()?.currentPrintJobId, jobRef.id);
   await assertFails(updateDoc(jobRef, { inputs: { modified: true } }));
+});
+
+async function seedSopSplit(id: string, sourceChanges = {}, detailChanges = {}) {
+  await env.withSecurityRulesDisabled(async context => {
+    const db = context.firestore();
+    await setDoc(doc(db, `artifacts/${APP_ID}/requests/${id}`), {
+      sopId: 'old-sop', sopName: 'Old SOP', status: 'draft', analysisDate: '2026-10-04',
+      sampleList: ['M1', 'M2', 'M3'], inputs: { n_sample: 3, sampleList: ['M1', 'M2', 'M3'], n_qc: 2 },
+      items: [], currentPrintJobId: 'original-print', ...sourceChanges
+    });
+    await setDoc(doc(db, `artifacts/${APP_ID}/results_details/${id}`), {
+      requestId: id, sopId: 'old-sop', page1Data: { analyst: 'An', recovery: 95 },
+      resultData: { M1: { value: 1 }, M2: { value: 2 }, M3: { value: 3 }, QC_blank: { value: 0 } }, ...detailChanges
+    });
+    await setDoc(doc(db, `artifacts/${APP_ID}/inventory/split-solvent`), { name: 'Solvent', stock: 10 });
+  });
+}
+
+function sopSplitBatch(user: TestUser, id: string, sourceChanges = {}, targetChanges = {}, resultChanges = {}) {
+  const db = dbFor(user);
+  const batch = writeBatch(db);
+  batch.update(doc(db, `artifacts/${APP_ID}/requests/${id}`), {
+    sampleList: ['M2', 'M3'], inputs: { n_sample: 2, sampleList: ['M2', 'M3'], n_qc: 2 },
+    lastSopSplitRequestId: `${id}-new`, resultStatusReason: 'sop_split_source',
+    currentPrintJobId: `${id}-source-print`, lastUpdated: serverTimestamp(), ...sourceChanges
+  });
+  batch.set(doc(db, `artifacts/${APP_ID}/requests/${id}-new`), {
+    sopId: 'new-sop', sopName: 'New SOP', status: 'approved', analysisDate: '2026-10-04',
+    sampleList: ['M1'], inputs: { n_sample: 1, sampleList: ['M1'], n_qc: 2 }, items: [],
+    sopSplitSourceRequestId: id, resultStatusReason: 'sop_split_created', currentPrintJobId: `${id}-target-print`,
+    user: user.displayName, createdByUid: user.uid,
+    timestamp: serverTimestamp(), approvedAt: serverTimestamp(), lastUpdated: serverTimestamp(), ...targetChanges
+  });
+  batch.set(doc(db, `artifacts/${APP_ID}/results_details/${id}`), {
+    requestId: id, sopId: 'old-sop', page1Data: { analyst: 'An', recovery: 95 },
+    resultData: { M2: { value: 2 }, M3: { value: 3 }, QC_blank: { value: 0 } }, ...resultChanges
+  });
+  return { db, batch };
+}
+
+test('SOP approval atomically splits selected samples, preserves source results and updates both worksheets/checklist', async () => {
+  await seedSopSplit('partial-basic', { analysisResult: null, analysisResultSummary: null });
+  await assertSucceeds(sopSplitBatch(users.approver, 'partial-basic').batch.commit());
+  const id = 'partial-sop-transfer';
+  await seedSopSplit(id);
+  const { db, batch } = sopSplitBatch(users.approver, id);
+  batch.update(doc(db, `artifacts/${APP_ID}/inventory/split-solvent`), {
+    stock: 8, lastSopReassignmentRequestId: id, lastUpdated: serverTimestamp()
+  });
+  batch.set(doc(db, `artifacts/${APP_ID}/daily_checklists/2026-10-04`), {
+    schemaVersion: 1, analysisDate: '2026-10-04', updatedAt: serverTimestamp(), lastSopReassignmentRequestId: id,
+    entries: {
+      [id]: { requestId: id, sopId: 'old-sop', sopName: 'Old SOP', status: 'draft' },
+      [`${id}-new`]: { requestId: `${id}-new`, sopId: 'new-sop', sopName: 'New SOP', status: 'approved' }
+    }
+  });
+  for (const [jobId, requestId] of [[`${id}-source-print`, id], [`${id}-target-print`, `${id}-new`]]) {
+    batch.set(doc(db, `artifacts/${APP_ID}/print_jobs/${jobId}`), {
+      requestId, createdByUid: users.approver.uid, createdBy: users.approver.displayName,
+      createdAt: serverTimestamp(), lastUpdated: serverTimestamp()
+    });
+  }
+  await assertSucceeds(batch.commit());
+  assert.deepEqual((await getDoc(doc(db, `artifacts/${APP_ID}/requests/${id}`))).data()?.sampleList, ['M2', 'M3']);
+  assert.deepEqual((await getDoc(doc(db, `artifacts/${APP_ID}/requests/${id}-new`))).data()?.sampleList, ['M1']);
+  const results = (await getDoc(doc(db, `artifacts/${APP_ID}/results_details/${id}`))).data();
+  assert.deepEqual(results?.resultData, { M2: { value: 2 }, M3: { value: 3 }, QC_blank: { value: 0 } });
+  assert.equal((await getDoc(doc(db, `artifacts/${APP_ID}/results_details/${id}-new`))).exists(), false);
+});
+
+test('the real SOP reassignment service recalculates both batches and atomically stores results, stats and traceability', async () => {
+  const id = 'service-sop-split';
+  const sop: Sop = {
+    id: 'old-sop', name: 'Old SOP', category: 'test', version: 1,
+    inputs: [{ var: 'n_sample', label: 'Mẫu', type: 'number', default: 1 }, { var: 'n_qc', label: 'QC', type: 'number', default: 2 }],
+    variables: {}, consumables: [{ name: 'split-solvent', type: 'simple', formula: '(n_sample + n_qc) * 2', unit: 'mL' }],
+    targets: [{ id: 'legacy-trif', name: 'Trifluralin' }, { id: 'legacy-clp', name: 'Chlorpyrifos' }]
+  };
+  const targetSop: Sop = { ...sop, id: 'SOP-03', name: 'Trifluralin', isManualOnly: true, targets: [{ id: 'trif', name: 'Trifluralin' }] };
+  const oldItem = { name: 'split-solvent', amount: 10, displayAmount: 10, unit: 'mL', stockUnit: 'mL' };
+  await seedSopSplit(id, { sampleTargetMap: { M1: ['legacy-trif'], M2: ['legacy-clp'], M3: ['legacy-clp'] },
+    targetIds: ['legacy-trif', 'legacy-clp'], targetNames: { 'legacy-trif': 'Trifluralin', 'legacy-clp': 'Chlorpyrifos' },
+    items: [oldItem], margin: 0,
+    inputs: { n_sample: 3, n_qc: 2, sampleList: ['M1', 'M2', 'M3'], safetyMargin: 0 } });
+  const db = dbFor(users.approver);
+  await env.withSecurityRulesDisabled(async context => {
+    await updateDoc(doc(context.firestore(), `artifacts/${APP_ID}/inventory/split-solvent`), { stock: 100, unit: 'mL' });
+    await setDoc(doc(context.firestore(), `artifacts/${APP_ID}/monthly_stats/2026-10`), {
+      '2026-10-04': { totalSamples: 3, totalBatches: 1, totalQcs: 2, sops: { 'Old SOP': { samples: 3, batches: 1, qcs: 2 } } }
+    });
+  });
+  const fb = { db, APP_ID };
+  const auth = { canApprove: () => true, currentUser: () => users.approver };
+  const inventory = { 'split-solvent': { id: 'split-solvent', name: 'Solvent', stock: 100, unit: 'mL' } };
+  const activityEvents = Object.assign(Object.create(ActivityEventService.prototype), { fb, auth });
+  const changes: any[] = [];
+  const service = Object.assign(Object.create(SopReassignmentService.prototype), {
+    fb, auth, activityEvents, calculator: new CalculatorService(), recipes: { getAllRecipes: async () => [] },
+    targetService: { getAllGroups: async () => [] },
+    state: { sops: () => [sop, targetSop], inventoryMap: () => inventory, safetyConfig: () => undefined,
+      publishInventoryChanges: (rows: any[]) => changes.push(...rows), publishRequestChanges: (rows: any[]) => changes.push(...rows) }
+  }) as SopReassignmentService;
+  const preview = await service.preview(id, targetSop.id, ['M1']);
+  assert.deepEqual(preview.inventoryDelta, { 'split-solvent': -4 });
+  assert.deepEqual(preview.remainingRequest?.sampleList, ['M2', 'M3']);
+  await assert.rejects(service.reassign(id, sop.id, targetSop.id, '', ['M1'], 'outdated-signature'), /đã thay đổi/);
+  // Cached preview stock is insufficient evidence: the transaction must read current stock.
+  await env.withSecurityRulesDisabled(async context => {
+    await updateDoc(doc(context.firestore(), `artifacts/${APP_ID}/inventory/split-solvent`), { stock: 0 });
+  });
+  await assert.rejects(service.reassign(id, sop.id, targetSop.id, '', ['M1']), /Kho không đủ/);
+  assert.deepEqual((await getDoc(doc(db, `artifacts/${APP_ID}/requests/${id}`))).data()?.sampleList, ['M1', 'M2', 'M3']);
+  await env.withSecurityRulesDisabled(async context => {
+    await updateDoc(doc(context.firestore(), `artifacts/${APP_ID}/inventory/split-solvent`), { stock: 100 });
+  });
+  const result = await assertSucceeds(service.reassign(id, sop.id, targetSop.id, 'Khách hàng chỉ định', ['M1']));
+  assert.equal(result.isPartial, true);
+  assert.deepEqual(result.sourceDraft?.resultData, { M2: { value: 2 }, M3: { value: 3 }, QC_blank: { value: 0 } });
+  const source = (await getDoc(doc(db, `artifacts/${APP_ID}/requests/${id}`))).data()!;
+  const target = (await getDoc(doc(db, `artifacts/${APP_ID}/requests/${result.targetRequest.id}`))).data()!;
+  assert.equal(source.sopId, sop.id);
+  assert.equal(target.sopId, targetSop.id);
+  assert.equal(source.items[0].amount, 8);
+  assert.equal(target.items[0].amount, 6);
+  assert.equal((await getDoc(doc(db, `artifacts/${APP_ID}/inventory/split-solvent`))).data()?.stock, 96);
+  const stats = (await getDoc(doc(db, `artifacts/${APP_ID}/monthly_stats/2026-10`))).data()!['2026-10-04'];
+  assert.equal(stats.totalSamples, 3);
+  assert.equal(stats.totalBatches, 2);
+  assert.equal(stats.totalQcs, 4);
+  assert.deepEqual(stats.sops['Old SOP'], { samples: 2, batches: 1, qcs: 2 });
+  assert.deepEqual(stats.sops.Trifluralin, { samples: 1, batches: 1, qcs: 2 });
+  assert.equal((await getDoc(doc(db, `artifacts/${APP_ID}/print_jobs/${source.currentPrintJobId}`))).data()?.inputs.n_sample, 2);
+  const targetPrint = (await getDoc(doc(db, `artifacts/${APP_ID}/print_jobs/${target.currentPrintJobId}`))).data()!;
+  assert.equal(targetPrint.inputs.n_sample, 1);
+  const event = (await getDoc(doc(db, `artifacts/${APP_ID}/logs/${targetPrint.traceLogId}`))).data()!;
+  assert.equal(event.metadata.sourceRequestId, id);
+  assert.equal(event.metadata.targetRequestId, target.id);
+  assert.deepEqual(event.metadata.movedSamples, ['M1']);
+  assert.equal((await getDoc(doc(db, `artifacts/${APP_ID}/public_traceability/${target.id}`))).data()?.logId, targetPrint.traceLogId);
+  assert.equal(changes.length, 3);
+  // Selecting every remaining sample keeps the original whole-batch workflow.
+  targetSop.targets.push({ id: 'clp', name: 'Chlorpyrifos' });
+  const whole = await assertSucceeds(service.reassign(id, sop.id, targetSop.id, '', ['M2', 'M3']));
+  assert.equal(whole.isPartial, false);
+  assert.equal(whole.targetRequest.id, id);
+  assert.deepEqual(whole.targetRequest.sampleList, ['M2', 'M3']);
+  assert.equal((await getDoc(doc(db, `artifacts/${APP_ID}/results_details/${id}`))).exists(), false);
+});
+
+test('partial SOP transfer cannot lose/duplicate samples, change retained results, reuse a batch or bypass approval', async () => {
+  const cases = [
+    { label: 'overlap', target: { sampleList: ['M1', 'M2'], inputs: { n_sample: 2, sampleList: ['M1', 'M2'] } } },
+    { label: 'missing', source: { sampleList: ['M2'], inputs: { n_sample: 1, sampleList: ['M2'] } } },
+    { label: 'unknown', target: { sampleList: ['M4'], inputs: { n_sample: 1, sampleList: ['M4'] } } },
+    { label: 'empty', target: { sampleList: [], inputs: { n_sample: 0, sampleList: [] } } },
+    { label: 'source-sop', source: { sopId: 'also-new-sop' } },
+    { label: 'results', result: { resultData: { M2: { value: 99 }, M3: { value: 3 }, QC_blank: { value: 0 } } } },
+    { label: 'lost-result', result: { resultData: { M3: { value: 3 }, QC_blank: { value: 0 } } } },
+    { label: 'published', seed: { analysisResultSummary: { pdfUrl: 'https://example.test/report.pdf' } } },
+    { label: 'detail-published', detail: { reports: { ALL: { pdfUrl: 'https://example.test/report.pdf' } } } },
+    { label: 'locked', seed: { lockedBy: users.batchB.email, lastActiveAt: Timestamp.now() } },
+    { label: 'unapproved', user: users.batchA },
+    { label: 'deleted', seed: { _isDeleted: true } },
+    { label: 'master', seed: { isVirtualMaster: true } }
+  ];
+  for (const row of cases) {
+    const id = `split-denied-${row.label}`;
+    await seedSopSplit(id, row.seed, row.detail);
+    const { batch } = sopSplitBatch(row.user || users.approver, id, row.source, row.target, row.result);
+    await assertFails(batch.commit());
+  }
+  const id = 'split-unpaired';
+  await seedSopSplit(id);
+  const db = dbFor(users.manager);
+  await assertFails(updateDoc(doc(db, `artifacts/${APP_ID}/requests/${id}`), {
+    sampleList: ['M2', 'M3'], inputs: { n_sample: 2, sampleList: ['M2', 'M3'] },
+    lastSopSplitRequestId: `${id}-new`, resultStatusReason: 'sop_split_source', lastUpdated: serverTimestamp()
+  }));
+  await seedSopSplit('split-reused');
+  await env.withSecurityRulesDisabled(async context => {
+    await setDoc(doc(context.firestore(), `artifacts/${APP_ID}/requests/split-reused-new`), { sopId: 'existing', status: 'approved' });
+  });
+  await assertFails(sopSplitBatch(users.approver, 'split-reused').batch.commit());
 });
 
 test('SOP reassignment can atomically switch the current worksheet while retaining the previous snapshot', async () => {

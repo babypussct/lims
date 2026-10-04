@@ -1,7 +1,7 @@
 import { InventoryItem } from '../../../core/models/inventory.model';
 import { Request, RequestItem } from '../../../core/models/request.model';
 import { CalculatedItem, Sop } from '../../../core/models/sop.model';
-import { getAssignedTargetsForSample, getCanonicalId } from '../shared/compound-id-resolver';
+import { getAssignedTargetsForSample, getCanonicalId, normalizeSampleCode } from '../shared/compound-id-resolver';
 import { getSopTargetKey, sopCoversTarget } from '../../batch/smart-batch.utils';
 import { ANGULAR_SOP_CONFIG, resolveConfigKey } from '../config/sop-configs';
 
@@ -22,6 +22,11 @@ function getReassignmentSampleTargetMap(request: ReassignmentTargetSource): Reco
   return Object.values(topLevel).some(targetIds => targetIds.length > 0)
     ? topLevel
     : request.inputs?.['sampleTargetMap'] || topLevel;
+}
+
+function getReassignmentSampleTargets(sample: string, map: Record<string, string[]>): string[] {
+  const direct = Object.entries(map).find(([key]) => normalizeSampleCode(key) === normalizeSampleCode(sample))?.[1];
+  return direct?.length ? direct : getAssignedTargetsForSample(sample, map) || [];
 }
 
 function buildReassignmentTargetResolver(request: ReassignmentTargetSource, sourceSop?: Sop) {
@@ -57,7 +62,7 @@ function stableStringify(value: unknown): string {
 }
 
 export function getSopReassignmentSourceSignature(
-  request: Pick<Request, 'analysisDate' | 'sampleList' | 'sampleTargetMap' | 'targetIds' | 'targetNames' | 'inputs' | 'items'>
+  request: Pick<Request, 'analysisDate' | 'sampleList' | 'sampleTargetMap' | 'targetIds' | 'targetNames' | 'inputs' | 'items' | 'margin'>
 ): string {
   return stableStringify({
     analysisDate: request.analysisDate,
@@ -66,6 +71,7 @@ export function getSopReassignmentSourceSignature(
     targetIds: request.targetIds || [],
     targetNames: request.targetNames || {},
     inputs: request.inputs || {},
+    margin: request.margin,
     items: request.items || []
   });
 }
@@ -80,6 +86,7 @@ export function getRequiredTargetIds(request: ReassignmentTargetSource, sourceSo
 }
 
 export function getSopReassignmentBlockReason(request: Request): string | null {
+  if (request._isDeleted) return 'Mẻ đã bị xóa, không thể chuyển SOP.';
   if (!['approved', 'draft'].includes(request.status)) {
     return request.status === 'completed'
       ? 'Mẻ đã hoàn thành, không thể chuyển SOP bằng nghiệp vụ này.'
@@ -96,6 +103,76 @@ export function getSopReassignmentBlockReason(request: Request): string | null {
   );
   if (hasPublishedReport) return 'Mẻ đã có báo cáo được phát hành, không thể chuyển SOP bằng nghiệp vụ này.';
   return null;
+}
+
+export function getReassignmentSamples(request: Request): string[] {
+  return [...(request.sampleList || request.inputs?.['sampleList'] || [])];
+}
+
+/** Move whole sample assignments, preserving the order and spelling of the source batch. */
+export function partitionSopReassignment(request: Request, selectedSamples?: readonly string[]): {
+  moving: Request; remaining: Request | null;
+} {
+  const samples = getReassignmentSamples(request);
+  if (!samples.length) throw new Error('Mẻ không có mã mẫu để chuyển SOP.');
+  const known = new Set(samples.map(normalizeSampleCode));
+  if (known.size !== samples.length) throw new Error('Mẻ có mã mẫu trùng nhau. Vui lòng kiểm tra danh sách mẫu.');
+  const selected = new Set((selectedSamples ?? samples).map(normalizeSampleCode));
+  if (!selected.size) throw new Error('Chọn ít nhất một mã mẫu cần chuyển SOP.');
+  if ([...selected].some(sample => !known.has(sample))) throw new Error('Mã mẫu được chọn không còn thuộc mẻ này.');
+  const subset = (list: string[]): Request => {
+    const codes = new Set(list.map(normalizeSampleCode));
+    const memberCodes = new Set(list.flatMap(sample => sample.split(';').map(normalizeSampleCode)));
+    const filterMap = <T>(map: Record<string, T>): Record<string, T> => Object.fromEntries(
+      Object.entries(map).filter(([key]) => codes.has(normalizeSampleCode(key)) || memberCodes.has(normalizeSampleCode(key)))
+    );
+    const oldMap = getReassignmentSampleTargetMap(request);
+    const fallback = request.targetIds?.length ? request.targetIds : request.inputs?.['targetIds'] || [];
+    const sampleTargetMap: Record<string, string[]> = {};
+    list.forEach(sample => {
+      const assigned = getReassignmentSampleTargets(sample, oldMap);
+      sampleTargetMap[sample] = assigned.length ? assigned : fallback;
+    });
+    const targetIds = [...new Set(Object.values(sampleTargetMap).flat())];
+    const sampleDescriptionMap = filterMap<NonNullable<Request['sampleDescriptionMap']>[string]>(request.sampleDescriptionMap || request.inputs?.['sampleDescriptionMap'] || {});
+    return {
+      ...request, sampleList: list, sampleTargetMap, targetIds, sampleDescriptionMap,
+      inputs: { ...request.inputs, n_sample: list.length, sampleList: list, sampleTargetMap, targetIds, sampleDescriptionMap }
+    };
+  };
+  const moving = samples.filter(sample => selected.has(normalizeSampleCode(sample)));
+  const remaining = samples.filter(sample => !selected.has(normalizeSampleCode(sample)));
+  return { moving: subset(moving), remaining: remaining.length ? subset(remaining) : null };
+}
+
+/** Keep source results and QC rows; never carry SOP-A results into the new SOP form. */
+export function retainSopSplitResults<T extends { resultData?: Record<string, any> }>(
+  draft: T, movedSamples: readonly string[]
+): T {
+  const moved = new Set(movedSamples.flatMap(sample => sample.split(';').map(normalizeSampleCode)));
+  return { ...draft, resultData: Object.fromEntries(Object.entries(draft.resultData || {}).filter(([key]) => {
+    const members = key.split(';').map(normalizeSampleCode);
+    const movedMembers = members.filter(member => moved.has(member));
+    if (movedMembers.length && movedMembers.length !== members.length) {
+      throw new Error(`Kết quả mẫu gộp “${key}” cần được tách trước khi chuyển SOP.`);
+    }
+    return movedMembers.length === 0;
+  })) };
+}
+
+export function splitSopStatsForDay(
+  monthly: Record<string, any>, dayKey: string, fromSopKey: string, toSopKey: string,
+  movedCount: number, newQcs: number
+): Record<string, any> {
+  const next = transferSopStatsForDay(monthly, dayKey, fromSopKey, toSopKey, movedCount, 0, 0);
+  const day = next[dayKey];
+  if (!day) return next;
+  day.totalBatches = Number(day.totalBatches || 0) + 1;
+  day.totalQcs = Number(day.totalQcs || 0) + newQcs;
+  day.sops[toSopKey] ||= { samples: 0, batches: 0, qcs: 0 };
+  day.sops[toSopKey].batches += 1;
+  day.sops[toSopKey].qcs += newQcs;
+  return next;
 }
 
 export function getMissingTargetIds(request: Request, targetSop: Sop, sourceSop?: Sop): string[] {
@@ -137,7 +214,7 @@ export function buildReassignmentTargetMetadata(request: Request, targetSop: Sop
   const sampleList = (request.sampleList || request.inputs?.['sampleList'] || []) as string[];
   const sampleTargetMap: Record<string, string[]> = {};
   sampleList.forEach((sample: string) => {
-    const assigned = getAssignedTargetsForSample(sample, sourceMap) || [];
+    const assigned = getReassignmentSampleTargets(sample, sourceMap);
     const canonical = Array.from(new Set((assigned.length ? assigned : Array.from(required))
       .map(resolveTarget)
       .filter((value: string) => required.has(value))));

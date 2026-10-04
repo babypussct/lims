@@ -31,7 +31,7 @@ import {
   SopReassignmentPreview,
   SopReassignmentService
 } from './services/sop-reassignment.service';
-import { getSopReassignmentBlockReason, SopReassignmentOption } from './services/sop-reassignment.utils';
+import { getReassignmentSamples, getSopReassignmentBlockReason, getSopReassignmentSourceSignature, SopReassignmentOption } from './services/sop-reassignment.utils';
 import { 
   buildTrifluralinPdfPayload, 
   buildFipronilPdfPayload, 
@@ -212,6 +212,13 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   sopReassignmentNote = signal('');
   sopReassignmentError = signal('');
   isLoadingSopReassignment = signal(false);
+  sopReassignmentScope = signal<'all' | 'selected'>('all');
+  selectedReassignmentSamples = signal<string[]>([]);
+  reassignmentSampleSearch = signal('');
+  reassignmentSamples = computed(() => this.run() ? getReassignmentSamples(this.run()) : []);
+  visibleReassignmentSamples = computed(() => this.reassignmentSamples().filter(sample =>
+    sample.toLocaleLowerCase('vi').includes(this.reassignmentSampleSearch().trim().toLocaleLowerCase('vi'))));
+  private sopReassignmentLoadId = 0;
   showPreflightModal = signal(false);
   excelImportFile = signal<File | null>(null);
   preflightSummary = signal<PublishPreflightSummary | null>(null);
@@ -277,33 +284,77 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     this.sopReassignmentError.set('');
     this.sopReassignmentCandidates.set([]);
     this.sopReassignmentUnavailableOptions.set([]);
+    this.sopReassignmentScope.set('all');
+    this.selectedReassignmentSamples.set([]);
+    this.reassignmentSampleSearch.set('');
     this.showSopReassignmentModal.set(true);
+    await this.refreshSopReassignmentOptions();
+  }
+
+  async setSopReassignmentScope(scope: 'all' | 'selected'): Promise<void> {
+    this.sopReassignmentScope.set(scope);
+    await this.refreshSopReassignmentOptions();
+  }
+
+  async toggleReassignmentSample(sample: string): Promise<void> {
+    this.selectedReassignmentSamples.update(samples => samples.includes(sample)
+      ? samples.filter(code => code !== sample) : [...samples, sample]);
+    await this.refreshSopReassignmentOptions();
+  }
+
+  async selectReassignmentSamples(all: boolean): Promise<void> {
+    this.selectedReassignmentSamples.set(all ? this.reassignmentSamples() : []);
+    await this.refreshSopReassignmentOptions();
+  }
+
+  onReassignmentSampleSearch(event: Event): void {
+    this.reassignmentSampleSearch.set((event.target as HTMLInputElement).value);
+  }
+
+  private selectedSamplesForReassignment(): string[] | undefined {
+    return this.sopReassignmentScope() === 'selected' ? this.selectedReassignmentSamples() : undefined;
+  }
+
+  private async refreshSopReassignmentOptions(): Promise<void> {
+    const request = this.run();
+    if (!request) return;
+    const loadId = ++this.sopReassignmentLoadId;
+    this.sopReassignmentPreview.set(null);
+    this.sopReassignmentError.set('');
     this.isLoadingSopReassignment.set(true);
     try {
-      const options = await this.sopReassignment.getOptions(request);
+      const options = await this.sopReassignment.getOptions(request, this.selectedSamplesForReassignment());
+      if (loadId !== this.sopReassignmentLoadId) return;
       const candidates = options.filter(option => !option.blockReason).map(option => option.sop);
       this.sopReassignmentCandidates.set(candidates);
       this.sopReassignmentUnavailableOptions.set(options.filter(option => option.blockReason));
       if (candidates.length === 0) {
+        this.selectedReassignmentSopId.set('');
         this.sopReassignmentError.set(
           'Chưa có SOP đích đáp ứng điều kiện chuyển. Xem lý do của từng SOP bên dưới.'
         );
         return;
       }
-      if (candidates.length === 1) {
-        this.selectedReassignmentSopId.set(candidates[0].id);
-        await this.loadSopReassignmentPreview(candidates[0].id);
-      }
+      const previous = this.selectedReassignmentSopId();
+      const target = candidates.find(sop => sop.id === previous) || (candidates.length === 1 ? candidates[0] : null);
+      this.selectedReassignmentSopId.set(target?.id || '');
+      if (target) await this.loadSopReassignmentPreview(target.id);
     } catch (error: any) {
-      this.sopReassignmentError.set(error?.message || 'Không thể tải danh sách SOP đích.');
+      if (loadId === this.sopReassignmentLoadId) {
+        this.sopReassignmentCandidates.set([]);
+        this.sopReassignmentUnavailableOptions.set([]);
+        this.selectedReassignmentSopId.set('');
+        this.sopReassignmentError.set(error?.message || 'Không thể tải danh sách SOP đích.');
+      }
     } finally {
-      this.isLoadingSopReassignment.set(false);
+      if (loadId === this.sopReassignmentLoadId) this.isLoadingSopReassignment.set(false);
     }
   }
 
   closeSopReassignmentModal(): void {
     if (this.isReassigningSop()) return;
     this.showSopReassignmentModal.set(false);
+    ++this.sopReassignmentLoadId;
     this.sopReassignmentPreview.set(null);
     this.sopReassignmentError.set('');
   }
@@ -322,20 +373,21 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
 
   private async loadSopReassignmentPreview(targetSopId: string): Promise<void> {
     if (!targetSopId) return;
+    const loadId = ++this.sopReassignmentLoadId;
     this.isLoadingSopReassignment.set(true);
     this.sopReassignmentError.set('');
     try {
-      const preview = await this.sopReassignment.preview(this.requestId, targetSopId);
-      if (this.selectedReassignmentSopId() === targetSopId) {
+      const preview = await this.sopReassignment.preview(this.requestId, targetSopId, this.selectedSamplesForReassignment());
+      if (loadId === this.sopReassignmentLoadId && this.showSopReassignmentModal()) {
         this.sopReassignmentPreview.set(preview);
       }
     } catch (error: any) {
-      if (this.selectedReassignmentSopId() === targetSopId) {
+      if (loadId === this.sopReassignmentLoadId) {
         this.sopReassignmentPreview.set(null);
         this.sopReassignmentError.set(error?.message || 'SOP đích không hợp lệ cho mẻ này.');
       }
     } finally {
-      if (this.selectedReassignmentSopId() === targetSopId) {
+      if (loadId === this.sopReassignmentLoadId) {
         this.isLoadingSopReassignment.set(false);
       }
     }
@@ -363,13 +415,19 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
       // already reached the queue. From this point no A draft may write after
       // the reassignment transaction.
       await this.pauseAutoSave();
+      if (preview.remainingRequest && oldDraftWasDirty && oldDraft && !(await this.flushCurrentDraft(false))) {
+        throw new Error('Chưa lưu được bản nháp hiện tại. Vui lòng lưu thành công trước khi tách chuyển SOP.');
+      }
 
-      const updatedRequest = await this.sopReassignment.reassign(
+      const result = await this.sopReassignment.reassign(
         this.requestId,
         request.sopId,
         preview.targetSop.id,
-        this.sopReassignmentNote()
+        this.sopReassignmentNote(),
+        preview.movingRequest.sampleList,
+        getSopReassignmentSourceSignature(preview.request)
       );
+      const updatedRequest = result.sourceRequest;
 
       const userEmail = this.auth.currentUser()?.email;
       if (userEmail) {
@@ -382,11 +440,12 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
 
       // Build the clean B form immediately. This avoids depending on the
       // delivery order of the request and results_details snapshot listeners.
-      const targetConfig = ANGULAR_SOP_CONFIG[preview.configKey];
+      const nextConfigKey = result.isPartial ? this.configKey()! : preview.configKey;
+      const targetConfig = ANGULAR_SOP_CONFIG[nextConfigKey];
       this.run.set(updatedRequest);
-      this.config.set({ ...targetConfig, id: preview.configKey });
-      this.configKey.set(preview.configKey);
-      this.draft.set(this.createDefaultDraft(updatedRequest, targetConfig));
+      this.config.set({ ...targetConfig, id: nextConfigKey });
+      this.configKey.set(nextConfigKey);
+      this.draft.set(result.sourceDraft || this.createDefaultDraft(updatedRequest, targetConfig));
       this.activeFilter.set('ALL');
       this.historyList.set([]);
       this.previousLockedBy = null;
@@ -401,7 +460,12 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
       this.sopReassignmentError.set('');
       succeeded = true;
 
-      this.toast.show(
+      if (result.isPartial) this.toast.showEvent({
+        message: `Đã chuyển ${preview.movingRequest.sampleList?.length} mẫu sang SOP “${preview.targetSop.name}”. Mẻ hiện tại còn ${updatedRequest.sampleList?.length} mẫu, giữ nguyên kết quả nháp.`,
+        type: 'success', durationMs: 15000, actionLabel: 'Mở mẻ mới',
+        action: () => openInNewTab(`${window.location.href.split('#')[0]}#${this.router.serializeUrl(this.router.createUrlTree(['/results', result.targetRequest.id]))}`)
+      });
+      else this.toast.show(
         `Đã chuyển SOP từ “${preview.sourceSop.name}” sang “${preview.targetSop.name}”. Dữ liệu kết quả của SOP cũ đã được xóa.`,
         'success'
       );
@@ -633,6 +697,9 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
 
     // Subscribe to real-time changes of the request document
     this.unsubscribeFromDraft = this.resultService.subscribeToDraft(this.requestId, async (draftDoc: any, runDoc: any) => {
+      // Metadata and result rows arrive on separate listeners. The transaction
+      // result below supplies a consistent projection while SOP transfer runs.
+      if (this.isReassigningSop()) return;
       if (runDoc) {
         const user = this.auth.currentUser();
 

@@ -1,5 +1,28 @@
 [
   {
+    "version": "v26.10.04-b01",
+    "date": "4/10/2026",
+    "title": "Chuyển SOP cho một vài mã mẫu trong mẻ",
+    "highlights": [
+      "Chọn một vài mã mẫu để tách sang mẻ mới dùng SOP khách hàng chỉ định.",
+      "Giữ SOP, kết quả nháp và số liệu QC của các mẫu còn lại trong mẻ gốc."
+    ],
+    "features": [
+      "Trong Kết quả → Chuyển SOP, chọn Chọn mã mẫu, đánh dấu mẫu cần chuyển rồi chọn SOP đích.",
+      "Tìm mã mẫu, chọn tất cả hoặc bỏ chọn; xem số mẫu chuyển và số mẫu giữ lại trước khi xác nhận.",
+      "Mở mẻ mới ngay từ thông báo sau khi tách mẫu và chuyển SOP thành công."
+    ],
+    "improvements": [
+      "Danh sách SOP chuyển đến xét đúng chỉ tiêu được giao cho các mẫu đã chọn, gồm SOP chỉ định thủ công.",
+      "Tính lại vật tư, QC, phiếu thao tác và kiểm tra hằng ngày cho cả hai mẻ sau khi tách.",
+      "Lưu bản nháp trước khi tách; từ chối chuyển nếu thiếu tồn kho, mẻ đã thay đổi hoặc có báo cáo được phát hành."
+    ],
+    "fixes": [
+      "Giữ kết quả mẫu còn lại khi tách chuyển SOP và ghi rõ mẫu đã chuyển để tra cứu sau này."
+    ],
+    "releaseOrder": 26100400001
+  },
+  {
     "version": "v26.10.03-b01",
     "date": "3/10/2026",
     "title": "Chuyển SOP thủ công rõ ràng và chính xác hơn",

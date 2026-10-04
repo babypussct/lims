@@ -10,8 +10,69 @@ import {
   getRequiredTargetIds,
   getSopReassignmentOptions,
   getSopReassignmentSourceSignature,
+  partitionSopReassignment,
+  retainSopSplitResults,
+  splitSopStatsForDay,
   transferSopStatsForDay
 } from './sop-reassignment.utils';
+
+test('partial SOP transfer partitions samples and checks only their assigned analytes', () => {
+  const mixed = { ...request, sampleTargetMap: { M1: ['legacy-fip-a'], M2: ['legacy-clp-a'] },
+    sampleDescriptionMap: { M1: { nameSnapshot: 'Cá' }, M2: { nameSnapshot: 'Tôm' } } };
+  const { moving, remaining } = partitionSopReassignment(mixed, [' m1 ']);
+  assert.deepEqual(moving.sampleList, ['M1']);
+  assert.deepEqual(remaining?.sampleList, ['M2']);
+  assert.deepEqual(moving.sampleDescriptionMap, { M1: { nameSnapshot: 'Cá' } });
+  assert.deepEqual(remaining?.sampleDescriptionMap, { M2: { nameSnapshot: 'Tôm' } });
+  assert.equal(moving.inputs.n_sample, 1);
+  assert.equal(remaining?.inputs.n_sample, 1);
+  assert.deepEqual(getMissingTargetIds(moving, sopB, sourceSop), []);
+  assert.deepEqual(getMissingTargetIds(remaining!, sopB, sourceSop), ['chlorpyrifos']);
+  assert.equal(remaining?.inputs.shared, request.inputs.shared);
+});
+
+test('partial transfer supports legacy inputs and refuses empty, missing or duplicate samples', () => {
+  const legacy = { ...request, sampleList: undefined, sampleTargetMap: {}, targetIds: [],
+    inputs: { ...request.inputs, sampleList: ['M1', 'M2'], sampleTargetMap: { M1: ['Fipronil'], M2: ['Chlorpyrifos'] } } };
+  assert.deepEqual(partitionSopReassignment(legacy, ['M2']).moving.targetIds, ['Chlorpyrifos']);
+  assert.equal(partitionSopReassignment(legacy, ['M1', 'M2']).remaining, null);
+  assert.throws(() => partitionSopReassignment(legacy, []), /ít nhất/);
+  assert.throws(() => partitionSopReassignment(legacy, ['M3']), /không còn/);
+  assert.throws(() => partitionSopReassignment({ ...request, sampleList: ['M1', 'm1'] }), /trùng/);
+});
+
+test('source draft keeps untouched sample/QC values and prevents splitting a shared result row', () => {
+  const page1Data = { analyst: 'An', recovery: 95 };
+  const draft = { page1Data, resultData: { ' m1 ': { value: 12 }, M2: { value: 23 }, QC_blank: { value: 0 } } };
+  const retained = retainSopSplitResults(draft, ['M1']);
+  assert.deepEqual(retained, { page1Data, resultData: { M2: { value: 23 }, QC_blank: { value: 0 } } });
+  assert.equal(Object.keys(draft.resultData).length, 3);
+  assert.throws(() => retainSopSplitResults({ resultData: { 'M1; M2': { value: 12 } } }, ['M1']), /mẫu gộp/);
+  assert.deepEqual(retainSopSplitResults({ resultData: { 'M1; M2': { value: 12 } } }, ['M1; M2']).resultData, {});
+});
+
+test('split inventory uses the combined recalculated needs including extra fixed QC', () => {
+  const item = (name: string, amount: number) => ({ name, amount, displayAmount: amount, unit: 'mL', stockUnit: 'mL' });
+  assert.deepEqual(calculateInventoryDelta([item('methanol', 20)], [item('methanol', 14), item('methanol', 10), item('acetone', 5)]),
+    { methanol: -4, acetone: -5 });
+});
+
+test('source signature detects a changed safety margin even when legacy inputs omit it', () => {
+  assert.notEqual(getSopReassignmentSourceSignature({ ...request, margin: 0 }), getSopReassignmentSourceSignature({ ...request, margin: 10 }));
+});
+
+test('split statistics move sample counts, keep the source batch/QC and add the new batch/QC', () => {
+  const original = { '2026-10-04': { totalSamples: 10, totalBatches: 2, totalQcs: 4,
+    sops: { A: { samples: 8, batches: 1, qcs: 2 }, C: { samples: 2, batches: 1, qcs: 2 } } } };
+  const next = splitSopStatsForDay(original, '2026-10-04', 'A', 'B', 3, 2)['2026-10-04'];
+  assert.equal(next.totalSamples, 10);
+  assert.equal(next.totalBatches, 3);
+  assert.equal(next.totalQcs, 6);
+  assert.deepEqual(next.sops.A, { samples: 5, batches: 1, qcs: 2 });
+  assert.deepEqual(next.sops.B, { samples: 3, batches: 1, qcs: 2 });
+  assert.deepEqual(next.sops.C, original['2026-10-04'].sops.C);
+  assert.equal(original['2026-10-04'].totalBatches, 2);
+});
 
 const request = {
   id: 'R1', sopId: 'A', sopName: 'A', items: [{ name: 'methanol', amount: 20, displayAmount: 20, unit: 'mL', stockUnit: 'mL' }],

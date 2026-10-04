@@ -42,6 +42,8 @@ export interface Request {
   approvedAt?: any;
   /** Immutable worksheet currently applicable to this request. Not a print status. */
   currentPrintJobId?: string;
+  lastSopSplitRequestId?: string; // New batch created by the latest partial SOP transfer
+  sopSplitSourceRequestId?: string; // Source batch of a partial SOP transfer
   rejectedAt?: any;
   user?: string;
   /** Stable owner/requester identity for notification and audit workflows. */

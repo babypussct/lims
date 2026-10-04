@@ -2,7 +2,30 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.10.03-b01
+## Phiên bản hiện tại: v26.10.04-b01
+
+### v26.10.04-b01
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Chọn một vài mã mẫu để tách sang mẻ mới dùng SOP khách hàng chỉ định.
+- Giữ SOP, kết quả nháp và số liệu QC của các mẫu còn lại trong mẻ gốc.
+
+#### ✨ Tính Năng Mới
+
+- Trong Kết quả → Chuyển SOP, chọn Chọn mã mẫu, đánh dấu mẫu cần chuyển rồi chọn SOP đích.
+- Tìm mã mẫu, chọn tất cả hoặc bỏ chọn; xem số mẫu chuyển và số mẫu giữ lại trước khi xác nhận.
+- Mở mẻ mới ngay từ thông báo sau khi tách mẫu và chuyển SOP thành công.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Danh sách SOP chuyển đến xét đúng chỉ tiêu được giao cho các mẫu đã chọn, gồm SOP chỉ định thủ công.
+- Tính lại vật tư, QC, phiếu thao tác và kiểm tra hằng ngày cho cả hai mẻ sau khi tách.
+- Lưu bản nháp trước khi tách; từ chối chuyển nếu thiếu tồn kho, mẻ đã thay đổi hoặc có báo cáo được phát hành.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Giữ kết quả mẫu còn lại khi tách chuyển SOP và ghi rõ mẫu đã chuyển để tra cứu sau này.
 
 ### v26.10.03-b01
 

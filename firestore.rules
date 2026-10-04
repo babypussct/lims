@@ -213,8 +213,12 @@ service cloud.firestore {
     }
 
     function canReassignSop(appId) {
-      return isActiveUser(appId) &&
-        (isManager(appId) || hasPermission(appId, 'sop_approve'));
+      return userExists(appId) && canReassignSopForProfile(appId, getUserProfile(appId));
+    }
+
+    function canReassignSopForProfile(appId, profile) {
+      return ['manager', 'staff'].hasAny([profile.get('role', 'pending')]) &&
+        evaluateUserPermission(appId, profile, 'sop_approve');
     }
 
     function canManageDutySchedule(appId) {
@@ -923,6 +927,110 @@ service cloud.firestore {
         entry.get('status', '') == 'approved';
     }
 
+    function unpublishedSopSplitData(data) {
+      return data == null || (data.get('pdfUrl', '') in ['', null] && data.get('pdfViewUrl', '') in ['', null] &&
+        data.get('docsUrl', '') in ['', null] && data.get('reports', {}).size() == 0 &&
+        data.get('pdfHistory', []).size() == 0 && data.get('publishedBackup', null) == null);
+    }
+
+    function validSopSplitResultSubset(before, after, remaining) {
+      let beforeMap = before == null ? {} : before;
+      let afterMap = after == null ? {} : after;
+      let oldRows = beforeMap.get('resultData', {});
+      let rows = afterMap.get('resultData', {});
+      return afterMap.get('page1Data', {}) == beforeMap.get('page1Data', {}) &&
+        rows.diff(oldRows).addedKeys().size() == 0 && rows.diff(oldRows).changedKeys().size() == 0 &&
+        rows.keys().toSet().hasAll(oldRows.keys().toSet().intersection(remaining.toSet()));
+    }
+
+    // A partial transfer must create a new approved batch and partition the
+    // original sample list in the same atomic write. Source SOP/results stay put.
+    function validSopSplitTransition(appId, sourceId) {
+      let sourcePath = /databases/$(database)/documents/artifacts/$(appId)/requests/$(sourceId);
+      let before = get(sourcePath).data;
+      let after = getAfter(sourcePath).data;
+      let targetId = after.get('lastSopSplitRequestId', '');
+      let targetPath = /databases/$(database)/documents/artifacts/$(appId)/requests/$(targetId);
+      let target = getAfter(targetPath).data;
+      let original = before.get('sampleList', before.get('inputs', {}).get('sampleList', []));
+      let remaining = after.get('sampleList', []);
+      let moved = target.get('sampleList', []);
+      return canReassignSop(appId) && sourceId != targetId && targetId.size() > 0 && !exists(targetPath) &&
+        ['approved', 'draft'].hasAny([before.get('status', '')]) && after.get('status', '') == before.get('status', '') &&
+        before.get('_isDeleted', false) != true && before.get('isVirtualMaster', false) != true &&
+        before.get('parentMasterId', '') == '' && before.get('childRequestIds', []).size() == 0 &&
+        (before.get('lockedBy', '') == '' || before.get('lockedBy', '') == request.auth.token.get('email', '') ||
+          (before.get('lastActiveAt', request.time) is timestamp && before.get('lastActiveAt', request.time) < request.time - duration.value(3, 'm'))) &&
+        unpublishedSopSplitData(before.get('analysisResultSummary', {})) &&
+        unpublishedSopSplitData(before.get('analysisResult', {})) &&
+        after.get('sopId', '') == before.get('sopId', '') && after.get('resultStatusReason', '') == 'sop_split_source' &&
+        after.get('inputs', {}).get('sampleList', []) == remaining && after.get('inputs', {}).get('n_sample', 0) == remaining.size() &&
+        target.get('inputs', {}).get('sampleList', []) == moved && target.get('inputs', {}).get('n_sample', 0) == moved.size() &&
+        original is list && remaining is list && moved is list && remaining.size() > 0 && moved.size() > 0 &&
+        original.toSet().size() == original.size() && remaining.toSet().size() == remaining.size() && moved.toSet().size() == moved.size() &&
+        remaining.toSet().intersection(moved.toSet()).size() == 0 && remaining.toSet().union(moved.toSet()) == original.toSet() &&
+        target.get('sopSplitSourceRequestId', '') == sourceId && target.get('resultStatusReason', '') == 'sop_split_created' &&
+        target.get('status', '') == 'approved' && target.get('sopId', '') != before.get('sopId', '') &&
+        target.get('analysisDate', '') == before.get('analysisDate', '') &&
+        !('analysisResult' in target) && !('analysisResultSummary' in target) &&
+        !existsAfter(/databases/$(database)/documents/artifacts/$(appId)/results_details/$(targetId)) &&
+        validSopSplitResultSubset(before.get('analysisResult', {}), after.get('analysisResult', {}), remaining) &&
+        after.lastUpdated == request.time &&
+        after.diff(before).affectedKeys().hasOnly([
+          'sampleList', 'sampleTargetMap', 'sampleDescriptionMap', 'targetIds', 'targetScopeSnapshots',
+          'inputs', 'items', 'currentPrintJobId', 'lastSopSplitRequestId', 'resultStatusReason', 'analysisResult', 'lastUpdated'
+        ]);
+    }
+
+    function validSopSplitDetails(appId, sourceId) {
+      let detailPath = /databases/$(database)/documents/artifacts/$(appId)/results_details/$(sourceId);
+      let sourcePath = /databases/$(database)/documents/artifacts/$(appId)/requests/$(sourceId);
+      return !exists(detailPath) || (
+        existsAfter(detailPath) && unpublishedSopSplitData(get(detailPath).data) &&
+        validSopSplitResultSubset(get(detailPath).data, getAfter(detailPath).data, getAfter(sourcePath).data.get('sampleList', []))
+      );
+    }
+
+    // Auxiliary writes rely on the source rule validating the partition. The
+    // fresh marker proves that source must also be written in this commit.
+    // Avoid re-evaluating the full protocol for every inventory item.
+    function isSopSplitCommit(appId, sourceId) {
+      let sourcePath = /databases/$(database)/documents/artifacts/$(appId)/requests/$(sourceId);
+      let before = get(sourcePath).data;
+      let after = getAfter(sourcePath).data;
+      return after.get('resultStatusReason', '') == 'sop_split_source' && after.lastUpdated == request.time &&
+        after.get('lastSopSplitRequestId', '') != before.get('lastSopSplitRequestId', '') &&
+        after.get('lastSopSplitRequestId', '').size() > 0;
+    }
+
+    function validSopSplitChecklist(appId, analysisDate) {
+      let sourceId = request.resource.data.get('lastSopReassignmentRequestId', '');
+      let source = getAfter(/databases/$(database)/documents/artifacts/$(appId)/requests/$(sourceId)).data;
+      let targetId = source.get('lastSopSplitRequestId', '');
+      let target = getAfter(/databases/$(database)/documents/artifacts/$(appId)/requests/$(targetId)).data;
+      let entries = request.resource.data.get('entries', {});
+      return isSopSplitCommit(appId, sourceId) &&
+        request.resource.data.get('schemaVersion', 0) == 1 && request.resource.data.get('analysisDate', '') == analysisDate &&
+        request.resource.data.updatedAt == request.time && source.get('analysisDate', '') == analysisDate &&
+        entries.get(sourceId, {}).get('requestId', '') == sourceId && entries.get(sourceId, {}).get('sopId', '') == source.get('sopId', '') &&
+        entries.get(sourceId, {}).get('status', '') == source.get('status', '') &&
+        entries.get(targetId, {}).get('requestId', '') == targetId && entries.get(targetId, {}).get('sopId', '') == target.get('sopId', '') &&
+        entries.get(targetId, {}).get('status', '') == 'approved';
+    }
+
+    function validSopSplitChecklistCreate(appId, analysisDate) {
+      return request.resource.data.keys().hasOnly(['schemaVersion', 'analysisDate', 'updatedAt', 'lastSopReassignmentRequestId', 'entries']) &&
+        request.resource.data.get('entries', {}).size() == 2 && validSopSplitChecklist(appId, analysisDate);
+    }
+
+    function validSopSplitChecklistUpdate(appId, analysisDate) {
+      let sourceId = request.resource.data.get('lastSopReassignmentRequestId', '');
+      let targetId = getAfter(/databases/$(database)/documents/artifacts/$(appId)/requests/$(sourceId)).data.get('lastSopSplitRequestId', '');
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['schemaVersion', 'analysisDate', 'updatedAt', 'lastSopReassignmentRequestId', 'entries']) &&
+        request.resource.data.get('entries', {}).diff(resource.data.get('entries', {})).affectedKeys().hasOnly([sourceId, targetId]) &&
+        validSopSplitChecklist(appId, analysisDate);
+    }
+
     function validSopReassignmentDailyChecklistCreate(appId, analysisDate) {
       let reqId = request.resource.data.get('lastSopReassignmentRequestId', '');
       let entries = request.resource.data.get('entries', {});
@@ -969,7 +1077,7 @@ service cloud.firestore {
         request.resource.data.get('stock', -1) is number &&
         request.resource.data.get('stock', -1) >= 0 &&
         request.resource.data.lastUpdated == request.time &&
-        validSopReassignmentTransition(appId, reqId);
+        (isSopSplitCommit(appId, reqId) || validSopReassignmentTransition(appId, reqId));
     }
 
     function validSopReassignmentLogSupersede(appId) {
@@ -2042,12 +2150,19 @@ service cloud.firestore {
     match /artifacts/{appId}/requests/{reqId} {
       allow get, list: if canUseSopWorkspace(appId) ||
         (isActiveUser(appId) && hasPermission(appId, 'report_view'));
-      allow create: if validRequestCreate(appId, request.resource.data);
-      allow update: if (
+      allow create: if validRequestCreate(appId, request.resource.data) &&
+        (!('sopSplitSourceRequestId' in request.resource.data) || (
+          isSopSplitCommit(appId, request.resource.data.sopSplitSourceRequestId) &&
+          getAfter(/databases/$(database)/documents/artifacts/$(appId)/requests/$(request.resource.data.sopSplitSourceRequestId)).data.get('lastSopSplitRequestId', '') == reqId &&
+          request.resource.data.get('resultStatusReason', '') == 'sop_split_created'
+        ));
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasAny(['lastSopSplitRequestId'])
+        ? (validSopSplitTransition(appId, reqId) && validSopSplitDetails(appId, reqId))
+        : ((
           request.resource.data.get('sopId', '') == resource.data.get('sopId', '') &&
           validWorksheetParameterUpdate(appId, reqId) &&
           (isManager(appId) || hasPermission(appId, 'sop_approve') || validBatchRequestUpdate(appId))
-        ) || validSopReassignmentTransition(appId, reqId);
+        ) || validSopReassignmentTransition(appId, reqId));
       allow delete: if isManager(appId);
 
       match /history/{histId} {
@@ -2068,10 +2183,10 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow create: if isManager(appId) ||
         hasPermission(appId, 'batch_run') ||
-        validSopReassignmentDailyChecklistCreate(appId, analysisDate);
+        validSopReassignmentDailyChecklistCreate(appId, analysisDate) || validSopSplitChecklistCreate(appId, analysisDate);
       allow update: if isManager(appId) ||
         hasPermission(appId, 'batch_run') ||
-        validSopReassignmentDailyChecklistUpdate(appId, analysisDate);
+        validSopReassignmentDailyChecklistUpdate(appId, analysisDate) || validSopSplitChecklistUpdate(appId, analysisDate);
       allow delete: if isManager(appId) || hasPermission(appId, 'batch_run');
     }
     match /artifacts/{appId}/duty_staff/{staffId} {
