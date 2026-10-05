@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.10.04-b02",
-    "title": "Chọn khoảng ngày duyệt trong Kết Quả Phân Tích",
+    "version": "v26.10.05-b01",
+    "title": "Tối ưu nhập Excel kết quả và sửa nút in bảng checklist",
     "features": [
-      "Mở Kết Quả Phân Tích với Tất cả thời gian, chỉ lọc ngày khi tự chọn.",
-      "Chọn nhanh hoặc nhập khoảng ngày duyệt để tra cứu đúng các mẻ cần xử lý.",
-      "Giữ lựa chọn Tất cả thời gian hoặc khoảng ngày đã chọn khi quay lại danh sách từ mẻ phân tích.",
-      "Giữ trang đang xem khi mở lại Lọc nâng cao mà chưa thay đổi khoảng ngày.",
-      "Sửa lịch và danh sách chọn nhanh bị che khuất trong Lọc nâng cao; chọn ngày được trên máy tính và điện thoại."
+      "Bỏ qua hình sắc ký đồ và thành phần đính kèm khi nhập Excel kết quả phân tích.",
+      "Giữ nguyên dữ liệu bảng tính khi lọc ảnh, đối tượng nhúng và thiết lập máy in khỏi bản Excel dùng để đọc.",
+      "Tự thử lại bằng file gốc nếu đọc hoặc phân tích bản đã lọc thất bại; áp dụng cho worker và chế độ tương thích.",
+      "Hiển thị thống nhất số thành phần đính kèm đã bỏ qua ở hai chế độ nhập Excel.",
+      "Giữ nguyên file gốc khi cấu trúc ZIP không được hỗ trợ hoặc metadata không nhất quán."
     ]
   },
   "assetGroups": [

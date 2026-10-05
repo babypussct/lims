@@ -7,6 +7,11 @@ import {
   parseMassHunterResultWorkbook
 } from './excel-result-import';
 import {
+  describeStrippedEntries,
+  readWithStrippedFallback,
+  stripXlsxMedia
+} from './xlsx-media-stripper';
+import {
   LARGE_SPREADSHEET_MAX_FILE_SIZE,
   SAFE_XLSX_IMPORT_READ_OPTIONS,
   validateSpreadsheetFile
@@ -181,20 +186,27 @@ function readInWorker(
 }
 
 async function readOnMainThread(
-  buffer: ArrayBuffer,
+  sourceBuffer: ArrayBuffer,
   context: ExcelImportContext,
   onProgress: ProgressCallback,
   signal?: AbortSignal
 ): Promise<ParsedExcelWorkbook> {
   throwIfAborted(signal);
+  const stripped = stripXlsxMedia(sourceBuffer);
+  if (stripped.strippedEntries > 0) {
+    onProgress({
+      stage: 'reading-sheets',
+      percent: 32,
+      message: `${describeStrippedEntries(stripped.strippedEntries)}; đang đọc danh sách trang tính...`
+    });
+  }
   const XLSX = await import('xlsx');
   await yieldToBrowser();
   throwIfAborted(signal);
 
-  const workbookIndex = XLSX.read(buffer, {
-    ...SAFE_XLSX_IMPORT_READ_OPTIONS,
-    bookSheets: true,
-  });
+  const workbookIndex = readWithStrippedFallback(sourceBuffer, stripped, buffer =>
+    XLSX.read(buffer, { ...SAFE_XLSX_IMPORT_READ_OPTIONS, bookSheets: true })
+  );
   const allSheetNames = workbookIndex.SheetNames || [];
   const relevantSheetNames = getRelevantExcelImportSheetNames(allSheetNames, context);
   const selectedSheetNames = relevantSheetNames.length > 0
@@ -209,11 +221,13 @@ async function readOnMainThread(
   await yieldToBrowser();
   throwIfAborted(signal);
 
-  const workbook = XLSX.read(buffer, {
-    ...SAFE_XLSX_IMPORT_READ_OPTIONS,
-    cellText: true,
-    sheets: selectedSheetNames
-  });
+  const parsed = readWithStrippedFallback(sourceBuffer, stripped, buffer =>
+    parseMassHunterResultWorkbook(XLSX, XLSX.read(buffer, {
+      ...SAFE_XLSX_IMPORT_READ_OPTIONS,
+      cellText: true,
+      sheets: selectedSheetNames
+    }))
+  );
   throwIfAborted(signal);
 
   onProgress({
@@ -221,7 +235,7 @@ async function readOnMainThread(
     percent: 90,
     message: 'Đã đọc xong Excel; đang ghép số liệu với mẫu trong mẻ...'
   });
-  return parseMassHunterResultWorkbook(XLSX, workbook);
+  return parsed;
 }
 
 function readFileAsArrayBuffer(

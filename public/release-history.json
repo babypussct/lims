@@ -1,5 +1,24 @@
 [
   {
+    "version": "v26.10.05-b01",
+    "date": "5/10/2026",
+    "title": "Tối ưu nhập Excel kết quả và sửa nút in bảng checklist",
+    "highlights": [
+      "Bỏ qua hình sắc ký đồ và thành phần đính kèm khi nhập Excel kết quả phân tích."
+    ],
+    "features": [],
+    "improvements": [
+      "Giữ nguyên dữ liệu bảng tính khi lọc ảnh, đối tượng nhúng và thiết lập máy in khỏi bản Excel dùng để đọc.",
+      "Tự thử lại bằng file gốc nếu đọc hoặc phân tích bản đã lọc thất bại; áp dụng cho worker và chế độ tương thích.",
+      "Hiển thị thống nhất số thành phần đính kèm đã bỏ qua ở hai chế độ nhập Excel."
+    ],
+    "fixes": [
+      "Giữ nguyên file gốc khi cấu trúc ZIP không được hỗ trợ hoặc metadata không nhất quán.",
+      "Sửa nút In bảng trong checklist hằng ngày để dùng đúng giao diện nút hiện có."
+    ],
+    "releaseOrder": 26100500001
+  },
+  {
     "version": "v26.10.04-b02",
     "date": "4/10/2026",
     "title": "Chọn khoảng ngày duyệt trong Kết Quả Phân Tích",

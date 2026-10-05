@@ -1,18 +1,16 @@
 {
-  "title": "Chọn khoảng ngày duyệt trong Kết Quả Phân Tích",
+  "title": "Tối ưu nhập Excel kết quả và sửa nút in bảng checklist",
   "highlights": [
-    "Mở Kết Quả Phân Tích với Tất cả thời gian, chỉ lọc ngày khi tự chọn.",
-    "Chọn nhanh hoặc nhập khoảng ngày duyệt để tra cứu đúng các mẻ cần xử lý."
+    "Bỏ qua hình sắc ký đồ và thành phần đính kèm khi nhập Excel kết quả phân tích."
   ],
-  "features": [
-  ],
+  "features": [],
   "improvements": [
-    "Giữ lựa chọn Tất cả thời gian hoặc khoảng ngày đã chọn khi quay lại danh sách từ mẻ phân tích.",
-    "Giữ trang đang xem khi mở lại Lọc nâng cao mà chưa thay đổi khoảng ngày."
+    "Giữ nguyên dữ liệu bảng tính khi lọc ảnh, đối tượng nhúng và thiết lập máy in khỏi bản Excel dùng để đọc.",
+    "Tự thử lại bằng file gốc nếu đọc hoặc phân tích bản đã lọc thất bại; áp dụng cho worker và chế độ tương thích.",
+    "Hiển thị thống nhất số thành phần đính kèm đã bỏ qua ở hai chế độ nhập Excel."
   ],
   "fixes": [
-    "Sửa lịch và danh sách chọn nhanh bị che khuất trong Lọc nâng cao; chọn ngày được trên máy tính và điện thoại.",
-    "Lọc danh sách, số mẻ theo trạng thái và lịch sử theo ngày duyệt, kể cả khi ngày phân tích khác ngày duyệt.",
-    "Bỏ giới hạn Hôm nay khi mở Kết Quả Phân Tích lần đầu."
+    "Giữ nguyên file gốc khi cấu trúc ZIP không được hỗ trợ hoặc metadata không nhất quán.",
+    "Sửa nút In bảng trong checklist hằng ngày để dùng đúng giao diện nút hiện có."
   ]
 }

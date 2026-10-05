@@ -2,7 +2,28 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.10.04-b02
+## Phiên bản hiện tại: v26.10.05-b01
+
+### v26.10.05-b01
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Bỏ qua hình sắc ký đồ và thành phần đính kèm khi nhập Excel kết quả phân tích.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Giữ nguyên dữ liệu bảng tính khi lọc ảnh, đối tượng nhúng và thiết lập máy in khỏi bản Excel dùng để đọc.
+- Tự thử lại bằng file gốc nếu đọc hoặc phân tích bản đã lọc thất bại; áp dụng cho worker và chế độ tương thích.
+- Hiển thị thống nhất số thành phần đính kèm đã bỏ qua ở hai chế độ nhập Excel.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Giữ nguyên file gốc khi cấu trúc ZIP không được hỗ trợ hoặc metadata không nhất quán.
+- Sửa nút In bảng trong checklist hằng ngày để dùng đúng giao diện nút hiện có.
 
 ### v26.10.04-b02
 
