@@ -222,6 +222,10 @@
                         <i class="fa-solid fa-pen text-xs"></i><span class="text-[10px] font-black uppercase tracking-wide">Sửa mẻ</span>
                       </button>
                     }
+                    <button type="button" (click)="openQuickBatch(batch)"
+                            class="shrink-0 min-h-10 px-3 py-1.5 rounded-lg border border-violet-200 dark:border-violet-500/30 bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-300 flex items-center justify-center gap-1.5 transition active:scale-95 hover:bg-violet-100 dark:hover:bg-violet-500/20 sm:min-h-0">
+                      <i class="fa-solid fa-list-ol text-xs" aria-hidden="true"></i><span class="text-[10px] font-black uppercase tracking-wide">LẬP BATCH NHANH</span>
+                    </button>
                     <button type="button" (click)="toggleSourceBatchList(batch.cardKey)"
                             class="shrink-0 min-h-10 px-3 py-1.5 rounded-lg border border-blue-200 dark:border-blue-500/30 bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300 flex items-center justify-center gap-1.5 transition active:scale-95 sm:min-h-0">
                       <i class="fa-solid fa-layer-group text-xs"></i><span class="text-[10px] font-black uppercase tracking-wide">{{batch.physicalBatchCount}} mẻ</span>
@@ -239,7 +243,8 @@
                           <div class="font-mono text-[10px] font-black text-slate-700 dark:text-slate-300 break-all">{{source.requestId}}</div>
                           <div class="text-[10px] text-slate-400 mt-0.5">{{source.formattedSamples || 'Chưa xác định mã mẫu'}} · {{sourceBatchStatusLabel(source.status)}}</div>
                         </div>
-                        <div class="flex flex-wrap items-center gap-1.5 shrink-0 sm:flex-nowrap">
+                        <div class="flex flex-wrap items-center gap-1.5 shrink-0 sm:max-w-[60%]">
+                          <button type="button" (click)="openQuickBatch(batch, source.requestId)" class="h-10 px-2.5 rounded-lg border border-violet-200 dark:border-violet-500/30 bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-300 text-[9px] font-black hover:bg-violet-100 dark:hover:bg-violet-500/20 sm:h-7 sm:px-2"><i class="fa-solid fa-list-ol mr-1" aria-hidden="true"></i>LẬP BATCH NHANH</button>
                           <button type="button" (click)="copyBatchId(source.requestId)" class="h-10 px-2.5 rounded-lg border border-slate-200 dark:border-slate-700 text-[9px] font-black text-slate-500 dark:text-slate-300 hover:text-blue-600 sm:h-7 sm:px-2"><i class="fa-regular fa-copy mr-1"></i>Sao Chép</button>
                           <button type="button" (click)="navigateToResult(source.requestId, source.status)" class="h-10 px-2.5 rounded-lg bg-blue-600 text-white text-[9px] font-black hover:bg-blue-700 sm:h-7 sm:px-2"><i class="fa-solid fa-arrow-up-right-from-square mr-1"></i>Mở Kết Quả</button>
                           @if (state.isAdmin()) {
@@ -479,6 +484,58 @@
     }
   </main>
 </div>
+
+@if (quickBatchContext(); as context) {
+  <app-modal-shell title="LẬP BATCH NHANH" [description]="context.sopName" size="md" (closed)="quickBatchContext.set(null)">
+    <div modalBody data-daily-quick-batch class="space-y-4 text-sm text-slate-700 dark:text-slate-200">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="space-y-1.5">
+          <label for="daily-quick-batch-method" class="block text-xs font-bold">Phương pháp chạy</label>
+          <input id="daily-quick-batch-method" type="text" [ngModel]="quickBatchMethod()" (ngModelChange)="quickBatchMethod.set($event)"
+                 placeholder="Ví dụ: TRIFLURALIN" autocomplete="off" spellcheck="false"
+                 class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2.5 font-mono text-sm focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none">
+          <p class="text-xs text-slate-500 dark:text-slate-400">Có thể sửa. Tên được viết hoa và khoảng trắng được đổi thành dấu gạch dưới.</p>
+        </div>
+        <div class="space-y-1.5">
+          <label for="daily-quick-batch-id" class="block text-xs font-bold">Mã batch chạy</label>
+          @if (context.sources.length > 1) {
+            <select id="daily-quick-batch-id" [ngModel]="quickBatchRequestId()" (ngModelChange)="quickBatchRequestId.set($event)"
+                    class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2.5 font-mono text-sm focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none">
+              @for (source of context.sources; track source.requestId) {
+                <option [value]="source.requestId">{{source.requestId}} · {{source.sampleIds.length}} mẫu</option>
+              }
+            </select>
+          } @else {
+            <input id="daily-quick-batch-id" type="text" [value]="quickBatchRequestId()" readonly
+                   class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2.5 font-mono text-sm">
+          }
+          <p class="text-xs text-slate-500 dark:text-slate-400">Tự động lấy từ mẻ đã chọn.@if (context.sources.length > 1) { Có thể chọn mẻ khác cùng phương pháp. }</p>
+        </div>
+      </div>
+      @if (quickBatchSource(); as source) {
+        <p class="rounded-xl bg-violet-50 dark:bg-violet-500/10 px-3 py-2 text-xs text-violet-700 dark:text-violet-300"><strong>Mẫu thực hiện:</strong> {{source.formattedSamples || 'Chưa có mã mẫu'}}</p>
+      }
+      <div class="space-y-1.5">
+        <label for="daily-quick-batch-list" class="block text-xs font-bold">Danh sách chạy · {{quickBatchList().lines.length}} dòng</label>
+        <textarea #quickBatchOutput id="daily-quick-batch-list" [value]="quickBatchText()" readonly rows="10" wrap="off" (click)="quickBatchOutput.select()"
+                  class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2.5 font-mono text-sm leading-6 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none"></textarea>
+        <p class="text-xs text-slate-500 dark:text-slate-400">Định dạng: PHƯƠNG PHÁP_HẬU TỐ_MÃ SỐ MẪU. Giữ tiền tố chữ nếu mã mẫu có tiền tố. Mỗi dòng tương ứng một hàng trong Excel.</p>
+      </div>
+      @if (!quickBatchMethod().trim()) {
+        <p role="alert" class="text-xs text-amber-700 dark:text-amber-300">Nhập phương pháp chạy để tạo danh sách.</p>
+      }
+      @if (quickBatchList().invalidSampleIds.length > 0) {
+        <p role="alert" class="text-xs text-amber-700 dark:text-amber-300">Chưa thể sao chép vì mã mẫu không có số thứ tự và hậu tố 2 chữ số: {{quickBatchList().invalidSampleIds.join(', ')}}.</p>
+      } @else if (quickBatchSource()?.sampleIds?.length === 0) {
+        <p role="alert" class="text-xs text-amber-700 dark:text-amber-300">Mẻ này chưa có mã mẫu để lập danh sách.</p>
+      }
+    </div>
+    <div modalFooter class="flex flex-wrap justify-end gap-2">
+      <app-button variant="secondary" (click)="quickBatchContext.set(null)">Đóng</app-button>
+      <app-button [disabled]="!canCopyQuickBatch() || copyingQuickBatch()" (click)="copyQuickBatchList()"><i class="fa-regular fa-copy" aria-hidden="true"></i> {{copyingQuickBatch() ? 'Đang sao chép…' : 'Sao chép vào Excel'}}</app-button>
+    </div>
+  </app-modal-shell>
+}
 
 <!-- ===== PRINT OPTIONS SETTINGS MODAL ===== -->
 @if (showPrintSettings()) {

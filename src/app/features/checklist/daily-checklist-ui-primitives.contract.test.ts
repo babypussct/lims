@@ -55,7 +55,7 @@ describe('daily checklist shared UI primitive integration', () => {
     assert.match(template, /setViewMode\(option\.value\)/);
     assert.match(template, /class="h-10 px-3 rounded-lg[^\"]*sm:h-7 sm:px-2\.5"/);
     assert.match(template, /class="h-10 px-2\.5 rounded-lg[^\"]*sm:h-7 sm:px-2"/);
-    assert.match(template, /flex flex-wrap items-center gap-1\.5 shrink-0 sm:flex-nowrap/);
+    assert.match(template, /flex flex-wrap items-center gap-1\.5 shrink-0 sm:max-w-\[60%\]/);
     assert.match(template, /Đã nhận \{\{loadedBatchCount\(\)\}\} mẻ phù hợp\./);
     assert.match(template, /class="cl-print-document cl-print-only"/);
     assert.match(component, /printDocument\(\)/);

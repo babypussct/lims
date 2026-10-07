@@ -11,6 +11,41 @@ import {
 } from './daily-checklist.utils';
 import { buildDailyCompactPrintPages, planDailyPrintLayout } from './daily-print-layout-planner';
 import { computeDailyBatchLayoutHint } from './daily-screen-layout-planner';
+import { buildDailyQuickBatchList, normalizeQuickBatchMethod } from './daily-quick-batch.utils';
+
+test('quick batch formats the Trifluralin example as one sample per Excel row', () => {
+  const result = buildDailyQuickBatchList('Trifluralin', ['0306', '0406', '0506', '0606']);
+  assert.deepEqual(result, {
+    lines: ['TRIFLURALIN_06_03', 'TRIFLURALIN_06_04', 'TRIFLURALIN_06_05', 'TRIFLURALIN_06_06'],
+    invalidSampleIds: []
+  });
+  assert.equal(result.lines.join('\r\n').split('\r\n').length, 4);
+});
+
+test('quick batch uses only actual samples, removes duplicates and keeps zeros, suffixes and prefixes', () => {
+  assert.deepEqual(buildDailyQuickBatchList(' gc ms ', ['1007', '0306', '0606', ' 0306 ', 'U0306', 'l0306', 'L0306', '10306']).lines,
+    ['GC_MS_06_03', 'GC_MS_06_06', 'GC_MS_06_103', 'GC_MS_07_10', 'GC_MS_06_L03', 'GC_MS_06_U03']);
+});
+
+test('quick batch method edits regenerate names and invalid codes are reported', () => {
+  assert.equal(normalizeQuickBatchMethod('  triflu\tral in\n'), 'TRIFLU_RAL_IN');
+  assert.deepEqual(buildDailyQuickBatchList('New method', ['0306']).lines, ['NEW_METHOD_06_03']);
+  assert.deepEqual(buildDailyQuickBatchList('  ', ['0306']).lines, []);
+  assert.deepEqual(buildDailyQuickBatchList('Trifluralin', ['0306', 'QC_BLANK', 'A01', '0306;0406']).invalidSampleIds,
+    ['QC_BLANK', 'A01', '0306;0406']);
+  assert.deepEqual(buildDailyQuickBatchList('Trifluralin', []), { lines: [], invalidSampleIds: [] });
+});
+
+test('quick batch selection keeps physical batch samples independent of filtered daily groups', () => {
+  const batches = buildDailyBatchViews(buildApprovedBatchOverviews([
+    request({ id: 'REQ-TRI-1', sopName: 'Trifluralin', sampleList: ['0306', '0406'], targetIds: ['T1'] }),
+    request({ id: 'REQ-TRI-2', sopName: 'Trifluralin', sampleList: ['0506', '0606'], targetIds: ['T2'] })
+  ], '2026-07-16', (_item, targetId) => targetId));
+  const filtered = { ...batches[0], groups: batches[0].groups.slice(0, 1) };
+  const source = filtered.sourceBatches.find(batch => batch.requestId === 'REQ-TRI-2')!;
+  assert.deepEqual(buildDailyQuickBatchList(filtered.sopName, source.sampleIds).lines,
+    ['TRIFLURALIN_06_05', 'TRIFLURALIN_06_06']);
+});
 
 function request(overrides: Partial<Request> = {}): Request {
   return {

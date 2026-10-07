@@ -15,6 +15,7 @@ import { DailyChecklistDataService } from './daily-checklist-data.service';
 import {
   ApprovedBatchOverview,
   DailyBatchView,
+  DailyPhysicalBatchRef,
   DailyPrintModePreference,
   DailyPrintOrientationPreference
 } from './daily-checklist.model';
@@ -32,6 +33,7 @@ import {
 } from './daily-screen-layout-planner';
 import { TargetService } from '../targets/target.service';
 import { getCanonicalId } from '../results/shared/compound-id-resolver';
+import { buildDailyQuickBatchList, normalizeQuickBatchMethod } from './daily-quick-batch.utils';
 
 @Component({
   selector: 'app-daily-checklist',
@@ -465,6 +467,20 @@ export class DailyChecklistComponent implements OnDestroy {
   readonly batchGridWidth = signal(0);
   readonly availableTargetGroups = signal<TargetGroup[]>([]);
   readonly openTargetDetailKeys = signal<Set<string>>(new Set());
+  readonly quickBatchContext = signal<{ sopName: string; sources: DailyPhysicalBatchRef[] } | null>(null);
+  readonly quickBatchMethod = signal('');
+  readonly quickBatchRequestId = signal('');
+  readonly copyingQuickBatch = signal(false);
+  readonly quickBatchSource = computed(() =>
+    this.quickBatchContext()?.sources.find(source => source.requestId === this.quickBatchRequestId())
+  );
+  readonly quickBatchList = computed(() =>
+    buildDailyQuickBatchList(this.quickBatchMethod(), this.quickBatchSource()?.sampleIds || [])
+  );
+  readonly quickBatchText = computed(() => this.quickBatchList().lines.join('\r\n'));
+  readonly canCopyQuickBatch = computed(() =>
+    this.quickBatchList().lines.length > 0 && this.quickBatchList().invalidSampleIds.length === 0
+  );
 
   readonly printOrientationOptions: { v: DailyPrintOrientationPreference, l: string }[] = [
     { v: 'auto', l: 'Tự động' },
@@ -781,22 +797,51 @@ export class DailyChecklistComponent implements OnDestroy {
     });
   }
 
+  openQuickBatch(batch: DailyBatchView, requestId = batch.sourceBatches[0]?.requestId): void {
+    if (!requestId) return;
+    this.quickBatchMethod.set(normalizeQuickBatchMethod(batch.sopName));
+    this.quickBatchRequestId.set(requestId);
+    this.quickBatchContext.set({ sopName: batch.sopName, sources: batch.sourceBatches });
+  }
+
+  async copyQuickBatchList(): Promise<void> {
+    if (!this.canCopyQuickBatch() || this.copyingQuickBatch()) return;
+    const text = this.quickBatchText();
+    const count = this.quickBatchList().lines.length;
+    this.copyingQuickBatch.set(true);
+    try {
+      await this.copyText(text);
+      this.toast.show(`Đã sao chép ${count} dòng. Dán vào Excel để mỗi mẫu nằm trên một hàng.`, 'success');
+    } catch {
+      this.toast.show('Không thể sao chép tự động. Hãy chọn danh sách và nhấn Ctrl+C để sao chép.', 'error');
+    } finally {
+      this.copyingQuickBatch.set(false);
+    }
+  }
+
+  private async copyText(text: string): Promise<void> {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      const container = this.element.nativeElement.querySelector('[data-daily-quick-batch]') || document.body;
+      container.appendChild(textarea);
+      try {
+        textarea.select();
+        if (!document.execCommand('copy')) throw new Error('Clipboard API unavailable');
+      } finally {
+        textarea.remove();
+      }
+    }
+  }
+
   async copyBatchId(requestId: string): Promise<void> {
     if (!requestId) return;
     try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(requestId);
-      } else {
-        const textarea = document.createElement('textarea');
-        textarea.value = requestId;
-        textarea.style.position = 'fixed';
-        textarea.style.opacity = '0';
-        document.body.appendChild(textarea);
-        textarea.select();
-        const copied = document.execCommand('copy');
-        textarea.remove();
-        if (!copied) throw new Error('Clipboard API unavailable');
-      }
+      await this.copyText(requestId);
       this.toast.show('Đã sao chép mã mẻ.', 'success');
     } catch {
       this.toast.show('Không thể sao chép mã mẻ trên thiết bị này.', 'error');

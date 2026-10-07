@@ -2,7 +2,28 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.10.07-b01
+## Phiên bản hiện tại: v26.10.07-b02
+
+### v26.10.07-b02
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Tạo nhanh danh sách chạy từ các mẫu trong mẻ và sao chép vào Excel, mỗi mẫu nằm trên một hàng riêng.
+
+#### ✨ Tính Năng Mới
+
+- Thêm nút LẬP BATCH NHANH cạnh thao tác của từng mẻ tại Theo Dõi Mẫu & Kết Quả Ngày.
+- Điền sẵn phương pháp chạy có thể sửa và tự lấy mã batch của mẻ được chọn; danh sách cập nhật ngay khi đổi phương pháp hoặc chọn mẻ khác.
+- Tạo tên theo dạng PHƯƠNG PHÁP_HẬU TỐ_MÃ SỐ MẪU, giữ số 0 đầu và tiền tố chữ của mã mẫu.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Danh sách chạy lấy đúng các mẫu thực tế của từng mẻ, kể cả khi bảng theo dõi đang lọc hoặc gom nhiều mẻ cùng phương pháp.
+- Các nút thao tác tự xuống dòng để dễ sử dụng trên màn hình hẹp; hiển thị thông báo khi mẻ chưa có mẫu hoặc mã mẫu chưa đủ thông tin.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Không có thay đổi trong nhóm này.
 
 ### v26.10.07-b01
 

@@ -2,12 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.10.07-b01",
-    "title": "Hiển thị đầy đủ chỉ tiêu ngoài bộ trên bảng theo dõi mẫu ngày",
+    "version": "v26.10.07-b02",
+    "title": "Lập batch nhanh từ bảng theo dõi mẫu ngày",
     "features": [
-      "Kiểm nghiệm viên xem được toàn bộ tên chỉ tiêu ngoài bộ trên bảng theo dõi mẫu ngày, cửa sổ xem trước và bản in.",
-      "Bố cục in dạng bảng và dạng thẻ tính theo danh sách chỉ tiêu ngoài bộ đầy đủ.",
-      "Thay phần rút gọn '+Y chỉ tiêu khác' bằng danh sách tên đầy đủ; các chỉ tiêu thuộc bộ tiếp tục hiển thị theo tên bộ."
+      "Tạo nhanh danh sách chạy từ các mẫu trong mẻ và sao chép vào Excel, mỗi mẫu nằm trên một hàng riêng.",
+      "Thêm nút LẬP BATCH NHANH cạnh thao tác của từng mẻ tại Theo Dõi Mẫu & Kết Quả Ngày.",
+      "Điền sẵn phương pháp chạy có thể sửa và tự lấy mã batch của mẻ được chọn; danh sách cập nhật ngay khi đổi phương pháp hoặc chọn mẻ khác.",
+      "Tạo tên theo dạng PHƯƠNG PHÁP_HẬU TỐ_MÃ SỐ MẪU, giữ số 0 đầu và tiền tố chữ của mã mẫu.",
+      "Danh sách chạy lấy đúng các mẫu thực tế của từng mẻ, kể cả khi bảng theo dõi đang lọc hoặc gom nhiều mẻ cùng phương pháp."
     ]
   },
   "assetGroups": [
