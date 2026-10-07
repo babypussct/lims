@@ -2,7 +2,25 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.10.05-b01
+## Phiên bản hiện tại: v26.10.07-b01
+
+### v26.10.07-b01
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Kiểm nghiệm viên xem được toàn bộ tên chỉ tiêu ngoài bộ trên bảng theo dõi mẫu ngày, cửa sổ xem trước và bản in.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Bố cục in dạng bảng và dạng thẻ tính theo danh sách chỉ tiêu ngoài bộ đầy đủ.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Thay phần rút gọn '+Y chỉ tiêu khác' bằng danh sách tên đầy đủ; các chỉ tiêu thuộc bộ tiếp tục hiển thị theo tên bộ.
 
 ### v26.10.05-b01
 

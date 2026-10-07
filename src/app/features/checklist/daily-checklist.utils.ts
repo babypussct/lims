@@ -382,8 +382,10 @@ function buildDailyPrintTargetScope(
   if (!maximalCandidates.length) return fallback;
 
   const coveredIds = new Set(maximalCandidates.flatMap(candidate => candidate.presentIds));
-  const residualCount = assignedIds.filter(id => !coveredIds.has(id)).length;
-  const matchedCount = assignedIds.length - residualCount;
+  const residualIds = assignedIds.filter(id => !coveredIds.has(id));
+  const displayNameById = new Map(targetIds.map((id, index) => [getCanonicalId(id), targetNames[index] || id]));
+  const residualNames = residualIds.map(id => displayNameById.get(id) || id);
+  const matchedCount = assignedIds.length - residualIds.length;
   const headline = `Bộ chỉ tiêu: ${maximalCandidates.map(candidate =>
     candidate.missingNames.length
       ? `${candidate.name} ${candidate.presentIds.length}/${candidate.ids.length}`
@@ -394,8 +396,8 @@ function buildDailyPrintTargetScope(
     .map(candidate => `Thiếu ${candidate.name}: ${candidate.missingNames.join(', ')}`);
   const detailParts = [
     ...partialDetails,
-    residualCount > 0
-      ? `${matchedCount} chỉ tiêu theo bộ · +${residualCount} chỉ tiêu khác`
+    residualNames.length > 0
+      ? `${matchedCount} chỉ tiêu theo bộ · Chỉ tiêu khác: ${residualNames.join(', ')}`
       : `${assignedIds.length} chỉ tiêu`
   ];
   const detailLabel = detailParts.join(' · ');

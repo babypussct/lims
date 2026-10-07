@@ -1,16 +1,13 @@
 {
-  "title": "Tối ưu nhập Excel kết quả và sửa nút in bảng checklist",
+  "title": "Hiển thị đầy đủ chỉ tiêu ngoài bộ trên bảng theo dõi mẫu ngày",
   "highlights": [
-    "Bỏ qua hình sắc ký đồ và thành phần đính kèm khi nhập Excel kết quả phân tích."
+    "Kiểm nghiệm viên xem được toàn bộ tên chỉ tiêu ngoài bộ trên bảng theo dõi mẫu ngày, cửa sổ xem trước và bản in."
   ],
   "features": [],
   "improvements": [
-    "Giữ nguyên dữ liệu bảng tính khi lọc ảnh, đối tượng nhúng và thiết lập máy in khỏi bản Excel dùng để đọc.",
-    "Tự thử lại bằng file gốc nếu đọc hoặc phân tích bản đã lọc thất bại; áp dụng cho worker và chế độ tương thích.",
-    "Hiển thị thống nhất số thành phần đính kèm đã bỏ qua ở hai chế độ nhập Excel."
+    "Bố cục in dạng bảng và dạng thẻ tính theo danh sách chỉ tiêu ngoài bộ đầy đủ."
   ],
   "fixes": [
-    "Giữ nguyên file gốc khi cấu trúc ZIP không được hỗ trợ hoặc metadata không nhất quán.",
-    "Sửa nút In bảng trong checklist hằng ngày để dùng đúng giao diện nút hiện có."
+    "Thay phần rút gọn '+Y chỉ tiêu khác' bằng danh sách tên đầy đủ; các chỉ tiêu thuộc bộ tiếp tục hiển thị theo tên bộ."
   ]
 }

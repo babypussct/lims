@@ -1,5 +1,21 @@
 [
   {
+    "version": "v26.10.07-b01",
+    "date": "7/10/2026",
+    "title": "Hiển thị đầy đủ chỉ tiêu ngoài bộ trên bảng theo dõi mẫu ngày",
+    "highlights": [
+      "Kiểm nghiệm viên xem được toàn bộ tên chỉ tiêu ngoài bộ trên bảng theo dõi mẫu ngày, cửa sổ xem trước và bản in."
+    ],
+    "features": [],
+    "improvements": [
+      "Bố cục in dạng bảng và dạng thẻ tính theo danh sách chỉ tiêu ngoài bộ đầy đủ."
+    ],
+    "fixes": [
+      "Thay phần rút gọn '+Y chỉ tiêu khác' bằng danh sách tên đầy đủ; các chỉ tiêu thuộc bộ tiếp tục hiển thị theo tên bộ."
+    ],
+    "releaseOrder": 26100700001
+  },
+  {
     "version": "v26.10.05-b01",
     "date": "5/10/2026",
     "title": "Tối ưu nhập Excel kết quả và sửa nút in bảng checklist",

@@ -507,7 +507,7 @@ test('daily print compresses complete configured groups inside a larger assigned
 
   assert.equal(view.groups[0].printTargetScope.compact, true);
   assert.equal(view.groups[0].printTargetScope.headline, 'Bộ chỉ tiêu: Nhóm Chlor · Nhóm Cúc');
-  assert.equal(view.groups[0].printTargetScope.detailLabel, '5 chỉ tiêu theo bộ · +2 chỉ tiêu khác');
+  assert.equal(view.groups[0].printTargetScope.detailLabel, '5 chỉ tiêu theo bộ · Chỉ tiêu khác: Atrazine, Chlorothalonil');
   assert.equal(view.groups[0].printTargetScope.headline.includes('10 chỉ tiêu TTS'), false);
   assert.equal(view.groups[0].printTargetScope.headline.includes('Nhóm Lân'), false);
 });
@@ -536,8 +536,47 @@ test('daily print labels a large configured group when fewer than five targets a
   assert.equal(view.groups[0].printTargetScope.headline, 'Bộ chỉ tiêu: Nhóm Lân 36/38');
   assert.equal(
     view.groups[0].printTargetScope.detailLabel,
-    'Thiếu Nhóm Lân: Lan-37, Lan-38 · 36 chỉ tiêu theo bộ · +2 chỉ tiêu khác'
+    'Thiếu Nhóm Lân: Lan-37, Lan-38 · 36 chỉ tiêu theo bộ · Chỉ tiêu khác: Atrazine, Chlorothalonil'
   );
+});
+
+test('daily print lists every residual target by its snapshot name and plans space for the full list', () => {
+  const residualIds = Array.from({ length: 12 }, (_, index) => `Other-${index + 1}`);
+  const residualNames = residualIds.map((_, index) => `Chỉ tiêu ngoài bộ có tên dài số ${index + 1}`);
+  const targetIds = ['BHCa', 'BHCb', ...residualIds];
+  const targetNames = Object.fromEntries([
+    ['BHCa', 'BHC-alpha'],
+    ['BHCb', 'BHC-beta'],
+    ...residualIds.map((id, index) => [id, residualNames[index]])
+  ]);
+  const [overview] = buildApprovedBatchOverviews([
+    request({ targetIds, targetNames })
+  ], '2026-07-16', (item, targetId) => item.targetNames?.[targetId] || targetId);
+  const configuredGroups: TargetGroup[] = [{
+    id: 'G-BHC',
+    name: 'Nhóm BHC',
+    targets: ['BHC-alpha', 'BHC-beta'].map(name => ({ id: name, name }))
+  }];
+  const [view] = buildDailyBatchViews([overview], configuredGroups);
+  const scope = view.groups[0].printTargetScope;
+
+  assert.equal(scope.headline, 'Bộ chỉ tiêu: Nhóm BHC');
+  assert.equal(scope.detailLabel, `2 chỉ tiêu theo bộ · Chỉ tiêu khác: ${residualNames.join(', ')}`);
+  assert.equal(scope.targetCount, 14);
+  assert.doesNotMatch(scope.detailLabel, /BHC-alpha|BHC-beta|Other-/);
+
+  const countOnlyView = {
+    ...view,
+    groups: view.groups.map(group => ({
+      ...group,
+      printTargetScope: { ...group.printTargetScope, detailLabel: '2 chỉ tiêu theo bộ · +12 chỉ tiêu khác' }
+    }))
+  };
+  for (const mode of ['list', 'compact'] as const) {
+    const fullPlan = planDailyPrintLayout([view], false, 'portrait', mode);
+    const countOnlyPlan = planDailyPrintLayout([countOnlyView], false, 'portrait', mode);
+    assert.ok(fullPlan.wrappedLineCount > countOnlyPlan.wrappedLineCount);
+  }
 });
 
 test('daily print does not approximate small groups or large groups missing five targets', () => {
