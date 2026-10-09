@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.10.07-b02",
-    "title": "Lập batch nhanh từ bảng theo dõi mẫu ngày",
+    "version": "v26.10.09-b01",
+    "title": "Hoàn thiện bản in bảng theo dõi mẫu ngày",
     "features": [
-      "Tạo nhanh danh sách chạy từ các mẫu trong mẻ và sao chép vào Excel, mỗi mẫu nằm trên một hàng riêng.",
-      "Thêm nút LẬP BATCH NHANH cạnh thao tác của từng mẻ tại Theo Dõi Mẫu & Kết Quả Ngày.",
-      "Điền sẵn phương pháp chạy có thể sửa và tự lấy mã batch của mẻ được chọn; danh sách cập nhật ngay khi đổi phương pháp hoặc chọn mẻ khác.",
-      "Tạo tên theo dạng PHƯƠNG PHÁP_HẬU TỐ_MÃ SỐ MẪU, giữ số 0 đầu và tiền tố chữ của mã mẫu.",
-      "Danh sách chạy lấy đúng các mẫu thực tế của từng mẻ, kể cả khi bảng theo dõi đang lọc hoặc gom nhiều mẻ cùng phương pháp."
+      "Bản in bảng theo dõi mẫu ngày hiển thị rõ bộ chỉ tiêu và từng chỉ tiêu kiểm để dễ đối chiếu.",
+      "Các chỉ tiêu nằm ngoài bộ được liệt kê đầy đủ, mỗi chỉ tiêu trên một dòng ở cả hai kiểu in.",
+      "Cải thiện cách tính bố cục và ngắt trang để hạn chế thiếu nội dung khi in danh sách chỉ tiêu dài.",
+      "Mẫu chỉ có Trifluralin chỉ hiển thị tên Trifluralin, không kèm dòng thừa về bộ chỉ tiêu.",
+      "Bộ 10 chỉ tiêu TTS được phân công 8/10 hiển thị rõ hai chỉ tiêu còn thiếu là Aldrin và Dieldrin; các chỉ tiêu khác được in riêng từng dòng."
     ]
   },
   "assetGroups": [

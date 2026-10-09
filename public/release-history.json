@@ -1,5 +1,23 @@
 [
   {
+    "version": "v26.10.09-b01",
+    "date": "9/10/2026",
+    "title": "Hoàn thiện bản in bảng theo dõi mẫu ngày",
+    "highlights": [
+      "Bản in bảng theo dõi mẫu ngày hiển thị rõ bộ chỉ tiêu và từng chỉ tiêu kiểm để dễ đối chiếu."
+    ],
+    "features": [],
+    "improvements": [
+      "Các chỉ tiêu nằm ngoài bộ được liệt kê đầy đủ, mỗi chỉ tiêu trên một dòng ở cả hai kiểu in.",
+      "Cải thiện cách tính bố cục và ngắt trang để hạn chế thiếu nội dung khi in danh sách chỉ tiêu dài."
+    ],
+    "fixes": [
+      "Mẫu chỉ có Trifluralin chỉ hiển thị tên Trifluralin, không kèm dòng thừa về bộ chỉ tiêu.",
+      "Bộ 10 chỉ tiêu TTS được phân công 8/10 hiển thị rõ hai chỉ tiêu còn thiếu là Aldrin và Dieldrin; các chỉ tiêu khác được in riêng từng dòng."
+    ],
+    "releaseOrder": 26100900001
+  },
+  {
     "version": "v26.10.07-b02",
     "date": "7/10/2026",
     "title": "Lập batch nhanh từ bảng theo dõi mẫu ngày",

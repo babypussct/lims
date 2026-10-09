@@ -90,6 +90,10 @@ describe('daily checklist shared UI primitive integration', () => {
     assert.match(template, /group\.printTargetScope\.compact/);
     assert.match(template, /\{\{group\.printTargetScope\.headline\}\}/);
     assert.match(template, /\{\{group\.printTargetScope\.detailLabel\}\}/);
+    assert.match(printTemplate, /\{\{group\.printTargetScope\.printHeading\}\}/);
+    assert.match(printTemplate, /\{\{group\.targetNames\[0\]\}\}/);
+    assert.match(printTemplate, /@for \(targetName of group\.printTargetScope\.residualTargetNames; track \$index\)/);
+    assert.match(component, /\.cl-print-compact-targets li \{[\s\S]*?display: list-item !important;/);
     assert.doesNotMatch(printTemplate, /SOP v\{\{batch\.sopVersion\}\}/);
     assert.doesNotMatch(printTemplate, /Nhóm \{\{groupIndex \+ 1\}\}/);
     assert.doesNotMatch(printTemplate, /\{\{batch\.physicalBatchCount\}\} mẻ vật lý/);

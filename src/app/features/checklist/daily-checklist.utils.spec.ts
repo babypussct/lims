@@ -493,6 +493,7 @@ test('daily print scope prefers one exact configured target group over full SOP 
   assert.equal(view.groups[0].targetScope.headline, 'Bộ chỉ tiêu: Nhóm thuốc BVTV');
   assert.equal(view.groups[0].targetScope.detailLabel, '2 chỉ tiêu');
   assert.equal(view.groups[0].printTargetScope.headline, 'Bộ chỉ tiêu: Nhóm thuốc BVTV');
+  assert.equal(view.groups[0].printTargetScope.printHeading, 'Bộ chỉ tiêu: Nhóm thuốc BVTV');
 });
 
 test('a one-target configured group is still printed by group name', () => {
@@ -511,6 +512,7 @@ test('a one-target configured group is still printed by group name', () => {
   assert.equal(view.groups[0].targetScope.compact, true);
   assert.equal(view.groups[0].targetScope.headline, 'Bộ chỉ tiêu: Nhóm Pirimiphos');
   assert.equal(view.groups[0].printTargetScope.headline, 'Bộ chỉ tiêu: Nhóm Pirimiphos');
+  assert.deepEqual(view.groups[0].printTargetScope.residualTargetNames, []);
 });
 
 test('daily print compresses complete configured groups inside a larger assigned target set', () => {
@@ -543,6 +545,7 @@ test('daily print compresses complete configured groups inside a larger assigned
   assert.equal(view.groups[0].printTargetScope.compact, true);
   assert.equal(view.groups[0].printTargetScope.headline, 'Bộ chỉ tiêu: Nhóm Chlor · Nhóm Cúc');
   assert.equal(view.groups[0].printTargetScope.detailLabel, '5 chỉ tiêu theo bộ · Chỉ tiêu khác: Atrazine, Chlorothalonil');
+  assert.deepEqual(view.groups[0].printTargetScope.residualTargetNames, residualIds);
   assert.equal(view.groups[0].printTargetScope.headline.includes('10 chỉ tiêu TTS'), false);
   assert.equal(view.groups[0].printTargetScope.headline.includes('Nhóm Lân'), false);
 });
@@ -569,6 +572,7 @@ test('daily print labels a large configured group when fewer than five targets a
 
   assert.equal(view.groups[0].printTargetScope.compact, true);
   assert.equal(view.groups[0].printTargetScope.headline, 'Bộ chỉ tiêu: Nhóm Lân 36/38');
+  assert.equal(view.groups[0].printTargetScope.printHeading, 'Bộ chỉ tiêu: Nhóm Lân 36/38 (Thiếu Nhóm Lân: Lan-37, Lan-38)');
   assert.equal(
     view.groups[0].printTargetScope.detailLabel,
     'Thiếu Nhóm Lân: Lan-37, Lan-38 · 36 chỉ tiêu theo bộ · Chỉ tiêu khác: Atrazine, Chlorothalonil'
@@ -598,19 +602,58 @@ test('daily print lists every residual target by its snapshot name and plans spa
   assert.equal(scope.headline, 'Bộ chỉ tiêu: Nhóm BHC');
   assert.equal(scope.detailLabel, `2 chỉ tiêu theo bộ · Chỉ tiêu khác: ${residualNames.join(', ')}`);
   assert.equal(scope.targetCount, 14);
+  assert.deepEqual(scope.residualTargetNames, residualNames);
   assert.doesNotMatch(scope.detailLabel, /BHC-alpha|BHC-beta|Other-/);
 
   const countOnlyView = {
     ...view,
     groups: view.groups.map(group => ({
       ...group,
-      printTargetScope: { ...group.printTargetScope, detailLabel: '2 chỉ tiêu theo bộ · +12 chỉ tiêu khác' }
+      printTargetScope: { ...group.printTargetScope, residualTargetNames: [] }
     }))
   };
   for (const mode of ['list', 'compact'] as const) {
     const fullPlan = planDailyPrintLayout([view], false, 'portrait', mode);
     const countOnlyPlan = planDailyPrintLayout([countOnlyView], false, 'portrait', mode);
     assert.ok(fullPlan.wrappedLineCount > countOnlyPlan.wrappedLineCount);
+  }
+});
+
+test('print treats single Trifluralin as one target and shows 8/10 TTS with each remaining target separately', () => {
+  const ttsIds = ['Aldrin', 'Dieldrin', 'BHC-alpha', 'BHC-beta', 'BHC-gamma', 'Endrin', 'Heptachlor', 'Lindane', 'DDD', 'DDT'];
+  const otherNames = [
+    'Trifluralin', 'Acephate', 'Alachlor', 'Chlorothalonil', 'Chlorpyrifos', 'Deltamethrin',
+    'Dimethoate', 'Heptachlor endo-epoxide (isomer A)', 'Heptachlor exo-epoxide (isomer B)',
+    'Malathion', 'Metalaxyl', "Methoxychlor, p,p'-", 'Molinate', 'Pendimethalin',
+    'Permethrin cis', 'Permethrin trans', 'Propanil', 'Simazine'
+  ];
+  const assignedIds = [...ttsIds.slice(2), ...otherNames];
+  const configuredGroups: TargetGroup[] = [
+    { id: 'G-TTS', name: '10 chỉ tiêu TTS', targets: ttsIds.map(name => ({ id: name, name })) },
+    { id: 'G-TRI', name: 'Trifluralin', targets: [{ id: 'Trifluralin', name: 'Trifluralin' }] }
+  ];
+  const build = (targetIds: string[]) => buildDailyBatchViews(buildApprovedBatchOverviews([
+    request({ targetIds, targetNames: Object.fromEntries(targetIds.map(name => [name, name])) })
+  ], '2026-07-16', (item, id) => item.targetNames?.[id] || id), configuredGroups);
+
+  const [singleView] = build(['Trifluralin']);
+  assert.deepEqual(singleView.groups[0].targetNames, ['Trifluralin']);
+  assert.equal(singleView.groups[0].printTargetScope.targetCount, 1);
+
+  const [view] = build(assignedIds);
+  const scope = view.groups[0].printTargetScope;
+  assert.equal(scope.headline, 'Bộ chỉ tiêu: 10 chỉ tiêu TTS 8/10');
+  assert.equal(scope.printHeading, 'Bộ chỉ tiêu: 10 chỉ tiêu TTS 8/10 (Thiếu 10 chỉ tiêu TTS: Aldrin, Dieldrin)');
+  assert.deepEqual([...scope.residualTargetNames].sort(), [...otherNames].sort());
+  assert.equal(scope.targetCount, assignedIds.length);
+  assert.ok(!scope.printHeading.includes('Trifluralin'));
+  for (const mode of ['list', 'compact'] as const) {
+    const withOtherTargets = planDailyPrintLayout([view], false, 'portrait', mode);
+    const withoutOtherTargets = planDailyPrintLayout([{ ...view, groups: view.groups.map(group => ({
+      ...group,
+      printTargetScope: { ...group.printTargetScope, residualTargetNames: [] }
+    })) }], false, 'portrait', mode);
+    assert.ok(withOtherTargets.wrappedLineCount > withoutOtherTargets.wrappedLineCount);
   }
 });
 

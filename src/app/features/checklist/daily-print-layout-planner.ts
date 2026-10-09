@@ -7,7 +7,6 @@ import {
   DailyPrintOrientation,
   DailyPrintOrientationPreference
 } from './daily-checklist.model';
-import { getTargetScopeDisplayText } from '../targets/target-scope-classifier';
 
 interface OrientationMetrics {
   usableHeightMm: number;
@@ -112,11 +111,10 @@ function evaluateListLayout(
     batch.groups.forEach(group => {
       const batchText = `${batch.sopName} v${batch.sopVersion || ''}`;
       const sampleText = getPrintSampleText(group, includeSampleDescriptions);
-      const targetText = getTargetScopeDisplayText(group.printTargetScope) || 'Chưa xác định chỉ tiêu';
       const lines = Math.max(
         estimateLines(batchText, metrics.batchCharsPerLine),
         estimateLines(sampleText, metrics.sampleCharsPerLine),
-        estimateLines(targetText, metrics.targetCharsPerLine),
+        estimatePrintTargetLines(group, metrics.targetCharsPerLine),
         1
       );
       wrappedLineCount += Math.max(0, lines - 1);
@@ -176,11 +174,15 @@ function evaluateCompactLayout(
   const complexityPenalty = batches.reduce((penalty, batch) => penalty
     + Number(batch.groups.length > 2) * 18
     + Number(batch.groups.some(group => !group.printTargetScope.compact && group.targetNames.length > 30)) * 12, 0);
+  // Oversized cards cannot be split cleanly because the compact renderer keeps each card together.
+  // Prefer the list table for long, individually listed targets to prevent print clipping.
+  const oversizedCardPenalty = placement.overflowPageCount * 250;
   const score = estimatedPages * 100
     + estimatedBatchSplits * 30
     + wrappedLineCount
     + landscapePenalty
-    + complexityPenalty;
+    + complexityPenalty
+    + oversizedCardPenalty;
 
   return {
     mode: 'compact',
@@ -257,9 +259,8 @@ function estimateCompactCard(
 
   batch.groups.forEach(group => {
     const sampleText = getPrintSampleText(group, includeSampleDescriptions);
-    const targetText = getTargetScopeDisplayText(group.printTargetScope) || 'Chưa xác định chỉ tiêu';
     const sampleLines = estimateLines(sampleText, metrics.compactSampleCharsPerLine);
-    const targetLines = estimateLines(targetText, metrics.compactTargetCharsPerLine);
+    const targetLines = estimatePrintTargetLines(group, metrics.compactTargetCharsPerLine);
     wrappedLineCount += Math.max(0, sampleLines - 1) + Math.max(0, targetLines - 1);
     heightMm += COMPACT_GROUP_BASE_MM + (sampleLines + targetLines) * COMPACT_LINE_HEIGHT_MM;
   });
@@ -274,6 +275,18 @@ function indexOfSmallest(values: number[]): number {
 function estimateLines(text: string, charsPerLine: number): number {
   const normalizedLength = String(text || '').trim().length;
   return Math.max(1, Math.ceil(normalizedLength / charsPerLine));
+}
+
+function estimatePrintTargetLines(group: DailyBatchView['groups'][number], charsPerLine: number): number {
+  if (!group.targetNames.length) return 1;
+  if (group.targetNames.length === 1) return estimateLines(group.targetNames[0], charsPerLine);
+  if (!group.printTargetScope.compact) {
+    return group.targetNames.reduce((lines, name) => lines + estimateLines(name, charsPerLine), 0);
+  }
+  const { printHeading, residualTargetNames } = group.printTargetScope;
+  return estimateLines(printHeading, charsPerLine)
+    + (residualTargetNames.length ? 1 : 0) // "Chỉ tiêu khác:"
+    + residualTargetNames.reduce((lines, name) => lines + estimateLines(name, charsPerLine), 0);
 }
 
 function getPrintSampleText(group: DailyBatchView['groups'][number], includeSampleDescriptions: boolean): string {

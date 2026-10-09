@@ -2,7 +2,27 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.10.07-b02
+## Phiên bản hiện tại: v26.10.09-b01
+
+### v26.10.09-b01
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Bản in bảng theo dõi mẫu ngày hiển thị rõ bộ chỉ tiêu và từng chỉ tiêu kiểm để dễ đối chiếu.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Các chỉ tiêu nằm ngoài bộ được liệt kê đầy đủ, mỗi chỉ tiêu trên một dòng ở cả hai kiểu in.
+- Cải thiện cách tính bố cục và ngắt trang để hạn chế thiếu nội dung khi in danh sách chỉ tiêu dài.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Mẫu chỉ có Trifluralin chỉ hiển thị tên Trifluralin, không kèm dòng thừa về bộ chỉ tiêu.
+- Bộ 10 chỉ tiêu TTS được phân công 8/10 hiển thị rõ hai chỉ tiêu còn thiếu là Aldrin và Dieldrin; các chỉ tiêu khác được in riêng từng dòng.
 
 ### v26.10.07-b02
 

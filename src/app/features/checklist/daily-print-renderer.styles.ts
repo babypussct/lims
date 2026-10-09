@@ -180,11 +180,8 @@ export const DAILY_PRINT_RENDERER_CSS = `
       }
 
       .a4-html-root .cl-print-compact-targets li {
-        display: inline !important;
-      }
-
-      .a4-html-root .cl-print-compact-targets li:not(:last-child)::after {
-        content: '; ' !important;
+        display: list-item !important;
+        margin-bottom: 0.7mm !important;
       }
 
       .a4-html-root .cl-print-table {
@@ -304,6 +301,8 @@ export const DAILY_PRINT_RENDERER_CSS = `
       .a4-html-root .cl-print-compact-targets li {
         font-weight: 700 !important;
         color: #0f172a !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
       }
 
       .a4-html-root .cl-print-missing {
@@ -327,6 +326,23 @@ export const DAILY_PRINT_RENDERER_CSS = `
         color: #64748b !important;
         font-size: 7.5pt !important;
         font-weight: 700 !important;
+      }
+
+      .a4-html-root .cl-print-single-target {
+        font-weight: 700 !important;
+        color: #0f172a !important;
+      }
+
+      .a4-html-root .cl-print-other-label {
+        margin-top: 0.8mm !important;
+        font-size: 7.5pt !important;
+        font-weight: 700 !important;
+        color: #475569 !important;
+      }
+
+      .a4-html-root .cl-print-scope ul {
+        color: #0f172a !important;
+        padding-left: 4mm !important;
       }
 
 `;

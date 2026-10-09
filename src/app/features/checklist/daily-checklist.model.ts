@@ -42,7 +42,14 @@ export interface DailyBatchAssignmentGroup {
   hasSampleDescriptions: boolean;
   hasDescriptionConflict: boolean;
   targetScope: TargetScopePresentation;
-  printTargetScope: TargetScopePresentation;
+  printTargetScope: DailyPrintTargetScope;
+}
+
+export interface DailyPrintTargetScope extends TargetScopePresentation {
+  /** Label shown in the printout, including missing members of partial groups. */
+  printHeading: string;
+  /** Targets outside printed groups, in their original assigned order. */
+  residualTargetNames: string[];
 }
 
 export interface DailySampleView {

@@ -13,6 +13,7 @@ import {
   ApprovedBatchSample,
   ApprovedBatchStatus,
   DailyBatchAssignmentGroup,
+  DailyPrintTargetScope,
   DailySampleDisplayRun,
   DailySampleView,
   DailyBatchView
@@ -314,12 +315,17 @@ function buildDailyPrintTargetScope(
   targetNames: string[],
   availableGroups: TargetGroup[],
   fallback: DailyBatchAssignmentGroup['targetScope']
-): DailyBatchAssignmentGroup['printTargetScope'] {
+): DailyPrintTargetScope {
   const partialGroupMinSize = 10;
   const partialGroupMaxMissing = 4; // "thiếu < 5 chỉ tiêu"
   const partialGroupMinCoverage = 0.8;
   const assignedIds = [...new Set(targetIds.map(getCanonicalId).filter(Boolean))];
-  if (!assignedIds.length || !availableGroups.length) return fallback;
+  const printFallback = (): DailyPrintTargetScope => ({
+    ...fallback,
+    printHeading: fallback.compact ? `${fallback.headline} (${fallback.detailLabel})` : fallback.headline,
+    residualTargetNames: []
+  });
+  if (!assignedIds.length || !availableGroups.length) return printFallback();
 
   const assignedSet = new Set(assignedIds);
   interface PrintGroupCandidate {
@@ -338,7 +344,8 @@ function buildDailyPrintTargetScope(
       if (id && !displayNameById.has(id)) displayNameById.set(id, displayName);
     });
     const ids = [...displayNameById.keys()].sort();
-    if (!ids.length) continue;
+    // A one-target group is clearer as its target name, especially beside a larger group.
+    if (ids.length < 2) continue;
 
     const presentIds = ids.filter(id => assignedSet.has(id));
     const missingIds = ids.filter(id => !assignedSet.has(id));
@@ -365,7 +372,7 @@ function buildDailyPrintTargetScope(
   const uniqueCandidates = [...candidateBuckets.values()]
     .filter(bucket => bucket.length === 1)
     .map(bucket => bucket[0]);
-  if (!uniqueCandidates.length) return fallback;
+  if (!uniqueCandidates.length) return printFallback();
 
   // Remove redundant groups whose assigned portion is a strict subset of another
   // matched group. This also works for near-complete large groups.
@@ -379,7 +386,7 @@ function buildDailyPrintTargetScope(
     )
   ).sort((a, b) => b.presentIds.length - a.presentIds.length || naturalCompare(a.name, b.name));
 
-  if (!maximalCandidates.length) return fallback;
+  if (!maximalCandidates.length) return printFallback();
 
   const coveredIds = new Set(maximalCandidates.flatMap(candidate => candidate.presentIds));
   const residualIds = assignedIds.filter(id => !coveredIds.has(id));
@@ -406,7 +413,9 @@ function buildDailyPrintTargetScope(
     kind: 'target-group',
     compact: true,
     headline,
+    printHeading: partialDetails.length ? `${headline} (${partialDetails.join(' · ')})` : headline,
     detailLabel,
+    residualTargetNames: residualNames,
     targetCount: targetNames.length,
     targetNames: [...targetNames],
     traceability: 'current-config'

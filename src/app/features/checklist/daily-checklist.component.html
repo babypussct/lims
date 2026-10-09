@@ -406,14 +406,21 @@
                       <td>
                         @if (group.targetNames.length === 0) {
                           <div class="cl-print-missing">Chưa xác định chỉ tiêu</div>
+                        } @else if (group.targetNames.length === 1) {
+                          <div class="cl-print-single-target">{{group.targetNames[0]}}</div>
                         } @else if (group.printTargetScope.compact) {
                           <div class="cl-print-scope">
-                            <strong>{{group.printTargetScope.headline}}</strong>
-                            <span>{{group.printTargetScope.detailLabel}}</span>
+                            <strong>{{group.printTargetScope.printHeading}}</strong>
+                            @if (group.printTargetScope.residualTargetNames.length) {
+                              <div class="cl-print-other-label">Chỉ tiêu khác:</div>
+                              <ul class="cl-print-targets">
+                                @for (targetName of group.printTargetScope.residualTargetNames; track $index) { <li>{{targetName}}</li> }
+                              </ul>
+                            }
                           </div>
                         } @else {
                           <ul class="cl-print-targets">
-                            @for (targetName of group.targetNames; track targetName) { <li>{{targetName}}</li> }
+                            @for (targetName of group.targetNames; track $index) { <li>{{targetName}}</li> }
                           </ul>
                         }
                       </td>
@@ -459,14 +466,21 @@
                               @if (printIncludeSampleDescriptions() && group.hasDescriptionConflict) { <div class="cl-print-missing">Mô tả mẫu không thống nhất</div> }
                               @if (group.targetNames.length === 0) {
                                 <div class="cl-print-missing">Chưa xác định chỉ tiêu</div>
+                              } @else if (group.targetNames.length === 1) {
+                                <div class="cl-print-single-target">{{group.targetNames[0]}}</div>
                               } @else if (group.printTargetScope.compact) {
                                 <div class="cl-print-scope">
-                                  <strong>{{group.printTargetScope.headline}}</strong>
-                                  <span>{{group.printTargetScope.detailLabel}}</span>
+                                  <strong>{{group.printTargetScope.printHeading}}</strong>
+                                  @if (group.printTargetScope.residualTargetNames.length) {
+                                    <div class="cl-print-other-label">Chỉ tiêu khác:</div>
+                                    <ul class="cl-print-compact-targets">
+                                      @for (targetName of group.printTargetScope.residualTargetNames; track $index) { <li>{{targetName}}</li> }
+                                    </ul>
+                                  }
                                 </div>
                               } @else {
                                 <ul class="cl-print-compact-targets">
-                                  @for (targetName of group.targetNames; track targetName) { <li>{{targetName}}</li> }
+                                  @for (targetName of group.targetNames; track $index) { <li>{{targetName}}</li> }
                                 </ul>
                               }
                             </div>
