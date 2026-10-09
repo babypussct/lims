@@ -4,7 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { ToastService } from '../../core/services/toast.service';
 import { AppButtonComponent } from '../../shared/components/ui/button/button.component';
 import { AppPageHeaderComponent } from '../../shared/components/ui/page-header/page-header.component';
-import { PREP_SUBSTANCE_LIBRARY, PrepSubstanceOption, formulaSubstanceOption, normalizeSubstanceSearch } from './prep-substance-catalog';
+import { PREP_SUBSTANCE_GROUPS, PREP_SUBSTANCE_LIBRARY, PrepSubstanceOption, formulaSubstanceOption, matchesSubstanceSearch } from './prep-substance-catalog';
+import type { LabReagentGroupId } from './prep-substance-data';
 import { formulaSpeciesFactor, parseChemicalFormula } from './chemical-formula';
 import { PRESET_CHEMICALS, calculatePrep, calculateSaltHydrateFactor as calculateSaltHydrateFactorEngine, concentrationToGPerL } from './prep-calculation.engine';
 import {
@@ -242,6 +243,9 @@ const TASKS: readonly TaskDefinition[] = [
 export class SmartPrepComponent {
   private readonly toast = inject(ToastService);
   readonly substanceQuery = signal('');
+  readonly substanceGroup = signal<LabReagentGroupId | 'all'>('all');
+  readonly substanceGroups = PREP_SUBSTANCE_GROUPS;
+  readonly substanceLibraryCount = PREP_SUBSTANCE_LIBRARY.length;
   readonly sourceParametersOpen = signal(false);
   readonly targetFormula = signal('');
   readonly concentrationFormula = signal('');
@@ -252,10 +256,12 @@ export class SmartPrepComponent {
   readonly spikeSourceNote = signal('');
   readonly seriesSourceNote = signal('');
   readonly substanceOptions = computed(() => {
-    const query = normalizeSubstanceSearch(this.substanceQuery());
-    const library = PREP_SUBSTANCE_LIBRARY.filter(item => !query || item.searchText.includes(query));
+    const query = this.substanceQuery();
+    const group = this.substanceGroup();
+    const library = PREP_SUBSTANCE_LIBRARY.filter(item =>
+      (group === 'all' || item.group === group) && matchesSubstanceSearch(item, query));
     const parsed = formulaSubstanceOption(this.substanceQuery());
-    const options = [...library, ...(parsed && !library.some(item => item.formula === parsed.formula) ? [parsed] : [])];
+    const options = [...library, ...(group === 'all' && parsed && !library.some(item => item.formula === parsed.formula) ? [parsed] : [])];
     return this.calcMode() === 'spike' || this.calcMode() === 'series' ? options.filter(option => option.sourceType !== 'solid') : options;
   });
 
@@ -540,6 +546,7 @@ export class SmartPrepComponent {
 
   setCalcMode(mode: PrepMode): void {
     this.substanceQuery.set('');
+    this.substanceGroup.set('all');
     this.sourceParametersOpen.set(false);
     this.calcMode.set(mode);
     this.showTrace.set(false);
@@ -1039,6 +1046,7 @@ export class SmartPrepComponent {
 
   resetDraft(): void {
     this.substanceQuery.set('');
+    this.substanceGroup.set('all');
     this.sourceParametersOpen.set(false);
     this.targetFormula.set('');
     this.concentrationFormula.set('');

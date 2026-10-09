@@ -2,7 +2,27 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.10.09-b01
+## Phiên bản hiện tại: v26.10.09-b02
+
+### v26.10.09-b02
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Trạm Pha Chế có thêm nhiều hóa chất và thuốc thử phổ biến để chọn nhanh khi tính toán pha dung dịch.
+
+#### ✨ Tính Năng Mới
+
+- Tìm hóa chất theo tên tiếng Việt, tiếng Anh, công thức hoặc số CAS ngay cả khi không có mạng.
+- Lọc hóa chất theo nhóm để nhanh chóng chọn đúng chất cần pha.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Phân biệt rõ các dạng ngậm nước và các chất có cùng công thức khi chọn hóa chất.
+- Hiển thị thông tin nhận diện hóa chất và nhắc kiểm tra độ tinh khiết, nồng độ, khối lượng riêng theo nhãn hoặc chứng nhận của từng lô.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Khi chuyển giữa hóa chất rắn và lỏng, biểu mẫu xóa thông số của chất trước để tránh dùng nhầm trong phép tính.
 
 ### v26.10.09-b01
 

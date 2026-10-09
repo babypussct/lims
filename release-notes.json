@@ -1,15 +1,17 @@
 {
-  "title": "Hoàn thiện bản in bảng theo dõi mẫu ngày",
+  "title": "Mở rộng thư viện hóa chất cho Trạm Pha Chế",
   "highlights": [
-    "Bản in bảng theo dõi mẫu ngày hiển thị rõ bộ chỉ tiêu và từng chỉ tiêu kiểm để dễ đối chiếu."
+    "Trạm Pha Chế có thêm nhiều hóa chất và thuốc thử phổ biến để chọn nhanh khi tính toán pha dung dịch."
   ],
-  "features": [],
+  "features": [
+    "Tìm hóa chất theo tên tiếng Việt, tiếng Anh, công thức hoặc số CAS ngay cả khi không có mạng.",
+    "Lọc hóa chất theo nhóm để nhanh chóng chọn đúng chất cần pha."
+  ],
   "improvements": [
-    "Các chỉ tiêu nằm ngoài bộ được liệt kê đầy đủ, mỗi chỉ tiêu trên một dòng ở cả hai kiểu in.",
-    "Cải thiện cách tính bố cục và ngắt trang để hạn chế thiếu nội dung khi in danh sách chỉ tiêu dài."
+    "Phân biệt rõ các dạng ngậm nước và các chất có cùng công thức khi chọn hóa chất.",
+    "Hiển thị thông tin nhận diện hóa chất và nhắc kiểm tra độ tinh khiết, nồng độ, khối lượng riêng theo nhãn hoặc chứng nhận của từng lô."
   ],
   "fixes": [
-    "Mẫu chỉ có Trifluralin chỉ hiển thị tên Trifluralin, không kèm dòng thừa về bộ chỉ tiêu.",
-    "Bộ 10 chỉ tiêu TTS được phân công 8/10 hiển thị rõ hai chỉ tiêu còn thiếu là Aldrin và Dieldrin; các chỉ tiêu khác được in riêng từng dòng."
+    "Khi chuyển giữa hóa chất rắn và lỏng, biểu mẫu xóa thông số của chất trước để tránh dùng nhầm trong phép tính."
   ]
 }

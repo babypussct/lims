@@ -165,12 +165,47 @@ test('offline search immediately resolves names and formulas without an external
   ui.searchSubstance('Đồng sulfat');
   assert.ok(ui.substanceOptions().some(option => option.formula === 'CuSO4.5H2O' && option.origin === 'library'));
   ui.searchSubstance('MgSO4.7H2O');
-  assert.ok(ui.substanceOptions().some(option => option.formula === 'MgSO4.7H2O' && option.origin === 'formula'));
+  assert.ok(ui.substanceOptions().some(option => option.formula === 'MgSO4.7H2O' && option.origin === 'library'));
+  ui.searchSubstance('Ca3(PO4)2');
+  assert.ok(ui.substanceOptions().some(option => option.formula === 'Ca3(PO4)2' && option.origin === 'library'));
+  ui.searchSubstance('Ca5(PO4)3Cl');
+  assert.ok(ui.substanceOptions().some(option => option.formula === 'Ca5(PO4)3Cl' && option.origin === 'formula'));
+  ui.searchSubstance('67-56-1');
+  assert.ok(ui.substanceOptions().some(option => option.name.includes('Methanol')));
+  ui.substanceGroup.set('buffers');
+  ui.searchSubstance('phosphat');
+  assert.ok(ui.substanceOptions().length > 0);
+  assert.ok(ui.substanceOptions().every(option => option.group === 'buffers'));
+  ui.substanceGroup.set('salts');
+  ui.searchSubstance('67-56-1');
+  assert.equal(ui.substanceOptions().length, 0);
+  ui.setCalcMode('target');
+  assert.equal(ui.substanceGroup(), 'all');
   ui.searchSubstance('Không có chất này');
   assert.deepEqual(ui.substanceOptions(), []);
   ui.setCalcMode('spike');
   assert.equal(ui.substanceQuery(), '');
   assert.ok(ui.substanceOptions().every(option => option.sourceType !== 'solid'));
+});
+
+test('choosing a liquid reagent clears any previous solid assay and does not assume supplier stock values', () => {
+  const ui = setup();
+  ui.selectSubstance(formulaSubstanceOption('NaCl')!);
+  ui.targetPotency.set(99.5);
+  ui.targetActualValue.set(30);
+  ui.targetSourceDensity.set(2);
+  const acetic = PREP_SUBSTANCE_LIBRARY.find(option => option.name.endsWith('· Axit acetic'))!;
+  ui.selectSubstance(acetic);
+  assert.equal(ui.targetSourceType(), 'concentrate');
+  assert.equal(ui.targetPotency(), null);
+  assert.equal(ui.targetActualValue(), null);
+  assert.equal(ui.targetSourceValue(), null);
+  assert.equal(ui.targetSourceDensity(), null);
+  assert.equal(ui.targetMolecularWeight(), acetic.molarMass);
+  assert.equal(ui.canExport(), false);
+  ui.selectSubstance(PREP_SUBSTANCE_LIBRARY.find(option => option.name.endsWith('· Metyl etyl keton'))!);
+  assert.equal(ui.targetSourceValue(), null);
+  assert.equal(ui.targetSourceDensity(), null);
 });
 
 test('copy text contains the bench operation and includes formulas only when requested', () => {
