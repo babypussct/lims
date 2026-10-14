@@ -1,17 +1,17 @@
 {
-  "title": "Mở rộng thư viện hóa chất cho Trạm Pha Chế",
+  "title": "Theo dõi tiến trình xuất bản report PDF",
   "highlights": [
-    "Trạm Pha Chế có thêm nhiều hóa chất và thuốc thử phổ biến để chọn nhanh khi tính toán pha dung dịch."
+    "Theo dõi rõ từng bước khi xuất bản report PDF và biết ngay hệ thống đang gửi yêu cầu, chờ GAS hay đã nhận file."
   ],
   "features": [
-    "Tìm hóa chất theo tên tiếng Việt, tiếng Anh, công thức hoặc số CAS ngay cả khi không có mạng.",
-    "Lọc hóa chất theo nhóm để nhanh chóng chọn đúng chất cần pha."
+    "Hiển thị cửa sổ tiến trình với thời gian đã chờ, số phần đang xử lý và nút xem PDF sau khi xuất bản thành công.",
+    "Cho phép thử lại từ đúng phần report bị lỗi thay vì tạo lại các phần đã hoàn tất."
   ],
   "improvements": [
-    "Phân biệt rõ các dạng ngậm nước và các chất có cùng công thức khi chọn hóa chất.",
-    "Hiển thị thông tin nhận diện hóa chất và nhắc kiểm tra độ tinh khiết, nồng độ, khối lượng riêng theo nhãn hoặc chứng nhận của từng lô."
+    "Đặt thời gian chờ phản hồi GAS tối đa 7 phút và hướng dẫn kiểm tra Drive khi GAS có thể vẫn đang tạo PDF.",
+    "Giữ trạng thái xuất bản thành công ngay cả khi việc tải lại lịch sử báo cáo gặp lỗi tạm thời."
   ],
   "fixes": [
-    "Khi chuyển giữa hóa chất rắn và lỏng, biểu mẫu xóa thông số của chất trước để tránh dùng nhầm trong phép tính."
+    "Chặn đóng cửa sổ và gửi lặp trong lúc report đang được xử lý; báo lỗi rõ ràng khi GAS không trả về đường dẫn PDF."
   ]
 }

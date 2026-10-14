@@ -810,7 +810,8 @@ export class ResultService {
     draftData: Partial<AnalysisResultDraft>,
     payload: GenerateReportPayload,
     prefix?: string,
-    includedSamples?: string[]
+    includedSamples?: string[],
+    onProgress?: (phase: 'sending' | 'waiting' | 'received') => void
   ): Promise<{
     success: boolean;
     error?: string;
@@ -890,11 +891,16 @@ export class ResultService {
 
       // 2. Gọi API GAS tạo báo cáo PDF
       this.toast.show(`Đang gửi lệnh tạo báo cáo PDF bản v${nextVersion}${isPrefixReport ? ' (nhóm ' + (prefix === '' ? 'Không tiền tố' : prefix) + ')' : ''} sang Google Docs...`, 'info');
-      const response = await this.reportService.generateReport(payload);
+      onProgress?.('sending');
+      const response = await this.reportService.generateReport(payload, () => onProgress?.('waiting'));
       
       if (!response.success) {
         throw new Error(response.error || 'GAS Web App returned success = false');
       }
+      if (!response.pdfUrl && !response.pdfViewUrl) {
+        throw new Error('GAS báo tạo PDF thành công nhưng không trả về đường dẫn PDF. Hãy kiểm tra Drive trước khi thử lại.');
+      }
+      onProgress?.('received');
 
       // 3. Đóng gói và lưu phiên bản cũ vào Sub-collection history nếu bản in cũ đã tồn tại
       if (isPrefixReport) {

@@ -337,6 +337,20 @@
     </app-modal-shell>
   }
 
+  @if (publishProgressOpen()) {
+    <app-report-publish-progress-modal
+      [state]="publishProgressState()"
+      [stepIndex]="publishStepIndex()"
+      [elapsedSeconds]="publishElapsedSeconds()"
+      [chunkIndex]="publishChunkIndex()"
+      [chunkCount]="publishChunkCount()"
+      [error]="publishError()"
+      [pdfAvailable]="!!publishPdf()"
+      (retry)="retryPublishProgress()"
+      (preview)="previewPublishedPdf()"
+      (closed)="closePublishProgress()" />
+  }
+
   <!-- Publish Preflight Modal -->
   @if (showPreflightModal() && preflightSummary()) {
     <app-modal-shell

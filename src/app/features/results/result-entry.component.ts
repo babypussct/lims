@@ -51,6 +51,7 @@ import { ResultActiveReportsPanelComponent } from './components/result-active-re
 import { ResultEntryHeaderComponent } from './components/result-entry-header.component';
 import { SopEntryOutletComponent } from './components/sop-entry-outlet.component';
 import { ExcelResultImportModalComponent } from './components/excel-result-import-modal.component';
+import { ReportPublishProgressModalComponent, ReportPublishState } from './components/report-publish-progress-modal.component';
 import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent } from '../../shared/components/ui';
 
 type AutoSaveStatus = 'synced' | 'modified' | 'saving' | 'error';
@@ -76,6 +77,7 @@ interface AutoSaveEnvelope {
     ResultEntryHeaderComponent,
     SopEntryOutletComponent,
     ExcelResultImportModalComponent,
+    ReportPublishProgressModalComponent,
     AppButtonComponent,
     AppEmptyStateComponent,
     AppModalShellComponent
@@ -169,6 +171,20 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   isLoading = signal(true);
   isSavingDraft = signal(false);
   isPublishing = signal(false);
+  publishProgressOpen = signal(false);
+  publishProgressState = signal<ReportPublishState>('working');
+  publishStepIndex = signal(0);
+  publishElapsedSeconds = signal(0);
+  publishChunkIndex = signal(1);
+  publishChunkCount = signal(1);
+  publishError = signal('');
+  publishPdf = signal<{
+    url: string; docsUrl?: string; version?: number; publishedBy?: string;
+    publishedAt?: string; prefix?: string;
+  } | null>(null);
+  private publishRetryChunkIndex = 0;
+  private publishStartedAt = 0;
+  private publishElapsedTimer: ReturnType<typeof setInterval> | null = null;
   isReassigningSop = signal(false);
   isProcessing = computed(() => this.isSavingDraft() || this.isPublishing() || this.isReassigningSop());
   formIsReadOnly = computed(() => this.isReadOnly() || this.isProcessing());
@@ -786,6 +802,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.stopPublishElapsedTimer();
     this.reloadSafety.clearBlocker('result-entry-autosave');
     if (this.unsubscribeFromDraft) {
       this.unsubscribeFromDraft();
@@ -799,6 +816,51 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     
     // Giải phóng khóa khi thoát trang nếu mình là người giữ khóa
     this.releaseLockIfNeeded();
+  }
+
+  private stopPublishElapsedTimer() {
+    if (this.publishElapsedTimer !== null) {
+      clearInterval(this.publishElapsedTimer);
+      this.publishElapsedTimer = null;
+    }
+    if (this.publishStartedAt) {
+      this.publishElapsedSeconds.set(Math.floor((Date.now() - this.publishStartedAt) / 1000));
+    }
+  }
+
+  private startPublishProgress(retryFromChunkIndex: number) {
+    this.stopPublishElapsedTimer();
+    this.publishRetryChunkIndex = retryFromChunkIndex;
+    this.publishProgressState.set('working');
+    this.publishStepIndex.set(0);
+    this.publishChunkIndex.set(retryFromChunkIndex + 1);
+    this.publishChunkCount.set(1);
+    this.publishError.set('');
+    this.publishPdf.set(null);
+    this.publishElapsedSeconds.set(0);
+    this.publishProgressOpen.set(true);
+    this.publishStartedAt = Date.now();
+    this.publishElapsedTimer = setInterval(() => {
+      this.publishElapsedSeconds.set(Math.floor((Date.now() - this.publishStartedAt) / 1000));
+    }, 1000);
+  }
+
+  closePublishProgress() {
+    if (this.isPublishing()) return;
+    this.publishProgressOpen.set(false);
+  }
+
+  retryPublishProgress() {
+    if (this.isPublishing()) return;
+    void this.triggerPublishReport(true, this.publishRetryChunkIndex);
+  }
+
+  previewPublishedPdf() {
+    if (this.isPublishing()) return;
+    const pdf = this.publishPdf();
+    if (!pdf) return;
+    this.closePublishProgress();
+    this.openPdfPreview(pdf.url, pdf.docsUrl, pdf.version, pdf.publishedBy, pdf.publishedAt, pdf.prefix);
   }
 
   onDraftChanged(updatedDraft: AnalysisResultDraft) {
@@ -968,14 +1030,14 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     }
 
     this.isPublishing.set(true);
+    this.startPublishProgress(retryFromChunkIndex);
 
     try {
       // Chờ mọi autosave cũ kết thúc và lưu snapshot mới nhất trước khi tạo PDF.
       // Autosave tiếp tục bị tạm dừng cho đến khi publish hoàn tất.
       const flushed = await this.flushCurrentDraft(false);
       if (!flushed) {
-        this.toast.show('Không thể lưu dữ liệu mới nhất. Đã dừng xuất báo cáo để tránh tạo PDF sai.', 'error');
-        return;
+        throw new Error('Không thể lưu dữ liệu mới nhất. Đã dừng xuất báo cáo để tránh tạo PDF sai.');
       }
 
       const activeFilter = this.activeFilter();
@@ -992,9 +1054,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
       });
 
       if (allIncludedSamples.length === 0) {
-        this.toast.show('Vui lòng chọn ít nhất một mẫu để tạo báo cáo!', 'info');
-        this.isPublishing.set(false);
-        return;
+        throw new Error('Vui lòng chọn ít nhất một mẫu để tạo báo cáo!');
       }
 
       // 2. Chunking
@@ -1003,12 +1063,16 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
       for (let i = 0; i < allIncludedSamples.length; i += chunkSize) {
         chunks.push(allIncludedSamples.slice(i, i + chunkSize));
       }
+      this.publishChunkCount.set(chunks.length);
 
       let lastResult = null;
 
       // 3. Process each chunk. Khi retry sau lỗi, tiếp tục từ đúng chunk lỗi
       // để không tạo phiên bản mới cho các PDF đã xuất thành công trước đó.
       for (let chunkIndex = retryFromChunkIndex; chunkIndex < chunks.length; chunkIndex++) {
+        this.publishRetryChunkIndex = chunkIndex;
+        this.publishChunkIndex.set(chunkIndex + 1);
+        this.publishStepIndex.set(0);
         const chunk = chunks[chunkIndex];
         // Clone draft and set selected=false for non-chunk samples
         const chunkDraft = JSON.parse(JSON.stringify(currentDraft));
@@ -1077,21 +1141,15 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
           ...currentDraft,
           page1Data: { ...(chunkDraft.page1Data || currentDraft.page1Data) }
         };
-        const result = await this.resultService.publishReport(this.requestId, draftForSave, reportPayload, prefixForReport, chunk);
+        const result = await this.resultService.publishReport(
+          this.requestId, draftForSave, reportPayload, prefixForReport, chunk,
+          phase => this.publishStepIndex.set(phase === 'sending' ? 1 : phase === 'waiting' ? 2 : 3)
+        );
         lastResult = result;
 
         if (!result.success) {
           const chunkLabel = chunks.length > 1 ? ` (phần ${chunkIndex + 1}/${chunks.length})` : '';
-          this.toast.showEvent({
-            title: 'Không thể xuất báo cáo',
-            message: `Xuất báo cáo${chunkLabel} thất bại: ${result.error || 'Không xác định được nguyên nhân lỗi.'}`,
-            type: 'error',
-            persistent: true,
-            actionLabel: 'Thử lại',
-            dedupeKey: `publish-report-error:${this.requestId}`,
-            action: () => void this.triggerPublishReport(true, chunkIndex)
-          });
-          return;
+          throw new Error(`Xuất báo cáo${chunkLabel} thất bại: ${result.error || 'Không xác định được nguyên nhân lỗi.'}`);
         }
       }
 
@@ -1099,23 +1157,31 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
         this.draft.update((d: any) => d ? { ...d, status: lastResult.newStatus || 'completed', version: (d.version || 0) + 1 } as any : null);
         this.lastSavedAt.set(new Date());
         this.autoSaveStatus.set('synced');
-        const hist = await this.resultService.getHistory(this.requestId);
-        this.historyList.set(hist);
+        try {
+          const hist = await this.resultService.getHistory(this.requestId);
+          this.historyList.set(hist);
+        } catch {
+          this.toast.show('PDF đã xuất bản nhưng chưa cập nhật được danh sách lịch sử.', 'info');
+        }
         const url = lastResult.pdfViewUrl || lastResult.pdfUrl;
         if (url) {
-          this.openPdfPreview(
-            url,
-            lastResult.docsUrl,
-            lastResult.version,
-            lastResult.publishedBy,
-            lastResult.publishedAt,
-            lastResult.prefix
-          );
+          this.publishPdf.set({
+            url, docsUrl: lastResult.docsUrl, version: lastResult.version,
+            publishedBy: lastResult.publishedBy, publishedAt: lastResult.publishedAt,
+            prefix: lastResult.prefix
+          });
         } else {
           this.toast.show('PDF đã lưu trên Drive nhưng không nhận được liên kết trực tiếp.', 'info');
         }
+        this.publishStepIndex.set(4);
+        this.publishProgressState.set('success');
       }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Đã xảy ra lỗi không xác định khi xuất bản báo cáo.';
+      this.publishError.set(message);
+      this.publishProgressState.set(/hết thời gian chờ|timeout/i.test(message) ? 'timeout' : 'error');
     } finally {
+      this.stopPublishElapsedTimer();
       this.resumeAutoSave();
       this.isPublishing.set(false);
     }

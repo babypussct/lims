@@ -2,7 +2,27 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.10.09-b02
+## Phiên bản hiện tại: v26.10.14-b01
+
+### v26.10.14-b01
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Theo dõi rõ từng bước khi xuất bản report PDF và biết ngay hệ thống đang gửi yêu cầu, chờ GAS hay đã nhận file.
+
+#### ✨ Tính Năng Mới
+
+- Hiển thị cửa sổ tiến trình với thời gian đã chờ, số phần đang xử lý và nút xem PDF sau khi xuất bản thành công.
+- Cho phép thử lại từ đúng phần report bị lỗi thay vì tạo lại các phần đã hoàn tất.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Đặt thời gian chờ phản hồi GAS tối đa 7 phút và hướng dẫn kiểm tra Drive khi GAS có thể vẫn đang tạo PDF.
+- Giữ trạng thái xuất bản thành công ngay cả khi việc tải lại lịch sử báo cáo gặp lỗi tạm thời.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Chặn đóng cửa sổ và gửi lặp trong lúc report đang được xử lý; báo lỗi rõ ràng khi GAS không trả về đường dẫn PDF.
 
 ### v26.10.09-b02
 

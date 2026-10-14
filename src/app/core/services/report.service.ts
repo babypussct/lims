@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpEventType, HttpHeaders, HttpResponse } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, timeout, TimeoutError } from 'rxjs';
 import { filter, map, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { openInNewTab } from '../../shared/utils/browser-navigation';
@@ -52,6 +52,7 @@ export interface ReportResult {
 
 @Injectable({ providedIn: 'root' })
 export class ReportService {
+  private readonly reportResponseTimeoutMs = 7 * 60 * 1000;
   private http = inject(HttpClient);
   private auth = inject(AuthService);
   private fb = inject(FirebaseService);
@@ -77,7 +78,7 @@ export class ReportService {
    * Tạo báo cáo PDF từ dữ liệu nhập kết quả.
    * GAS sẽ: copy template → điền data → export PDF → lưu Drive → trả URL
    */
-  async generateReport(payload: GenerateReportPayload): Promise<ReportResult> {
+  async generateReport(payload: GenerateReportPayload, onRequestStarted?: () => void): Promise<ReportResult> {
     if (!this.GAS_URL) {
       throw new Error(
         'Chưa cấu hình GAS Web App URL. ' +
@@ -91,6 +92,7 @@ export class ReportService {
     const authenticatedPayload = await this.withMutationAuth(payload);
     let rawResponse: string;
     try {
+      onRequestStarted?.();
       // Đọc response dưới dạng text rồi tự parse. GAS/Google đôi lúc có thể
       // trả HTML, body rỗng hoặc body lỗi không đúng JSON; để HttpClient tự
       // parse JSON sẽ biến các trường hợp đó thành lỗi khó hiểu.
@@ -98,9 +100,12 @@ export class ReportService {
         this.http.post(this.GAS_URL, JSON.stringify(authenticatedPayload), {
           headers: new HttpHeaders({ 'Content-Type': 'text/plain' }),
           responseType: 'text'
-        })
+        }).pipe(timeout({ first: this.reportResponseTimeoutMs }))
       );
     } catch (error) {
+      if (error instanceof TimeoutError) {
+        throw new Error('Hết thời gian chờ phản hồi từ GAS sau 7 phút. GAS có thể vẫn đang tạo PDF; hãy kiểm tra báo cáo trên Drive trước khi thử lại.');
+      }
       throw new Error(this.describeReportTransportError(error));
     }
 
