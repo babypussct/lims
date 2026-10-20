@@ -158,6 +158,44 @@ test('duty statistics support selected period, full year and all-time balance co
   assert.doesNotMatch(template, /Chưa khai báo mã nhân viên|Mã NV:|Mã nhân viên/);
 });
 
+test('duty schedule explains expectation from both schedule and statistics views', () => {
+  const component = read('src/app/features/duty-stats/duty-stats.component.ts');
+  const template = read('src/app/features/duty-stats/duty-stats.component.html');
+  const assignmentModal = read('src/app/features/duty-stats/duty-assignment-modal.component.ts');
+
+  assert.match(component, /readonly expectationHelpOpen = signal\(false\)/);
+  assert.equal((template.match(/\(click\)="expectationHelpOpen\.set\(true\)"/g) || []).length, 2);
+  assert.match(template, /title="Mức kỳ vọng trong lịch trực là gì\?"/);
+  assert.match(template, /tổng lượt trực đã phân công ÷ số nhân sự có hiệu lực trong tháng/);
+  assert.match(template, /20 ÷ 5 = 4 lượt/);
+  assert.match(template, /mức kỳ vọng không tự thay đổi lịch, không chặn phân công/);
+  assert.match(template, /dữ liệu 90 ngày gần ngày xếp ca/);
+  assert.match(assignmentModal, /mức kỳ vọng riêng/);
+  assert.doesNotMatch(assignmentModal, /so với bình quân/);
+});
+
+test('every duty statistics expectation exposes an identity-based monthly breakdown on desktop and mobile', () => {
+  const model = read('src/app/features/duty-stats/duty-schedule.model.ts');
+  const utils = read('src/app/features/duty-stats/duty-schedule.utils.ts');
+  const component = read('src/app/features/duty-stats/duty-stats.component.ts');
+  const template = read('src/app/features/duty-stats/duty-stats.component.html');
+
+  assert.match(model, /interface DutyExpectationMonthDetail/);
+  assert.match(model, /expectationMonths: DutyExpectationMonthDetail\[\]/);
+  assert.match(utils, /const expectationMonths = eligibleMonths\.map/);
+  assert.match(utils, /total \+ month\.expectedAssignments/);
+  assert.match(component, /readonly expectationDetailStaffId = signal<string \| null>\(null\)/);
+  assert.match(component, /person\.staffId === this\.expectationDetailStaffId\(\)/);
+  assert.equal((template.match(/\(click\)="expectationDetailStaffId\.set\(stat\.staffId\)"/g) || []).length, 3);
+  assert.match(template, /Xem cách tính mức kỳ vọng của/);
+  assert.match(template, /@if \(selectedExpectationDetail\(\); as stat\)/);
+  assert.match(template, /@for \(month of stat\.expectationMonths; track month\.monthKey\)/);
+  assert.match(template, /month\.totalAssignments.*month\.eligibleStaffCount/);
+  assert.match(template, /Kỳ vọng =/);
+  assert.match(template, /Chưa đủ dữ liệu để tính mức kỳ vọng riêng/);
+  assert.match(template, /\(closed\)="expectationDetailStaffId\.set\(null\)"/);
+});
+
 test('M4 statistics chart stacks weekday and weekend counts while keeping lead count separate', () => {
   const model = read('src/app/features/duty-stats/duty-schedule.model.ts');
   const utils = read('src/app/features/duty-stats/duty-schedule.utils.ts');

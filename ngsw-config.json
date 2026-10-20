@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.10.14-b01",
-    "title": "Theo dõi tiến trình xuất bản report PDF",
+    "version": "v26.10.20-b01",
+    "title": "Giải thích rõ mức kỳ vọng khi xếp lịch trực",
     "features": [
-      "Theo dõi rõ từng bước khi xuất bản report PDF và biết ngay hệ thống đang gửi yêu cầu, chờ GAS hay đã nhận file.",
-      "Hiển thị cửa sổ tiến trình với thời gian đã chờ, số phần đang xử lý và nút xem PDF sau khi xuất bản thành công.",
-      "Cho phép thử lại từ đúng phần report bị lỗi thay vì tạo lại các phần đã hoàn tất.",
-      "Đặt thời gian chờ phản hồi GAS tối đa 7 phút và hướng dẫn kiểm tra Drive khi GAS có thể vẫn đang tạo PDF.",
-      "Giữ trạng thái xuất bản thành công ngay cả khi việc tải lại lịch sử báo cáo gặp lỗi tạm thời."
+      "Xem cách tính mức kỳ vọng của từng nhân sự theo tháng để hiểu rõ sự chênh lệch lượt trực trong kỳ.",
+      "Mở mục “Kỳ vọng là gì?” trong Lịch trực để xem công thức, ví dụ và ý nghĩa của mức kỳ vọng khi xếp ca.",
+      "Bấm dấu hỏi cạnh mức kỳ vọng của từng nhân sự để xem số lượt, số người có hiệu lực và phép tính của từng tháng.",
+      "Giải thích rõ mức kỳ vọng riêng và các ngưỡng gợi ý phân công, giúp người xếp lịch dễ cân bằng lượt trực.",
+      "Hiển thị lý do chưa đủ dữ liệu khi chưa xác định được mức kỳ vọng của nhân sự."
     ]
   },
   "assetGroups": [

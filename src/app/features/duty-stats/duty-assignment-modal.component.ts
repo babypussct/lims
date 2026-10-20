@@ -40,10 +40,10 @@ export class DutyAssignmentModalComponent {
   @Output() searchChange = new EventEmitter<string>();
 
   readonly recommendationGroups: readonly DutyRecommendationGroup[] = [
-    { tier: 'recommended', title: 'Ưu tiên xếp', description: 'Tải 90 ngày thấp hơn bình quân trên 15%.' },
-    { tier: 'balanced', title: 'Cân bằng', description: 'Tải 90 ngày nằm trong khoảng ±15% so với bình quân.' },
-    { tier: 'consider', title: 'Cân nhắc', description: 'Tải cao hơn bình quân trên 15% hoặc có ca liền kề.' },
-    { tier: 'high', title: 'Đang nhiều', description: 'Tải 90 ngày cao hơn bình quân trên 35%.' },
+    { tier: 'recommended', title: 'Ưu tiên xếp', description: 'Lượt trực 90 ngày thấp hơn mức kỳ vọng riêng trên 15%.' },
+    { tier: 'balanced', title: 'Cân bằng', description: 'Lệch trong khoảng ±15% so với mức kỳ vọng riêng trong 90 ngày.' },
+    { tier: 'consider', title: 'Cân nhắc', description: 'Cao hơn mức kỳ vọng riêng trên 15% hoặc có ca liền kề.' },
+    { tier: 'high', title: 'Đang nhiều', description: 'Cao hơn mức kỳ vọng riêng trên 35% trong 90 ngày.' },
   ];
 
   onDateChange(value: string): void {

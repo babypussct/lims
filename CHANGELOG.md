@@ -2,7 +2,27 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.10.14-b01
+## Phiên bản hiện tại: v26.10.20-b01
+
+### v26.10.20-b01
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Xem cách tính mức kỳ vọng của từng nhân sự theo tháng để hiểu rõ sự chênh lệch lượt trực trong kỳ.
+
+#### ✨ Tính Năng Mới
+
+- Mở mục “Kỳ vọng là gì?” trong Lịch trực để xem công thức, ví dụ và ý nghĩa của mức kỳ vọng khi xếp ca.
+- Bấm dấu hỏi cạnh mức kỳ vọng của từng nhân sự để xem số lượt, số người có hiệu lực và phép tính của từng tháng.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Giải thích rõ mức kỳ vọng riêng và các ngưỡng gợi ý phân công, giúp người xếp lịch dễ cân bằng lượt trực.
+- Hiển thị lý do chưa đủ dữ liệu khi chưa xác định được mức kỳ vọng của nhân sự.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Không có thay đổi trong nhóm này.
 
 ### v26.10.14-b01
 

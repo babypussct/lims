@@ -145,6 +145,22 @@ test('duty fairness uses each person effective months and keeps Huỳnh separate
   assert.ok(Math.abs((plain?.expectedAssignments || 0) - (25 / 6)) < 0.0001);
   assert.ok(Math.abs((newcomer?.expectedAssignments || 0) - (5 / 3)) < 0.0001);
   assert.equal(former?.expectedAssignments, 1);
+
+  assert.deepEqual(acute?.expectationMonths.map(({ monthKey, totalAssignments, eligibleStaffCount }) => ({
+    monthKey, totalAssignments, eligibleStaffCount,
+  })), [
+    { monthKey: '2026-01', totalAssignments: 3, eligibleStaffCount: 2 },
+    { monthKey: '2026-02', totalAssignments: 3, eligibleStaffCount: 3 },
+    { monthKey: '2026-03', totalAssignments: 3, eligibleStaffCount: 3 },
+    { monthKey: '2026-04', totalAssignments: 2, eligibleStaffCount: 3 },
+  ]);
+  assert.deepEqual(newcomer?.expectationMonths.map(month => month.monthKey), ['2026-03', '2026-04']);
+  assert.deepEqual(former?.expectationMonths.map(month => month.monthKey), ['2026-02']);
+  assert.equal(former?.expectationMonths[0].expectedAssignments, 1);
+  for (const person of stats) {
+    const calculated = person.expectationMonths.reduce((total, month) => total + month.expectedAssignments, 0);
+    assert.ok(Math.abs(calculated - person.expectedAssignments) < 0.00000001);
+  }
 });
 
 test('duty statistics count weekend assignments and lead responsibility independently', () => {
@@ -202,8 +218,21 @@ test('duty roster statistics keep active staff with zero assignments visible', (
   ]);
 
   assert.equal(roster.find(item => item.staffId === 'staff-zero')?.total, 0);
+  assert.deepEqual(roster.find(item => item.staffId === 'staff-zero')?.expectationMonths, []);
+  assert.equal(roster.find(item => item.staffId === 'staff-zero')?.fairnessAvailable, false);
   assert.equal(roster.some(item => item.staffId === 'staff-inactive-zero'), false);
   assert.equal(roster.find(item => item.staffId === 'staff-dat')?.total, 1);
+});
+
+test('duty expectation detail excludes cancelled shifts and handles a range with no schedules', () => {
+  const mixed = aggregateDutyRosterById(schedules, staff);
+  assert.deepEqual(mixed.find(item => item.staffId === 'staff-plain')?.expectationMonths, [{
+    monthKey: '2026-08', totalAssignments: 4, eligibleStaffCount: 3, expectedAssignments: 4 / 3,
+  }]);
+
+  const empty = aggregateDutyRosterById([], staff);
+  assert.equal(empty.find(person => person.staffId === 'staff-accented')?.fairnessAvailable, false);
+  assert.deepEqual(empty.find(person => person.staffId === 'staff-accented')?.expectationMonths, []);
 });
 
 test('optional LIMS account linkage resolves independently from duty history', () => {

@@ -1,5 +1,23 @@
 [
   {
+    "version": "v26.10.20-b01",
+    "date": "20/10/2026",
+    "title": "Giải thích rõ mức kỳ vọng khi xếp lịch trực",
+    "highlights": [
+      "Xem cách tính mức kỳ vọng của từng nhân sự theo tháng để hiểu rõ sự chênh lệch lượt trực trong kỳ."
+    ],
+    "features": [
+      "Mở mục “Kỳ vọng là gì?” trong Lịch trực để xem công thức, ví dụ và ý nghĩa của mức kỳ vọng khi xếp ca.",
+      "Bấm dấu hỏi cạnh mức kỳ vọng của từng nhân sự để xem số lượt, số người có hiệu lực và phép tính của từng tháng."
+    ],
+    "improvements": [
+      "Giải thích rõ mức kỳ vọng riêng và các ngưỡng gợi ý phân công, giúp người xếp lịch dễ cân bằng lượt trực.",
+      "Hiển thị lý do chưa đủ dữ liệu khi chưa xác định được mức kỳ vọng của nhân sự."
+    ],
+    "fixes": [],
+    "releaseOrder": 26102000001
+  },
+  {
     "version": "v26.10.14-b01",
     "date": "14/10/2026",
     "title": "Theo dõi tiến trình xuất bản report PDF",

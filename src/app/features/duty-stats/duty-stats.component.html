@@ -323,9 +323,14 @@
         <strong class="text-sm font-black text-slate-800 dark:text-slate-100">{{ uniqueAssignedPeople() }}</strong> nhân sự
       </span>
       <span class="text-slate-300 dark:text-slate-600" aria-hidden="true">·</span>
-      <span class="inline-flex items-baseline gap-1 text-[11px] font-bold text-slate-500 dark:text-slate-400" title="Số lượt trung bình trên mỗi nhân sự trong kỳ">
+      <span class="inline-flex items-baseline gap-1 text-[11px] font-bold text-slate-500 dark:text-slate-400" title="Trung bình các mức kỳ vọng riêng của nhân sự có dữ liệu trong kỳ">
         Mức kỳ vọng TB <strong class="text-sm font-black text-slate-800 dark:text-slate-100">{{ averageAssignments() | number:'1.1-1' }}</strong>/người
       </span>
+      <button type="button" (click)="expectationHelpOpen.set(true)"
+        class="ml-auto inline-flex min-h-8 items-center gap-1 rounded-lg px-2 text-[11px] font-bold text-blue-700 underline-offset-2 hover:bg-blue-50 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500 dark:text-blue-300 dark:hover:bg-blue-950/30"
+        aria-label="Giải thích mức kỳ vọng, cách tính và tác động khi xếp lịch trực">
+        <i class="fa-solid fa-circle-info" aria-hidden="true"></i> Kỳ vọng là gì?
+      </button>
     </div>
 
     @if (actionableSwapCount() > 0) {
@@ -815,7 +820,15 @@
     <div class="grid shrink-0 grid-cols-2 gap-3 lg:grid-cols-4">
       <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div class="text-[10px] font-bold uppercase text-slate-400"><span class="md:hidden">Tổng lượt</span><span class="hidden md:inline">Tổng lượt trong phạm vi</span></div><div class="mt-1 text-2xl font-black">{{ totalAssignments() }}</div><div class="mt-1 hidden text-[10px] font-bold text-slate-400 md:block">{{ statsRangeLabel() }}</div></div>
       <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div class="text-[10px] font-bold uppercase text-slate-400">Đã tham gia</div><div class="mt-1 text-2xl font-black">{{ uniqueAssignedPeople() }}/{{ statsPopulationCount() }}</div><div class="mt-1 hidden text-[10px] font-bold text-slate-400 md:block">người có lượt / người trong thống kê</div></div>
-      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div class="flex items-center gap-1 text-[10px] font-bold uppercase text-slate-400"><span class="md:hidden">Mức kỳ vọng</span><span class="hidden md:inline">Mức kỳ vọng bình quân</span><span class="md:hidden" title="Mức kỳ vọng được tính theo tháng hiệu lực của từng nhân sự">ⓘ</span></div><div class="mt-1 text-2xl font-black">{{ averageAssignments() | number:'1.1-1' }}</div><div class="mt-1 hidden text-[10px] font-bold text-slate-400 md:block">mỗi người có thể có mức kỳ vọng riêng</div></div>
+      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div class="flex flex-wrap items-center gap-1 text-[10px] font-bold uppercase text-slate-400">Mức kỳ vọng bình quân</div>
+        <div class="mt-1 text-2xl font-black">{{ averageAssignments() | number:'1.1-1' }}</div>
+        <button type="button" (click)="expectationHelpOpen.set(true)"
+          class="mt-1 inline-flex min-h-7 items-center gap-1 text-left text-[10px] font-bold text-blue-700 underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500 dark:text-blue-300"
+          aria-label="Tìm hiểu mức kỳ vọng và cách tính">
+          <i class="fa-solid fa-circle-info" aria-hidden="true"></i> Kỳ vọng là gì?
+        </button>
+      </div>
       <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div class="text-[10px] font-bold uppercase text-slate-400">Ca trực</div><div class="mt-1 text-2xl font-black">{{ activeSchedules().length }}</div></div>
     </div>
     <app-duty-stats-chart
@@ -907,11 +920,19 @@
                         {{ assignmentDeviationPercent(stat) > 0 ? '+' : '' }}{{ assignmentDeviationPercent(stat) | number:'1.0-0' }}%
                       </span>
                     </div>
-                    <div class="mt-1 text-[9px] font-bold text-slate-400">
-                      {{ assignmentDifference(stat) > 0 ? '+' : '' }}{{ assignmentDifference(stat) | number:'1.1-1' }} lượt · kỳ vọng {{ stat.expectedAssignments | number:'1.1-1' }}
+                    <div class="mt-1 flex items-center justify-end gap-1.5 text-[9px] font-bold text-slate-400">
+                      <span>{{ assignmentDifference(stat) > 0 ? '+' : '' }}{{ assignmentDifference(stat) | number:'1.1-1' }} lượt · kỳ vọng {{ stat.expectedAssignments | number:'1.1-1' }}</span>
+                      <button type="button" (click)="expectationDetailStaffId.set(stat.staffId)"
+                        class="inline-flex size-6 shrink-0 items-center justify-center rounded-full border border-blue-200 bg-blue-50 text-[11px] font-black text-blue-700 hover:bg-blue-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-300 dark:hover:bg-blue-900"
+                        [attr.aria-label]="'Xem cách tính mức kỳ vọng của ' + stat.displayName" title="Xem cách tính mức kỳ vọng">?</button>
                     </div>
                   } @else {
-                    <span class="rounded-full bg-slate-100 px-2 py-1 text-[9px] font-black text-slate-600 dark:bg-slate-800 dark:text-slate-300">Chưa đủ dữ liệu</span>
+                    <div class="inline-flex items-center gap-1.5">
+                      <span class="rounded-full bg-slate-100 px-2 py-1 text-[9px] font-black text-slate-600 dark:bg-slate-800 dark:text-slate-300">Chưa đủ dữ liệu</span>
+                      <button type="button" (click)="expectationDetailStaffId.set(stat.staffId)"
+                        class="inline-flex size-6 shrink-0 items-center justify-center rounded-full border border-blue-200 bg-blue-50 text-[11px] font-black text-blue-700 hover:bg-blue-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-300 dark:hover:bg-blue-900"
+                        [attr.aria-label]="'Xem cách tính mức kỳ vọng của ' + stat.displayName" title="Vì sao chưa có mức kỳ vọng?">?</button>
+                    </div>
                   }
                 </td>
                 <td class="px-5 py-3.5 text-right">{{ stat.weekendCount }}</td>
@@ -944,7 +965,15 @@
               </div>
             </div>
             <div class="mt-3 grid grid-cols-2 gap-2 text-[10px] sm:grid-cols-4">
-              <div><span class="block text-slate-400">Mức kỳ vọng</span><strong>{{ stat.fairnessAvailable ? (stat.expectedAssignments | number:'1.1-1') : '—' }} lượt</strong></div>
+              <div>
+                <span class="block text-slate-400">Mức kỳ vọng</span>
+                <div class="flex items-center gap-1.5">
+                  <strong>{{ stat.fairnessAvailable ? (stat.expectedAssignments | number:'1.1-1') : '—' }} lượt</strong>
+                  <button type="button" (click)="expectationDetailStaffId.set(stat.staffId)"
+                    class="inline-flex size-7 shrink-0 items-center justify-center rounded-full border border-blue-200 bg-blue-50 text-xs font-black text-blue-700 hover:bg-blue-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-300 dark:hover:bg-blue-900"
+                    [attr.aria-label]="'Xem cách tính mức kỳ vọng của ' + stat.displayName" title="Xem cách tính mức kỳ vọng">?</button>
+                </div>
+              </div>
               <div><span class="block text-slate-400">Cuối tuần</span><strong>{{ stat.weekendCount }}</strong></div>
               <div><span class="block text-slate-400">★ Chủ trì</span><strong>{{ stat.leadCount }}</strong></div>
               <div><span class="block text-slate-400">Hiệu lực</span><strong>{{ stat.eligibleMonthCount }} tháng</strong></div>
@@ -1306,4 +1335,132 @@
 }
 @if (printDocument(); as document) {
   <app-a4-document-preview [document]="document" (closed)="printDocument.set(null)" />
+}
+
+@if (expectationHelpOpen()) {
+  <app-modal-shell
+    title="Mức kỳ vọng trong lịch trực là gì?"
+    description="Cách tính, cách đọc số liệu và tác động đến gợi ý xếp ca."
+    size="lg"
+    (closed)="expectationHelpOpen.set(false)">
+    <div modalBody class="space-y-4 text-sm leading-relaxed text-slate-700 dark:text-slate-200">
+      <section class="rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-900/60 dark:bg-blue-950/30">
+        <h3 class="font-black text-blue-800 dark:text-blue-200">1. Ý nghĩa và vai trò</h3>
+        <p class="mt-1 text-xs sm:text-sm">
+          <strong>Mức kỳ vọng</strong> là số lượt trực tham chiếu mà một nhân sự có thể được phân bổ nếu chia tương đối đều các lượt trực trong thời gian người đó có hiệu lực.
+          Hệ thống dùng mốc này để đánh giá sự chênh lệch giữa các nhân sự, hỗ trợ cân bằng lịch trực. Đây là chỉ số thống kê, <strong>không phải định mức bắt buộc</strong> hay số ca tự động giao cho người đó.
+        </p>
+      </section>
+
+      <section>
+        <h3 class="font-black text-slate-900 dark:text-slate-100">2. Hệ thống tính như thế nào?</h3>
+        <ol class="mt-2 list-decimal space-y-2 pl-5 text-xs sm:text-sm">
+          <li>Mỗi người được xếp vào một ca được tính <strong>1 lượt trực</strong>. Một ca có 3 người là 3 lượt; ca đã hủy không tính. Vai trò ★ chủ trì không cộng thêm lượt.</li>
+          <li>Trong mỗi tháng có lịch, lấy <strong>tổng lượt trực đã phân công ÷ số nhân sự có hiệu lực trong tháng</strong> để xác định mức kỳ vọng của tháng đó.</li>
+          <li>Cộng mức kỳ vọng của những tháng nhân sự có hiệu lực trong phạm vi đang xem để ra <strong>mức kỳ vọng riêng</strong> của người đó.</li>
+        </ol>
+        <p class="mt-2 rounded-lg bg-slate-50 p-3 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+          <strong>Tháng hiệu lực:</strong> bắt đầu từ tháng đầu tiên người đó có lượt trực trong phạm vi đang xem. Người còn hoạt động được tính đến tháng cuối có lịch; người đã ngừng hoạt động được tính đến tháng cuối có lượt trực. Người chưa có lượt trong phạm vi sẽ hiện “Chưa đủ dữ liệu”.
+          <strong>Mức kỳ vọng bình quân</strong> trên thẻ tổng quan là trung bình của các mức kỳ vọng riêng có dữ liệu.
+        </p>
+      </section>
+
+      <section class="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+        <h3 class="font-black text-slate-900 dark:text-slate-100">3. Ví dụ dễ hiểu</h3>
+        <p class="mt-1 text-xs sm:text-sm">Trong một tháng có <strong>20 lượt trực</strong> và <strong>5 nhân sự có hiệu lực</strong>, mức kỳ vọng tháng của mỗi người là <strong>20 ÷ 5 = 4 lượt</strong>.</p>
+        <div class="mt-3 grid gap-2 sm:grid-cols-2">
+          <div class="rounded-lg bg-rose-50 p-3 text-xs dark:bg-rose-950/30">
+            <strong class="text-rose-700 dark:text-rose-300">Người A trực 5 lượt</strong>
+            <p class="mt-1">Nhiều hơn kỳ vọng 1 lượt, tương ứng <strong>+25%</strong>.</p>
+          </div>
+          <div class="rounded-lg bg-blue-50 p-3 text-xs dark:bg-blue-950/30">
+            <strong class="text-blue-700 dark:text-blue-300">Người B trực 3 lượt</strong>
+            <p class="mt-1">Ít hơn kỳ vọng 1 lượt, tương ứng <strong>−25%</strong>.</p>
+          </div>
+        </div>
+        <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Công thức “% lệch” = (lượt thực tế − mức kỳ vọng riêng) ÷ mức kỳ vọng riêng × 100. Trong bảng thống kê, lệch dưới 10% về trị tuyệt đối được ghi “Cân bằng”.</p>
+      </section>
+
+      <section>
+        <h3 class="font-black text-slate-900 dark:text-slate-100">4. Có tác động gì khi xếp lịch?</h3>
+        <p class="mt-1 text-xs sm:text-sm">Trong phần <strong>Thống kê</strong>, mức kỳ vọng tạo đường nét đứt trên biểu đồ, giúp nhận biết ai đang trực nhiều hơn hoặc ít hơn so với mốc riêng. Khi <strong>Thêm/Sửa ca</strong>, hệ thống xét dữ liệu 90 ngày gần ngày xếp ca để ưu tiên gợi ý người đang có tải thấp, đồng thời cảnh báo ca liền kề. Ngưỡng phân nhóm gợi ý là ±15%; trên +35% được đánh dấu “Đang nhiều”.</p>
+        <p class="mt-2 text-xs font-semibold text-slate-600 dark:text-slate-300">Đây là gợi ý hỗ trợ người xếp lịch: mức kỳ vọng không tự thay đổi lịch, không chặn phân công và không thay thế việc xem xét khả năng, lịch nghỉ hay điều kiện thực tế.</p>
+      </section>
+    </div>
+    <div modalFooter>
+      <app-button variant="secondary" (click)="expectationHelpOpen.set(false)">Đã hiểu</app-button>
+    </div>
+  </app-modal-shell>
+}
+
+@if (selectedExpectationDetail(); as stat) {
+  <app-modal-shell
+    [title]="'Chi tiết mức kỳ vọng — ' + stat.displayName"
+    [description]="'Phép tính riêng của nhân sự trong phạm vi: ' + statsRangeLabel()"
+    size="md"
+    (closed)="expectationDetailStaffId.set(null)">
+    <div modalBody class="space-y-4 text-sm text-slate-700 dark:text-slate-200">
+      <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        <div class="rounded-xl bg-slate-50 p-3 dark:bg-slate-800">
+          <div class="text-xs font-semibold text-slate-500 dark:text-slate-400">Lượt trực thực tế</div>
+          <div class="mt-1 text-xl font-black text-slate-900 dark:text-white">{{ stat.total }}</div>
+        </div>
+        <div class="rounded-xl bg-blue-50 p-3 dark:bg-blue-950/40">
+          <div class="text-xs font-semibold text-blue-700 dark:text-blue-300">Mức kỳ vọng riêng</div>
+          <div class="mt-1 text-xl font-black text-blue-800 dark:text-blue-200">{{ stat.fairnessAvailable ? (stat.expectedAssignments | number:'1.2-2') : '—' }}</div>
+        </div>
+        <div class="col-span-2 rounded-xl bg-slate-50 p-3 sm:col-span-1 dark:bg-slate-800">
+          <div class="text-xs font-semibold text-slate-500 dark:text-slate-400">Số tháng hiệu lực</div>
+          <div class="mt-1 text-xl font-black text-slate-900 dark:text-white">{{ stat.eligibleMonthCount }}</div>
+        </div>
+      </div>
+
+      @if (stat.fairnessAvailable) {
+        <section class="space-y-2">
+          <h3 class="font-black text-slate-900 dark:text-slate-100">Thời gian và cách tính</h3>
+          <p class="text-xs leading-relaxed">Tháng hiệu lực: <strong>{{ stat.effectiveFromMonth.slice(5, 7) }}/{{ stat.effectiveFromMonth.slice(0, 4) }}</strong> đến <strong>{{ stat.effectiveToMonth.slice(5, 7) }}/{{ stat.effectiveToMonth.slice(0, 4) }}</strong>. Mỗi tháng có lịch: <strong>tổng lượt phân công ÷ số nhân sự có hiệu lực</strong>. Cộng kết quả những tháng này để ra mức kỳ vọng riêng của {{ stat.displayName }}.</p>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Tính mỗi người 1 lượt trong mỗi ca; bỏ ca hủy, không cộng thêm lượt cho người chủ trì. Các tháng không có lịch không tham gia phép tính.</p>
+        </section>
+
+        <section>
+          <h3 class="mb-2 font-black text-slate-900 dark:text-slate-100">Phép tính từng tháng ({{ stat.expectationMonths.length }} tháng)</h3>
+          <div class="space-y-2">
+            @for (month of stat.expectationMonths; track month.monthKey) {
+              <div class="rounded-xl border border-slate-200 p-3 dark:border-slate-700">
+                <div class="mb-1 text-xs font-black text-slate-800 dark:text-slate-100">Tháng {{ month.monthKey.slice(5, 7) }}/{{ month.monthKey.slice(0, 4) }}</div>
+                <div class="text-xs text-slate-600 dark:text-slate-300">
+                  {{ month.totalAssignments }} lượt phân công ÷ {{ month.eligibleStaffCount }} người có hiệu lực
+                  ≈ <strong class="text-blue-700 dark:text-blue-300">{{ month.expectedAssignments | number:'1.3-3' }} lượt</strong>
+                </div>
+              </div>
+            }
+          </div>
+        </section>
+
+        <section class="rounded-xl border border-blue-200 bg-blue-50 p-3 text-xs leading-relaxed dark:border-blue-900 dark:bg-blue-950/30">
+          <h3 class="font-black text-blue-800 dark:text-blue-200">Tổng kỳ vọng và mức chênh lệch</h3>
+          <p class="mt-1 break-words">
+            Kỳ vọng =
+            @for (month of stat.expectationMonths; track month.monthKey; let first = $first) {
+              @if (!first) { <span> + </span> }
+              ({{ month.totalAssignments }} ÷ {{ month.eligibleStaffCount }})
+            }
+            ≈ <strong>{{ stat.expectedAssignments | number:'1.3-3' }} lượt</strong>.
+          </p>
+          <p class="mt-2">Chênh lệch lượt: {{ stat.total }} − {{ stat.expectedAssignments | number:'1.3-3' }} ≈ <strong>{{ assignmentDifference(stat) > 0 ? '+' : '' }}{{ assignmentDifference(stat) | number:'1.2-2' }} lượt</strong>.</p>
+          <p class="mt-1">Chênh lệch % = ({{ stat.total }} − {{ stat.expectedAssignments | number:'1.3-3' }}) ÷ {{ stat.expectedAssignments | number:'1.3-3' }} × 100 ≈ <strong>{{ stat.deviationPercent > 0 ? '+' : '' }}{{ stat.deviationPercent | number:'1.1-1' }}%</strong>.</p>
+          <p class="mt-2 text-slate-600 dark:text-slate-300">Dương: trực nhiều hơn kỳ vọng; âm: trực ít hơn. Đây là mốc tham chiếu để hỗ trợ cân bằng lịch.</p>
+        </section>
+        <p class="text-xs italic text-slate-500 dark:text-slate-400">Các số thập phân được làm tròn khi hiển thị. Tổng và tỷ lệ phần trăm được tính từ giá trị đầy đủ trước khi làm tròn.</p>
+      } @else {
+        <section class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs leading-relaxed text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+          <h3 class="font-black">Chưa đủ dữ liệu để tính mức kỳ vọng riêng</h3>
+          <p class="mt-2">{{ stat.total === 0 ? 'Nhân sự chưa có lượt trực trong phạm vi đang xem, nên chưa xác định được tháng bắt đầu hiệu lực.' : 'Các tháng hiệu lực chưa có đủ dữ liệu phân công để xác định mức kỳ vọng.' }} Mức kỳ vọng được hiển thị là “—” cho tới khi có dữ liệu phù hợp.</p>
+        </section>
+      }
+    </div>
+    <div modalFooter>
+      <app-button variant="secondary" (click)="expectationDetailStaffId.set(null)">Đóng</app-button>
+    </div>
+  </app-modal-shell>
 }

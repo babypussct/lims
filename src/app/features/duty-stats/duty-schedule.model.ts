@@ -50,6 +50,13 @@ export interface DutyScheduleDraft {
   source?: 'manual' | 'import' | 'batch';
 }
 
+export interface DutyExpectationMonthDetail {
+  monthKey: string;
+  totalAssignments: number;
+  eligibleStaffCount: number;
+  expectedAssignments: number;
+}
+
 export interface DutyPersonStat {
   staffId: string;
   displayName: string;
@@ -62,6 +69,7 @@ export interface DutyPersonStat {
   activeMonthCount: number;
   lastDate: string;
   expectedAssignments: number;
+  expectationMonths: DutyExpectationMonthDetail[];
   deviationPercent: number;
   eligibleMonthCount: number;
   fairnessAvailable: boolean;

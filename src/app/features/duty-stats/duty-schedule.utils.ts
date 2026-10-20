@@ -213,6 +213,7 @@ export function aggregateDutyPeopleById(
       activeMonthCount: value.months.size,
       lastDate: value.lastDate,
       expectedAssignments: 0,
+      expectationMonths: [],
       deviationPercent: 0,
       eligibleMonthCount: 0,
       fairnessAvailable: false,
@@ -246,6 +247,7 @@ export function aggregateDutyRosterById(
       activeMonthCount: 0,
       lastDate: '',
       expectedAssignments: 0,
+      expectationMonths: [],
       deviationPercent: 0,
       eligibleMonthCount: 0,
       fairnessAvailable: false,
@@ -283,6 +285,7 @@ function applyDutyFairness(
     return stats.map(stat => ({
       ...stat,
       expectedAssignments: 0,
+      expectationMonths: [],
       deviationPercent: 0,
       eligibleMonthCount: 0,
       fairnessAvailable: false,
@@ -336,12 +339,19 @@ function applyDutyFairness(
     const eligibleMonths = monthKeys.filter(month => effectiveFromMonth
       && effectiveFromMonth <= month
       && month <= effectiveToMonth);
-    const expectedAssignments = eligibleMonths.reduce((total, month) => {
+    const expectationMonths = eligibleMonths.map(month => {
       const eligibleCount = eligibleByMonth.get(month)?.length || 0;
-      return eligibleCount === 0
-        ? total
-        : total + (assignmentsByMonth.get(month) || 0) / eligibleCount;
-    }, 0);
+      const totalAssignments = assignmentsByMonth.get(month) || 0;
+      return {
+        monthKey: month,
+        totalAssignments,
+        eligibleStaffCount: eligibleCount,
+        expectedAssignments: eligibleCount === 0 ? 0 : totalAssignments / eligibleCount,
+      };
+    });
+    const expectedAssignments = expectationMonths.reduce(
+      (total, month) => total + month.expectedAssignments, 0,
+    );
     const fairnessAvailable = expectedAssignments > 0;
     const deviationPercent = fairnessAvailable
       ? ((stat.total - expectedAssignments) / expectedAssignments) * 100
@@ -350,6 +360,7 @@ function applyDutyFairness(
     return {
       ...stat,
       expectedAssignments,
+      expectationMonths,
       deviationPercent,
       eligibleMonthCount: eligibleMonths.length,
       fairnessAvailable,

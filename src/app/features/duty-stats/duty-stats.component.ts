@@ -112,6 +112,8 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
   readonly toolsMenuOpen = signal(false);
   readonly periodPickerOpen = signal(false);
   readonly swapDrawerOpen = signal(false);
+  readonly expectationHelpOpen = signal(false);
+  readonly expectationDetailStaffId = signal<string | null>(null);
   readonly selectedDayCell = signal<DutyCalendarCell | null>(null);
   readonly mobilePeriodMode = signal<DutyMobilePeriodMode>('month');
   readonly staffSearch = signal('');
@@ -197,6 +199,9 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
   });
   readonly batchExistingCount = computed(() => this.batchScopedDates().length - this.batchCandidateDates().length);
   readonly personStats = computed(() => aggregateDutyRosterById(this.duty.schedules(), this.duty.staff()));
+  readonly selectedExpectationDetail = computed(() =>
+    this.personStats().find(person => person.staffId === this.expectationDetailStaffId()) ?? null,
+  );
   readonly sortedPersonStats = computed(() => {
     const column = this.sortColumn();
     const direction = this.sortDirection() === 'asc' ? 1 : -1;
