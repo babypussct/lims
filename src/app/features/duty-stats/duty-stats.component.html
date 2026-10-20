@@ -22,6 +22,11 @@
       [class]="activeView() === 'stats' ? 'border border-slate-200/80 bg-white text-blue-600 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-blue-400' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'">
       <i class="fa-solid fa-chart-column mr-2 text-[11px]" aria-hidden="true"></i>Thống kê
     </button>
+    <button type="button" (click)="setActiveView('profile')"
+      class="inline-flex items-center whitespace-nowrap rounded-xl px-3 py-1.5 text-xs font-black transition active:scale-95"
+      [class]="activeView() === 'profile' ? 'border border-slate-200/80 bg-white text-blue-600 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-blue-400' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'">
+      <i class="fa-solid fa-id-card mr-2 text-[11px]" aria-hidden="true"></i>Tường cá nhân
+    </button>
   </div>
 
   <div class="hidden shrink-0 lg:block">
@@ -194,7 +199,7 @@
           }
         </div>
       </app-toolbar>
-    } @else {
+    } @else if (activeView() === 'stats') {
       <app-toolbar>
         <div toolbarSearch class="flex items-center gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-950">
           <button type="button" (click)="setStatsRangeMode('selection')" class="rounded-lg px-3 py-2 text-[10px] font-black transition"
@@ -716,6 +721,11 @@
               <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/40" [class.opacity-50]="!person.active">
                 <td class="px-5 py-3.5">
                   <div class="font-black">{{ person.displayName }}</div>
+                  @if (canViewProfile(person.id)) {
+                    <button type="button" (click)="openPersonalProfile(person.id)" class="mt-1 inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:underline dark:text-blue-400" [attr.aria-label]="'Xem tường cá nhân ' + person.displayName">
+                      <i class="fa-solid fa-chart-line" aria-hidden="true"></i> Xem tường cá nhân
+                    </button>
+                  }
                   @if (person.note) { <div class="mt-1 max-w-[320px] truncate text-[10px] text-slate-400" [title]="person.note">{{ person.note }}</div> }
                 </td>
                 <td class="px-5 py-3.5">
@@ -763,6 +773,46 @@
           </tbody>
         </table>
       </div>
+    </section>
+  }
+
+  @if (activeView() === 'profile') {
+    <section class="min-h-0 flex-1 overflow-y-auto custom-scrollbar" aria-label="Phân tích hồ sơ lịch trực cá nhân">
+      @if (duty.error(); as message) {
+        <div class="mb-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-bold text-rose-700 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-300" role="alert">Không thể tải đầy đủ lịch trực: {{ message }}</div>
+      }
+      <div class="mb-3 flex flex-wrap items-end gap-3 rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
+        <div class="min-w-44 flex-1">
+          <label for="profile-staff" class="mb-1 block text-[10px] font-black uppercase text-slate-500">Nhân sự</label>
+          <select id="profile-staff" [ngModel]="effectiveProfileStaffId()" (ngModelChange)="setProfileStaffId($event)" class="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-bold dark:border-slate-700 dark:bg-slate-950">
+            @for (person of profileStaffOptions(); track person.id) {
+              <option [value]="person.id">{{ person.displayName }}{{ !person.active ? ' (ngừng dùng)' : '' }}</option>
+            }
+          </select>
+        </div>
+        <div class="min-w-40">
+          <label for="profile-month" class="mb-1 block text-[10px] font-black uppercase text-slate-500">Kết thúc tại tháng</label>
+          <input id="profile-month" type="month" [ngModel]="profileEndMonth()" (ngModelChange)="setProfileEndMonth($event)" [max]="currentProfileMonth"
+            class="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-bold dark:border-slate-700 dark:bg-slate-950">
+        </div>
+        <div class="flex flex-wrap gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-950" aria-label="Khoảng thời gian phân tích cá nhân">
+          @for (period of profileWindows; track period.value) {
+            <button type="button" (click)="setProfileWindow(period.value)" [attr.aria-pressed]="profileWindow() === period.value"
+              class="h-9 rounded-lg px-3 text-[11px] font-black transition"
+              [class]="profileWindow() === period.value ? 'bg-white text-blue-700 shadow-sm dark:bg-slate-800 dark:text-blue-300' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-200'">{{ period.label }}</button>
+          }
+        </div>
+      </div>
+      @if (duty.error()) {
+        <div class="rounded-2xl border border-dashed border-rose-200 bg-white p-8 text-center text-sm text-slate-500 dark:border-rose-900 dark:bg-slate-900">Vui lòng thử chọn lại kỳ phân tích khi kết nối dữ liệu đã hoạt động.</div>
+      } @else if (effectiveProfileStaffId(); as staffId) {
+        <app-duty-personal-profile [staff]="duty.staff()" [schedules]="duty.schedules()" [staffId]="staffId"
+          [startDate]="profileRange().start" [endDate]="profileRange().end" [window]="profileWindow()" [loading]="duty.loadingSchedules()" [canManage]="duty.canManage()" />
+      } @else {
+        <div class="rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900">
+          Chưa có nhân sự trong danh mục lịch trực.
+        </div>
+      }
     </section>
   }
 

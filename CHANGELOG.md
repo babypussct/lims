@@ -2,7 +2,30 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.10.20-b01
+## Phiên bản hiện tại: v26.10.20-b02
+
+### v26.10.20-b02
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Mỗi nhân sự có một tường cá nhân để xem lịch sử lượt trực, xu hướng theo tháng và các dấu hiệu dồn ca trong kỳ phân tích.
+
+#### ✨ Tính Năng Mới
+
+- Thêm các khoảng phân tích 3, 6, 12 tháng hoặc toàn bộ lịch sử, kèm biểu đồ cá nhân, bình quân phòng và mức kỳ vọng ước tính.
+- Cho phép quản trị viên tạo prompt số liệu riêng cho từng nhân sự, kiểm tra kết quả AI bên ngoài rồi công bố bản nhận xét bất biến lên tường cá nhân.
+- Lưu lịch sử nhận xét AI theo nhân sự, kỳ phân tích và dấu vân tay dữ liệu để nhận biết khi lịch trực đã thay đổi.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Bổ sung heatmap ngày, xu hướng tuần, lượt cuối tuần, khoảng cách giữa các ca và các nhận xét tự động mang tính tham khảo.
+- Giữ phân tích theo mã nhân sự, loại trừ ca đã hủy và không suy diễn từ lịch trực sang năng lực, sức khỏe hoặc hiệu suất làm việc.
+- Giới hạn quyền công bố nhận xét ở người quản lý lịch trực; bản đã công bố chỉ đọc và không thể sửa hoặc xóa từ client.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Bổ sung kiểm tra schema Firestore cho nhận xét AI, bao gồm kỳ ngày hợp lệ, độ dài nội dung, dấu vân tay dữ liệu và thời gian tạo từ server.
+- Bổ sung test release cho các trường hợp dữ liệu rỗng, vượt biên tháng/năm, nhân sự chưa được phân công và thay đổi lịch làm mất hiệu lực nhận xét cũ.
 
 ### v26.10.20-b01
 

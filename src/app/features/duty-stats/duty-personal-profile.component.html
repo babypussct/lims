@@ -1,0 +1,171 @@
+@if (loading()) {
+  <div class="rounded-2xl border border-slate-200 bg-white p-12 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900" role="status">Đang tải dữ liệu lịch trực cá nhân...</div>
+} @else if (report(); as data) {
+  <div class="space-y-4 pb-6" aria-label="Tường cá nhân lịch trực">
+    <header class="rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-50 to-white p-5 dark:border-blue-900/50 dark:from-blue-950/30 dark:to-slate-900">
+      <p class="text-[10px] font-black uppercase tracking-[.16em] text-blue-600 dark:text-blue-300">Hồ sơ lịch trực · {{ window() === 'all' ? 'Lịch sử' : window() + ' tháng' }}</p>
+      <h2 class="mt-1 text-xl font-black text-slate-900 dark:text-slate-100">{{ data.staffName }}</h2>
+      <p class="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">{{ data.start | date:'dd/MM/yyyy' }} – {{ data.end | date:'dd/MM/yyyy' }} · So sánh trên cùng kỳ quan sát</p>
+    </header>
+
+    <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <article class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+        <p class="text-[11px] font-bold text-slate-500">Lượt trực cá nhân</p><strong class="mt-1 block text-3xl font-black">{{ data.total }}</strong>
+        <p class="mt-1 text-[11px] text-slate-400">Trên {{ data.teamTotal }} lượt toàn phòng</p>
+      </article>
+      <article class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+        <p class="text-[11px] font-bold text-slate-500">Tỷ trọng đóng góp</p><strong class="mt-1 block text-3xl font-black">{{ data.sharePercent | number:'1.1-1' }}%</strong>
+        <p class="mt-1 text-[11px] text-slate-400">Bình quân {{ data.teamAverage | number:'1.1-1' }} lượt/người</p>
+      </article>
+      <article class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+        <p class="text-[11px] font-bold text-slate-500">So với kỳ vọng ước tính</p>
+        <strong class="mt-1 block text-3xl font-black" [class.text-amber-600]="data.deviationPercent !== null && data.deviationPercent > 20">
+          {{ data.deviationPercent === null ? '—' : (data.deviationPercent > 0 ? '+' : '') + (data.deviationPercent | number:'1.1-1') + '%' }}
+        </strong>
+        <p class="mt-1 text-[11px] text-slate-400">Mốc {{ data.expected === null ? 'chưa đủ dữ liệu' : (data.expected | number:'1.1-1') + ' lượt' }}</p>
+      </article>
+      <article class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+        <p class="text-[11px] font-bold text-slate-500">Độ dàn trải</p><strong class="mt-1 block text-3xl font-black">{{ data.medianGapDays === null ? '—' : (data.medianGapDays | number:'1.0-1') }}</strong>
+        <p class="mt-1 text-[11px] text-slate-400">Ngày cách ca (trung vị) · {{ data.consecutivePairs }} cặp sát ngày</p>
+      </article>
+    </div>
+
+    <section class="rounded-2xl border border-slate-200 bg-white p-4 md:p-5 dark:border-slate-800 dark:bg-slate-900" aria-label="Xu hướng trực hàng tháng">
+      <h3 class="text-sm font-black">Xu hướng số lượt trực theo tháng</h3>
+      <p class="mb-4 mt-1 text-xs text-slate-500">So sánh số lượt cá nhân, bình quân của nhóm nhân sự trong thống kê và kỳ vọng ước tính cho từng tháng.</p>
+      <app-duty-profile-trend-chart [months]="data.monthly" />
+    </section>
+
+    <div class="grid gap-4 xl:grid-cols-2">
+      <section class="rounded-2xl border border-slate-200 bg-white p-4 md:p-5 dark:border-slate-800 dark:bg-slate-900" aria-label="Biến động tỷ trọng theo tháng">
+        <h3 class="text-sm font-black">Tỷ trọng trong phòng theo tháng</h3>
+        <p class="mt-1 text-xs text-slate-500">% số lượt cá nhân / tổng lượt toàn phòng của từng tháng.</p>
+        <div class="mt-4 max-h-72 space-y-2 overflow-y-auto pr-1">
+          @for (month of data.monthly; track month.key) {
+            <div class="flex items-center gap-3 text-[11px]">
+              <span class="w-16 shrink-0 font-bold text-slate-500">{{ month.key.slice(5) }}/{{ month.key.slice(0, 4) }}</span>
+              <div class="h-3 min-w-0 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                <div class="h-full rounded-full bg-blue-500" [style.width.%]="month.sharePercent"></div>
+              </div>
+              <span class="w-24 shrink-0 text-right font-black">{{ month.sharePercent | number:'1.1-1' }}% <span class="font-normal text-slate-400">({{ month.actual }}/{{ month.totalAssignments }})</span></span>
+            </div>
+          }
+        </div>
+      </section>
+
+      <section class="rounded-2xl border border-slate-200 bg-white p-4 md:p-5 dark:border-slate-800 dark:bg-slate-900" aria-label="Lịch nhiệt cá nhân">
+        <h3 class="text-sm font-black">Lịch nhiệt 12 tuần cuối kỳ</h3>
+        <p class="mt-1 text-xs text-slate-500">Ô xanh là ngày có phân công; viền nhạt đánh dấu cuối tuần.</p>
+        <div class="mt-4 grid grid-cols-7 gap-1 text-center text-[10px] font-semibold text-slate-400">
+          @for (day of ['T2','T3','T4','T5','T6','T7','CN']; track day) { <span>{{ day }}</span> }
+        </div>
+        <div class="mt-1 grid grid-cols-7 gap-1">
+          @for (day of heatmapRows(); track $index) {
+            @if (day; as cell) {
+              <span class="flex h-7 items-center justify-center rounded-md border text-[9px] font-bold"
+                [class]="cell.count ? 'border-blue-500 bg-blue-500 text-white dark:bg-blue-600' : cell.weekend ? 'border-amber-200 bg-amber-50 text-slate-500 dark:border-amber-900 dark:bg-amber-950/30' : 'border-slate-100 bg-slate-50 text-slate-400 dark:border-slate-800 dark:bg-slate-800/60'"
+                [title]="cell.date + (cell.count ? ': Có trực' : ': Không trực')" [attr.aria-label]="cell.date + (cell.count ? ', có trực' : ', không trực')">{{ cell.date.slice(-2) }}</span>
+            } @else { <span aria-hidden="true"></span> }
+          }
+        </div>
+        <p class="mt-3 text-[11px] font-medium text-slate-500">{{ data.weekendCount }} lượt cuối tuần · {{ data.leadCount }} lượt đầu danh sách · {{ data.shortestGapDays === null ? 'Chưa đủ ca để tính khoảng cách' : 'Khoảng cách ngắn nhất: ' + data.shortestGapDays + ' ngày' }}</p>
+      </section>
+    </div>
+
+    <section class="rounded-2xl border border-slate-200 bg-white p-4 md:p-5 dark:border-slate-800 dark:bg-slate-900" aria-label="Mức dàn trải lịch trực theo tuần">
+      <h3 class="text-sm font-black">Mức dàn trải theo tuần</h3>
+      <p class="mt-1 text-xs text-slate-500">16 tuần cuối kỳ · Mỗi cột xanh là lượt trực cá nhân, phần nền xám là mức bình quân phòng cùng tuần.</p>
+      <div class="mt-4 grid grid-cols-8 items-end gap-2">
+        @for (week of recentWeeks(); track week.start) {
+          <div class="min-w-0 text-center" [title]="'Tuần từ ' + week.start + ': cá nhân ' + week.actual + ' lượt / bình quân ' + (week.teamAverage | number:'1.1-1') + ' lượt, tỷ trọng ' + (week.sharePercent | number:'1.1-1') + '%'">
+            <div class="relative mx-auto h-24 w-full max-w-8 rounded-md bg-slate-100 dark:bg-slate-800">
+              <div class="absolute inset-x-0 bottom-0 rounded-md bg-slate-300/65 dark:bg-slate-600/70" [style.height.%]="100 * week.teamAverage / weeklyPeak()"></div>
+              <div class="absolute inset-x-[22%] bottom-0 rounded-t bg-blue-500 dark:bg-blue-400" [style.height.%]="100 * week.actual / weeklyPeak()"></div>
+            </div>
+            <span class="mt-1 block text-[9px] font-black text-slate-500">{{ week.start.slice(5) }}</span>
+            <span class="block text-[9px] text-slate-400">{{ week.actual }} lượt</span>
+          </div>
+        }
+      </div>
+      <p class="mt-3 text-[11px] text-slate-500">So sánh theo từng tuần giúp nhận diện ca bị dồn cục bộ dù tổng lượt theo tháng gần mức bình quân.</p>
+    </section>
+
+    <section class="rounded-2xl border border-indigo-200 bg-white p-4 md:p-5 dark:border-indigo-900 dark:bg-slate-900" aria-label="Đánh giá AI do quản trị viên công bố">
+      <h3 class="text-sm font-black text-indigo-700 dark:text-indigo-300"><i class="fa-solid fa-robot mr-2" aria-hidden="true"></i>Đánh giá AI do quản trị viên công bố</h3>
+      <p class="mt-1 text-xs leading-relaxed text-slate-500">Quản trị viên đưa số liệu lịch trực vào mô hình AI bên ngoài, kiểm tra kết quả rồi công bố tại đây. Nội dung chỉ mang tính tham khảo; mọi thành viên đăng nhập đều có thể xem.</p>
+
+      @if (reviewsError(); as error) {
+        <p class="mt-3 rounded-lg bg-rose-50 p-3 text-xs text-rose-700 dark:bg-rose-950/30 dark:text-rose-300" role="alert">{{ error }}</p>
+      } @else if (reviewsLoading()) {
+        <p class="mt-3 text-xs text-slate-500" role="status">Đang tải lịch sử nhận xét AI...</p>
+      } @else {
+        @for (review of periodReviews(); track review.id) {
+          <article class="mt-3 rounded-xl border border-indigo-100 bg-indigo-50/50 p-4 dark:border-indigo-900 dark:bg-indigo-950/20">
+            <div class="flex flex-wrap items-center justify-between gap-2 text-[11px] font-bold text-indigo-700 dark:text-indigo-300">
+              <span>Đã công bố · {{ review.createdAtDate ? (review.createdAtDate | date:'dd/MM/yyyy HH:mm') : 'Đang đồng bộ thời gian' }}</span>
+              @if (review.dataFingerprint !== dataFingerprint()) {
+                <span class="rounded-lg bg-amber-100 px-2 py-1 text-amber-800 dark:bg-amber-950 dark:text-amber-300">Dữ liệu lịch trực đã thay đổi; nên đánh giá lại</span>
+              }
+            </div>
+            <p class="mt-3 whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-700 dark:text-slate-200">{{ review.analysisText }}</p>
+          </article>
+        } @empty {
+          <p class="mt-3 rounded-xl border border-dashed border-slate-200 p-4 text-xs text-slate-500 dark:border-slate-700">Chưa có đánh giá AI được công bố cho kỳ phân tích này.</p>
+        }
+        @if (otherReviews().length) {
+          <details class="mt-4 rounded-xl border border-slate-200 p-3 dark:border-slate-700">
+            <summary class="cursor-pointer text-xs font-bold text-slate-600 dark:text-slate-300">Lịch sử các kỳ khác ({{ otherReviews().length }} bản)</summary>
+            <div class="mt-3 space-y-3">
+              @for (review of otherReviews(); track review.id) {
+                <article class="rounded-lg bg-slate-50 p-3 dark:bg-slate-800/70">
+                  <p class="mb-2 text-[11px] font-bold text-slate-500">{{ review.periodStart }} – {{ review.periodEnd }} · {{ review.window === 'all' ? 'Toàn bộ' : review.window + ' tháng' }} · {{ review.createdAtDate ? (review.createdAtDate | date:'dd/MM/yyyy HH:mm') : 'Đang đồng bộ' }}</p>
+                  <p class="whitespace-pre-wrap break-words text-xs leading-relaxed text-slate-700 dark:text-slate-200">{{ review.analysisText }}</p>
+                </article>
+              }
+            </div>
+          </details>
+        }
+      }
+
+      @if (canManage()) {
+        <div class="mt-5 border-t border-indigo-100 pt-4 dark:border-indigo-900">
+          <h4 class="text-xs font-black">Công cụ dành cho người quản lý lịch trực</h4>
+          <p class="mt-1 text-xs leading-relaxed text-slate-500">1. Sao chép prompt số liệu của <strong>{{ data.staffName }}</strong> ({{ data.start }} – {{ data.end }}). 2. Dán vào AI. 3. Kiểm tra tên, mã và kỳ, sau đó dán kết quả vào ô bên dưới và công bố.</p>
+          <button type="button" (click)="copyPrompt()" [disabled]="loading()" class="mt-3 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-black text-white hover:bg-indigo-700 disabled:opacity-40"><i class="fa-solid fa-copy mr-2" aria-hidden="true"></i>Sao chép prompt AI</button>
+          @if (showPrompt()) {
+            <label for="duty-ai-prompt" class="mt-3 block text-xs font-bold text-slate-500">Prompt đã tạo (có thể chọn và sao chép thủ công)</label>
+            <textarea id="duty-ai-prompt" readonly [value]="promptText()" rows="7" class="mt-1 w-full rounded-xl border border-indigo-200 bg-slate-50 p-3 font-mono text-xs dark:border-indigo-900 dark:bg-slate-950"></textarea>
+          }
+          <label for="duty-ai-response" class="mt-4 block text-xs font-black">Dán câu trả lời AI đã kiểm tra</label>
+          <textarea id="duty-ai-response" [ngModel]="draftText()" (ngModelChange)="setDraftText($event)" rows="8" maxlength="16000"
+            class="mt-2 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm leading-relaxed dark:border-slate-700 dark:bg-slate-950"
+            [placeholder]="'Dán nhận xét dành riêng cho ' + data.staffName + ' vào đây...'"></textarea>
+          <label class="mt-2 flex cursor-pointer items-start gap-2 text-xs font-medium text-slate-600 dark:text-slate-300">
+            <input type="checkbox" class="mt-0.5 accent-indigo-600" [checked]="confirmedIdentity()" (change)="confirmedIdentity.set($any($event.target).checked)">
+            <span>Tôi đã kiểm tra AI trả lời đúng nhân sự <strong>{{ data.staffName }}</strong>, mã <strong>{{ staffId() }}</strong>, kỳ <strong>{{ data.start }} – {{ data.end }}</strong> và đã đọc lại nội dung.</span>
+          </label>
+          <div class="mt-2 flex flex-wrap items-center justify-between gap-3">
+            <span class="text-[11px] text-slate-500">{{ draftText().trim().length }}/16.000 ký tự · Công bố sẽ hiển thị cho mọi người và lưu thành một phiên bản lịch sử mới.</span>
+            <button type="button" (click)="publishReview()" [disabled]="savingReview() || loading() || preparedFingerprint() !== dataFingerprint() || !confirmedIdentity() || draftText().trim().length < 30"
+              class="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-black text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-40">{{ savingReview() ? 'Đang công bố...' : 'Công bố lên tường cá nhân' }}</button>
+          </div>
+        </div>
+      }
+    </section>
+
+    <section class="rounded-2xl border border-slate-200 bg-white p-4 md:p-5 dark:border-slate-800 dark:bg-slate-900" aria-label="Nhận xét tự động dựa trên dữ liệu">
+      <div class="flex items-center gap-2"><i class="fa-solid fa-wand-magic-sparkles text-blue-600" aria-hidden="true"></i><h3 class="text-sm font-black">Nhận xét thông minh</h3></div>
+      <p class="mt-1 text-xs text-slate-500">Sinh tự động từ công thức thống kê; có thể kiểm tra lại qua biểu đồ và số liệu lịch trực. Chưa sử dụng mô hình AI tạo sinh.</p>
+      <div class="mt-4 grid gap-3 md:grid-cols-2">
+        @for (insight of data.insights; track insight.title) {
+          <article class="rounded-xl border p-3" [class]="insight.tone === 'attention' ? 'border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/20' : insight.tone === 'positive' ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950/20' : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/50'">
+            <h4 class="text-xs font-black">{{ insight.title }}</h4><p class="mt-1 text-xs leading-relaxed text-slate-600 dark:text-slate-300">{{ insight.detail }}</p>
+          </article>
+        }
+      </div>
+      <p class="mt-4 text-[11px] leading-relaxed text-slate-500">Lưu ý: Một lượt tương ứng một nhân sự được gán vào một ngày trực hợp lệ; không suy ra số giờ làm việc. Các ca đã hủy bị loại trừ. Mức kỳ vọng được ước tính từ tháng trực đầu tiên và trạng thái nhân sự hiện tại; chưa xét ngày nghỉ, thời gian sẵn sàng hay điều kiện phân công. Đây là chỉ số tham khảo, không dùng để chấm điểm nhân sự. Chọn tháng kết thúc để xem lại các giai đoạn lịch sử.</p>
+    </section>
+  </div>
+} @else {
+  <div class="rounded-2xl border border-dashed border-slate-200 p-10 text-center text-sm text-slate-500 dark:border-slate-700">Không tìm thấy hồ sơ nhân sự được chọn.</div>
+}

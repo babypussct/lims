@@ -39,6 +39,30 @@ test('duty schedule is available to signed-in users and uses dedicated managemen
   assert.match(rules, /allow delete: if false;/);
 });
 
+test('personal duty wall offers time windows and selection of all staff for signed-in users', () => {
+  const component = read('src/app/features/duty-stats/duty-stats.component.ts');
+  const template = read('src/app/features/duty-stats/duty-stats.component.html');
+  const profile = read('src/app/features/duty-stats/duty-personal-profile.component.html');
+
+  assert.match(template, /Tường cá nhân/);
+  assert.match(template, /openPersonalProfile\(person\.id\)/);
+  assert.match(component, /readonly profileStaffOptions = computed\(\(\) => this\.duty\.staff\(\)\)/);
+  assert.match(component, /return this\.profileStaffOptions\(\)\.some\(person => person\.id === staffId\)/);
+  assert.match(template, /<select id="profile-staff"/);
+  assert.doesNotMatch(template, /Chưa liên kết tài khoản/);
+  assert.match(template, /\[staffId\]="staffId"/);
+  assert.match(template, /profileWindow\(\)/);
+  assert.match(profile, /Xu hướng số lượt trực theo tháng/);
+  assert.match(profile, /Nhận xét thông minh/);
+  assert.match(profile, /Chưa sử dụng mô hình AI tạo sinh/);
+  assert.match(profile, /Sao chép prompt AI/);
+  assert.match(profile, /Công bố lên tường cá nhân/);
+  assert.match(profile, /\{\{ review\.analysisText \}\}/);
+  assert.doesNotMatch(profile, /\[innerHTML\]/);
+  assert.match(read('src/app/features/duty-stats/duty-ai-review.service.ts'), /PERMISSIONS\.DUTY_MANAGE/);
+  assert.match(read('firestore.rules'), /match \/artifacts\/\{appId\}\/duty_ai_profiles\/\{staffId\}\/reviews\/\{reviewId\}/);
+});
+
 test('duty staffing does not expose or depend on employee codes', () => {
   const model = read('src/app/features/duty-stats/duty-schedule.model.ts');
   const utils = read('src/app/features/duty-stats/duty-schedule.utils.ts');

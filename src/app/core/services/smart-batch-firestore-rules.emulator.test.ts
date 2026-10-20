@@ -1155,6 +1155,44 @@ test('duty schedule is readable by signed-in users but writable only with duty_m
   await assertFails(deleteDoc(doc(managerDb, `artifacts/${APP_ID}/duty_staff/staff-huynh`)));
 });
 
+test('published duty AI reviews are readable across staff but append-only and writable only by duty managers', async () => {
+  const managerDb = dbFor(users.manager);
+  const dutyDb = dbFor(users.customDutyManage);
+  const memberDb = dbFor(users.staffDefault);
+  const viewerDb = dbFor(users.viewer);
+  const anonymousDb = env.unauthenticatedContext().firestore();
+  const staffId = 'ai-reviewed-staff';
+  await env.withSecurityRulesDisabled(async context => {
+    await setDoc(doc(context.firestore(), `artifacts/${APP_ID}/duty_staff/${staffId}`), {
+      displayName: 'Nhân sự cần đánh giá', active: true,
+    });
+  });
+  const base = {
+    staffId,
+    periodStart: '2026-08-01',
+    periodEnd: '2026-10-31',
+    window: '3',
+    analysisText: 'Tổng lượt trực của nhân sự được so sánh với bình quân phòng trong cùng kỳ.',
+    dataFingerprint: 'deadbeef',
+    createdByUid: users.manager.uid,
+    createdAt: serverTimestamp(),
+  };
+  const path = `artifacts/${APP_ID}/duty_ai_profiles/${staffId}/reviews`;
+  await assertSucceeds(setDoc(doc(managerDb, path, 'review-v1'), base));
+  await assertSucceeds(getDoc(doc(memberDb, path, 'review-v1')));
+  await assertSucceeds(getDocs(collection(viewerDb, path)));
+  await assertFails(getDoc(doc(anonymousDb, path, 'review-v1')));
+  await assertFails(setDoc(doc(memberDb, path, 'forbidden'), { ...base, createdByUid: users.staffDefault.uid }));
+  await assertFails(setDoc(doc(viewerDb, path, 'forbidden-viewer'), { ...base, createdByUid: users.viewer.uid }));
+  await assertFails(setDoc(doc(dutyDb, path, 'wrong-person'), { ...base, staffId: 'somebody-else', createdByUid: users.customDutyManage.uid }));
+  await assertFails(setDoc(doc(dutyDb, path, 'wrong-author'), { ...base }));
+  await assertFails(setDoc(doc(dutyDb, path, 'invalid-body'), { ...base, analysisText: '<b>tiny</b>', createdByUid: users.customDutyManage.uid }));
+  await assertFails(setDoc(doc(dutyDb, `artifacts/${APP_ID}/duty_ai_profiles/missing-staff/reviews/a`), { ...base, staffId: 'missing-staff', createdByUid: users.customDutyManage.uid }));
+  await assertSucceeds(setDoc(doc(dutyDb, path, 'review-v2'), { ...base, createdByUid: users.customDutyManage.uid }));
+  await assertFails(updateDoc(doc(managerDb, path, 'review-v1'), { analysisText: 'Thay đổi nội dung đã công bố' }));
+  await assertFails(deleteDoc(doc(managerDb, path, 'review-v1')));
+});
+
 test('duty swap requests enforce participant transitions and atomic manager approval', async () => {
   const managerDb = dbFor(users.manager);
   const requesterDb = dbFor(users.staffDefault);

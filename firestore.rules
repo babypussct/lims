@@ -226,6 +226,27 @@ service cloud.firestore {
         (isActiveUser(appId) && hasPermission(appId, 'duty_manage'));
     }
 
+    function validDutyAiReviewCreate(appId, staffId) {
+      let data = request.resource.data;
+      return data.keys().hasOnly([
+          'staffId', 'periodStart', 'periodEnd', 'window', 'analysisText',
+          'dataFingerprint', 'createdAt', 'createdByUid'
+        ]) &&
+        data.keys().hasAll([
+          'staffId', 'periodStart', 'periodEnd', 'window', 'analysisText',
+          'dataFingerprint', 'createdAt', 'createdByUid'
+        ]) &&
+        data.staffId is string && data.staffId == staffId &&
+        exists(/databases/$(database)/documents/artifacts/$(appId)/duty_staff/$(staffId)) &&
+        data.periodStart is string && data.periodStart.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$') &&
+        data.periodEnd is string && data.periodEnd.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$') &&
+        data.periodStart <= data.periodEnd &&
+        data.window is string && ['3', '6', '12', 'all'].hasAny([data.window]) &&
+        data.analysisText is string && data.analysisText.size() >= 30 && data.analysisText.size() <= 16000 &&
+        data.dataFingerprint is string && data.dataFingerprint.matches('^[a-f0-9]{8}$') &&
+        data.createdAt == request.time && data.createdByUid == request.auth.uid;
+    }
+
     function validDutyLinkedUser(appId, linkedUserUid) {
       return linkedUserUid == null ||
         (
@@ -2200,6 +2221,13 @@ service cloud.firestore {
       allow create: if canManageDutySchedule(appId) && validDutyScheduleCreate(scheduleDate);
       allow update: if canManageDutySchedule(appId) && validDutyScheduleUpdate(scheduleDate);
       allow delete: if false;
+    }
+    // Append-only AI reviews: every signed-in person sees published records;
+    // only duty managers can publish new versions for an existing staff member.
+    match /artifacts/{appId}/duty_ai_profiles/{staffId}/reviews/{reviewId} {
+      allow read: if isSignedIn();
+      allow create: if canManageDutySchedule(appId) && validDutyAiReviewCreate(appId, staffId);
+      allow update, delete: if false;
     }
     match /artifacts/{appId}/duty_swap_requests/{requestId} {
       allow read: if canReadDutySwap(appId, resource.data);

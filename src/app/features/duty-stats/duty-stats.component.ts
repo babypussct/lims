@@ -24,6 +24,8 @@ import { DutyShiftSwapPanelComponent } from './duty-shift-swap-panel.component';
 import { DutyShiftSwapRequestComponent } from './duty-shift-swap-request.component';
 import { DutyShiftSwapService } from './duty-shift-swap.service';
 import { DutyStatsChartComponent } from './duty-stats-chart.component';
+import { DutyPersonalProfileComponent } from './duty-personal-profile.component';
+import { dutyProfileRange, type DutyProfileWindow } from './duty-personal-analytics';
 import { DutyTsvImportComponent } from './duty-tsv-import.component';
 import { A4DocumentPreviewComponent } from '../../shared/components/a4-document-preview/a4-document-preview.component';
 import { A4Document } from '../../shared/utils/a4-document';
@@ -43,11 +45,12 @@ import {
   dutyYearRange,
   findLinkedDutyStaff,
   isDutyDateKey,
+  isDutyMonthKey,
   resolveDutyStaffNames,
   shiftDutyDateKey,
 } from './duty-schedule.utils';
 
-type DutyView = 'schedule' | 'staff' | 'stats';
+type DutyView = 'schedule' | 'staff' | 'stats' | 'profile';
 type DutyScheduleLayout = 'list' | 'calendar' | 'week';
 type DutyBatchScope = 'all' | 'weekdays' | 'weekends';
 type DutyStatsRangeMode = 'selection' | 'year' | 'all';
@@ -76,6 +79,7 @@ interface DutyCalendarCell {
     DutyShiftSwapPanelComponent,
     DutyShiftSwapRequestComponent,
     DutyStatsChartComponent,
+    DutyPersonalProfileComponent,
     DutyTsvImportComponent,
     DutyWeekViewComponent,
     A4DocumentPreviewComponent,
@@ -135,6 +139,16 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
   readonly sortColumn = signal<DutyStatsSortColumn>('total');
   readonly sortDirection = signal<SortDirection>('desc');
   readonly statsRangeMode = signal<DutyStatsRangeMode>('selection');
+  readonly profileWindow = signal<DutyProfileWindow>(12);
+  readonly profileEndMonth = signal(currentDutyMonthKey());
+  readonly profileStaffId = signal<string | null>(null);
+  readonly currentProfileMonth = currentDutyMonthKey();
+  readonly profileWindows: { label: string; value: DutyProfileWindow }[] = [
+    { label: '3 tháng', value: 3 },
+    { label: '6 tháng', value: 6 },
+    { label: '12 tháng', value: 12 },
+    { label: 'Toàn bộ', value: 'all' },
+  ];
 
   readonly years = Array.from({ length: 21 }, (_, index) => new Date().getFullYear() + 5 - index);
   readonly months = Array.from({ length: 12 }, (_, index) => index + 1);
@@ -226,6 +240,16 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
     findLinkedDutyStaff(this.auth.currentUser()?.uid, this.duty.staff()),
   );
   readonly myStaffId = computed(() => this.myStaff()?.id);
+  readonly profileStaffOptions = computed(() => this.duty.staff());
+  readonly effectiveProfileStaffId = computed(() => {
+    const selected = this.profileStaffId();
+    const options = this.profileStaffOptions();
+    if (selected && options.some(person => person.id === selected)) return selected;
+    return this.myStaffId() && options.some(person => person.id === this.myStaffId())
+      ? this.myStaffId()!
+      : options.find(person => person.active)?.id || options[0]?.id || null;
+  });
+  readonly profileRange = computed(() => dutyProfileRange(this.profileEndMonth(), this.profileWindow()));
   readonly combinedStaffFilter = computed(() => {
     if (this.myShiftsOnly()) return 'mine';
     const staffId = this.selectedStaffFilter();
@@ -537,6 +561,31 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
     this.activeView.set(view);
     this.refreshRange();
     if (view === 'staff') void this.ensureAccounts();
+  }
+
+  canViewProfile(staffId: string): boolean {
+    return this.profileStaffOptions().some(person => person.id === staffId);
+  }
+
+  openPersonalProfile(staffId: string): void {
+    if (!this.canViewProfile(staffId)) return;
+    this.profileStaffId.set(staffId);
+    this.setActiveView('profile');
+  }
+
+  setProfileStaffId(staffId: string): void {
+    if (this.profileStaffOptions().some(item => item.id === staffId)) this.profileStaffId.set(staffId);
+  }
+
+  setProfileWindow(value: DutyProfileWindow): void {
+    this.profileWindow.set(value);
+    if (this.activeView() === 'profile') this.refreshRange();
+  }
+
+  setProfileEndMonth(value: string): void {
+    if (!isDutyMonthKey(value) || value > currentDutyMonthKey()) return;
+    this.profileEndMonth.set(value);
+    if (this.activeView() === 'profile') this.refreshRange();
   }
 
   setStatsRangeMode(mode: DutyStatsRangeMode): void {
@@ -1003,6 +1052,11 @@ export class DutyStatsComponent implements OnInit, OnDestroy {
   }
 
   private refreshRange(): void {
+    if (this.activeView() === 'profile') {
+      const range = this.profileRange();
+      this.duty.watchRange(range.start, range.end);
+      return;
+    }
     if (this.isWeekMode()) {
       const week = this.weekInfo();
       this.duty.watchRange(week.start, week.end);
