@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.10.20-b02",
-    "title": "Tường cá nhân và phân tích lịch trực theo nhân sự",
+    "version": "v26.10.22-b01",
+    "title": "Tải thư mục Phiếu giao nhận mẫu thành ZIP",
     "features": [
-      "Mỗi nhân sự có một tường cá nhân để xem lịch sử lượt trực, xu hướng theo tháng và các dấu hiệu dồn ca trong kỳ phân tích.",
-      "Thêm các khoảng phân tích 3, 6, 12 tháng hoặc toàn bộ lịch sử, kèm biểu đồ cá nhân, bình quân phòng và mức kỳ vọng ước tính.",
-      "Cho phép quản trị viên tạo prompt số liệu riêng cho từng nhân sự, kiểm tra kết quả AI bên ngoài rồi công bố bản nhận xét bất biến lên tường cá nhân.",
-      "Lưu lịch sử nhận xét AI theo nhân sự, kỳ phân tích và dấu vân tay dữ liệu để nhận biết khi lịch trực đã thay đổi.",
-      "Bổ sung heatmap ngày, xu hướng tuần, lượt cuối tuần, khoảng cách giữa các ca và các nhận xét tự động mang tính tham khảo."
+      "Tải toàn bộ thư mục Phiếu giao nhận mẫu hoặc một thư mục con thành một tệp ZIP.",
+      "Thêm nút tải ZIP cho thư mục hiện tại và từng thư mục trong danh sách, trên máy tính và điện thoại.",
+      "Giữ cấu trúc thư mục con, thư mục trống và các tệp khi tạo ZIP; hỗ trợ xuất Google Docs, Sheets và Slides.",
+      "Hiển thị tiến trình, cho phép hủy lượt tải và tránh ghi đè khi có tên tệp trùng nhau.",
+      "Thông báo rõ khi thư mục vượt giới hạn tải trên trình duyệt để người dùng chọn từng thư mục con."
     ]
   },
   "assetGroups": [

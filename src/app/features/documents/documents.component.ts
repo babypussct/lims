@@ -16,6 +16,7 @@ import {
 import { DocumentPreviewModalComponent } from './document-preview-modal.component';
 import { DriveItem } from './document-viewer.models';
 import { formatDocumentSize, removeDiacritics } from './document-viewer.utils';
+import { createFolderZip, folderZipFileName } from './folder-download';
 import { AgGridAngular } from 'ag-grid-angular';
 import {
   AllCommunityModule,
@@ -172,10 +173,24 @@ function readStoredOption<T extends string>(key: string, allowed: readonly T[], 
               }
             </div>
           </div>
-          <div toolbarActions class="text-xs text-slate-500 dark:text-slate-400 shrink-0 font-semibold bg-slate-100 dark:bg-slate-800 px-2.5 py-1.5 rounded-full">
-            {{ displayFiles().length }} mục
+          <div toolbarActions class="flex items-center gap-2 shrink-0">
+            <span class="hidden sm:inline text-xs text-slate-500 dark:text-slate-400 font-semibold bg-slate-100 dark:bg-slate-800 px-2.5 py-1.5 rounded-full">{{ displayFiles().length }} mục</span>
+            @if (isDownloadingFolder()) {
+              <button type="button" (click)="cancelFolderDownload()" class="h-9 px-2.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300" title="Hủy tải thư mục">Hủy tải</button>
+            } @else {
+              <button type="button" (click)="downloadCurrentFolder($event)" [disabled]="!isOnline() || loading()" class="h-9 px-2.5 rounded-lg border border-fuchsia-200 dark:border-fuchsia-800 text-xs font-semibold text-fuchsia-700 dark:text-fuchsia-300 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-900/30 disabled:opacity-50 disabled:cursor-not-allowed" title="Tải thư mục hiện tại thành tệp ZIP" aria-label="Tải thư mục hiện tại thành ZIP">
+                <i class="fa-solid fa-file-zipper mr-1" aria-hidden="true"></i><span class="hidden sm:inline">Tải thư mục này</span><span class="sm:hidden">Tải ZIP</span>
+              </button>
+            }
           </div>
         </app-toolbar>
+
+        @if (folderDownloadStatus()) {
+          <div class="mx-2.5 mt-2 px-3 py-2 rounded-lg text-xs flex items-center gap-2 shrink-0" [class.bg-red-50]="folderDownloadError()" [class.text-red-700]="folderDownloadError()" [class.bg-fuchsia-50]="!folderDownloadError()" [class.text-fuchsia-700]="!folderDownloadError()" role="status" aria-live="polite">
+            <i class="fa-solid" [class.fa-triangle-exclamation]="folderDownloadError()" [class.fa-spinner]="isDownloadingFolder() && !folderDownloadError()" [class.fa-spin]="isDownloadingFolder() && !folderDownloadError()" [class.fa-circle-check]="!isDownloadingFolder() && !folderDownloadError()" aria-hidden="true"></i>
+            <span>{{ folderDownloadStatus() }}</span>
+          </div>
+        }
 
         @if (!isOnline()) {
           <!-- Offline State -->
@@ -272,6 +287,7 @@ function readStoredOption<T extends string>(key: string, allowed: readonly T[], 
                           </button>
                         }
                         @if (isFolder(item)) {
+                          <button type="button" (click)="downloadFolder(item, $event)" [disabled]="isDownloadingFolder() || !isOnline()" class="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-fuchsia-50 hover:text-fuchsia-600 dark:hover:bg-fuchsia-900/30 disabled:opacity-40" title="Tải thư mục thành ZIP" [attr.aria-label]="'Tải thư mục ' + item.name + ' thành ZIP'"><i class="fa-solid fa-file-zipper text-xs" aria-hidden="true"></i></button>
                           <i class="fa-solid fa-chevron-right text-xs"></i>
                         }
                       </div>
@@ -351,6 +367,11 @@ function readStoredOption<T extends string>(key: string, allowed: readonly T[], 
                                   title="Tải xuống">
                             <i class="fa-solid fa-download text-xs"></i>
                           </button>
+                        }
+                        @if (isFolder(item)) {
+                          <button type="button" (click)="downloadFolder(item, $event)" [disabled]="isDownloadingFolder() || !isOnline()" [attr.aria-label]="'Tải thư mục ' + item.name + ' thành ZIP'"
+                                  class="flex absolute top-0 right-0 w-9 h-9 rounded-full bg-white/90 dark:bg-slate-700/90 shadow-sm text-slate-500 hover:bg-fuchsia-500 hover:text-white transition-colors items-center justify-center opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 focus-visible:opacity-100 disabled:opacity-40"
+                                  title="Tải thư mục thành ZIP"><i class="fa-solid fa-file-zipper text-xs" aria-hidden="true"></i></button>
                         }
                       </div>
                       
@@ -516,6 +537,9 @@ export class DocumentsComponent implements OnInit, OnDestroy {
   files = signal<DriveItem[]>([]);
   loading = signal<boolean>(true);
   folderError = signal<string | null>(null);
+  folderDownloadStatus = signal('');
+  folderDownloadError = signal(false);
+  isDownloadingFolder = signal(false);
   isOnline = signal<boolean>(navigator.onLine);
   windowWidth = signal<number>(window.innerWidth);
   isMobile = computed(() => this.windowWidth() < 640);
@@ -669,6 +693,7 @@ export class DocumentsComponent implements OnInit, OnDestroy {
   private onlineListener?: () => void;
   private offlineListener?: () => void;
   private folderAbortController?: AbortController;
+  private downloadAbortController?: AbortController;
   private folderRequestId = 0;
   private scrollPositions: Record<string, number> = {};
   private gridApi?: GridApi<DriveItem>;
@@ -754,6 +779,7 @@ export class DocumentsComponent implements OnInit, OnDestroy {
     this.offlineListener = () => {
       this.isOnline.set(false);
       this.folderAbortController?.abort();
+      this.downloadAbortController?.abort();
       this.loading.set(false);
     };
     window.addEventListener('online', this.onlineListener);
@@ -772,6 +798,7 @@ export class DocumentsComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     this.folderRequestId++;
     this.folderAbortController?.abort();
+    this.downloadAbortController?.abort();
     this.closePreview();
     if (this.searchSub) this.searchSub.unsubscribe();
     if (this.onlineListener) window.removeEventListener('online', this.onlineListener);
@@ -945,6 +972,48 @@ export class DocumentsComponent implements OnInit, OnDestroy {
     }
   }
 
+  downloadCurrentFolder(event: Event): void {
+    const current = this.folderStack().at(-1);
+    if (current) void this.downloadFolder({ ...current, mimeType: 'application/vnd.google-apps.folder' }, event);
+  }
+
+  async downloadFolder(item: DriveItem, event: Event): Promise<void> {
+    event.stopPropagation();
+    if (!this.isFolder(item) || !this.isOnline() || this.isDownloadingFolder()) return;
+    const controller = new AbortController();
+    this.downloadAbortController = controller;
+    this.isDownloadingFolder.set(true);
+    this.folderDownloadError.set(false);
+    this.folderDownloadStatus.set(`Đang chuẩn bị tải thư mục ${item.name}...`);
+    try {
+      const blob = await createFolderZip(item, this.driveService, controller.signal, message => this.folderDownloadStatus.set(message));
+      controller.signal.throwIfAborted();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = folderZipFileName(item.name);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      this.folderDownloadStatus.set(`Đã tải ${link.download}`);
+    } catch (error) {
+      if (controller.signal.aborted) {
+        this.folderDownloadStatus.set('Đã hủy tải thư mục.');
+      } else {
+        this.folderDownloadError.set(true);
+        this.folderDownloadStatus.set(error instanceof Error ? error.message : 'Không thể tải thư mục. Vui lòng thử lại.');
+      }
+    } finally {
+      if (this.downloadAbortController === controller) this.downloadAbortController = undefined;
+      this.isDownloadingFolder.set(false);
+    }
+  }
+
+  cancelFolderDownload(): void {
+    this.downloadAbortController?.abort();
+  }
+
   closePreview() {
     this.previewItem.set(null);
   }
@@ -992,10 +1061,17 @@ export class DocumentsComponent implements OnInit, OnDestroy {
     if (!item) return '';
 
     if (this.isFolder(item)) {
-      const folderHint = document.createElement('i');
-      folderHint.className = 'fa-solid fa-chevron-right text-slate-400 text-xs';
-      folderHint.setAttribute('aria-hidden', 'true');
-      return folderHint;
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'w-7 h-7 rounded-md text-slate-400 hover:bg-fuchsia-100 hover:text-fuchsia-600 dark:hover:bg-fuchsia-900/40 dark:hover:text-fuchsia-300 transition-colors flex items-center justify-center';
+      button.title = `Tải thư mục ${item.name} thành ZIP`;
+      button.setAttribute('aria-label', button.title);
+      const icon = document.createElement('i');
+      icon.className = 'fa-solid fa-file-zipper text-xs';
+      icon.setAttribute('aria-hidden', 'true');
+      button.appendChild(icon);
+      button.addEventListener('click', event => void this.downloadFolder(item, event));
+      return button;
     }
 
     if (!item.webContentLink) return '';

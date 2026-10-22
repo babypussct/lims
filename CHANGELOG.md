@@ -2,7 +2,27 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.10.20-b02
+## Phiên bản hiện tại: v26.10.22-b01
+
+### v26.10.22-b01
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Tải toàn bộ thư mục Phiếu giao nhận mẫu hoặc một thư mục con thành một tệp ZIP.
+
+#### ✨ Tính Năng Mới
+
+- Thêm nút tải ZIP cho thư mục hiện tại và từng thư mục trong danh sách, trên máy tính và điện thoại.
+- Giữ cấu trúc thư mục con, thư mục trống và các tệp khi tạo ZIP; hỗ trợ xuất Google Docs, Sheets và Slides.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Hiển thị tiến trình, cho phép hủy lượt tải và tránh ghi đè khi có tên tệp trùng nhau.
+- Thông báo rõ khi thư mục vượt giới hạn tải trên trình duyệt để người dùng chọn từng thư mục con.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Không có thay đổi trong nhóm này.
 
 ### v26.10.20-b02
 

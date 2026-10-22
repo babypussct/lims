@@ -1,6 +1,6 @@
 {
   "name": "lims-cloud-pro",
-  "version": "26.10.20-b02",
+  "version": "26.10.22-b01",
   "packageManager": "npm@10.9.8",
   "engines": {
     "node": "22.x"
@@ -65,7 +65,7 @@
     "test:ui-zero-jump": "node scripts/ui-zero-jump-audit.js",
     "verify:ui-release": "npm run test:ui-guardrails && npm run test:ui-contracts && npm run test:ui-zero-jump",
     "test:service-worker": "tsx --test src/app/core/utils/service-worker-recovery.test.ts src/app/core/utils/chunk-reload-recovery.test.ts src/app/core/utils/service-worker-update.contract.test.ts src/app/core/utils/pwa-readiness.contract.test.ts",
-    "test:documents": "tsx --test src/app/core/services/google-drive.service.test.ts src/app/features/documents/document-viewer.utils.test.ts src/app/features/documents/excel-univer-converter.test.ts src/app/features/documents/excel-univer-metadata.test.ts src/app/features/documents/excel-viewer-tools.test.ts src/app/features/documents/excel-document-demo.component.test.ts",
+    "test:documents": "tsx --test src/app/core/services/google-drive.service.test.ts src/app/features/documents/document-viewer.utils.test.ts src/app/features/documents/folder-download.test.ts src/app/features/documents/excel-univer-converter.test.ts src/app/features/documents/excel-univer-metadata.test.ts src/app/features/documents/excel-viewer-tools.test.ts src/app/features/documents/excel-document-demo.component.test.ts",
     "test:results": "tsx --test src/app/features/results/report-completion.utils.test.ts src/app/features/results/report-publish-progress.contract.test.ts src/app/features/results/result-pdf-helper.test.ts src/app/features/results/result-preflight.test.ts src/app/features/results/services/report-request-id.test.ts src/app/features/results/services/sop-reassignment.utils.test.ts src/app/features/results/services/sop-reassignment.component.test.ts src/app/features/results/sops/sop-tbvtv-thuc-pham-gcmsms/sop-914-entry.utils.test.ts",
     "test:excel-import": "tsx --test src/app/features/results/import/excel-result-import.test.ts src/app/features/results/import/xlsx-media-stripper.test.ts",
     "test:smart-batch": "tsx --test src/app/features/batch/smart-batch.utils.test.ts src/app/features/batch/sample-group.utils.test.ts src/app/features/batch/single-sample-dispatch.utils.test.ts src/app/features/batch/smart-batch-planner.test.ts src/app/features/batch/smart-batch.date.utils.test.ts src/app/features/batch/smart-batch.plan.utils.test.ts src/app/features/targets/target-scope-classifier.spec.ts src/app/core/services/calculator.service.test.ts src/app/core/services/smart-batch-security-rules.test.ts scripts/standard-request-security-audit.test.ts && npm run test:firestore-rules",
@@ -181,6 +181,7 @@
     "ag-grid-community": "^35.3.1",
     "chart.js": "^4.4.1",
     "exceljs": "^4.4.0",
+    "fflate": "^0.8.3",
     "firebase": "^12.19.0",
     "firebase-admin": "^14.4.0",
     "html2canvas": "^1.4.1",
