@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.11.03-b02",
-    "title": "Hiển thị rõ nội dung trong cửa sổ lựa chọn",
+    "version": "v26.11.03-b03",
+    "title": "Hiển thị đầy đủ lịch trực đêm trên Dashboard",
     "features": [
-      "Các mục lựa chọn và cửa sổ bật lên hiển thị rõ chữ ở cả chế độ sáng và chế độ tối.",
-      "Danh sách lựa chọn có màu nền và màu chữ đồng bộ với giao diện đang sử dụng.",
-      "Nội dung trong các cửa sổ bật lên có màu chữ mặc định rõ ràng, dễ đọc.",
-      "Các mục bị vô hiệu hóa trong danh sách lựa chọn vẫn được phân biệt rõ với các mục có thể chọn.",
-      "Khắc phục lỗi chữ trong một số danh sách lựa chọn và cửa sổ bật lên bị hiện trắng, khó đọc."
+      "Lịch tháng hiển thị đầy đủ nhân sự, người chủ trì và các vị trí cần xác minh.",
+      "Thẻ ca cá nhân bổ sung mức kỳ vọng riêng, vai trò chủ trì và đồng nghiệp cùng ca.",
+      "Thống kê nhân sự bổ sung tỷ trọng lượt trực, chênh lệch so với kỳ vọng và ngày trực tiếp theo.",
+      "Hiển thị ghi chú, giờ trực tùy chỉnh và trạng thái chưa phân công trên lịch và các thẻ thông tin.",
+      "Đồng bộ ca cá nhân sắp tới trên máy tính và điện thoại trong phạm vi lịch đang tải."
     ]
   },
   "assetGroups": [

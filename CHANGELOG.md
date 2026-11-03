@@ -2,7 +2,28 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.11.03-b02
+## Phiên bản hiện tại: v26.11.03-b03
+
+### v26.11.03-b03
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Lịch tháng hiển thị đầy đủ nhân sự, người chủ trì và các vị trí cần xác minh.
+
+#### ✨ Tính Năng Mới
+
+- Thẻ ca cá nhân bổ sung mức kỳ vọng riêng, vai trò chủ trì và đồng nghiệp cùng ca.
+- Thống kê nhân sự bổ sung tỷ trọng lượt trực, chênh lệch so với kỳ vọng và ngày trực tiếp theo.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Hiển thị ghi chú, giờ trực tùy chỉnh và trạng thái chưa phân công trên lịch và các thẻ thông tin.
+- Đồng bộ ca cá nhân sắp tới trên máy tính và điện thoại trong phạm vi lịch đang tải.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Khắc phục việc ẩn bớt tên nhân sự trong ô lịch và bỏ sót ca cá nhân đầu tháng kế tiếp trong phạm vi theo dõi.
+- Xác định đồng nghiệp cùng ca theo mã nhân sự và sắp xếp ca tiếp theo theo ngày.
 
 ### v26.11.03-b02
 

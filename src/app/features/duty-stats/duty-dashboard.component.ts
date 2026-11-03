@@ -45,9 +45,13 @@ export class DutyDashboardComponent implements OnInit, OnDestroy {
   readonly calendarWeekdays = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
 
   private readonly currentMonthRange = dutyMonthRange(this.monthKey);
-  readonly watchedActiveSchedules = computed(() => activeDutySchedules(this.duty.schedules()));
+  readonly watchedActiveSchedules = computed(() => activeDutySchedules(this.duty.schedules())
+    .sort((left, right) => left.date.localeCompare(right.date)));
   readonly activeSchedules = computed(() => this.watchedActiveSchedules()
     .filter(item => item.date >= this.currentMonthRange.start && item.date <= this.currentMonthRange.end));
+  readonly unassignedScheduleCount = computed(() =>
+    this.activeSchedules().filter(item => item.staffIds.length === 0 && (item.unresolvedAssignees?.length || 0) === 0).length,
+  );
   readonly calendarCells = computed<(DutyDashboardCalendarCell | null)[]>(() => {
     const year = Number(this.monthKey.slice(0, 4));
     const month = Number(this.monthKey.slice(5, 7));
@@ -62,6 +66,9 @@ export class DutyDashboardComponent implements OnInit, OnDestroy {
   readonly todaySchedule = computed(() =>
     this.watchedActiveSchedules().find(item => item.date === this.todayKey),
   );
+  readonly nextSchedule = computed(() =>
+    this.watchedActiveSchedules().find(item => item.date > this.todayKey),
+  );
   readonly nextSevenDaysSchedules = computed(() => {
     const end = shiftDutyDateKey(this.todayKey, 6);
     return this.watchedActiveSchedules().filter(item => item.date >= this.todayKey && item.date <= end);
@@ -69,28 +76,42 @@ export class DutyDashboardComponent implements OnInit, OnDestroy {
   readonly linkedStaff = computed(() =>
     findLinkedDutyStaff(this.auth.currentUser()?.uid, this.duty.staff()),
   );
+  readonly myPersonStat = computed(() => {
+    const staffId = this.linkedStaff()?.id;
+    if (!staffId) return undefined;
+    return this.personStats().find(item => item.staffId === staffId);
+  });
   readonly myMonthCount = computed(() => {
     const staffId = this.linkedStaff()?.id;
     if (!staffId) return null;
     return this.activeSchedules().filter(item => item.staffIds.includes(staffId)).length;
   });
-  readonly myNextSchedule = computed(() => {
-    const staffId = this.linkedStaff()?.id;
-    if (!staffId) return undefined;
-    return this.activeSchedules().find(item => item.date >= this.todayKey && item.staffIds.includes(staffId));
+  readonly myExpectedAssignments = computed(() => {
+    const stat = this.myPersonStat();
+    return stat?.fairnessAvailable ? stat.expectedAssignments : null;
   });
-  readonly mobileMyNextSchedule = computed(() => {
+  readonly myUpcomingSchedules = computed(() => {
     const staffId = this.linkedStaff()?.id;
-    if (!staffId) return undefined;
-    const sevenDayEnd = shiftDutyDateKey(this.todayKey, 6);
-    return this.watchedActiveSchedules()
-      .find(item => item.date >= this.todayKey && item.date <= sevenDayEnd && item.staffIds.includes(staffId));
+    if (!staffId) return [];
+    return this.watchedActiveSchedules().filter(item => item.date >= this.todayKey && item.staffIds.includes(staffId));
+  });
+  readonly myNextSchedule = computed(() => this.myUpcomingSchedules()[0]);
+  readonly mobileMyNextSchedule = computed(() => this.myNextSchedule());
+  readonly nextAssignmentByStaffId = computed(() => {
+    const nextByStaffId = new Map<string, string>();
+    for (const schedule of this.watchedActiveSchedules()) {
+      if (schedule.date < this.todayKey) continue;
+      for (const staffId of new Set(schedule.staffIds)) {
+        if (!nextByStaffId.has(staffId)) nextByStaffId.set(staffId, schedule.date);
+      }
+    }
+    return nextByStaffId;
   });
   readonly monthAssignmentCount = computed(() =>
     this.activeSchedules().reduce((total, item) => total + new Set(item.staffIds).size, 0),
   );
   readonly verificationScheduleCount = computed(() =>
-    this.activeSchedules().filter(item => item.needsVerification === true).length,
+    this.activeSchedules().filter(item => item.needsVerification === true || (item.unresolvedAssignees?.length || 0) > 0).length,
   );
   readonly unresolvedAssignmentCount = computed(() =>
     this.activeSchedules().reduce((total, item) => total + (item.unresolvedAssignees?.length || 0), 0),
@@ -158,11 +179,11 @@ export class DutyDashboardComponent implements OnInit, OnDestroy {
   }
 
   calendarVisibleNames(schedule: DutyScheduleEntry): string[] {
-    return this.namesFor(schedule).slice(0, 2);
+    return this.namesFor(schedule);
   }
 
-  calendarAdditionalPeopleCount(schedule: DutyScheduleEntry): number {
-    return Math.max(0, this.namesFor(schedule).length - 2);
+  calendarAdditionalPeopleCount(_schedule: DutyScheduleEntry): number {
+    return 0;
   }
 
   calendarHasCustomTime(schedule: DutyScheduleEntry): boolean {
@@ -197,6 +218,10 @@ export class DutyDashboardComponent implements OnInit, OnDestroy {
     ].filter(Boolean).join('. ');
   }
 
+  assignmentDifference(stat: DutyPersonStat): number {
+    return stat.fairnessAvailable ? stat.total - stat.expectedAssignments : 0;
+  }
+
   assignmentDeviationPercent(stat: DutyPersonStat): number {
     return stat.fairnessAvailable ? stat.deviationPercent : 0;
   }
@@ -219,6 +244,30 @@ export class DutyDashboardComponent implements OnInit, OnDestroy {
     return deviation > 0
       ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300'
       : 'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300';
+  }
+
+  assignmentSharePercent(total: number): number {
+    const assignments = this.monthAssignmentCount();
+    return assignments === 0 ? 0 : (total / assignments) * 100;
+  }
+
+  assignmentLoadPercent(total: number): number {
+    const max = this.maxAssignments();
+    return max === 0 ? 0 : (total / max) * 100;
+  }
+
+  nextAssignmentDate(staffId: string): string | undefined {
+    return this.nextAssignmentByStaffId().get(staffId);
+  }
+
+  isLeadInSchedule(schedule: { staffIds: string[] }, staffId?: string): boolean {
+    const targetId = staffId ?? this.linkedStaff()?.id;
+    return !!targetId && schedule.staffIds[0] === targetId;
+  }
+
+  coWorkersFor(schedule: { staffIds: string[] }): string[] {
+    const myStaffId = this.linkedStaff()?.id;
+    return this.namesFor({ staffIds: schedule.staffIds.filter(staffId => staffId !== myStaffId) });
   }
 
   avatarFor(displayName: string, linkedUserUid?: string | null): string {

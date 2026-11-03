@@ -159,10 +159,17 @@ test('dashboard duty widget exposes the current month calendar and monthly stati
   assert.doesNotMatch(template, /Chưa khai báo mã nhân viên|Mã NV:|Mã nhân viên/);
   assert.doesNotMatch(template, /startTime|18:00/);
   assert.match(template, /grid items-stretch gap-4/);
-  assert.match(template, /2xl:h-\[460px\]/);
+  assert.match(template, /2xl:min-h-\[460px\]/);
   assert.match(template, /max-h-\[300px\]/);
-  assert.match(template, /xl:max-h-none/);
+  assert.match(template, /xl:max-h-\[560px\]/);
   assert.match(template, /so mức kỳ vọng/);
+  assert.match(template, /kỳ vọng riêng/);
+  assert.match(template, /Phối hợp cùng:/);
+  assert.match(template, /Tỷ trọng:/);
+  assert.match(component, /readonly unassignedScheduleCount = computed/);
+  assert.match(component, /readonly myExpectedAssignments = computed/);
+  assert.match(component, /assignmentDifference\(stat: DutyPersonStat\)/);
+  assert.match(component, /nextAssignmentDate\(staffId: string\)/);
   assert.doesNotMatch(template, /Ca sắp tới/);
 });
 

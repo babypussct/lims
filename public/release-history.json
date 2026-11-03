@@ -1,5 +1,26 @@
 [
   {
+    "version": "v26.11.03-b03",
+    "date": "3/11/2026",
+    "title": "Hiển thị đầy đủ lịch trực đêm trên Dashboard",
+    "highlights": [
+      "Lịch tháng hiển thị đầy đủ nhân sự, người chủ trì và các vị trí cần xác minh."
+    ],
+    "features": [
+      "Thẻ ca cá nhân bổ sung mức kỳ vọng riêng, vai trò chủ trì và đồng nghiệp cùng ca.",
+      "Thống kê nhân sự bổ sung tỷ trọng lượt trực, chênh lệch so với kỳ vọng và ngày trực tiếp theo."
+    ],
+    "improvements": [
+      "Hiển thị ghi chú, giờ trực tùy chỉnh và trạng thái chưa phân công trên lịch và các thẻ thông tin.",
+      "Đồng bộ ca cá nhân sắp tới trên máy tính và điện thoại trong phạm vi lịch đang tải."
+    ],
+    "fixes": [
+      "Khắc phục việc ẩn bớt tên nhân sự trong ô lịch và bỏ sót ca cá nhân đầu tháng kế tiếp trong phạm vi theo dõi.",
+      "Xác định đồng nghiệp cùng ca theo mã nhân sự và sắp xếp ca tiếp theo theo ngày."
+    ],
+    "releaseOrder": 26110300003
+  },
+  {
     "version": "v26.11.03-b02",
     "date": "3/11/2026",
     "title": "Hiển thị rõ nội dung trong cửa sổ lựa chọn",
