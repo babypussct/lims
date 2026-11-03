@@ -10,6 +10,7 @@ import { SPREADSHEET_MAX_FILE_SIZE, validateSpreadsheetFile } from '../../../sha
 import { generateSlug } from '../../../shared/utils/utils';
 import {
   assessInternalId,
+  hasUnreleasedCodeLifecycle,
   isCurrentStandardLifecycle,
   isSpecialInternalId,
   normalizeInternalId,
@@ -18,6 +19,13 @@ import {
 export const STANDARD_IMPORT_MAX_FILE_SIZE = SPREADSHEET_MAX_FILE_SIZE;
 export const STANDARD_IMPORT_ALLOWED_EXTENSIONS = ['xlsx', 'xlsm', 'csv'] as const;
 export const STANDARD_IMPORT_MAX_ATOMIC_WRITES = 450;
+/**
+ * A new reusable-code assignment touches the registry and its immutable event;
+ * each path consumes one Rules document-access call. Keep room below
+ * Firestore's 20-call per-request budget for the import activity/metadata
+ * writes and for the extra release event when an expired owner is reused.
+ */
+export const STANDARD_IMPORT_MAX_LIFECYCLE_RULE_ACCESS_COST = 18;
 
 type ImportField =
   | 'name'
@@ -329,14 +337,16 @@ function existingCandidates(
   name: string,
   lot: string
 ): ReferenceStandard[] {
-  const activeStandards = existingStandards.filter(isActiveStandardIdentity);
+  // Import identity matching must see hidden rows that still own a code. A
+  // released row remains history and is intentionally excluded from this set.
+  const codeOwners = existingStandards.filter(hasUnreleasedCodeLifecycle);
   if (internalId && !isSpecialInternalId(internalId)) {
-    return activeStandards.filter(
+    return codeOwners.filter(
       standard => normalizeIdentity(standard.internal_id) === normalizeIdentity(internalId)
     );
   }
   if (name && lot) {
-    return activeStandards.filter(
+    return codeOwners.filter(
       standard =>
         normalizeIdentity(standard.name) === normalizeIdentity(name) &&
         normalizeIdentity(standard.lot_number) === normalizeIdentity(lot)
@@ -482,7 +492,14 @@ export function parseStandardImportRows(
 
     let mode: ImportPreviewItem['mode'] = 'CREATE';
     if (existing) {
-      mode = existing._isDeleted || existing.status === 'DELETED' ? 'RESTORE' : 'UPDATE_SAFE';
+      if ((existing._isDeleted === true || existing.status === 'DELETED') && hasUnreleasedCodeLifecycle(existing)) {
+        mode = 'CONFLICT';
+        errors.push(`Mã ${internalId} vẫn thuộc hồ sơ đã ẩn ${existing.id} nhưng chưa ghi nhận trả mã; hãy thu hồi mã trước khi nhập.`);
+      } else if (existing._isDeleted || existing.status === 'DELETED') {
+        mode = 'RESTORE';
+      } else {
+        mode = 'UPDATE_SAFE';
+      }
       if (mode === 'UPDATE_SAFE' && logs.length) {
         warnings.push('Chuẩn đã tồn tại: chỉ cập nhật metadata, không nhập lại các LẦN CÂN để tránh thay đổi tồn kho.');
       }

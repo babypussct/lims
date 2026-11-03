@@ -2,6 +2,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   assessInternalId,
+  assessCodeOwnership,
+  hasUnreleasedCodeLifecycle,
+  isStandardVisibleInCatalogue,
   isCurrentStandardLifecycle,
   isSpecialInternalId,
   isValidInternalId,
@@ -65,4 +68,37 @@ test('released physical records are not current borrow candidates', () => {
   assert.equal(isCurrentStandardLifecycle(base), true);
   assert.equal(isCurrentStandardLifecycle({ ...base, lifecycle_status: 'RELEASED' }), false);
   assert.equal(isCurrentStandardLifecycle({ ...base, _isDeleted: true }), false);
+});
+
+test('keeps hidden active ownership separate from catalogue visibility', () => {
+  const hidden = {
+    id: 'std-hidden', name: 'A', internal_id: 'AA01', status: 'DELETED', _isDeleted: true,
+  } as any;
+  assert.equal(isStandardVisibleInCatalogue(hidden), false);
+  assert.equal(hasUnreleasedCodeLifecycle(hidden), true);
+  assert.equal(assessCodeOwnership(hidden, {
+    id: 'AA01', internal_id: 'AA01', status: 'ASSIGNED', currentStandardId: 'std-hidden', assignmentCount: 1,
+  }, [hidden], false).status, 'RELEASED');
+});
+
+test('blocks hidden-code recall when a different physical owner or workflow exists', () => {
+  const hidden = { id: 'std-hidden', name: 'A', internal_id: 'AA01', status: 'DELETED', _isDeleted: true } as any;
+  const other = { id: 'std-other', name: 'B', internal_id: 'AA01', status: 'AVAILABLE', lifecycle_status: 'ACTIVE' } as any;
+  const registry = { id: 'AA01', internal_id: 'AA01', status: 'ASSIGNED', currentStandardId: 'std-hidden', assignmentCount: 1 } as any;
+  assert.equal(assessCodeOwnership(hidden, registry, [hidden, other], false).status, 'BLOCKED');
+  assert.equal(assessCodeOwnership(hidden, registry, [hidden], true).status, 'BLOCKED');
+});
+
+test('classifies an available registry as reconcile without increasing assignment count', () => {
+  const hidden = { id: 'std-hidden', name: 'A', internal_id: 'AA01', status: 'DELETED', _isDeleted: true } as any;
+  const assessment = assessCodeOwnership(hidden, {
+    id: 'AA01', internal_id: 'AA01', status: 'AVAILABLE', assignmentCount: 3,
+  } as any, [hidden], false);
+  assert.equal(assessment.status, 'RECONCILED');
+  assert.equal(assessment.blocking, false);
+});
+
+test('excludes SDHET from reusable-code recall', () => {
+  const standard = { id: 'std-sdhet', name: 'SDHET', internal_id: 'SDHET', status: 'DELETED', _isDeleted: true } as any;
+  assert.equal(assessCodeOwnership(standard, null, [standard], false).status, 'EXCLUDED_SPECIAL_CODE');
 });

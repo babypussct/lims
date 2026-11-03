@@ -2,7 +2,27 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.10.22-b01
+## Phiên bản hiện tại: v26.11.03-b01
+
+### v26.11.03-b01
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Bổ sung luồng quét, xem trước và thu hồi mã quản lý nội bộ của chuẩn đã ẩn về kho mã chung.
+
+#### ✨ Tính Năng Mới
+
+- Ghi lịch sử cấp–trả bất biến, operation ID chống xử lý trùng và projection theo từng đợt thu hồi.
+- Thêm khôi phục hồ sơ có reserve mã atomically, nút dừng sau transaction và xuất báo cáo JSON trên modal thu hồi.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Đồng bộ quy tắc sở hữu mã giữa thêm mới, import, trả mã, khôi phục và công cụ đồng bộ; hồ sơ ẩn chưa trả mã không bị tái cấp nhầm.
+- Bảo vệ Firestore Rules cho restore, event lịch sử và batch import trong giới hạn access-call; giữ QR trỏ tới hồ sơ vật lý.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Ngăn trạng thái registry sẵn sàng nhưng còn chủ cũ và xử lý riêng mã nghiệp vụ SDHET ngoài kho mã tái cấp.
 
 ### v26.10.22-b01
 

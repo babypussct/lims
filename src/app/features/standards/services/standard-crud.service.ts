@@ -24,7 +24,7 @@ import { ActivityEventService } from '../../../core/services/activity-event.serv
 import { FirestoreReadMonitor } from '../../../core/services/firestore-read-monitor.service';
 import { StandardTagCatalogService } from './standard-tag-catalog.service';
 import { StandardCodeRegistryService } from './standard-code-registry.service';
-import { isSpecialInternalId, isValidInternalId, normalizeInternalId } from '../../../shared/utils/standard-internal-id';
+import { hasUnreleasedCodeLifecycle, isSpecialInternalId, isValidInternalId, normalizeInternalId } from '../../../shared/utils/standard-internal-id';
 import { ACTIVE_STANDARD_STATUSES } from '../../../shared/utils/standard-query';
 import {
   applyTagMode,
@@ -164,16 +164,13 @@ export class StandardCrudService {
     const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${std.id}`);
     const { derivedDeviceCodes: _derivedDeviceCodes, derivedMethodLabels: _derivedMethodLabels, ...persistedStandard } = std;
     const specialBusinessCode = isSpecialInternalId(std.internal_id);
-    const registrySnapshot = specialBusinessCode
-      ? null
-      : await getDoc(this.codeRegistry.getRegistryRef(std.internal_id));
     let legacyOwnerIds: string[] = [];
-    if (!specialBusinessCode && registrySnapshot && (!registrySnapshot.exists() || registrySnapshot.data()?.['status'] === 'AVAILABLE')) {
-      // A missing/AVAILABLE registry is precisely the legacy-repair boundary:
-      // an old row may contain lower-case or surrounding whitespace, which an
-      // equality query on the canonical code would not find. This fallback is
-      // intentionally rare and favors ownership safety over one extra admin
-      // read before assigning a reusable code.
+    if (!specialBusinessCode) {
+      // The registry is authoritative for the canonical owner, but legacy
+      // rows can still carry the same code (including a hidden row) without a
+      // registry entry. Always scan same-code physical records before a new
+      // assignment so an old duplicate cannot be silently masked by a current
+      // registry owner.
       const legacyMatches = await getDocs(collection(
         this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards`
       ));
@@ -181,8 +178,7 @@ export class StandardCrudService {
         .filter(snapshot => snapshot.id !== std.id)
         .map(snapshot => ({ id: snapshot.id, ...snapshot.data() } as ReferenceStandard))
         .filter(candidate => normalizeInternalId(candidate.internal_id) === std.internal_id)
-        .filter(candidate => !candidate._isDeleted && candidate.status !== 'DELETED')
-        .filter(candidate => candidate.lifecycle_status !== 'RELEASED' && candidate.lifecycle_status !== 'CLOSED')
+        .filter(candidate => hasUnreleasedCodeLifecycle(candidate))
         .map(candidate => candidate.id);
     }
     let createdProjection: ReferenceStandard | null = null;
@@ -750,51 +746,8 @@ export class StandardCrudService {
   }
 
   async restoreStandard(id: string, name = ''): Promise<void> {
-    const ref = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${id}`);
-    const currentSnapshot = await getDoc(ref);
-    if (!currentSnapshot.exists()) throw new Error('Chuẩn cần khôi phục không còn tồn tại.');
-    const current = { id: currentSnapshot.id, ...currentSnapshot.data() } as ReferenceStandard;
-    const internalId = (current.internal_id || '').trim();
-    const candidateRefs = internalId
-      ? (await getDocs(query(
-          collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards`),
-          where('internal_id', 'in', [...new Set([internalId, internalId.toUpperCase(), internalId.toLowerCase()])])
-        ))).docs
-          .filter(snapshot => snapshot.id !== id)
-          .map(snapshot => snapshot.ref)
-      : [];
-    let restoredProjection: ReferenceStandard | null = null;
-
-    await runTransaction(this.fb.db, async transaction => {
-      const [freshSnapshot, ...candidateSnapshots] = await Promise.all([
-        transaction.get(ref),
-        ...candidateRefs.map(candidateRef => transaction.get(candidateRef))
-      ]);
-      if (!freshSnapshot.exists()) throw new Error('Chuẩn cần khôi phục không còn tồn tại.');
-      const fresh = { id: freshSnapshot.id, ...freshSnapshot.data() } as ReferenceStandard;
-      const occupied = candidateSnapshots
-        .filter(snapshot => snapshot.exists())
-        .map(snapshot => ({ id: snapshot.id, ...snapshot.data() } as ReferenceStandard))
-        .find(standard => standard._isDeleted !== true && standard.status !== 'DELETED');
-      if (occupied) {
-        throw new Error(
-          `Không thể khôi phục vì slot ${fresh.internal_id || '(trống)'} đang được cấp cho ` +
-          `"${occupied.name}" (${occupied.internal_id || 'Chưa có mã quản lý'}).`
-        );
-      }
-      transaction.update(ref, {
-        _isDeleted: deleteField(),
-        status: Number(fresh.current_amount || 0) <= 0 ? 'DEPLETED' : 'AVAILABLE',
-        lastUpdated: serverTimestamp()
-      });
-      restoredProjection = {
-        ...fresh,
-        _isDeleted: false,
-        status: Number(fresh.current_amount || 0) <= 0 ? 'DEPLETED' : 'AVAILABLE',
-        lastUpdated: Date.now()
-      };
-    });
-    if (restoredProjection) this.cache._mergeAndSave([restoredProjection], []);
+    await this.codeRegistry.restoreStandard(id);
+    await this.publishFreshStandard(id);
     await this.logGlobalActivity('RESTORE_STANDARD', `Khôi phục chuẩn đối chiếu: ${name || id}`, id);
     await this.fb.updateMetadata('standards');
   }

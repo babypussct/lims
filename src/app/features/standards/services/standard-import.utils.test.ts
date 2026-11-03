@@ -161,7 +161,7 @@ test('creates a new standard when name and lot match but management code is diff
   assert.deepEqual(item.changes, []);
 });
 
-test('treats a soft-deleted identity as released and creates a new immutable document', () => {
+test('blocks an import that would reuse a hidden identity before its code is explicitly returned', () => {
   const existing: ReferenceStandard = {
     id: 'deleted-id',
     name: 'Deleted standard',
@@ -177,10 +177,10 @@ test('treats a soft-deleted identity as released and creates a new immutable doc
     'Khối lượng chai': '1 mg',
     'Số nhận diện': 'AB02'
   }], [existing]);
-  assert.equal(item.mode, 'CREATE');
-  assert.notEqual(item.parsed.id, existing.id);
-  assert.match(item.parsed.id, /^std_ab02_/);
-  assert.equal(item.isValid, true);
+  assert.equal(item.mode, 'CONFLICT');
+  assert.equal(item.parsed.id, existing.id);
+  assert.match(item.errorMessage || '', /đã ẩn.*chưa ghi nhận trả mã/i);
+  assert.equal(item.isValid, false);
 });
 
 test('only active standards occupy a management-code slot', () => {

@@ -1990,6 +1990,180 @@ test('internal-id ownership cannot be rewritten without the lifecycle transactio
   await assertSucceeds(batch.commit());
 });
 
+test('standard-code events and recall projections require the atomic lifecycle shape and remain append-only', async () => {
+  const managerDb = dbFor(users.manager);
+  const restoreStandardPath = `artifacts/${APP_ID}/reference_standards/event-restore`;
+  const restoreRegistryPath = `artifacts/${APP_ID}/standard_code_registry/AB11`;
+  const releaseStandardPath = `artifacts/${APP_ID}/reference_standards/event-release`;
+  const releaseRegistryPath = `artifacts/${APP_ID}/standard_code_registry/AC11`;
+  const softDeleteStandardPath = `artifacts/${APP_ID}/reference_standards/event-soft-delete`;
+  const restoreEventPath = `artifacts/${APP_ID}/standard_code_events/event-restore-assignment`;
+  const releaseEventPath = `artifacts/${APP_ID}/standard_code_events/event-release`;
+
+  await env.withSecurityRulesDisabled(async context => {
+    const db = context.firestore();
+    await Promise.all([
+      setDoc(doc(db, restoreStandardPath), {
+        id: 'event-restore', name: 'Restore event standard', internal_id: 'AB11',
+        initial_amount: 10, current_amount: 10, unit: 'mg', status: 'DELETED',
+        _isDeleted: true, lifecycle_status: 'RELEASED', internal_id_assignment_sequence: 1,
+        lastUpdated: Timestamp.fromMillis(1_700_000_000_000)
+      }),
+      setDoc(doc(db, restoreRegistryPath), {
+        id: 'AB11', internal_id: 'AB11', status: 'AVAILABLE', assignmentCount: 1,
+        lastUpdated: Timestamp.fromMillis(1_700_000_000_000)
+      }),
+      setDoc(doc(db, releaseStandardPath), {
+        id: 'event-release', name: 'Release event standard', internal_id: 'AC11',
+        initial_amount: 10, current_amount: 10, unit: 'mg', status: 'AVAILABLE',
+        _isDeleted: false, lifecycle_status: 'ACTIVE', internal_id_assignment_sequence: 1,
+        lastUpdated: Timestamp.fromMillis(1_700_000_000_000)
+      }),
+      setDoc(doc(db, releaseRegistryPath), {
+        id: 'AC11', internal_id: 'AC11', status: 'ASSIGNED',
+        currentStandardId: 'event-release', assignmentCount: 1,
+        lastUpdated: Timestamp.fromMillis(1_700_000_000_000)
+      }),
+      setDoc(doc(db, softDeleteStandardPath), {
+        id: 'event-soft-delete', name: 'Soft-delete event standard', internal_id: 'AA12',
+        initial_amount: 10, current_amount: 10, unit: 'mg', status: 'AVAILABLE',
+        _isDeleted: false, lifecycle_status: 'ACTIVE', lastUpdated: Timestamp.fromMillis(1_700_000_000_000)
+      })
+    ]);
+  });
+
+  await assertSucceeds(updateDoc(doc(managerDb, softDeleteStandardPath), {
+    _isDeleted: true, status: 'DELETED', lastUpdated: serverTimestamp()
+  }));
+  await assertFails(updateDoc(doc(managerDb, softDeleteStandardPath), {
+    _isDeleted: false, status: 'AVAILABLE', lifecycle_status: 'ACTIVE', lastUpdated: serverTimestamp()
+  }));
+
+  const restoreBatch = writeBatch(managerDb);
+  restoreBatch.update(doc(managerDb, restoreStandardPath), {
+    _isDeleted: false,
+    status: 'AVAILABLE',
+    lifecycle_status: 'ACTIVE',
+    internal_id_assigned_at: serverTimestamp(),
+    internal_id_assignment_sequence: 2,
+    internal_id_released_at: deleteField(),
+    internal_id_release_reason: deleteField(),
+    lastUpdated: serverTimestamp()
+  });
+  restoreBatch.set(doc(managerDb, restoreRegistryPath), {
+    id: 'AB11', internal_id: 'AB11', status: 'ASSIGNED',
+    currentStandardId: 'event-restore', assignmentCount: 2,
+    lastAssignedAt: serverTimestamp(), lastUpdated: serverTimestamp()
+  }, { merge: true });
+  restoreBatch.set(doc(managerDb, restoreEventPath), {
+    id: 'event-restore-assignment',
+    eventId: 'event-restore-assignment',
+    operationId: 'event-restore-assignment',
+    internalId: 'AB11',
+    standardId: 'event-restore',
+    assignmentSequence: 2,
+    type: 'ASSIGNED',
+    source: 'RESTORE',
+    reason: 'Khôi phục hồ sơ và cấp lại mã.',
+    actorUid: users.manager.uid,
+    actorName: users.manager.displayName,
+    createdAt: serverTimestamp(),
+    before: { standardId: 'event-restore', internalId: 'AB11', lifecycleStatus: 'RELEASED', registryStatus: 'AVAILABLE', registryStandardId: null },
+    after: { standardId: 'event-restore', internalId: 'AB11', lifecycleStatus: 'ACTIVE', registryStatus: 'ASSIGNED', registryStandardId: 'event-restore' }
+  });
+  await assertSucceeds(restoreBatch.commit());
+  assert.equal((await getDoc(doc(managerDb, restoreEventPath))).data()?.source, 'RESTORE');
+
+  await assertFails(updateDoc(doc(managerDb, restoreEventPath), { reason: 'tampered' }));
+  await assertFails(deleteDoc(doc(managerDb, restoreEventPath)));
+
+  const forgedEvent = doc(managerDb, `artifacts/${APP_ID}/standard_code_events/event-forged`);
+  await assertFails(setDoc(forgedEvent, {
+    id: 'event-forged', eventId: 'event-forged', operationId: 'event-forged',
+    internalId: 'AB11', standardId: 'event-restore', assignmentSequence: 2,
+    type: 'ASSIGNED', source: 'CREATE', reason: 'Không có giao dịch cấp mã.',
+    actorUid: users.manager.uid, actorName: users.manager.displayName,
+    createdAt: serverTimestamp(),
+    before: {}, after: { standardId: 'event-restore', internalId: 'AB11' }
+  }));
+
+  const releaseBatch = writeBatch(managerDb);
+  releaseBatch.update(doc(managerDb, releaseStandardPath), {
+    lifecycle_status: 'RELEASED',
+    internal_id_released_at: serverTimestamp(),
+    internal_id_release_reason: 'Thu hồi kiểm thử.',
+    lastUpdated: serverTimestamp()
+  });
+  releaseBatch.set(doc(managerDb, releaseRegistryPath), {
+    id: 'AC11', internal_id: 'AC11', status: 'AVAILABLE',
+    currentStandardId: deleteField(), lastReleasedAt: serverTimestamp(),
+    lastReleasedStandardId: 'event-release', lastUpdated: serverTimestamp()
+  }, { merge: true });
+  releaseBatch.set(doc(managerDb, releaseEventPath), {
+    id: 'event-release', eventId: 'event-release', operationId: 'event-release',
+    internalId: 'AC11', standardId: 'event-release', assignmentSequence: 1,
+    type: 'RELEASED', source: 'RECALL', reason: 'Thu hồi mã chuẩn đã ẩn.',
+    actorUid: users.manager.uid, actorName: users.manager.displayName,
+    createdAt: serverTimestamp(),
+    before: { standardId: 'event-release', internalId: 'AC11', lifecycleStatus: 'ACTIVE', registryStatus: 'ASSIGNED', registryStandardId: 'event-release' },
+    after: { standardId: 'event-release', internalId: 'AC11', lifecycleStatus: 'RELEASED', registryStatus: 'AVAILABLE', registryStandardId: null }
+  });
+  await assertSucceeds(releaseBatch.commit());
+
+  const runPath = `artifacts/${APP_ID}/standard_code_recall_runs/recall-rules-test`;
+  const runItemPath = `${runPath}/items/recall-rules-test-item`;
+  const runBatch = writeBatch(managerDb);
+  runBatch.set(doc(managerDb, runPath), {
+    id: 'recall-rules-test', status: 'READY', reason: 'Mã chuẩn đã ẩn', totalCount: 1,
+    createdBy: users.manager.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+  });
+  runBatch.set(doc(managerDb, runItemPath), {
+    operationId: 'recall-rules-test-item', runId: 'recall-rules-test', status: 'RELEASED', updatedAt: serverTimestamp()
+  });
+  await assertSucceeds(runBatch.commit());
+
+  const completeRun = writeBatch(managerDb);
+  completeRun.update(doc(managerDb, runPath), {
+    status: 'COMPLETED_WITH_BLOCKS', releasedCount: 1, blockedCount: 0,
+    reconciledCount: 0, failedCount: 0, updatedAt: serverTimestamp()
+  });
+  await assertSucceeds(completeRun.commit());
+  await assertSucceeds(getDoc(doc(managerDb, runPath)));
+  await assertFails(deleteDoc(doc(managerDb, runPath)));
+  await assertFails(getDoc(doc(dbFor(users.viewer), runPath)));
+});
+
+test('a normal multi-code assignment batch stays within the Firestore rules access budget', async () => {
+  const managerDb = dbFor(users.manager);
+  const codes = Array.from({ length: 10 }, (_, index) => `AB${String(index + 21).padStart(2, '0')}`);
+  const batch = writeBatch(managerDb);
+  codes.forEach(code => {
+    const standardId = `bulk-event-${code}`;
+    const standardPath = `artifacts/${APP_ID}/reference_standards/${standardId}`;
+    const registryPath = `artifacts/${APP_ID}/standard_code_registry/${code}`;
+    const eventId = `bulk-event-assignment-${code}`;
+    batch.set(doc(managerDb, standardPath), {
+      id: standardId, name: `Bulk event ${code}`, internal_id: code,
+      status: 'AVAILABLE', lifecycle_status: 'ACTIVE', _isDeleted: false,
+      lastUpdated: serverTimestamp()
+    });
+    batch.set(doc(managerDb, registryPath), {
+      id: code, internal_id: code, status: 'ASSIGNED',
+      currentStandardId: standardId, assignmentCount: 1,
+      lastAssignedAt: serverTimestamp(), lastUpdated: serverTimestamp()
+    });
+    batch.set(doc(managerDb, `artifacts/${APP_ID}/standard_code_events/${eventId}`), {
+      id: eventId, eventId, operationId: eventId, internalId: code, standardId,
+      assignmentSequence: 1, type: 'ASSIGNED', source: 'IMPORT',
+      reason: 'Cấp mã từ đợt nhập kiểm thử.', actorUid: users.manager.uid,
+      actorName: users.manager.displayName, createdAt: serverTimestamp(),
+      before: { standardId: null, internalId: code, lifecycleStatus: null, registryStatus: null, registryStandardId: null },
+      after: { standardId, internalId: code, lifecycleStatus: 'ACTIVE', registryStatus: 'ASSIGNED', registryStandardId: standardId }
+    });
+  });
+  await assertSucceeds(batch.commit());
+});
+
 test('legacy registry aliases can migrate only to a canonical target without deleting history', async () => {
   const managerDb = dbFor(users.manager);
   const legacyAcPath = `artifacts/${APP_ID}/standard_code_registry/ac01`;

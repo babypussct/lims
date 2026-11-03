@@ -39,15 +39,59 @@ service cloud.firestore {
         registryAfter.get('currentStandardId', '') == expectedStandardId;
     }
 
-    function releasableRegistryAfterMatches(registryPath, expectedStandardId) {
+    function releasableRegistryAfterMatches(registryPath, expectedCode, expectedStandardId) {
       let registryAfter = getAfter(registryPath).data;
       return (
-        (registryAfter.get('status', '') == 'AVAILABLE' &&
+        registryAfter.get('internal_id', '') == expectedCode &&
+        ((registryAfter.get('status', '') == 'AVAILABLE' &&
           registryAfter.get('lastReleasedStandardId', '') == expectedStandardId) ||
         (registryAfter.get('status', '') == 'ASSIGNED' &&
           registryAfter.get('currentStandardId', '') != expectedStandardId &&
-          registryAfter.get('lastReleasedStandardId', '') == expectedStandardId)
+          registryAfter.get('lastReleasedStandardId', '') == expectedStandardId))
       );
+    }
+
+    function releasedStandardAfterOwnsCode(standardPath, expectedCode) {
+      let standardAfter = getAfter(standardPath).data;
+      return standardAfter.get('internal_id', '') == expectedCode &&
+        ['RELEASED', 'CLOSED'].hasAny([standardAfter.get('lifecycle_status', '')]);
+    }
+
+    // Event-specific variants also bind the snapshot to the same request.
+    // The lifecycle predicates above are reused by older repair paths where a
+    // registry may legitimately point at an already-active standard; history
+    // entries need the stronger same-write timestamp invariant.
+    function eventAssignedRegistryAfterMatches(registryPath, expectedCode, expectedStandardId) {
+      let registryAfter = getAfter(registryPath).data;
+      return registryAfter.get('status', '') == 'ASSIGNED' &&
+        registryAfter.get('internal_id', '') == expectedCode &&
+        registryAfter.get('currentStandardId', '') == expectedStandardId &&
+        registryAfter.get('lastUpdated', null) == request.time;
+    }
+
+    function eventReleasableRegistryAfterMatches(registryPath, expectedCode, expectedStandardId) {
+      let registryAfter = getAfter(registryPath).data;
+      return registryAfter.get('internal_id', '') == expectedCode &&
+        registryAfter.get('lastUpdated', null) == request.time &&
+        ((registryAfter.get('status', '') == 'AVAILABLE' &&
+          registryAfter.get('lastReleasedStandardId', '') == expectedStandardId) ||
+        (registryAfter.get('status', '') == 'ASSIGNED' &&
+          registryAfter.get('currentStandardId', '') != expectedStandardId &&
+          registryAfter.get('lastReleasedStandardId', '') == expectedStandardId));
+    }
+
+    function eventStandardAfterOwnsActiveCode(standardPath, expectedCode) {
+      let standardAfter = getAfter(standardPath).data;
+      return standardAfter.get('internal_id', '') == expectedCode &&
+        standardAfter.get('lifecycle_status', 'ACTIVE') == 'ACTIVE' &&
+        standardAfter.get('lastUpdated', null) == request.time;
+    }
+
+    function eventReleasedStandardAfterOwnsCode(standardPath, expectedCode) {
+      let standardAfter = getAfter(standardPath).data;
+      return standardAfter.get('internal_id', '') == expectedCode &&
+        ['RELEASED', 'CLOSED'].hasAny([standardAfter.get('lifecycle_status', '')]) &&
+        standardAfter.get('lastUpdated', null) == request.time;
     }
 
     function releasedStandardAfterMatches(standardPath, expectedTime) {
@@ -1524,14 +1568,19 @@ service cloud.firestore {
       // for a legacy missing/invalid code.
       function canEditReferenceStandardMetadata(appId) {
         let changed = request.resource.data.diff(resource.data).affectedKeys();
-        return hasPermission(appId, 'standard_edit') &&
-          validStandardTagArray(request.resource.data) &&
-          !changed.hasAny([
-            'internal_id', 'lifecycle_status', 'internal_id_assigned_at',
-            'internal_id_released_at', 'internal_id_release_reason',
-            'internal_id_assignment_sequence'
-          ]) &&
-          request.resource.data.get('internal_id', '') == resource.data.get('internal_id', '');
+        let restoreSource = resource.data.get('_isDeleted', false) == true ||
+          resource.data.get('status', '') == 'DELETED' ||
+          ['RELEASED', 'CLOSED'].hasAny([resource.data.get('lifecycle_status', '')]);
+        return restoreSource && changed.hasAny(['_isDeleted', 'status', 'lifecycle_status'])
+          ? canRestoreReferenceStandard(appId)
+          : hasPermission(appId, 'standard_edit') &&
+            validStandardTagArray(request.resource.data) &&
+            !changed.hasAny([
+              'internal_id', 'lifecycle_status', 'internal_id_assigned_at',
+              'internal_id_released_at', 'internal_id_release_reason',
+              'internal_id_assignment_sequence'
+            ]) &&
+            request.resource.data.get('internal_id', '') == resource.data.get('internal_id', '');
       }
 
       function canRepairReferenceStandardInternalId(appId) {
@@ -1569,10 +1618,34 @@ service cloud.firestore {
           request.resource.data.get('lifecycle_status', '') == 'RELEASED' &&
           noOpenStandardWorkflow(request.resource.data) &&
           request.resource.data.lastUpdated == request.time &&
-          (code == 'SDHET' || releasableRegistryAfterMatches(registryPath, stdId));
+          (code == 'SDHET' || releasableRegistryAfterMatches(registryPath, code, stdId));
+      }
+
+      function canRestoreReferenceStandard(appId) {
+        let changed = request.resource.data.diff(resource.data).affectedKeys();
+        let code = resource.data.get('internal_id', '');
+        let registryPath = /databases/$(database)/documents/artifacts/$(appId)/standard_code_registry/$(code);
+        return changed.hasOnly([
+          '_isDeleted', 'status', 'lifecycle_status', 'internal_id_assigned_at',
+          'internal_id_assignment_sequence', 'internal_id_released_at',
+          'internal_id_release_reason', 'lastUpdated'
+        ])
+          ? ((resource.data.get('_isDeleted', false) == true ||
+              resource.data.get('status', '') == 'DELETED' ||
+              ['RELEASED', 'CLOSED'].hasAny([resource.data.get('lifecycle_status', '')]))
+            ? hasAuditedStandardEdit(appId) &&
+              validInternalId(code) &&
+              request.resource.data.get('_isDeleted', false) == false &&
+              ['AVAILABLE', 'DEPLETED'].hasAny([request.resource.data.get('status', '')]) &&
+              request.resource.data.get('lifecycle_status', 'ACTIVE') == 'ACTIVE' &&
+              request.resource.data.lastUpdated == request.time &&
+              (code == 'SDHET' || assignedRegistryAfterMatches(registryPath, code, stdId))
+            : false)
+          : false;
       }
 
       function canUpdateReferenceStandard(appId) {
+        let changed = request.resource.data.diff(resource.data).affectedKeys();
         return canRequesterUpdateReferenceStandard(appId) ||
           canRepairReferenceStandardInternalId(appId) ||
           canReleaseReferenceStandardInternalId(appId) ||
@@ -1714,6 +1787,87 @@ service cloud.firestore {
         request.resource.data.recordCount > 0 &&
         request.resource.data.changes is list;
       allow update, delete: if false;
+    }
+
+    // Append-only ownership history for reusable standard codes. The event is
+    // accepted only when the same atomic write also leaves the referenced
+    // physical record and registry in the matching post-write state.
+    match /artifacts/{appId}/standard_code_events/{eventId} {
+      function validStandardCodeEvent(appId) {
+        let data = request.resource.data;
+        let code = data.get('internalId', '');
+        let stdId = data.get('standardId', '');
+        let standardPath = /databases/$(database)/documents/artifacts/$(appId)/reference_standards/$(stdId);
+        let registryPath = /databases/$(database)/documents/artifacts/$(appId)/standard_code_registry/$(code);
+        return hasAuditedStandardEdit(appId) &&
+          data.keys().hasOnly([
+            'id', 'eventId', 'operationId', 'internalId', 'standardId',
+            'assignmentSequence', 'type', 'source', 'reason', 'actorUid',
+            'actorName', 'createdAt', 'before', 'after', 'runId'
+          ]) &&
+          data.id == eventId &&
+          data.eventId == eventId &&
+          data.operationId is string && data.operationId.size() > 0 &&
+          validInternalId(code) &&
+          stdId is string && stdId.size() > 0 &&
+          data.type is string && ['ASSIGNED', 'RELEASED', 'REASSIGNED', 'RECONCILED'].hasAny([data.type]) &&
+          data.source is string && ['CREATE', 'IMPORT', 'SINGLE_RELEASE', 'RECALL', 'RESTORE', 'AUTO_REUSE', 'RECONCILIATION'].hasAny([data.source]) &&
+          data.reason is string && data.reason.size() > 0 && data.reason.size() <= 500 &&
+          data.actorUid == request.auth.uid && data.actorName is string && data.actorName.size() > 0 &&
+          data.createdAt == request.time && data.before is map && data.after is map &&
+          data.after.get('standardId', '') == stdId &&
+          data.after.get('internalId', '') == code &&
+          (
+            ['ASSIGNED', 'REASSIGNED'].hasAny([data.type])
+              ? (code == 'SDHET'
+                ? eventStandardAfterOwnsActiveCode(standardPath, code)
+                : eventAssignedRegistryAfterMatches(registryPath, code, stdId))
+              : (code == 'SDHET'
+                ? eventReleasedStandardAfterOwnsCode(standardPath, code)
+                : eventReleasableRegistryAfterMatches(registryPath, code, stdId))
+          );
+      }
+
+      allow read: if hasPermission(appId, 'standard_view') ||
+        hasPermission(appId, 'standard_log_view') || hasPermission(appId, 'standard_edit');
+      allow create: if validStandardCodeEvent(appId);
+      allow update, delete: if false;
+    }
+
+    // Run metadata is a resumable projection only; ownership authority remains
+    // in standard_code_events and the registry transaction.
+    match /artifacts/{appId}/standard_code_recall_runs/{runId} {
+      function validRecallRun(data) {
+        return data.id == runId &&
+          data.status is string && ['SCANNING', 'READY', 'RUNNING', 'STOPPED', 'COMPLETED', 'COMPLETED_WITH_BLOCKS'].hasAny([data.status]) &&
+          data.reason is string && data.reason.size() <= 500 &&
+          (!('totalCount' in data) || (data.totalCount is number && data.totalCount >= 0)) &&
+          (!('releasedCount' in data) || (data.releasedCount is number && data.releasedCount >= 0)) &&
+          (!('reconciledCount' in data) || (data.reconciledCount is number && data.reconciledCount >= 0)) &&
+          (!('blockedCount' in data) || (data.blockedCount is number && data.blockedCount >= 0)) &&
+          (!('failedCount' in data) || (data.failedCount is number && data.failedCount >= 0));
+      }
+
+      allow read: if hasPermission(appId, 'standard_edit') || hasPermission(appId, 'standard_log_view');
+      allow create: if hasAuditedStandardEdit(appId) && validRecallRun(request.resource.data) &&
+        request.resource.data.createdBy == request.auth.uid && request.resource.data.createdAt == request.time;
+      allow update: if hasAuditedStandardEdit(appId) && validRecallRun(request.resource.data) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'status', 'reason', 'updatedAt', 'releasedCount', 'reconciledCount',
+          'blockedCount', 'failedCount', 'totalCount'
+        ]) && request.resource.data.updatedAt == request.time;
+      allow delete: if false;
+
+      match /items/{itemId} {
+        allow read: if hasPermission(appId, 'standard_edit') || hasPermission(appId, 'standard_log_view');
+        allow create, update: if hasAuditedStandardEdit(appId) &&
+          request.resource.data.operationId == itemId &&
+          request.resource.data.runId == runId &&
+          request.resource.data.status is string &&
+          ['RELEASED', 'RECONCILED', 'ALREADY_RELEASED', 'BLOCKED', 'CHANGED_SINCE_SCAN', 'FAILED', 'EXCLUDED_SPECIAL_CODE'].hasAny([request.resource.data.status]) &&
+          request.resource.data.updatedAt == request.time;
+        allow delete: if false;
+      }
     }
 
     // Yeu cau mua chuan (Purchase/Standard Requests)

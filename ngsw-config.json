@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.10.22-b01",
-    "title": "Tải thư mục Phiếu giao nhận mẫu thành ZIP",
+    "version": "v26.11.03-b01",
+    "title": "Hoàn thiện vòng đời và thu hồi mã chuẩn đã ẩn",
     "features": [
-      "Tải toàn bộ thư mục Phiếu giao nhận mẫu hoặc một thư mục con thành một tệp ZIP.",
-      "Thêm nút tải ZIP cho thư mục hiện tại và từng thư mục trong danh sách, trên máy tính và điện thoại.",
-      "Giữ cấu trúc thư mục con, thư mục trống và các tệp khi tạo ZIP; hỗ trợ xuất Google Docs, Sheets và Slides.",
-      "Hiển thị tiến trình, cho phép hủy lượt tải và tránh ghi đè khi có tên tệp trùng nhau.",
-      "Thông báo rõ khi thư mục vượt giới hạn tải trên trình duyệt để người dùng chọn từng thư mục con."
+      "Bổ sung luồng quét, xem trước và thu hồi mã quản lý nội bộ của chuẩn đã ẩn về kho mã chung.",
+      "Ghi lịch sử cấp–trả bất biến, operation ID chống xử lý trùng và projection theo từng đợt thu hồi.",
+      "Thêm khôi phục hồ sơ có reserve mã atomically, nút dừng sau transaction và xuất báo cáo JSON trên modal thu hồi.",
+      "Đồng bộ quy tắc sở hữu mã giữa thêm mới, import, trả mã, khôi phục và công cụ đồng bộ; hồ sơ ẩn chưa trả mã không bị tái cấp nhầm.",
+      "Bảo vệ Firestore Rules cho restore, event lịch sử và batch import trong giới hạn access-call; giữ QR trỏ tới hồ sơ vật lý."
     ]
   },
   "assetGroups": [

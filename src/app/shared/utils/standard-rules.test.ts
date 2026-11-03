@@ -43,6 +43,7 @@ test('reference standard update branches are named helpers instead of one compou
   assert.match(standardsBlock, /function canEditReferenceStandardMetadata\(appId\)/);
   assert.match(standardsBlock, /function canRepairReferenceStandardInternalId\(appId\)/);
   assert.match(standardsBlock, /function canReleaseReferenceStandardInternalId\(appId\)/);
+  assert.match(standardsBlock, /function canRestoreReferenceStandard\(appId\)/);
   assert.match(standardsBlock, /function canUpdateReferenceStandard\(appId\)/);
 });
 
@@ -64,6 +65,10 @@ test('internal-id lifecycle writes are bound to the canonical code and audited s
   assert.match(rules, /validRegistryHolder\(appId\)/);
   assert.match(rules, /canReuseAssignedRegistrySlot\(appId\)/);
   assert.match(rules, /match \/artifacts\/\{appId\}\/standard_code_sync_batches\/\{batchId\}/);
+  assert.match(rules, /match \/artifacts\/\{appId\}\/standard_code_events\/\{eventId\}/);
+  assert.match(rules, /function validStandardCodeEvent\(appId\)/);
+  assert.match(rules, /match \/artifacts\/\{appId\}\/standard_code_recall_runs\/\{runId\}/);
+  assert.match(rules, /COMPLETED_WITH_BLOCKS/);
   assert.match(rules, /canRepairStandardRequestSnapshot\(appId\)/);
   assert.match(rules, /canRepairStandardUsageSnapshot\(appId\)/);
   assert.match(rules, /canRepairNestedStandardUsageSnapshot\(appId, stdId\)/);

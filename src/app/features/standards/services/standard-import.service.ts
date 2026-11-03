@@ -12,17 +12,21 @@ import { canAutoReleaseExpiredStandard, parseStandardDate } from '../../../share
 import { ProgressService } from '../../../core/services/progress.service';
 import { StandardCacheService } from './standard-cache.service';
 import { StandardCrudService } from './standard-crud.service';
-import { StandardCodeRegistryService } from './standard-code-registry.service';
+import {
+  buildStandardCodeEvent,
+  normalizeStandardCodeOperationId,
+  StandardCodeRegistryService,
+} from './standard-code-registry.service';
 import { StandardUsageService } from './standard-usage.service';
 import { ActivityEventService } from '../../../core/services/activity-event.service';
-import { isSpecialInternalId, isValidInternalId, normalizeInternalId } from '../../../shared/utils/standard-internal-id';
+import { hasUnreleasedCodeLifecycle, isSpecialInternalId, isValidInternalId, normalizeInternalId } from '../../../shared/utils/standard-internal-id';
 import { SAFE_XLSX_IMPORT_READ_OPTIONS } from '../../../shared/utils/spreadsheet-file-security';
 import {
   STANDARD_IMPORT_MAX_ATOMIC_WRITES,
+  STANDARD_IMPORT_MAX_LIFECYCLE_RULE_ACCESS_COST,
   buildSafeImportMetadata,
   computeImportChanges,
   countAtomicStandardImportWrites,
-  isActiveStandardIdentity,
   parseExcelDateDetailed,
   parseStandardImportRows,
   validateStandardImportFile
@@ -142,6 +146,8 @@ export class StandardImportService {
       throw new Error('Không có dòng hợp lệ để nhập. Vui lòng kiểm tra lỗi trong bảng xem trước.');
     }
     if (!this.auth.canEditStandards()) throw new Error('Bạn không có quyền nhập danh mục chuẩn.');
+    const importer = this.auth.currentUser();
+    if (!importer?.uid) throw new Error('Phiên đăng nhập không hợp lệ; không thể ghi lịch sử cấp mã.');
 
     // Preflight strong internal identities first so the same fresh Firestore
     // documents can be reused for deterministic-id validation below.
@@ -163,7 +169,7 @@ export class StandardImportService {
         const standard = { id: document.id, ...document.data() } as ReferenceStandard;
         freshExistingIds.add(standard.id);
         existing.set(standard.id, standard);
-        if (!isActiveStandardIdentity(standard)) return;
+        if (!hasUnreleasedCodeLifecycle(standard)) return;
         const key = normalizeInternalId(standard.internal_id);
         activeByInternalId.set(key, [...(activeByInternalId.get(key) || []), standard]);
       });
@@ -175,7 +181,7 @@ export class StandardImportService {
     const knownStandards = this.cache.getCompleteCatalogueFromMemory()
       ?? await this.cache.fetchAllAndCache();
     knownStandards.forEach(standard => {
-      if (!isActiveStandardIdentity(standard) || !standard.internal_id || isSpecialInternalId(standard.internal_id)) return;
+      if (!hasUnreleasedCodeLifecycle(standard) || !standard.internal_id || isSpecialInternalId(standard.internal_id)) return;
       const key = normalizeInternalId(standard.internal_id);
       const bucket = activeByInternalId.get(key) || [];
       if (!bucket.some(candidate => candidate.id === standard.id)) {
@@ -196,6 +202,13 @@ export class StandardImportService {
       }
       if (!isSpecialInternalId(internalKey) && matches.length === 1) {
         const matched = matches[0];
+        if (matched._isDeleted === true || matched.status === 'DELETED') {
+          item.mode = 'CONFLICT';
+          item.isValid = false;
+          item.errorMessage = `Mã ${internalKey} vẫn thuộc hồ sơ đã ẩn ${matched.id} nhưng chưa ghi nhận trả mã. Hãy mở Thu hồi mã chuẩn đã ẩn trước khi nhập dữ liệu.`;
+          identityConflicts.push(item);
+          return;
+        }
         item.parsed.id = matched.id;
         item.mode = 'UPDATE_SAFE';
         item.changes = computeImportChanges(matched, item.parsed, item.presentFields || []);
@@ -299,12 +312,19 @@ export class StandardImportService {
       }
     }
 
-    const newItemsCount = validItems.filter(item => item.mode === 'CREATE').length;
     const registryItemsCount = validItems.filter(item =>
       item.mode === 'CREATE' && !isSpecialInternalId(item.parsed.internal_id)
     ).length;
+    const newStandardItems = validItems.filter(item => item.mode === 'CREATE');
     const plannedWrites = countAtomicStandardImportWrites(validItems, new Set(existing.keys())) +
-      registryItemsCount + autoReleaseOwners.size + 1;
+      registryItemsCount + autoReleaseOwners.size + newStandardItems.length + 1;
+    const lifecycleRuleAccessCost = registryItemsCount + newStandardItems.length + autoReleaseOwners.size;
+    if (lifecycleRuleAccessCost > STANDARD_IMPORT_MAX_LIFECYCLE_RULE_ACCESS_COST) {
+      throw new Error(
+        `Lần nhập này cần ${lifecycleRuleAccessCost} lượt kiểm tra an toàn cho vòng đời mã, vượt ngưỡng ` +
+        `${STANDARD_IMPORT_MAX_LIFECYCLE_RULE_ACCESS_COST} của một batch Firestore. Vui lòng chia tệp thành các phần nhỏ hơn; chưa có dữ liệu nào được ghi.`
+      );
+    }
     if (plannedWrites > STANDARD_IMPORT_MAX_ATOMIC_WRITES) {
       throw new Error(
         `Lần nhập này cần ${plannedWrites} thao tác, vượt giới hạn an toàn ${STANDARD_IMPORT_MAX_ATOMIC_WRITES}. ` +
@@ -359,6 +379,7 @@ export class StandardImportService {
           internal_id_assigned_at: serverTimestamp(),
           internal_id_assignment_sequence: assignmentSequence,
         };
+        const assignmentOperationId = normalizeStandardCodeOperationId(`import_${item.parsed.id}_${code}`);
         if (expiredOwner) {
           batch.update(
             doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${expiredOwner.id}`),
@@ -374,6 +395,22 @@ export class StandardImportService {
             lifecycle_status: 'RELEASED',
             internal_id_release_reason: 'AUTO_EXPIRED_REUSE',
           });
+          batch.set(
+            this.codeRegistry.getCodeEventRef(`${assignmentOperationId}_release_${expiredOwner.id}`),
+            buildStandardCodeEvent({
+              operationId: `${assignmentOperationId}_release_${expiredOwner.id}`,
+              internalId: code,
+              standardId: expiredOwner.id,
+              assignmentSequence: expiredOwner.internal_id_assignment_sequence ?? null,
+              type: 'RELEASED',
+              source: 'AUTO_REUSE',
+              reason: 'AUTO_EXPIRED_REUSE',
+              actorUid: importer.uid,
+              actorName: importer.displayName || importer.email || importer.uid,
+              before: { standardId: expiredOwner.id, internalId: code, lifecycleStatus: expiredOwner.lifecycle_status || 'ACTIVE', registryStatus: 'ASSIGNED', registryStandardId: expiredOwner.id },
+              after: { standardId: expiredOwner.id, internalId: code, lifecycleStatus: 'RELEASED', registryStatus: 'ASSIGNED', registryStandardId: item.parsed.id },
+            }),
+          );
         }
         batch.set(stdRef, { ...item.parsed, ...lifecycleFields, _isDeleted: false, lastUpdated: serverTimestamp() });
         if (!isSpecialInternalId(code)) {
@@ -391,6 +428,22 @@ export class StandardImportService {
             lastUpdated: serverTimestamp(),
           }, { merge: true });
         }
+        batch.set(
+          this.codeRegistry.getCodeEventRef(assignmentOperationId),
+          buildStandardCodeEvent({
+            operationId: assignmentOperationId,
+            internalId: code,
+            standardId: item.parsed.id,
+            assignmentSequence,
+            type: expiredOwner ? 'REASSIGNED' : 'ASSIGNED',
+            source: 'IMPORT',
+            reason: 'Cấp Mã quản lý nội bộ từ dữ liệu nhập danh mục chuẩn.',
+            actorUid: importer.uid,
+            actorName: importer.displayName || importer.email || importer.uid,
+            before: { standardId: expiredOwner?.id || null, internalId: code, lifecycleStatus: expiredOwner?.lifecycle_status || null, registryStatus: registry?.status || null, registryStandardId: registry?.currentStandardId || null },
+            after: { standardId: item.parsed.id, internalId: code, lifecycleStatus: 'ACTIVE', registryStatus: isSpecialInternalId(code) ? null : 'ASSIGNED', registryStandardId: isSpecialInternalId(code) ? null : item.parsed.id },
+          }),
+        );
         optimisticChanges.push({ ...item.parsed, ...lifecycleFields, _isDeleted: false });
         created++;
         for (const [logIndex, rawLog] of (item.logs || []).entries()) {
@@ -426,7 +479,6 @@ export class StandardImportService {
           );
         }
       }
-      const importer = this.auth.currentUser();
       const resultSummary = [
         created > 0 ? `${created} chuẩn mới` : '',
         updated > 0 ? `${updated} chuẩn cập nhật` : ''

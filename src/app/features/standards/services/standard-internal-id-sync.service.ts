@@ -25,6 +25,7 @@ import {
   assessInternalId,
   INTERNAL_ID_SYNC_MAX_CHANGES_PER_BATCH,
   INTERNAL_ID_SYNC_MAX_RULE_ACCESS_COST,
+  hasUnreleasedCodeLifecycle,
   isCurrentStandardLifecycle,
   isSpecialInternalId,
   isValidInternalId,
@@ -173,7 +174,9 @@ export class StandardInternalIdSyncService {
       // slot. Keep it in byCode for legacy reference resolution, but do not
       // produce duplicate-owner or registry warnings for it.
       if (isSpecialInternalId(code)) continue;
-      const currentRecords = records.filter(isCurrentStandardLifecycle);
+      // Hidden records with an ACTIVE/missing lifecycle still own their code;
+      // catalogue visibility is not evidence of a release.
+      const currentRecords = records.filter(hasUnreleasedCodeLifecycle);
       const registry = registries.get(code);
       if (currentRecords.length > 1) {
         currentRecords.forEach(record => addIssue({
@@ -205,10 +208,10 @@ export class StandardInternalIdSyncService {
           addIssue({
             kind: 'REGISTRY_MISMATCH', severity: 'ERROR', collection: 'standard_code_registry', documentId: code,
             standardId: current.id, internalId: code,
-            message: registryOwner && isCurrentStandardLifecycle(registryOwner)
+            message: registryOwner && hasUnreleasedCodeLifecycle(registryOwner)
               ? `Sổ mã ${code} đang liên kết với một hồ sơ hiện tại khác (mã tham chiếu ${registryOwner.id}); cần đối chiếu trước khi thay đổi.`
               : `Sổ mã ${code} đang liên kết với hồ sơ có mã tham chiếu ${registry.currentStandardId} chưa được đối chiếu; cần kiểm tra trước khi thay đổi.`,
-            detail: registryOwner && isCurrentStandardLifecycle(registryOwner)
+            detail: registryOwner && hasUnreleasedCodeLifecycle(registryOwner)
               ? `Hồ sơ đang kiểm tra có mã tham chiếu ${current.id}, trong khi sổ mã đang ghi nhận hồ sơ ${registryOwner.id}.`
               : `Sổ mã đang ghi nhận hồ sơ ${registry.currentStandardId}, nhưng hồ sơ đó chưa được xác nhận là vòng đời hiện tại của mã ${code}.`,
             suggestion: 'Đối chiếu hồ sơ vật lý và trạng thái vòng đời của cả hai bản ghi; chỉ để một chủ sở hữu hiện tại rồi quét lại.',
@@ -230,7 +233,7 @@ export class StandardInternalIdSyncService {
           });
         }
       } else if (records.length > 0 && (!registry || registry.status !== 'AVAILABLE')) {
-        const allReleased = records.every(record => !isCurrentStandardLifecycle(record));
+        const allReleased = records.every(record => !hasUnreleasedCodeLifecycle(record));
         const registryOwner = registry?.status === 'ASSIGNED' && registry.currentStandardId
           ? byId.get(registry.currentStandardId)
           : undefined;
@@ -244,7 +247,7 @@ export class StandardInternalIdSyncService {
             autoFixable: false,
           });
         } else if (allReleased &&
-          (!registryOwner || !isCurrentStandardLifecycle(registryOwner))) {
+          (!registryOwner || !hasUnreleasedCodeLifecycle(registryOwner))) {
           addChange({
             collection: 'standard_code_registry', documentId: code, field: '__document__',
             before: registry ? this.registrySnapshot(registry) : null,
@@ -260,10 +263,10 @@ export class StandardInternalIdSyncService {
         } else if (registry?.status === 'ASSIGNED') {
           addIssue({
             kind: 'REGISTRY_MISMATCH', severity: 'ERROR', collection: 'standard_code_registry', documentId: code,
-            internalId: code, message: registryOwner && isCurrentStandardLifecycle(registryOwner)
+            internalId: code, message: registryOwner && hasUnreleasedCodeLifecycle(registryOwner)
               ? `Sổ mã ${code} đang liên kết với một hồ sơ hiện tại khác với dữ liệu mã; cần xử lý xung đột.`
               : `Sổ mã ${code} vẫn đang ghi nhận một hồ sơ hiện tại nhưng không tìm thấy vòng đời đang mở.`,
-            detail: registryOwner && isCurrentStandardLifecycle(registryOwner)
+            detail: registryOwner && hasUnreleasedCodeLifecycle(registryOwner)
               ? `Các hồ sơ cùng mã ${code} không khớp với hồ sơ đang giữ mã được sổ mã ghi nhận.`
               : `Sổ mã vẫn ghi nhận mã ${code} là đã cấp nhưng không có hồ sơ hiện tại tương ứng.`,
             suggestion: 'Đối chiếu sổ mã với từng hồ sơ; chưa cấp lại mã cho hồ sơ mới cho đến khi xung đột được xử lý.',
@@ -459,7 +462,7 @@ export class StandardInternalIdSyncService {
         const duplicateSnapshot = await getDocs(standardsCollection);
         const duplicateCurrent = duplicateSnapshot.docs
           .map(snapshot => ({ id: snapshot.id, ...snapshot.data() } as ReferenceStandard))
-          .filter(candidate => candidate.id !== standardId && isCurrentStandardLifecycle(candidate))
+          .filter(candidate => candidate.id !== standardId && hasUnreleasedCodeLifecycle(candidate))
           .filter(candidate => normalizeInternalId(candidate.internal_id) === targetCode);
         if (duplicateCurrent.length > 0) {
           throw new Error(`Mã ${targetCode} đã có chuẩn hiện tại khác; không thể gán tự động.`);
@@ -474,7 +477,7 @@ export class StandardInternalIdSyncService {
         collection: 'reference_standards', documentId: standardId, field: 'search_key',
         before: standard.search_key ?? null, after: this.buildSearchKey(standard, targetCode), reason: 'Cập nhật khóa tìm kiếm theo mã sửa thủ công.',
       });
-      if (isCurrentStandardLifecycle(standard) && !isSpecialInternalId(targetCode)) {
+      if (hasUnreleasedCodeLifecycle(standard) && !isSpecialInternalId(targetCode)) {
         const registrySnapshot = await getDoc(doc(this.fb.db, `${base}/standard_code_registry/${targetCode}`));
         const registry = registrySnapshot.exists() ? registrySnapshot.data() as StandardCodeRegistry : null;
         if (registry?.status === 'ASSIGNED' && registry.currentStandardId !== standardId) {
@@ -1191,7 +1194,7 @@ export class StandardInternalIdSyncService {
     }
 
     if (status === 'CONFLICT') {
-      const currentOwners = (byCode.get(canonicalCode) || []).filter(isCurrentStandardLifecycle);
+      const currentOwners = (byCode.get(canonicalCode) || []).filter(hasUnreleasedCodeLifecycle);
       addIssue({
         kind: 'REGISTRY_MISMATCH', severity: 'ERROR', blocking: true,
         collection: 'standard_code_registry', documentId: entry.rawDocumentId,
@@ -1273,8 +1276,8 @@ export class StandardInternalIdSyncService {
     }
     if (registry.status !== 'ASSIGNED' || !registry.currentStandardId) return null;
     const owner = byId.get(registry.currentStandardId);
-    if (!owner || !isCurrentStandardLifecycle(owner) || normalizeInternalId(owner.internal_id) !== canonicalCode) {
-      const currentOwners = (byCode.get(canonicalCode) || []).filter(isCurrentStandardLifecycle);
+    if (!owner || !hasUnreleasedCodeLifecycle(owner) || normalizeInternalId(owner.internal_id) !== canonicalCode) {
+      const currentOwners = (byCode.get(canonicalCode) || []).filter(hasUnreleasedCodeLifecycle);
       if (currentOwners.length !== 0) return null;
       return {
         id: canonicalCode,

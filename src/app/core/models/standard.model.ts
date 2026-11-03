@@ -125,6 +125,131 @@ export interface StandardCodeRegistry {
   lastUpdated?: any;
 }
 
+/**
+ * Immutable ownership-history event for one reusable internal code.
+ *
+ * `standard_code_registry` remains the current-state lock.  This record is
+ * the append-only explanation of how that state was reached; it is never a
+ * replacement business identifier and must not be edited or deleted.
+ */
+export type StandardCodeEventType = 'ASSIGNED' | 'RELEASED' | 'REASSIGNED' | 'RECONCILED';
+export type StandardCodeEventSource =
+  | 'CREATE'
+  | 'IMPORT'
+  | 'SINGLE_RELEASE'
+  | 'RECALL'
+  | 'RESTORE'
+  | 'AUTO_REUSE'
+  | 'RECONCILIATION';
+
+export interface StandardCodeOwnershipSnapshot {
+  standardId?: string;
+  internalId: string;
+  lifecycleStatus?: StandardLifecycleStatus | null;
+  registryStatus?: StandardCodeRegistryStatus | null;
+  registryStandardId?: string | null;
+}
+
+export interface StandardCodeEvent {
+  id: string;
+  eventId: string;
+  operationId: string;
+  internalId: string;
+  standardId: string;
+  assignmentSequence?: number | null;
+  type: StandardCodeEventType;
+  source: StandardCodeEventSource;
+  reason: string;
+  actorUid: string;
+  actorName: string;
+  createdAt?: any;
+  before: StandardCodeOwnershipSnapshot;
+  after: StandardCodeOwnershipSnapshot;
+  runId?: string;
+}
+
+export type StandardCodeReleaseStatus = 'RELEASED' | 'RECONCILED' | 'ALREADY_RELEASED';
+
+export interface StandardCodeReleaseResult {
+  status: StandardCodeReleaseStatus;
+  eventId?: string;
+  operationId: string;
+  internalId: string;
+  standardId: string;
+  message: string;
+}
+
+export type StandardCodeRecallItemStatus =
+  | StandardCodeReleaseStatus
+  | 'BLOCKED'
+  | 'CHANGED_SINCE_SCAN'
+  | 'FAILED'
+  | 'EXCLUDED_SPECIAL_CODE';
+
+export interface StandardCodeRecallItem {
+  id: string;
+  internalId: string;
+  standardId: string;
+  standardName: string;
+  lotNumber?: string;
+  lifecycleStatus?: StandardLifecycleStatus;
+  registryStatus?: StandardCodeRegistryStatus | 'MISSING';
+  registryStandardId?: string;
+  workflowStatus: 'CLEAN' | 'OPEN' | 'UNKNOWN';
+  status: StandardCodeRecallItemStatus;
+  reason: string;
+  operationId: string;
+  eventId?: string;
+  message?: string;
+  affectedStandardIds?: string[];
+}
+
+export interface StandardCodeRecallExecutionResult extends StandardCodeRecallItem {
+  completedAt?: any;
+}
+
+export interface StandardCodeRecallSummary {
+  hiddenStandards: number;
+  uniqueCodes: number;
+  eligibleCodes: number;
+  toReconcile: number;
+  alreadyReleased: number;
+  blocked: number;
+  excludedSpecial: number;
+  released: number;
+  failed: number;
+}
+
+export interface StandardCodeRecallReport {
+  runId: string;
+  generatedAt: number;
+  items: StandardCodeRecallItem[];
+  summary: StandardCodeRecallSummary;
+}
+
+export type StandardCodeRecallRunStatus =
+  | 'SCANNING'
+  | 'READY'
+  | 'RUNNING'
+  | 'STOPPED'
+  | 'COMPLETED'
+  | 'COMPLETED_WITH_BLOCKS';
+
+export interface StandardCodeRecallRun {
+  id: string;
+  status: StandardCodeRecallRunStatus;
+  reason: string;
+  createdAt?: any;
+  createdBy?: string;
+  createdByName?: string;
+  updatedAt?: any;
+  releasedCount?: number;
+  reconciledCount?: number;
+  blockedCount?: number;
+  failedCount?: number;
+  totalCount?: number;
+}
+
 export type StandardInternalIdIssueKind =
   | 'MISSING'
   | 'INVALID_FORMAT'

@@ -21,7 +21,8 @@ import {
   ReferenceStandard, StandardCleanupBatch, StandardNameUpdate, UsageLog, StandardsPage,
   ImportPreviewItem, ImportUsageLogPreviewItem,
   StandardRequest, StandardRequestStatus, PurchaseRequest, PurchaseRequestStatus, BulkTagUpdateResult, ReturnStandardResult,
-  StandardInternalIdSyncBatch, StandardInternalIdSyncReport
+  StandardInternalIdSyncBatch, StandardInternalIdSyncReport, StandardCodeRecallExecutionResult,
+  StandardCodeRecallReport
 } from '../../core/models/standard.model';
 
 import { StandardCacheService }   from './services/standard-cache.service';
@@ -36,6 +37,10 @@ import {
 } from './services/standard-import.service';
 import { StandardInternalIdSyncService } from './services/standard-internal-id-sync.service';
 import { SyncBatchProgress } from '../../shared/utils/standard-internal-id';
+import {
+  StandardCodeRecallExecutionOptions,
+  StandardCodeRecallService,
+} from './services/standard-code-recall.service';
 
 @Injectable({ providedIn: 'root' })
 export class StandardService {
@@ -49,6 +54,7 @@ export class StandardService {
   private request  = inject(StandardRequestService);
   private importer = inject(StandardImportService);
   private internalIdSync = inject(StandardInternalIdSyncService);
+  private codeRecall = inject(StandardCodeRecallService);
 
   // ─── Expose deltaSync cho component dùng stdService.deltaSync ────────────────
   get deltaSync() { return this.cache.deltaSync; }
@@ -105,6 +111,16 @@ export class StandardService {
   }
   async releaseInternalId(standardId: string, reason: string): Promise<void> {
     return this.crud.releaseInternalId(standardId, reason);
+  }
+  async scanHiddenStandardCodes(): Promise<StandardCodeRecallReport> {
+    return this.codeRecall.scanHiddenStandardCodes();
+  }
+  async recallHiddenStandardCodes(
+    report: StandardCodeRecallReport,
+    reason: string,
+    options?: StandardCodeRecallExecutionOptions,
+  ): Promise<StandardCodeRecallExecutionResult[]> {
+    return this.codeRecall.recallEligibleCodes(report, reason, options);
   }
   async scanInternalIdSync(): Promise<StandardInternalIdSyncReport> {
     return this.internalIdSync.scan();

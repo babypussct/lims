@@ -1,15 +1,17 @@
 {
-  "title": "Tải thư mục Phiếu giao nhận mẫu thành ZIP",
+  "title": "Hoàn thiện vòng đời và thu hồi mã chuẩn đã ẩn",
   "highlights": [
-    "Tải toàn bộ thư mục Phiếu giao nhận mẫu hoặc một thư mục con thành một tệp ZIP."
+    "Bổ sung luồng quét, xem trước và thu hồi mã quản lý nội bộ của chuẩn đã ẩn về kho mã chung."
   ],
   "features": [
-    "Thêm nút tải ZIP cho thư mục hiện tại và từng thư mục trong danh sách, trên máy tính và điện thoại.",
-    "Giữ cấu trúc thư mục con, thư mục trống và các tệp khi tạo ZIP; hỗ trợ xuất Google Docs, Sheets và Slides."
+    "Ghi lịch sử cấp–trả bất biến, operation ID chống xử lý trùng và projection theo từng đợt thu hồi.",
+    "Thêm khôi phục hồ sơ có reserve mã atomically, nút dừng sau transaction và xuất báo cáo JSON trên modal thu hồi."
   ],
   "improvements": [
-    "Hiển thị tiến trình, cho phép hủy lượt tải và tránh ghi đè khi có tên tệp trùng nhau.",
-    "Thông báo rõ khi thư mục vượt giới hạn tải trên trình duyệt để người dùng chọn từng thư mục con."
+    "Đồng bộ quy tắc sở hữu mã giữa thêm mới, import, trả mã, khôi phục và công cụ đồng bộ; hồ sơ ẩn chưa trả mã không bị tái cấp nhầm.",
+    "Bảo vệ Firestore Rules cho restore, event lịch sử và batch import trong giới hạn access-call; giữ QR trỏ tới hồ sơ vật lý."
   ],
-  "fixes": []
+  "fixes": [
+    "Ngăn trạng thái registry sẵn sàng nhưng còn chủ cũ và xử lý riêng mã nghiệp vụ SDHET ngoài kho mã tái cấp."
+  ]
 }

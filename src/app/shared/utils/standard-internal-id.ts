@@ -1,5 +1,7 @@
 import {
   ReferenceStandard,
+  StandardCodeRecallItemStatus,
+  StandardCodeRegistry,
   StandardInternalIdApplySummary,
   StandardInternalIdSyncChange,
   StandardInternalIdSyncReport,
@@ -114,6 +116,154 @@ export function isCurrentStandardLifecycle(standard: ReferenceStandard | null | 
 
 export function isReleasedStandardLifecycle(standard: ReferenceStandard | null | undefined): boolean {
   return standard?.lifecycle_status === 'RELEASED' || standard?.lifecycle_status === 'CLOSED';
+}
+
+/**
+ * Catalogue visibility and code ownership are deliberately separate.  A
+ * hidden record may still own a code until an explicit release transaction
+ * finishes, so callers that need the current owner must not use this as a
+ * lifecycle predicate.
+ */
+export function isStandardVisibleInCatalogue(standard: ReferenceStandard | null | undefined): boolean {
+  return Boolean(standard && !standard._isDeleted && standard.status !== 'DELETED');
+}
+
+/**
+ * Returns whether a physical record still has an unreleased code lifecycle.
+ * Missing lifecycle fields are treated as unreleased legacy data: absence of
+ * a field is not evidence that ownership was returned.
+ */
+export function hasUnreleasedCodeLifecycle(standard: ReferenceStandard | null | undefined): boolean {
+  return Boolean(standard) && !isReleasedStandardLifecycle(standard);
+}
+
+/** A named operational predicate for borrow/stock workflows. */
+export function isOperationalStandard(standard: ReferenceStandard | null | undefined): boolean {
+  return isStandardVisibleInCatalogue(standard) && hasUnreleasedCodeLifecycle(standard);
+}
+
+export interface StandardCodeOwnershipAssessment {
+  status: StandardCodeRecallItemStatus;
+  reason: string;
+  blocking: boolean;
+  otherOwnerIds: string[];
+}
+
+/**
+ * Pure decision table shared by preview and the transaction preflight.  The
+ * caller supplies the registry row and all same-code physical records read
+ * from the authoritative audit source; no UI-only cache state is involved.
+ */
+export function assessCodeOwnership(
+  standard: ReferenceStandard,
+  registry: StandardCodeRegistry | null | undefined,
+  sameCodeStandards: readonly ReferenceStandard[],
+  hasOpenRequest: boolean,
+): StandardCodeOwnershipAssessment {
+  const code = normalizeInternalId(standard.internal_id);
+  if (isSpecialInternalId(code)) {
+    return {
+      status: 'EXCLUDED_SPECIAL_CODE',
+      reason: 'SDHET là mã nghiệp vụ dùng chung, không thuộc kho mã tái cấp.',
+      blocking: false,
+      otherOwnerIds: [],
+    };
+  }
+  if (!isValidInternalId(code)) {
+    return {
+      status: 'BLOCKED',
+      reason: 'Hồ sơ thiếu hoặc có Mã quản lý nội bộ sai định dạng; cần đối soát trước khi thu hồi.',
+      blocking: true,
+      otherOwnerIds: [],
+    };
+  }
+
+  const otherOwnerIds = sameCodeStandards
+    .filter(candidate => candidate.id !== standard.id && hasUnreleasedCodeLifecycle(candidate))
+    .map(candidate => candidate.id);
+
+  if (isReleasedStandardLifecycle(standard)) {
+    if (registry?.status === 'ASSIGNED' && registry.currentStandardId === standard.id) {
+      return {
+        status: 'BLOCKED',
+        reason: `Hồ sơ đã ghi RELEASED nhưng sổ mã ${code} vẫn trỏ về hồ sơ này; cần đối soát.`,
+        blocking: true,
+        otherOwnerIds,
+      };
+    }
+    return {
+      status: 'ALREADY_RELEASED',
+      reason: 'Hồ sơ đã kết thúc vòng đời mã; không tạo thêm lần trả.',
+      blocking: false,
+      otherOwnerIds,
+    };
+  }
+
+  if (hasOpenRequest || standard.status === 'IN_USE' || standard.current_holder ||
+      standard.current_holder_uid || standard.current_request_id || standard.has_pending_request) {
+    return {
+      status: 'BLOCKED',
+      reason: 'Hồ sơ còn người giữ hoặc yêu cầu/quy trình đang mở.',
+      blocking: true,
+      otherOwnerIds,
+    };
+  }
+
+  if (otherOwnerIds.length > 0) {
+    return {
+      status: 'BLOCKED',
+      reason: `Có ${otherOwnerIds.length} hồ sơ khác vẫn chưa kết thúc cùng mã ${code}; không chọn chủ tùy ý.`,
+      blocking: true,
+      otherOwnerIds,
+    };
+  }
+
+  if (!registry) {
+    return {
+      status: 'BLOCKED',
+      reason: `Không tìm thấy sổ mã ${code}; cần đối soát trước khi thu hồi để không đoán quyền sở hữu.`,
+      blocking: true,
+      otherOwnerIds,
+    };
+  }
+  if (registry.status === 'CONFLICT') {
+    return {
+      status: 'BLOCKED',
+      reason: `Sổ mã ${code} đang ở trạng thái xung đột.`,
+      blocking: true,
+      otherOwnerIds,
+    };
+  }
+  if (registry.status === 'ASSIGNED') {
+    return registry.currentStandardId === standard.id
+      ? {
+          status: 'RELEASED',
+          reason: `Sổ mã ${code} đang thuộc đúng hồ sơ ẩn này và đủ điều kiện trả.`,
+          blocking: false,
+          otherOwnerIds,
+        }
+      : {
+          status: 'BLOCKED',
+          reason: `Sổ mã ${code} đang được cấp cho hồ sơ ${registry.currentStandardId || '(không rõ chủ mới)'}.`,
+          blocking: true,
+          otherOwnerIds,
+        };
+  }
+  if (registry.currentStandardId) {
+    return {
+      status: 'BLOCKED',
+      reason: `Sổ mã ${code} đã sẵn sàng nhưng vẫn có chủ hiện tại ${registry.currentStandardId}; cần đối soát.`,
+      blocking: true,
+      otherOwnerIds,
+    };
+  }
+
+  return {
+    status: 'RECONCILED',
+    reason: `Sổ mã ${code} đã sẵn sàng; hoàn tất vòng đời hồ sơ mà không tăng lượt cấp.`,
+    blocking: false,
+    otherOwnerIds,
+  };
 }
 
 export function normalizeInternalIdKey(value: unknown): string {

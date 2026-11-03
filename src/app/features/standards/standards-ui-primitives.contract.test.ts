@@ -749,12 +749,13 @@ describe('standards shared UI primitive integration', () => {
     const backfillModal = read('./components/standards-backfill-modal.component.ts');
     const printModal = read('./components/standards-print-modal.component.ts');
     const internalIdSyncModal = read('./components/standards-internal-id-sync-modal.component.ts');
+    const hiddenCodeRecallModal = read('./components/standards-hidden-code-recall-modal.component.ts');
     const bulkCoaModal = read('./components/standards-bulk-coa-modal.component.ts');
     const importDataModal = read('./components/standards-import-data-modal.component.ts');
     const importPreviewModals = read('./components/standards-import-modal.component.ts');
     const dataCleanupModal = read('./components/standards-data-cleanup-modal.component.ts');
 
-    for (const modal of [historyModal, bulkTagModal, tagManagerModal, purchaseModal, formModal, assignModal, backfillModal, printModal, internalIdSyncModal, bulkCoaModal, importDataModal, importPreviewModals, dataCleanupModal]) {
+    for (const modal of [historyModal, bulkTagModal, tagManagerModal, purchaseModal, formModal, assignModal, backfillModal, printModal, internalIdSyncModal, hiddenCodeRecallModal, bulkCoaModal, importDataModal, importPreviewModals, dataCleanupModal]) {
       assert.match(modal, /AppModalShellComponent/);
       assert.match(modal, /<app-modal-shell\b/);
       assert.doesNotMatch(modal, /class="[^"]*fixed inset-0/);
@@ -780,6 +781,14 @@ describe('standards shared UI primitive integration', () => {
     assert.match(internalIdSyncModal, /\[closeOnBackdrop\]="false"/);
     assert.match(internalIdSyncModal, /\[closeDisabled\]="isBusy\(\)"/);
     assert.match(internalIdSyncModal, /modalFooter/);
+    assert.match(hiddenCodeRecallModal, /title="Thu hồi mã chuẩn đã ẩn"/);
+    assert.match(hiddenCodeRecallModal, /scanHiddenStandardCodes/);
+    assert.match(hiddenCodeRecallModal, /Xuất báo cáo/);
+    assert.match(hiddenCodeRecallModal, /Dừng sau giao dịch này/);
+    assert.match(hiddenCodeRecallModal, /shouldStop/);
+    assert.match(hiddenCodeRecallModal, /Thu hồi mã đủ điều kiện/);
+    assert.match(hiddenCodeRecallModal, /\[closeDisabled\]="isBusy\(\)"/);
+    assert.match(hiddenCodeRecallModal, /modalFooter/);
     assert.match(bulkCoaModal, /title="Ghép nối CoA hàng loạt"/);
     assert.match(bulkCoaModal, /size="xl"/);
     assert.match(bulkCoaModal, /\[closeOnBackdrop\]="false"/);
