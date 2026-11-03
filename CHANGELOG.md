@@ -2,7 +2,26 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.11.03-b01
+## Phiên bản hiện tại: v26.11.03-b02
+
+### v26.11.03-b02
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Các mục lựa chọn và cửa sổ bật lên hiển thị rõ chữ ở cả chế độ sáng và chế độ tối.
+
+#### ✨ Tính Năng Mới
+
+- Danh sách lựa chọn có màu nền và màu chữ đồng bộ với giao diện đang sử dụng.
+- Nội dung trong các cửa sổ bật lên có màu chữ mặc định rõ ràng, dễ đọc.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Các mục bị vô hiệu hóa trong danh sách lựa chọn vẫn được phân biệt rõ với các mục có thể chọn.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Khắc phục lỗi chữ trong một số danh sách lựa chọn và cửa sổ bật lên bị hiện trắng, khó đọc.
 
 ### v26.11.03-b01
 

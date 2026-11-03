@@ -4,6 +4,7 @@
 
 /* Standardized Z-Index Layering Architecture Tokens (Policy A) */
 :root {
+  --soft-ui-color-scheme: light;
   --z-base: 0;
   --z-chrome: 45;
   --z-modal: 50;
@@ -63,6 +64,7 @@
 
 
 .dark {
+  --soft-ui-color-scheme: dark;
   --soft-ui-app-bg: #14131d;
   --soft-ui-underlay: #14131d;
   --soft-ui-workspace: #1c1b29;
@@ -663,6 +665,21 @@
 .soft-ui-app-shell :is(input, textarea)::placeholder {
   color: var(--soft-ui-table-heading);
   opacity: 0.78;
+}
+
+/* Native popup menus do not consistently inherit the select's background.
+   Set both colors on their rows, including grouped and disabled choices. */
+.soft-ui-app-shell select {
+  color-scheme: var(--soft-ui-color-scheme);
+}
+
+.soft-ui-app-shell select :is(option, optgroup) {
+  background-color: var(--soft-ui-panel);
+  color: var(--soft-ui-text);
+}
+
+.soft-ui-app-shell select :is(option, optgroup):disabled {
+  color: var(--soft-ui-muted);
 }
 
 .soft-ui-app-shell table {

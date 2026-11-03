@@ -19,7 +19,7 @@ let nextModalShellId = 0;
         [modalLabelledBy]="titleId"
         [modalDescribedBy]="description() ? descriptionId : undefined"
         (modalEscape)="requestClose()"
-        class="ui-modal-enter flex max-h-[calc(100vh-2rem)] w-full flex-col overflow-hidden rounded-2xl border border-white/70 bg-white shadow-soft-xl dark:border-slate-700/70 dark:bg-slate-900"
+        class="ui-modal-enter flex max-h-[calc(100vh-2rem)] w-full flex-col overflow-hidden rounded-2xl border border-white/70 bg-white text-slate-700 shadow-soft-xl dark:border-slate-700/70 dark:bg-slate-900 dark:text-slate-100"
         [class]="panelClasses()"
       >
         <header
@@ -111,7 +111,7 @@ export class AppModalShellComponent {
       '2xl': 'max-w-[96rem]',
     };
     const heightClass = this.variant() === 'viewer' ? 'h-[calc(100dvh-2rem)]' : '';
-    return `ui-modal-enter flex max-h-[calc(100vh-2rem)] w-full flex-col overflow-hidden rounded-2xl border border-white/70 bg-white shadow-soft-xl dark:border-slate-700/70 dark:bg-slate-900 ${sizeClasses[this.size()]} ${heightClass}`;
+    return `ui-modal-enter flex max-h-[calc(100vh-2rem)] w-full flex-col overflow-hidden rounded-2xl border border-white/70 bg-white text-slate-700 shadow-soft-xl dark:border-slate-700/70 dark:bg-slate-900 dark:text-slate-100 ${sizeClasses[this.size()]} ${heightClass}`;
   });
 
   protected onBackdropClick(event: MouseEvent): void {
