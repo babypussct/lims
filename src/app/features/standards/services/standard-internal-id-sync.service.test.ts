@@ -9,6 +9,19 @@ import {
 } from '../../../core/models/standard.model';
 import { StandardInternalIdSyncService } from './standard-internal-id-sync.service';
 
+test('certification is issued only for canonical records and revoked for ownership repairs or invalid codes', async () => {
+  const service = Object.create(StandardInternalIdSyncService.prototype) as any;
+  const saves: any[] = [];
+  service.saveNormalizationCertification = async (verified: boolean, stats: any) => saves.push({ verified, stats });
+  const report: any = { blockingIssues: [], conflicts: [], safeChanges: [] };
+  await service.certifyScan(report, [{ id: 'one', internal_id: 'AA01', lifecycle_status: 'ACTIVE' }]);
+  await service.certifyScan(report, [{ id: 'one', internal_id: ' aa01 ' }]);
+  await service.certifyScan({ ...report, safeChanges: [{ collection: 'standard_code_registry' }] }, [{ id: 'one', internal_id: 'AA01' }]);
+  await service.certifyScan(report, [{ id: 'missing' }]);
+  assert.deepEqual(saves.map(save => save.verified), [true, false, false, false]);
+  assert.equal(saves[1].stats.unnormalizedCount, 1);
+});
+
 function createService(): {
   service: any;
   issues: StandardInternalIdSyncIssue[];
@@ -887,4 +900,38 @@ test('StandardSyncPartialFailureError retains completedBatchIds, completedChange
   assert.equal(err.failedBatchIndex, 5);
   assert.equal(err.totalBatches, 9);
   assert.match(err.message, /4\/9 đợt xử lý/);
+});
+
+test('Batch 2: StandardInternalIdSyncService reads and writes normalization certification metadata', async () => {
+  let savedConfig: any = null;
+  const service = Object.create(StandardInternalIdSyncService.prototype) as any;
+  service.fb = { APP_ID: 'lims-batch2', db: {} };
+  service.auth = {
+    currentUser: () => ({ uid: 'admin-cert', displayName: 'Admin Normalizer' }),
+    canEditStandards: () => true,
+  };
+  service.saveNormalizationCertification = async (verified: boolean, stats: any) => {
+    savedConfig = {
+      normalizedInvariantsVerified: verified,
+      verifiedByUid: 'admin-cert',
+      verifiedByName: 'Admin Normalizer',
+      schemaVersion: 1,
+      stats,
+    };
+  };
+  service.getNormalizationCertification = async () => savedConfig;
+
+  await service.saveNormalizationCertification(true, {
+    totalScanned: 150,
+    activeAssigned: 120,
+    conflictsCount: 0,
+    unnormalizedCount: 0,
+  });
+
+  const readBack = await service.getNormalizationCertification();
+  assert.ok(readBack);
+  assert.equal(readBack.normalizedInvariantsVerified, true);
+  assert.equal(readBack.stats.totalScanned, 150);
+  assert.equal(readBack.stats.unnormalizedCount, 0);
+  assert.equal(readBack.verifiedByUid, 'admin-cert');
 });

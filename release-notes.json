@@ -1,18 +1,23 @@
 {
-  "title": "Hiển thị đầy đủ lịch trực đêm trên Dashboard",
+  "title": "Hoàn thiện thu hồi và tra cứu vòng đời mã chất chuẩn",
   "highlights": [
-    "Lịch tháng hiển thị đầy đủ nhân sự, người chủ trì và các vị trí cần xác minh."
+    "Thu hồi mã của chuẩn đã ẩn có xem trước, dừng và tiếp tục an toàn khi gián đoạn.",
+    "Bổ sung sổ mã và lịch sử cấp, trả, khôi phục để đối chiếu từng hồ sơ."
   ],
   "features": [
-    "Thẻ ca cá nhân bổ sung mức kỳ vọng riêng, vai trò chủ trì và đồng nghiệp cùng ca.",
-    "Thống kê nhân sự bổ sung tỷ trọng lượt trực, chênh lệch so với kỳ vọng và ngày trực tiếp theo."
+    "Tra cứu sổ mã theo trạng thái, tìm kiếm và xuất danh sách CSV.",
+    "Lưu bộ nhớ đệm danh mục bằng IndexedDB để giảm tải lại dữ liệu trên thiết bị."
   ],
   "improvements": [
-    "Hiển thị ghi chú, giờ trực tùy chỉnh và trạng thái chưa phân công trên lịch và các thẻ thông tin.",
-    "Đồng bộ ca cá nhân sắp tới trên máy tính và điện thoại trong phạm vi lịch đang tải."
+    "Tái sử dụng danh mục đã tải đầy đủ cho nhập Excel; kiểm tra chuẩn hóa trước khi áp dụng truy vấn mã tối ưu.",
+    "Hiển thị trạng thái đồng bộ tạm dừng và cho phép thử lại sau khi kết nối hoặc hạn mức phục hồi.",
+    "Tải đúng các sự kiện vòng đời mới nhất và bảo vệ thao tác thu hồi, khôi phục diễn ra đồng thời."
   ],
   "fixes": [
-    "Khắc phục việc ẩn bớt tên nhân sự trong ô lịch và bỏ sót ca cá nhân đầu tháng kế tiếp trong phạm vi theo dõi.",
-    "Xác định đồng nghiệp cùng ca theo mã nhân sự và sắp xếp ca tiếp theo theo ngày."
+    "Giữ kết quả chưa xác định khi mất mạng và ghi bổ sung nhật ký mà không trả mã lặp.",
+    "Không coi danh mục có giới hạn hoặc thiếu hồ sơ cũ là danh mục đầy đủ.",
+    "Giữ cache IndexedDB khi localStorage hết dung lượng; đồng bộ dữ liệu và mốc cập nhật cùng nhau.",
+    "Dừng các lượt đếm và gửi thông báo lặp khi Firestore chạm hạn mức; giải thích rõ lỗi hạn mức khi phát hành báo cáo.",
+    "Thử làm mới phiên đăng nhập một lần khi API sao lưu từ chối token hết hạn."
   ]
 }

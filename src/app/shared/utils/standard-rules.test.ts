@@ -37,13 +37,13 @@ test('reference standard update branches are named helpers instead of one compou
     rules.indexOf('match /artifacts/{appId}/standard_cleanup_batches/{batchId}')
   );
   assert.match(standardsBlock, /allow update: if canUpdateReferenceStandard\(appId\)/);
-  assert.match(standardsBlock, /function canApproveReferenceStandardUpdate\(appId\)/);
-  assert.match(standardsBlock, /function canRequesterUpdateReferenceStandard\(appId\)/);
-  assert.match(standardsBlock, /function canRollbackReferenceStandardUpdate\(appId\)/);
-  assert.match(standardsBlock, /function canEditReferenceStandardMetadata\(appId\)/);
-  assert.match(standardsBlock, /function canRepairReferenceStandardInternalId\(appId\)/);
-  assert.match(standardsBlock, /function canReleaseReferenceStandardInternalId\(appId\)/);
-  assert.match(standardsBlock, /function canRestoreReferenceStandard\(appId\)/);
+  assert.match(standardsBlock, /function canApproveReferenceStandardUpdate\(appId(?:, changed)?\)/);
+  assert.match(standardsBlock, /function canRequesterUpdateReferenceStandard\(appId(?:, changed)?\)/);
+  assert.match(standardsBlock, /function canRollbackReferenceStandardUpdate\(appId(?:, changed)?\)/);
+  assert.match(standardsBlock, /function canEditReferenceStandardMetadata\(appId(?:, changed)?\)/);
+  assert.match(standardsBlock, /function canRepairReferenceStandardInternalId\(appId(?:, changed)?\)/);
+  assert.match(standardsBlock, /function canReleaseReferenceStandardInternalId\(appId(?:, changed)?\)/);
+  assert.match(standardsBlock, /function canRestoreReferenceStandard\(appId(?:, changed)?\)/);
   assert.match(standardsBlock, /function canUpdateReferenceStandard\(appId\)/);
 });
 
@@ -96,8 +96,8 @@ test('requester stock writes require the correlated secure usage protocol', () =
   );
   assert.match(rules, /function validRequesterUsageStateTransition\(appId, stdId, logId\)/);
   assert.match(rules, /function validRequesterUsageJournalCreate\(appId, stdId, logId, data\)/);
-  assert.match(standardsBlock, /function validRequesterUsageTransaction\(appId\)/);
-  assert.match(standardsBlock, /validRequesterUsageStateTransition\(appId, stdId, usageLogId\)/);
+  assert.match(standardsBlock, /function validRequesterUsageTransaction\(appId(?:, changed)?\)/);
+  assert.match(standardsBlock, /validRequesterUsageStateTransition\(\s*appId,\s*stdId,/);
   assert.match(rules, /getAfter\(\/databases\/\$\(database\)\/documents\/artifacts\/\$\(appId\)\/standard_usages\/\$\(logId\)\)/);
   assert.doesNotMatch(standardsBlock, /current_amount <= resource\.data\.current_amount/);
 });

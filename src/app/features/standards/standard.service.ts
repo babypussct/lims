@@ -16,13 +16,17 @@
 import { Injectable, inject } from '@angular/core';
 import { FirebaseService } from '../../core/services/firebase.service';
 import { AuthService } from '../../core/services/auth.service';
+import {
+  DeltaSyncDiagnostic,
+  DeltaSyncResourceLimitState,
+} from '../../core/services/delta-sync.service';
 import { QueryDocumentSnapshot, QueryConstraint, Unsubscribe } from 'firebase/firestore';
 import {
   ReferenceStandard, StandardCleanupBatch, StandardNameUpdate, UsageLog, StandardsPage,
   ImportPreviewItem, ImportUsageLogPreviewItem,
   StandardRequest, StandardRequestStatus, PurchaseRequest, PurchaseRequestStatus, BulkTagUpdateResult, ReturnStandardResult,
-  StandardInternalIdSyncBatch, StandardInternalIdSyncReport, StandardCodeRecallExecutionResult,
-  StandardCodeRecallReport
+  StandardInternalIdSyncBatch, StandardInternalIdSyncReport, StandardCodeRecallBatchOutcome, StandardCodeRecallExecutionResult,
+  StandardCodeRecallReport, StandardCodeRegistry, StandardCodeEvent
 } from '../../core/models/standard.model';
 
 import { StandardCacheService }   from './services/standard-cache.service';
@@ -41,6 +45,7 @@ import {
   StandardCodeRecallExecutionOptions,
   StandardCodeRecallService,
 } from './services/standard-code-recall.service';
+import { StandardCodeRegistryService } from './services/standard-code-registry.service';
 
 @Injectable({ providedIn: 'root' })
 export class StandardService {
@@ -55,6 +60,7 @@ export class StandardService {
   private importer = inject(StandardImportService);
   private internalIdSync = inject(StandardInternalIdSyncService);
   private codeRecall = inject(StandardCodeRecallService);
+  private codeRegistry = inject(StandardCodeRegistryService);
 
   // ─── Expose deltaSync cho component dùng stdService.deltaSync ────────────────
   get deltaSync() { return this.cache.deltaSync; }
@@ -65,12 +71,30 @@ export class StandardService {
   // ═══════════════════════════════════════════════════════════════════════════
   // CACHE & LISTENER
   // ═══════════════════════════════════════════════════════════════════════════
-  startRealtimeDeltaListener(cb: () => void): () => void {
-    return this.cache.startRealtimeDeltaListener(cb);
+  startRealtimeDeltaListener(
+    cb: () => void,
+    onError?: (diagnostic: DeltaSyncDiagnostic) => void,
+    onReady?: () => void,
+  ): () => void {
+    return this.cache.startRealtimeDeltaListener(cb, onError, onReady);
   }
   /** Listener nhận callback không tham số (tương thích standard-detail.component) */
-  listenToStandards(callback: (() => void) | ((standards: ReferenceStandard[]) => void)): Unsubscribe {
-    return this.cache.listenToStandards(callback as (standards: ReferenceStandard[]) => void);
+  listenToStandards(
+    callback: (() => void) | ((standards: ReferenceStandard[]) => void),
+    onError?: (diagnostic: DeltaSyncDiagnostic) => void,
+    onReady?: () => void,
+  ): Unsubscribe {
+    return this.cache.listenToStandards(
+      callback as (standards: ReferenceStandard[]) => void,
+      onError,
+      onReady,
+    );
+  }
+  getStandardsResourceLimitState(): DeltaSyncResourceLimitState | null {
+    return this.cache.getStandardsResourceLimitState();
+  }
+  retryStandardsSync(): boolean {
+    return this.cache.retryStandardsSync();
   }
   invalidateLocalStandardsCache(): void {
     return this.cache.invalidateLocalStandardsCache();
@@ -86,6 +110,9 @@ export class StandardService {
   }
   async getNearestExpiry(): Promise<ReferenceStandard | null> {
     return this.cache.getNearestExpiry();
+  }
+  async getCompleteCatalogue(options?: { allowStale?: boolean; forceRefresh?: boolean }): Promise<ReferenceStandard[]> {
+    return this.cache.getCompleteCatalogue(options);
   }
   async fetchAllAndCache(): Promise<ReferenceStandard[]> {
     return this.cache.fetchAllAndCache();
@@ -122,6 +149,13 @@ export class StandardService {
   ): Promise<StandardCodeRecallExecutionResult[]> {
     return this.codeRecall.recallEligibleCodes(report, reason, options);
   }
+  async recallHiddenStandardCodesWithOutcome(
+    report: StandardCodeRecallReport,
+    reason: string,
+    options?: StandardCodeRecallExecutionOptions,
+  ): Promise<StandardCodeRecallBatchOutcome> {
+    return this.codeRecall.recallEligibleCodesWithOutcome(report, reason, options);
+  }
   async scanInternalIdSync(): Promise<StandardInternalIdSyncReport> {
     return this.internalIdSync.scan();
   }
@@ -138,6 +172,18 @@ export class StandardService {
   }
   async getRecentBatches(limitCount = 20): Promise<StandardInternalIdSyncBatch[]> {
     return this.internalIdSync.getRecentBatches(limitCount);
+  }
+  async listRegistryEntries(): Promise<StandardCodeRegistry[]> {
+    return this.codeRegistry.listRegistryEntries();
+  }
+  async listCodeEvents(options?: { internalId?: string; standardId?: string; limitCount?: number }): Promise<StandardCodeEvent[]> {
+    return this.codeRegistry.listCodeEvents(options);
+  }
+  async getRegistryEntry(internalId: string): Promise<StandardCodeRegistry | null> {
+    return this.codeRegistry.getRegistryEntry(internalId);
+  }
+  async getCertificationInfo(): Promise<{ verified: boolean; verifiedAt?: any; verifiedByName?: string; schemaVersion?: number } | null> {
+    return this.codeRegistry.getCertificationInfo();
   }
   async updateStandardNames(updates: StandardNameUpdate[]): Promise<string> {
     return this.crud.updateStandardNames(updates);

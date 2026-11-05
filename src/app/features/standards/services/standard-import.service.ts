@@ -73,8 +73,7 @@ export class StandardImportService {
     validateStandardImportFile(file);
     const buffer = await this.readFileAsArrayBuffer(file);
     const workbookData = await this.readWorkbookInWorker(buffer, sheetName);
-    let existingStandards = this.cache.getCompleteCatalogueFromMemory();
-    if (!existingStandards) existingStandards = await this.cache.fetchAllAndCache();
+    const existingStandards = await this.cache.getCompleteCatalogue();
     const items = parseStandardImportRows(workbookData.rows, {
       sourceSheet: workbookData.selectedSheet,
       existingStandards,
@@ -178,8 +177,7 @@ export class StandardImportService {
     // Firestore cannot query legacy whitespace/lower-case variants by the
     // canonical code. Merge the materialized catalogue into the preflight so
     // an old malformed value cannot create a second active owner.
-    const knownStandards = this.cache.getCompleteCatalogueFromMemory()
-      ?? await this.cache.fetchAllAndCache();
+    const knownStandards = await this.cache.getCompleteCatalogue();
     knownStandards.forEach(standard => {
       if (!hasUnreleasedCodeLifecycle(standard) || !standard.internal_id || isSpecialInternalId(standard.internal_id)) return;
       const key = normalizeInternalId(standard.internal_id);
@@ -541,8 +539,7 @@ export class StandardImportService {
             return found ? row[found] : undefined;
           };
 
-          let existingStandards = this.cache.getCompleteCatalogueFromMemory();
-          if (!existingStandards) existingStandards = await this.cache.fetchAllAndCache();
+          const existingStandards = await this.cache.getCompleteCatalogue();
           // Duplicate detection only needs rows from the same standard and date.
           // Reading the whole nested history here made import preview scale with
           // the standard's lifetime log count instead of the size of the import.

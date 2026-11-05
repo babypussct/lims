@@ -28,6 +28,28 @@ export interface MetadataSyncEventInput {
 
 @Injectable({ providedIn: 'root' })
 export class FirebaseService {
+  private countResourceLimitUntil = 0;
+
+  async getCollectionDocumentCount(collectionName: string): Promise<number> {
+    if (Date.now() < this.countResourceLimitUntil) {
+      throw Object.assign(new Error('Firestore đang tạm giới hạn tài nguyên. Vui lòng thử lại sau.'), { code: 'resource-exhausted' });
+    }
+    try {
+      return await this.readCollectionDocumentCount(collectionName);
+    } catch (error: any) {
+      if (error?.code === 'resource-exhausted' || error?.code === 'firestore/resource-exhausted' || error?.status === 429) {
+        this.countResourceLimitUntil = Date.now() + 60_000;
+      }
+      throw error;
+    }
+  }
+
+  protected async readCollectionDocumentCount(collectionName: string): Promise<number> {
+    const path = `artifacts/${this.APP_ID}/${collectionName}`;
+    const result = await getCountFromServer(collection(this.db, path));
+    this.readMonitor.record('aggregate', path, 1);
+    return result.data().count;
+  }
   public app: FirebaseApp;
   public db: Firestore;
   public messaging: Messaging | null = null;
@@ -257,11 +279,7 @@ export class FirebaseService {
 
     for (const col of collections) {
       try {
-        const colRef = collection(this.db, `artifacts/${this.APP_ID}/${col}`);
-        // getCountFromServer: costs only 1 read regardless of collection size
-        const countSnap = await getCountFromServer(colRef);
-        this.readMonitor.record('aggregate', `artifacts/${this.APP_ID}/${col}`, 1);
-        const count = countSnap.data().count;
+        const count = await this.getCollectionDocumentCount(col);
         details[col] = { count, sizeKB: parseFloat((count * 1.2).toFixed(2)) }; // ~1.2KB/doc estimate
         totalDocs += count;
       } catch(e: any) {

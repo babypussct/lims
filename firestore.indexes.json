@@ -407,6 +407,34 @@
           "order": "DESCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "standard_code_events",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "internalId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "standard_code_events",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "standardId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": [

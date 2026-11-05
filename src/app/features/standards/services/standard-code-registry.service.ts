@@ -6,15 +6,23 @@ import {
   DocumentData,
   DocumentReference,
   getDoc,
+  getDocFromServer,
   getDocs,
+  limit,
+  orderBy,
+  query,
+  QueryConstraint,
   runTransaction,
   serverTimestamp,
   Transaction,
+  where,
 } from 'firebase/firestore';
 import { FirebaseService } from '../../../core/services/firebase.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { FirestoreReadMonitor } from '../../../core/services/firestore-read-monitor.service';
 import {
   ReferenceStandard,
+  StandardCodeEvent,
   StandardCodeEventSource,
   StandardCodeEventType,
   StandardCodeRegistry,
@@ -38,10 +46,23 @@ export interface StandardCodeReserveOptions {
   allowAutoReleaseExpiredOwner?: boolean;
 }
 
+export interface StandardCodeScannedCandidates {
+  expectedInternalId: string;
+  standardIds: readonly string[];
+}
+
 export interface StandardCodeReleaseOptions {
   operationId?: string;
   source?: Extract<StandardCodeEventSource, 'SINGLE_RELEASE' | 'RECALL' | 'RECONCILIATION'>;
   runId?: string;
+  /**
+   * Candidate same-code standard IDs captured by a full collection scan for
+   * `expectedInternalId`. An empty `standardIds` array means the full scan
+   * confirmed no other historical records shared that code at scan time;
+   * `undefined` means no scan baseline exists and the conservative full scan
+   * must be used.
+   */
+  scannedCandidates?: StandardCodeScannedCandidates;
 }
 
 export interface StandardCodeEventWriteOptions {
@@ -96,6 +117,144 @@ export function buildStandardCodeEvent(options: StandardCodeEventWriteOptions): 
 export class StandardCodeRegistryService {
   private fb = inject(FirebaseService);
   private auth = inject(AuthService);
+  private readMonitor = inject(FirestoreReadMonitor);
+
+  private testCertifiedOverride: boolean | null = null;
+  private cachedCertification: { verified: boolean; checkedAt: number } | null = null;
+  private readonly CERTIFICATION_CACHE_TTL_MS = 60_000;
+
+  clearCertificationCache(): void {
+    this.cachedCertification = null;
+    this.testCertifiedOverride = null;
+  }
+
+  setNormalizationCertifiedForTest(verified: boolean | null): void {
+    this.testCertifiedOverride = verified;
+  }
+
+  async isNormalizationCertified(): Promise<boolean> {
+    if (this.testCertifiedOverride !== null && this.testCertifiedOverride !== undefined) {
+      return this.testCertifiedOverride;
+    }
+    const now = Date.now();
+    const ttl = this.CERTIFICATION_CACHE_TTL_MS || 60_000;
+    if (this.cachedCertification && (now - this.cachedCertification.checkedAt < ttl)) {
+      return this.cachedCertification.verified;
+    }
+    try {
+      const configRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/config/standard_code_migration`);
+      const snap = await getDocFromServer(configRef);
+      this.readMonitor?.record?.('getDoc', `artifacts/${this.fb.APP_ID}/config/standard_code_migration`, 1, { phase: 'single' });
+      const verified = snap.exists() && Boolean(snap.data()?.['normalizedInvariantsVerified']);
+      // Only cache negative results. Revocation must be visible to the next
+      // ownership operation, rather than trusting a stale positive marker.
+      this.cachedCertification = verified ? null : { verified, checkedAt: now };
+      return verified;
+    } catch {
+      return false;
+    }
+  }
+
+  async getCertificationInfo(): Promise<{ verified: boolean; verifiedAt?: any; verifiedByName?: string; schemaVersion?: number } | null> {
+    try {
+      const configRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/config/standard_code_migration`);
+      const snap = await getDoc(configRef);
+      this.readMonitor?.record?.('getDoc', `artifacts/${this.fb.APP_ID}/config/standard_code_migration`, 1, { phase: 'single' });
+      if (!snap.exists()) return null;
+      const data = snap.data();
+      return {
+        verified: Boolean(data?.['normalizedInvariantsVerified']),
+        verifiedAt: data?.['verifiedAt'],
+        verifiedByName: data?.['verifiedByName'],
+        schemaVersion: data?.['schemaVersion'],
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  async getRegistryEntry(internalId: string): Promise<StandardCodeRegistry | null> {
+    const snap = await getDoc(this.getRegistryRef(internalId));
+    this.readMonitor?.record?.('getDoc', `artifacts/${this.fb.APP_ID}/standard_code_registry/${normalizeInternalId(internalId)}`, 1, { phase: 'single' });
+    return this.registrySnapshotFrom(snap);
+  }
+
+  async listRegistryEntries(): Promise<StandardCodeRegistry[]> {
+    const colRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_code_registry`);
+    const snap = await getDocs(colRef);
+    this.readMonitor?.record?.('getDocs', `artifacts/${this.fb.APP_ID}/standard_code_registry`, snap.docs.length, { phase: 'single' });
+    return snap.docs
+      .map(docSnap => ({ id: docSnap.id, ...docSnap.data() } as StandardCodeRegistry))
+      .sort((a, b) => a.internal_id.localeCompare(b.internal_id, 'vi', { numeric: true }));
+  }
+
+  async listCodeEvents(options?: { internalId?: string; standardId?: string; limitCount?: number }): Promise<StandardCodeEvent[]> {
+    const colRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_code_events`);
+    const constraints: QueryConstraint[] = [];
+    if (options?.internalId) {
+      constraints.push(where('internalId', '==', normalizeInternalId(options.internalId)));
+    } else if (options?.standardId) {
+      constraints.push(where('standardId', '==', options.standardId));
+    }
+    const maxLimit = Math.min(options?.limitCount || 100, 300);
+    constraints.push(orderBy('createdAt', 'desc'), limit(maxLimit));
+    const q = query(colRef, ...constraints);
+    const snap = await getDocs(q);
+    this.readMonitor?.record?.('getDocs', `artifacts/${this.fb.APP_ID}/standard_code_events`, snap.docs.length, { phase: 'single' });
+    const events = snap.docs.map(docSnap => ({
+      id: docSnap.id,
+      ...docSnap.data()
+    } as StandardCodeEvent));
+    return events.sort((a, b) => {
+      const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+      const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+      return timeB - timeA;
+    });
+  }
+
+  async findSameCodeRecords(code: string): Promise<ReferenceStandard[]> {
+    const normalizedCode = normalizeInternalId(code);
+    if (!isValidInternalId(normalizedCode) || isSpecialInternalId(normalizedCode)) {
+      return [];
+    }
+    const isCertified = await this.isNormalizationCertified();
+    if (isCertified) {
+      const sameCodeQuery = query(
+        collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards`),
+        where('internal_id', '==', normalizedCode),
+      );
+      const snapshot = await getDocs(sameCodeQuery);
+      this.readMonitor?.record?.('getDocs', `artifacts/${this.fb.APP_ID}/reference_standards`, snapshot.docs.length, { phase: 'single' });
+      return snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() } as ReferenceStandard));
+    }
+    const snapshot = await getDocs(collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards`));
+    this.readMonitor?.record?.('getDocs', `artifacts/${this.fb.APP_ID}/reference_standards`, snapshot.docs.length, { phase: 'batch' });
+    return snapshot.docs
+      .map(docSnap => ({ id: docSnap.id, ...docSnap.data() } as ReferenceStandard))
+      .filter(candidate => normalizeInternalId(candidate.internal_id) === normalizedCode);
+  }
+
+  async findSameCodeCandidateIds(
+    normalizedCode: string,
+    extraCandidateIds: readonly string[] = [],
+    excludeStandardId?: string,
+  ): Promise<string[]> {
+    const isCertified = await this.isNormalizationCertified();
+    let baseIds: string[];
+    if (isCertified) {
+      const queried = await this.querySameCodeStandardIds(normalizedCode);
+      baseIds = excludeStandardId ? queried.filter(id => id !== excludeStandardId) : queried;
+    } else {
+      baseIds = await this.scanAllSameCodeStandardIds(normalizedCode, excludeStandardId || '');
+    }
+    const combined = new Set<string>([
+      ...baseIds,
+      ...extraCandidateIds.map(id => String(id || '').trim()),
+    ]);
+    if (excludeStandardId) combined.delete(excludeStandardId);
+    combined.delete('');
+    return [...combined];
+  }
 
   getRegistryRef(internalId: string): DocumentReference {
     const code = normalizeInternalId(internalId);
@@ -279,33 +438,59 @@ export class StandardCodeRegistryService {
     const normalizedReason = reason.trim();
     if (!normalizedReason) throw new Error('Cần ghi rõ lý do trả mã về ngân hàng.');
 
+    const expectedScannedCode = options.scannedCandidates !== undefined
+      ? normalizeInternalId(options.scannedCandidates.expectedInternalId)
+      : null;
     const operationId = normalizeStandardCodeOperationId(options.operationId || `release_${standardId}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
     const eventRef = this.getCodeEventRef(operationId);
-    const existingEvent = await getDoc(eventRef);
-    if (existingEvent.exists()) return this.releaseResultFromEvent(existingEvent.data(), operationId, standardId);
+    const existingEvent = await this.readDocument(eventRef);
+    if (existingEvent.exists()) {
+      return this.releaseResultFromEvent(existingEvent.data() ?? {}, operationId, standardId, expectedScannedCode);
+    }
 
-    const standardRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${standardId}`);
-    const initialSnapshot = await getDoc(standardRef);
+    const standardRef = this.getStandardRef(standardId);
+    const initialSnapshot = await this.readDocument(standardRef);
     if (!initialSnapshot.exists()) throw new Error('Không tìm thấy chất chuẩn.');
     const initialStandard = { id: initialSnapshot.id, ...initialSnapshot.data() } as ReferenceStandard;
     const initialCode = normalizeInternalId(initialStandard.internal_id);
     if (!isValidInternalId(initialCode)) throw new Error('Hồ sơ chưa có Mã quản lý nội bộ hợp lệ để trả.');
 
-    const registryRef = isSpecialInternalId(initialCode) ? null : this.getRegistryRef(initialCode);
-    const allStandardSnapshots = isSpecialInternalId(initialCode)
-      ? []
-      : (await getDocs(collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards`))).docs;
-    const otherOwnerRefs = allStandardSnapshots
-      .filter(snapshot => snapshot.id !== standardId)
-      .filter(snapshot => normalizeInternalId(snapshot.data()?.['internal_id']) === initialCode)
-      .map(snapshot => snapshot.ref);
     const source = options.source || 'SINGLE_RELEASE';
+    if (expectedScannedCode !== null && (!expectedScannedCode || initialCode !== expectedScannedCode)) {
+      throw new Error(`Mã quản lý nội bộ đã thay đổi sau lần quét (${expectedScannedCode || 'trống'} -> ${initialCode}); hãy quét lại trước khi trả mã.`);
+    }
+    const requiresHiddenState = source === 'RECALL' || options.scannedCandidates !== undefined;
+    if (requiresHiddenState && initialStandard._isDeleted !== true && initialStandard.status !== 'DELETED') {
+      throw new Error('Hồ sơ đã thay đổi trạng thái ẩn sau lần quét; hãy quét lại mục này.');
+    }
+
+    const registryRef = isSpecialInternalId(initialCode) ? null : this.getRegistryRef(initialCode);
+    let preTransactionCandidateIds: string[];
+    if (isSpecialInternalId(initialCode)) {
+      preTransactionCandidateIds = [];
+    } else if (options.scannedCandidates !== undefined) {
+      const queriedIds = await this.querySameCodeStandardIds(initialCode);
+      preTransactionCandidateIds = [
+        ...new Set([
+          ...options.scannedCandidates.standardIds.map(id => String(id || '').trim()),
+          ...queriedIds.map(id => String(id || '').trim()),
+        ]),
+      ].filter(id => Boolean(id) && id !== standardId);
+    } else {
+      preTransactionCandidateIds = await this.findSameCodeCandidateIds(initialCode, [], standardId);
+    }
+
     let releaseResult: StandardCodeReleaseResult | null = null;
 
-    await runTransaction(this.fb.db, async transaction => {
+    await this.runInTransaction(async transaction => {
       const eventSnapshot = await transaction.get(eventRef);
       if (eventSnapshot.exists()) {
-        releaseResult = this.releaseResultFromEvent(eventSnapshot.data(), operationId, standardId);
+        releaseResult = this.releaseResultFromEvent(
+          eventSnapshot.data() ?? {},
+          operationId,
+          standardId,
+          expectedScannedCode || initialCode,
+        );
         return;
       }
       const standardSnapshot = await transaction.get(standardRef);
@@ -313,9 +498,25 @@ export class StandardCodeRegistryService {
       const standard = { id: standardSnapshot.id, ...standardSnapshot.data() } as ReferenceStandard;
       const code = normalizeInternalId(standard.internal_id);
       if (!isValidInternalId(code)) throw new Error('Hồ sơ chưa có Mã quản lý nội bộ hợp lệ để trả.');
+      if (expectedScannedCode !== null && code !== expectedScannedCode) {
+        throw new Error(`Mã quản lý nội bộ đã thay đổi sau lần quét (${expectedScannedCode} -> ${code}); hãy quét lại trước khi trả mã.`);
+      }
       if (code !== initialCode) throw new Error('Mã quản lý nội bộ đã thay đổi đồng thời; hãy quét lại trước khi trả mã.');
+      if (requiresHiddenState && standard._isDeleted !== true && standard.status !== 'DELETED') {
+        throw new Error('Hồ sơ đã thay đổi trạng thái ẩn sau lần quét; hãy quét lại mục này.');
+      }
+
       const registrySnapshot = registryRef ? await transaction.get(registryRef) : null;
       const registry = registrySnapshot ? this.registrySnapshotFrom(registrySnapshot) : null;
+
+      const candidateIds = new Set<string>(preTransactionCandidateIds);
+      const liveRegistryOwnerId = String(registry?.currentStandardId || '').trim();
+      if (liveRegistryOwnerId && liveRegistryOwnerId !== standardId) {
+        candidateIds.add(liveRegistryOwnerId);
+      }
+      candidateIds.delete(standardId);
+      candidateIds.delete('');
+      const otherOwnerRefs = [...candidateIds].map(id => this.getStandardRef(id));
       const ownerSnapshots = await Promise.all(otherOwnerRefs.map(ref => transaction.get(ref)));
       const otherOwners = ownerSnapshots
         .map(snapshot => snapshot.exists() ? ({ id: snapshot.id, ...snapshot.data() } as ReferenceStandard) : null)
@@ -383,35 +584,70 @@ export class StandardCodeRegistryService {
     return releaseResult;
   }
 
+  protected getStandardRef(standardId: string): DocumentReference<DocumentData> {
+    return doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${standardId}`);
+  }
+
+  protected async readDocument(ref: DocumentReference<DocumentData>): Promise<{ exists(): boolean; id: string; data(): DocumentData | undefined }> {
+    return getDoc(ref);
+  }
+
+  protected async querySameCodeStandardIds(normalizedCode: string): Promise<string[]> {
+    const sameCodeQuery = query(
+      collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards`),
+      where('internal_id', '==', normalizedCode),
+    );
+    const snapshot = await getDocs(sameCodeQuery);
+    this.readMonitor?.record?.('getDocs', `artifacts/${this.fb.APP_ID}/reference_standards`, snapshot.docs.length, { phase: 'single' });
+    return snapshot.docs.map(docSnap => docSnap.id);
+  }
+
+  protected async scanAllSameCodeStandardIds(normalizedCode: string, excludeStandardId: string): Promise<string[]> {
+    const snapshot = await getDocs(collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards`));
+    this.readMonitor?.record?.('getDocs', `artifacts/${this.fb.APP_ID}/reference_standards`, snapshot.docs.length, { phase: 'batch' });
+    return snapshot.docs
+      .filter(docSnap => docSnap.id !== excludeStandardId)
+      .filter(docSnap => normalizeInternalId(docSnap.data()?.['internal_id']) === normalizedCode)
+      .map(docSnap => docSnap.id);
+  }
+
+  protected async runInTransaction<T>(updateFunction: (transaction: Transaction) => Promise<T>): Promise<T> {
+    return runTransaction(this.fb.db, updateFunction);
+  }
+
   /** Restores a soft-deleted record; a released record receives a new sequence atomically. */
   async restoreStandard(standardId: string, operationId?: string): Promise<void> {
     if (!this.auth.currentUser() || !this.auth.canEditStandards()) throw new Error('Bạn không có quyền khôi phục chất chuẩn.');
     const normalizedOperationId = normalizeStandardCodeOperationId(operationId || `restore_${standardId}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
     const eventRef = this.getCodeEventRef(normalizedOperationId);
-    const standardRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards/${standardId}`);
-    const initialSnapshot = await getDoc(standardRef);
+    const standardRef = this.getStandardRef(standardId);
+    const initialSnapshot = await this.readDocument(standardRef);
     if (!initialSnapshot.exists()) throw new Error('Chuẩn cần khôi phục không còn tồn tại.');
     const initial = { id: initialSnapshot.id, ...initialSnapshot.data() } as ReferenceStandard;
     const code = normalizeInternalId(initial.internal_id);
     if (!isValidInternalId(code)) throw new Error('Hồ sơ chưa có mã hợp lệ để khôi phục vào vận hành.');
-    const allStandards = isSpecialInternalId(code)
+    const preTransactionCandidateIds = isSpecialInternalId(code)
       ? []
-      : (await getDocs(collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards`))).docs;
-    const candidateRefs = allStandards
-      .filter(snapshot => snapshot.id !== standardId)
-      .filter(snapshot => normalizeInternalId(snapshot.data()?.['internal_id']) === code)
-      .map(snapshot => snapshot.ref);
+      : await this.findSameCodeCandidateIds(code, [], standardId);
     const registryRef = isSpecialInternalId(code) ? null : this.getRegistryRef(code);
 
-    await runTransaction(this.fb.db, async transaction => {
+    await this.runRestoreTransaction(standardRef, async transaction => {
       const eventSnapshot = await transaction.get(eventRef);
       const freshSnapshot = await transaction.get(standardRef);
       const registrySnapshot = registryRef ? await transaction.get(registryRef) : null;
-      const candidateSnapshots = await Promise.all(candidateRefs.map(ref => transaction.get(ref)));
+      const registry = registrySnapshot ? this.registrySnapshotFrom(registrySnapshot) : null;
+
+      const candidateIds = new Set<string>(preTransactionCandidateIds);
+      const liveRegistryOwnerId = String(registry?.currentStandardId || '').trim();
+      if (liveRegistryOwnerId && liveRegistryOwnerId !== standardId) {
+        candidateIds.add(liveRegistryOwnerId);
+      }
+      candidateIds.delete(standardId);
+      candidateIds.delete('');
+      const candidateSnapshots = await Promise.all([...candidateIds].map(id => transaction.get(this.getStandardRef(id))));
       if (!freshSnapshot.exists()) throw new Error('Chuẩn cần khôi phục không còn tồn tại.');
       const fresh = { id: freshSnapshot.id, ...freshSnapshot.data() } as ReferenceStandard;
       if (normalizeInternalId(fresh.internal_id) !== code) throw new Error('Mã quản lý nội bộ đã thay đổi đồng thời; hãy quét lại trước khi khôi phục.');
-      const registry = registrySnapshot ? this.registrySnapshotFrom(registrySnapshot) : null;
       if (eventSnapshot.exists()) {
         const existingEvent = eventSnapshot.data() || {};
         if (String(existingEvent['standardId'] || '') !== standardId || String(existingEvent['source'] || '') !== 'RESTORE') {
@@ -433,6 +669,9 @@ export class StandardCodeRegistryService {
       if (hasUnreleasedCodeLifecycle(fresh)) {
         if (!registryOwnsTarget) throw new Error(`Hồ sơ ${standardId} chưa trả mã nhưng sổ mã ${code} không còn trỏ đúng chủ; cần đối soát.`);
         transaction.update(standardRef, { _isDeleted: deleteField(), status: restoredStatus, lastUpdated: serverTimestamp() });
+        if (registryRef) {
+          transaction.set(registryRef, { lastUpdated: serverTimestamp() }, { merge: true });
+        }
         return;
       }
       if (registry?.status === 'ASSIGNED' && registry.currentStandardId !== standardId) throw new Error(`Không thể khôi phục: mã ${code} hiện thuộc hồ sơ ${registry.currentStandardId}. Hồ sơ cũ vẫn được giữ để tra cứu.`);
@@ -475,21 +714,64 @@ export class StandardCodeRegistryService {
     });
   }
 
-  private releaseResultFromEvent(data: DocumentData, operationId: string, fallbackStandardId: string): StandardCodeReleaseResult {
-    const rawType = String(data['type'] || '');
+  private async runRestoreTransaction(
+    standardRef: DocumentReference,
+    update: (transaction: Transaction) => Promise<void>,
+  ): Promise<void> {
+    const version = (snapshot: { exists(): boolean; data(): DocumentData | undefined }) => {
+      const data = snapshot.data() || {};
+      return JSON.stringify([snapshot.exists(), data['lifecycle_status'], data['_isDeleted'],
+        data['status'], data['lastUpdated']?.toMillis?.() ?? data['lastUpdated']]);
+    };
+    for (let attempt = 0; ; attempt++) {
+      let observedVersion: string | null = null;
+      try {
+        await this.runInTransaction(async transaction => {
+          observedVersion = version(await transaction.get(standardRef));
+          await update(transaction);
+        });
+        return;
+      } catch (error: unknown) {
+        const code = (error as { code?: unknown })?.code;
+        if (attempt >= 2 || (code !== 'permission-denied' && code !== 7) || observedVersion === null) throw error;
+        // Rules can reject a stale restore before the backend reports the
+        // version conflict. Retry only with evidence of a changed server row;
+        // unchanged permission failures are never retried or bypassed.
+        const fresh = await getDocFromServer(standardRef);
+        if (version(fresh) === observedVersion) throw error;
+      }
+    }
+  }
+
+  private releaseResultFromEvent(
+    data: DocumentData,
+    operationId: string,
+    fallbackStandardId: string,
+    expectedInternalId?: string | null,
+  ): StandardCodeReleaseResult {
+    const rawType = String(data['type'] || '').trim();
     if (rawType !== 'RELEASED' && rawType !== 'RECONCILED') {
       throw new Error(`Operation ID ${operationId} đã được dùng cho một event ${rawType || 'khác'}; hãy tạo thao tác mới.`);
     }
-    const eventStandardId = String(data['standardId'] || fallbackStandardId);
-    if (eventStandardId !== fallbackStandardId) {
+    const eventStandardId = String(data['standardId'] || '').trim();
+    if (!eventStandardId || eventStandardId !== fallbackStandardId) {
       throw new Error(`Operation ID ${operationId} không thuộc hồ sơ ${fallbackStandardId}.`);
+    }
+    const eventInternalId = normalizeInternalId(data['internalId']);
+    const normalizedExpectedCode = expectedInternalId ? normalizeInternalId(expectedInternalId) : '';
+    if (!eventInternalId || (normalizedExpectedCode && eventInternalId !== normalizedExpectedCode)) {
+      throw new Error(`Operation ID ${operationId} không khớp mã ${normalizedExpectedCode || eventInternalId || 'trống'}.`);
+    }
+    const recordedOpIdRaw = String(data['operationId'] || data['eventId'] || data['id'] || '').trim();
+    if (recordedOpIdRaw && normalizeStandardCodeOperationId(recordedOpIdRaw) !== operationId) {
+      throw new Error(`Operation ID ${operationId} không khớp định danh sự kiện ${recordedOpIdRaw}.`);
     }
     const type = rawType as 'RELEASED' | 'RECONCILED';
     return {
       status: type,
       eventId: String(data['eventId'] || data['id'] || operationId),
       operationId: String(data['operationId'] || operationId),
-      internalId: normalizeInternalId(data['internalId']),
+      internalId: eventInternalId,
       standardId: eventStandardId,
       message: type === 'RECONCILED' ? 'Đợt trước đã hoàn tất đối soát mã này.' : 'Đợt trước đã trả mã này thành công.',
     };

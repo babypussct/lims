@@ -5,6 +5,10 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { Router } from '@angular/router';
 import { StateService } from '../../core/services/state.service';
 import { StandardService } from './standard.service';
+import {
+  DeltaSyncDiagnostic,
+  DeltaSyncResourceLimitState,
+} from '../../core/services/delta-sync.service';
 import { FirebaseService } from '../../core/services/firebase.service';
 import { ReferenceStandard, UsageLog, ImportPreviewItem, ImportUsageLogPreviewItem, StandardRequest, PurchaseRequest, CoaMatchItem, StandardDeviceCode, StandardTagOption } from '../../core/models/standard.model';
 import { formatNum, calculateSimilarityScore } from '../../shared/utils/utils';
@@ -91,6 +95,9 @@ export class StandardsComponent implements OnInit, OnDestroy {
   activeMethodTagFilter = signal<string | null>(null);
   activeDeviceFilter = signal<StandardDeviceCode | 'all'>('all');
   private snapshotUnsub?: Unsubscribe;
+  syncPauseState = signal<DeltaSyncResourceLimitState | null>(null);
+  syncDiagnosticError = signal<DeltaSyncDiagnostic | null>(null);
+  isRetryingDeltaSync = signal(false);
 
   // --- Export State ---
   showExportModal = signal(false);
@@ -400,6 +407,12 @@ export class StandardsComponent implements OnInit, OnDestroy {
 
   showDataCleanupModal = signal(false);
   showInternalIdSyncModal = signal(false);
+  openInternalIdSyncModal(view: 'scan' | 'history' | 'registry' = 'scan'): void {
+    this.initialSyncModalView.set(view);
+    this.showInternalIdSyncModal.set(true);
+  }
+
+  initialSyncModalView = signal<'scan' | 'history' | 'registry'>('scan');
   showHiddenCodeRecallModal = signal(false);
 
   // --- Backfill Usage Log State (Manager) ---
@@ -437,10 +450,52 @@ export class StandardsComponent implements OnInit, OnDestroy {
           this.allStandards.set(cached);
       }
 
-      this.snapshotUnsub = this.stdService.listenToStandards((items) => {
+      const initialPause = this.stdService.getStandardsResourceLimitState?.() ?? null;
+      this.syncPauseState.set(initialPause);
+
+      this.snapshotUnsub = this.stdService.listenToStandards(
+        (items) => {
           this.allStandards.set([...items]);
+          const latestPause = this.stdService.getStandardsResourceLimitState?.() ?? null;
+          this.syncPauseState.set(latestPause);
+          if (!latestPause) {
+            this.syncDiagnosticError.set(null);
+            this.isRetryingDeltaSync.set(false);
+          }
           this.isLoading.set(false);
-      });
+        },
+        (diagnostic) => {
+          this.syncDiagnosticError.set(diagnostic);
+          const latestPause = this.stdService.getStandardsResourceLimitState?.() ?? null;
+          this.syncPauseState.set(latestPause);
+          this.isRetryingDeltaSync.set(false);
+          this.isLoading.set(false);
+        },
+        () => {
+          const latestPause = this.stdService.getStandardsResourceLimitState?.() ?? null;
+          this.syncPauseState.set(latestPause);
+          if (!latestPause) {
+            this.syncDiagnosticError.set(null);
+            this.isRetryingDeltaSync.set(false);
+          }
+          this.isLoading.set(false);
+        },
+      );
+  }
+
+  retryDeltaSync(): void {
+      if (this.isRetryingDeltaSync()) return;
+      this.isRetryingDeltaSync.set(true);
+      this.syncDiagnosticError.set(null);
+      if (this.allStandards().length === 0) {
+          this.isLoading.set(true);
+      }
+      const started = this.stdService.retryStandardsSync?.() ?? false;
+      this.syncPauseState.set(this.stdService.getStandardsResourceLimitState?.() ?? null);
+      if (!started) {
+          this.isRetryingDeltaSync.set(false);
+          this.isLoading.set(false);
+      }
   }
 
   ngOnDestroy() {

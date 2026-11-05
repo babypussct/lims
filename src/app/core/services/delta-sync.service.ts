@@ -5,6 +5,7 @@ import {
 import { FirebaseService } from './firebase.service';
 import { timestampToMillis } from '../../shared/utils/timestamp';
 import { FirestoreReadMonitor } from './firestore-read-monitor.service';
+import { DeltaIndexedDbStorage } from './delta-indexeddb';
 
 export interface DeltaSyncConfig {
   cacheKey: string;
@@ -32,6 +33,7 @@ export interface DeltaSyncConfig {
   retryMaxDelayMs?: number;
   retryMaxAttempts?: number;
   onError?: (diagnostic: DeltaSyncDiagnostic) => void;
+  onReady?: () => void;
   /**
    * Hàm kiểm tra doc đã bị xóa hay chưa.
    * Mặc định: (doc) => doc._isDeleted === true
@@ -59,10 +61,22 @@ export interface DeltaSyncDiagnostic {
   willRetry: boolean;
 }
 
+export interface DeltaSyncResourceLimitState {
+  cacheKey: string;
+  collectionPath: string;
+  pausedAt: number;
+  diagnostic: DeltaSyncDiagnostic;
+  hasUsableCache: boolean;
+  message: string;
+}
+
 interface DeltaErrorLike {
   code?: unknown;
   message?: unknown;
   name?: unknown;
+  status?: unknown;
+  statusCode?: unknown;
+  cause?: unknown;
 }
 
 const CACHE_REGISTRY_KEY = 'lims_delta_sync_registry_v3';
@@ -82,7 +96,8 @@ const TERMINAL_ERROR_CODES = new Set([
   'invalid-argument',
   'not-found',
   'already-exists',
-  'unimplemented'
+  'unimplemented',
+  'resource-exhausted'
 ]);
 
 const LEGACY_CACHE_PREFIXES = [
@@ -285,10 +300,50 @@ export function isDeltaStorageQuotaError(error: unknown): boolean {
     || code === 1014
     || name === 'quotaexceedederror'
     || name === 'ns_error_dom_quota_reached'
-    || message.includes('quota');
+    || (message.includes('quota') && (message.includes('storage') || message.includes('localstorage') || message.includes('indexeddb') || name.includes('quota')));
+}
+
+export function isDeltaResourceExhaustedError(error: unknown): boolean {
+  const seen = new Set<unknown>();
+  let current: unknown = error;
+  for (let depth = 0; depth < 5 && current && typeof current === 'object' && !seen.has(current); depth++) {
+    seen.add(current);
+    const errorLike = current as DeltaErrorLike;
+    const rawCode = errorLike.code;
+    if (typeof rawCode === 'string' && rawCode.trim()) {
+      const normalizedCode = getDeltaErrorCode(errorLike);
+      if (normalizedCode === 'resource-exhausted') return true;
+      if (normalizedCode !== 'unknown' && normalizedCode !== 'error') {
+        current = errorLike.cause;
+        continue;
+      }
+    }
+    if (isDeltaStorageQuotaError(errorLike)) {
+      current = errorLike.cause;
+      continue;
+    }
+    if (rawCode === 8) {
+      return true;
+    }
+    const httpStatus = typeof errorLike.status === 'number'
+      ? errorLike.status
+      : typeof errorLike.statusCode === 'number'
+        ? errorLike.statusCode
+        : null;
+    if (httpStatus === 429) {
+      return true;
+    }
+    const message = String(errorLike.message || '');
+    if (/\bresource[_\s-]?exhausted\b/i.test(message) || /\bquota exceeded\b/i.test(message)) {
+      return true;
+    }
+    current = errorLike.cause;
+  }
+  return false;
 }
 
 export function isRetryableDeltaError(error: unknown): boolean {
+  if (isDeltaResourceExhaustedError(error)) return false;
   return !TERMINAL_ERROR_CODES.has(getDeltaErrorCode(error));
 }
 
@@ -344,6 +399,9 @@ export class DeltaSyncService {
   private _diagnostics: DeltaSyncDiagnostic[] = [];
   private _persistenceDisabledKeys = new Set<string>();
   private _volatileCursors = new Map<string, number>();
+  private _resourceLimitPauses = new Map<string, DeltaSyncResourceLimitState>();
+  private readonly _idbStorage = DeltaIndexedDbStorage.getInstance();
+  private get idb(): DeltaIndexedDbStorage { return this._idbStorage || DeltaIndexedDbStorage.getInstance(); }
 
   constructor() {
     this._purgeLegacyUnscopedCachesOnce();
@@ -361,11 +419,41 @@ export class DeltaSyncService {
     const key = config.cacheKey;
     const existing = this._singletons.get(key) as SingletonEntry<T> | undefined;
     if (existing) {
+      if (config.onError || config.onReady) {
+        existing.config = {
+          ...existing.config,
+          ...(config.onError ? { onError: config.onError } : {}),
+          ...(config.onReady ? { onReady: config.onReady } : {}),
+        };
+      }
       existing.callbacks.add(onData);
-      onData([...existing.memCache]);
-      if (existing.status === 'failed' && !existing.retryTimer) {
-        existing.retryAttempt = 0;
-        this._startSingleton(existing);
+      const pauseState = this._resourceLimitPauses?.get(key);
+      if (pauseState) {
+        if (pauseState.hasUsableCache || existing.memCache.length > 0) {
+          onData([...existing.memCache]);
+        } else {
+          config.onError?.(pauseState.diagnostic);
+        }
+      } else {
+        if (existing.status === 'listening') {
+          try {
+            config.onReady?.();
+          } catch {}
+        }
+        const existingHasUsableCache = existing.memCache.length > 0
+          || existing.status === 'listening'
+          || this._hasConfirmedUsableCache(
+            existing.memCache.length,
+            this._loadCursor(config.cursorKey, config),
+            false
+          );
+        if (existingHasUsableCache) {
+          onData([...existing.memCache]);
+        }
+        if (existing.status === 'failed' && !existing.retryTimer) {
+          existing.retryAttempt = 0;
+          this._startSingleton(existing);
+        }
       }
       return () => {
         const current = this._singletons.get(key);
@@ -391,6 +479,8 @@ export class DeltaSyncService {
     if (cachedItems.length > 0 && memCache.length === 0) {
       this._clearPersistentData(config);
     }
+    const pauseState = this._resourceLimitPauses?.get(key);
+    const hasUsableCache = this._hasConfirmedUsableCache(memCache.length, cachedCursor, resetStaleCache);
     const entry: SingletonEntry<T> = {
       key,
       unsub: () => {},
@@ -401,11 +491,24 @@ export class DeltaSyncService {
       destroyed: false,
       retryAttempt: 0,
       retryTimer: null,
-      status: 'starting'
+      status: pauseState ? 'failed' : 'starting',
+      ...(pauseState ? { lastError: pauseState.diagnostic } : {})
     };
     this._singletons.set(key, entry);
-    onData([...entry.memCache]);
-    this._startSingleton(entry);
+    if (pauseState) {
+      pauseState.hasUsableCache = hasUsableCache;
+      pauseState.message = this._buildResourceLimitMessage(hasUsableCache);
+      if (hasUsableCache) {
+        onData([...entry.memCache]);
+      } else {
+        config.onError?.(pauseState.diagnostic);
+      }
+    } else {
+      if (hasUsableCache || entry.memCache.length > 0) {
+        onData([...entry.memCache]);
+      }
+      this._startSingleton(entry);
+    }
 
     return () => {
       const current = this._singletons.get(key);
@@ -440,6 +543,7 @@ export class DeltaSyncService {
     if (loadedItems.length > 0 && cachedItems.length === 0) {
       this._clearPersistentData(config);
     }
+    const initialHasUsableCache = this._hasConfirmedUsableCache(cachedItems.length, cachedCursor, resetStaleCache);
     let listenerUnsub: (() => void) | null = null;
     let retryTimer: ReturnType<typeof setTimeout> | null = null;
     let retryAttempt = 0;
@@ -452,12 +556,31 @@ export class DeltaSyncService {
     };
 
     const scheduleRetry = (error: unknown, phase: DeltaSyncPhase) => {
+      generation++;
       cleanupListener();
+      if (retryTimer) {
+        clearTimeout(retryTimer);
+        retryTimer = null;
+      }
       if (destroyed) return;
       retryAttempt++;
+      const resourceExhausted = isDeltaResourceExhaustedError(error);
       const maxAttempts = config.retryMaxAttempts ?? DEFAULT_RETRY_ATTEMPTS;
-      const willRetry = isRetryableDeltaError(error) && retryAttempt <= maxAttempts;
-      this._recordDiagnostic(config, error, phase, retryAttempt, willRetry);
+      const willRetry = !resourceExhausted && isRetryableDeltaError(error) && retryAttempt <= maxAttempts;
+      const diagnostic = this._recordDiagnostic(
+        config,
+        error,
+        phase,
+        retryAttempt,
+        willRetry,
+        recorded => {
+          if (resourceExhausted) {
+            const hasUsableCache = cachedItems.length > 0
+              || this._hasConfirmedUsableCache(0, this._loadCursor(config.cursorKey, config), false);
+            this._recordResourceLimitPause(config, recorded, hasUsableCache);
+          }
+        }
+      );
       if (!willRetry) {
         if (isDeltaAuthorizationError(error)) {
           cachedItems.splice(0);
@@ -478,36 +601,71 @@ export class DeltaSyncService {
     };
 
     const attachListener = (capturedGeneration: number) => {
+      if (destroyed || capturedGeneration !== generation || this.isResourceLimitPaused(config.cacheKey)) return;
       const cursor = this._loadCursor(config.cursorKey, config);
       listenerUnsub = this._setupSnapshotListener(
         config,
         cursor,
         cachedItems,
         data => {
-          if (destroyed || capturedGeneration !== generation) return;
+          if (destroyed || capturedGeneration !== generation || this.isResourceLimitPaused(config.cacheKey)) return;
           retryAttempt = 0;
+          this._resourceLimitPauses?.delete(config.cacheKey);
+          try {
+            config.onReady?.();
+          } catch {}
           onData(data);
         },
         isDeleted,
-        error => scheduleRetry(error, 'listener')
+        error => scheduleRetry(error, 'listener'),
+        () => {
+          if (!destroyed && capturedGeneration === generation && !this.isResourceLimitPaused(config.cacheKey)) {
+            retryAttempt = 0;
+            this._resourceLimitPauses?.delete(config.cacheKey);
+            try {
+              config.onReady?.();
+            } catch {}
+          }
+        }
       );
     };
 
     const start = async () => {
       if (destroyed) return;
       cleanupListener();
+      const pauseState = this._resourceLimitPauses?.get(config.cacheKey);
+      if (pauseState) {
+        pauseState.hasUsableCache = initialHasUsableCache;
+        pauseState.message = this._buildResourceLimitMessage(initialHasUsableCache);
+        if (initialHasUsableCache) {
+          onData([...cachedItems]);
+        } else {
+          config.onError?.(pauseState.diagnostic);
+        }
+        return;
+      }
       const capturedGeneration = ++generation;
       try {
+        if (cachedItems.length === 0 && this.idb.isAvailable()) {
+          const persisted = await this.idb.getEntry<T>(config.cacheKey);
+          const idbItems = persisted && sanitizeDeltaCursorMillis(persisted.cursorMillis) > 0
+            && !shouldResetStaleDeltaCache(persisted.cursorMillis!, persisted.updatedAt, config.maxCatchUpAgeMs)
+            ? persisted.items : null;
+          if (idbItems && persisted) this._volatileCursors.set(config.cursorKey, persisted.cursorMillis!);
+          if (idbItems && idbItems.length > 0 && !destroyed && capturedGeneration === generation && !this.isResourceLimitPaused(config.cacheKey)) {
+            replaceDeltaArrayContents(cachedItems, idbItems.filter(document => !isDeleted(document)));
+          }
+        }
         if (cachedItems.length === 0) {
           const items = await this._fetchInitialBatch<T>(config);
-          if (destroyed || capturedGeneration !== generation) return;
+          if (destroyed || capturedGeneration !== generation || this.isResourceLimitPaused(config.cacheKey)) return;
           replaceDeltaArrayContents(cachedItems, items.filter(document => !isDeleted(document)));
           this._updateCacheAndCursor(cachedItems, config);
           onData([...cachedItems]);
         } else {
           onData([...cachedItems]);
         }
-        if (destroyed || capturedGeneration !== generation) return;
+        if (destroyed || capturedGeneration !== generation || this.isResourceLimitPaused(config.cacheKey)) return;
         attachListener(capturedGeneration);
       } catch (error) {
         if (destroyed || capturedGeneration !== generation) return;
@@ -542,6 +700,7 @@ export class DeltaSyncService {
 
   public destroyAll(clearPersistentCaches = false): void {
     [...this._singletons.keys()].forEach(key => this.destroySingleton(key));
+    this._pauses().clear();
     if (clearPersistentCaches) this.clearAllPersistentCaches();
   }
 
@@ -560,6 +719,8 @@ export class DeltaSyncService {
     } catch {}
     this._persistenceDisabledKeys.delete(cacheKey);
     this._volatileCursors.delete(cursorKey);
+    this._pauses().delete(cacheKey);
+    void this.idb.remove(cacheKey);
   }
 
   public clearAllPersistentCaches(): void {
@@ -577,6 +738,68 @@ export class DeltaSyncService {
     } catch {}
     this._persistenceDisabledKeys.clear();
     this._volatileCursors.clear();
+    this._pauses().clear();
+    void this.idb.clear();
+  }
+
+  public isResourceLimitPaused(cacheKey: string): boolean {
+    return this._pauses().has(cacheKey);
+  }
+
+  public getResourceLimitState(cacheKey: string): DeltaSyncResourceLimitState | null {
+    const state = this._pauses().get(cacheKey);
+    return state ? { ...state, diagnostic: { ...state.diagnostic } } : null;
+  }
+
+  public clearResourceLimitPausesForScope(authScopeOrKey?: string): void {
+    const pauses = this._pauses();
+    if (!authScopeOrKey) {
+      pauses.clear();
+      return;
+    }
+    const targetScopeId = getDeltaStorageScopeId(authScopeOrKey) || authScopeOrKey;
+    for (const key of [...pauses.keys()]) {
+      const keyScopeId = getDeltaStorageScopeId(key);
+      if (key === authScopeOrKey || keyScopeId === targetScopeId) {
+        pauses.delete(key);
+      }
+    }
+  }
+
+  /**
+   * Intentionally resume one or all resource-limited singletons. Rapid repeated
+   * calls while a singleton is already in `starting` are ignored so manual
+   * retries cannot spawn parallel initial fetches or duplicate listeners.
+   */
+  public retryResourceLimitedSync(cacheKey?: string): boolean {
+    const pauses = this._pauses();
+    if (cacheKey) {
+      const entry = this._singletons.get(cacheKey);
+      if (entry && !entry.destroyed && entry.status === 'starting') {
+        return false;
+      }
+      pauses.delete(cacheKey);
+      if (entry && !entry.destroyed) {
+        entry.retryAttempt = 0;
+        this._startSingleton(entry);
+        return true;
+      }
+      return true;
+    }
+
+    let resumedAny = false;
+    const candidateKeys = new Set<string>([
+      ...pauses.keys(),
+      ...[...this._singletons.entries()]
+        .filter(([, entry]) => entry.status === 'failed')
+        .map(([key]) => key)
+    ]);
+    for (const key of candidateKeys) {
+      if (this.retryResourceLimitedSync(key)) {
+        resumedAny = true;
+      }
+    }
+    return resumedAny;
   }
 
   public getCache<T>(key: string): T[] {
@@ -641,13 +864,52 @@ export class DeltaSyncService {
     }
 
     const published = entry?.memCache ?? items;
-    if (!this._persistenceDisabledKeys.has(key)) {
-      const config = entry?.config ?? { cacheKey: key, cursorKey: '', collectionPath: 'local-cache' };
+    if (entry) {
+      this._updateCacheAndCursor(entry.memCache, entry.config);
+    } else if (!this.idb.isAvailable() && !this._persistenceDisabledKeys.has(key)) {
+      const config = { cacheKey: key, cursorKey: '', collectionPath: 'local-cache' };
       this._persistWithQuotaRecovery(config, () => {
         localStorage.setItem(key, JSON.stringify(published));
       });
     }
     return [...published];
+  }
+
+  private _pauses(): Map<string, DeltaSyncResourceLimitState> {
+    return (this._resourceLimitPauses ??= new Map());
+  }
+
+  private _hasConfirmedUsableCache(
+    itemCount: number,
+    cursorMillis: number,
+    resetStaleCache: boolean
+  ): boolean {
+    if (resetStaleCache) return false;
+    const validCursor = sanitizeDeltaCursorMillis(cursorMillis) > 0;
+    return itemCount > 0 ? validCursor : validCursor;
+  }
+
+  private _buildResourceLimitMessage(hasUsableCache: boolean): string {
+    return hasUsableCache
+      ? 'Đồng bộ đang tạm dừng do giới hạn tài nguyên Firestore. Dữ liệu hiển thị có thể chưa cập nhật.'
+      : 'Đồng bộ đang tạm dừng do giới hạn tài nguyên Firestore. Chưa tải được dữ liệu cho mục này.';
+  }
+
+  private _recordResourceLimitPause(
+    config: DeltaSyncConfig,
+    diagnostic: DeltaSyncDiagnostic,
+    hasUsableCache: boolean
+  ): DeltaSyncResourceLimitState {
+    const state: DeltaSyncResourceLimitState = {
+      cacheKey: config.cacheKey,
+      collectionPath: config.collectionPath,
+      pausedAt: Date.now(),
+      diagnostic,
+      hasUsableCache,
+      message: this._buildResourceLimitMessage(hasUsableCache)
+    };
+    this._pauses().set(config.cacheKey, state);
+    return state;
   }
 
   private _startSingleton<T extends {
@@ -656,7 +918,7 @@ export class DeltaSyncService {
     _isDeleted?: boolean;
     [key: string]: any;
   }>(entry: SingletonEntry<T>): void {
-    if (entry.destroyed || this._singletons.get(entry.key) !== entry) return;
+    if (entry.destroyed || this._singletons.get(entry.key) !== entry || this.isResourceLimitPaused(entry.key)) return;
     entry.unsub();
     entry.unsub = () => {};
     if (entry.retryTimer) clearTimeout(entry.retryTimer);
@@ -667,9 +929,23 @@ export class DeltaSyncService {
 
     const finish = async () => {
       try {
+        if (entry.memCache.length === 0 && this.idb.isAvailable()) {
+          const persisted = await this.idb.getEntry<T>(entry.config.cacheKey);
+          const idbItems = persisted && sanitizeDeltaCursorMillis(persisted.cursorMillis) > 0
+            && !shouldResetStaleDeltaCache(persisted.cursorMillis!, persisted.updatedAt, entry.config.maxCatchUpAgeMs)
+            ? persisted.items : null;
+          if (idbItems && idbItems.length > 0 && this._entryIsActive(entry, capturedGeneration) && !this.isResourceLimitPaused(entry.key)) {
+            this._volatileCursors.set(entry.config.cursorKey, persisted!.cursorMillis!);
+            replaceDeltaArrayContents(
+              entry.memCache,
+              idbItems.filter(document => !isDeleted(document))
+            );
+            this._emitEntry(entry);
+          }
+        }
         if (entry.memCache.length === 0) {
           const items = await this._fetchInitialBatch<T>(entry.config);
-          if (!this._entryIsActive(entry, capturedGeneration)) return;
+          if (!this._entryIsActive(entry, capturedGeneration) || this.isResourceLimitPaused(entry.key)) return;
           replaceDeltaArrayContents(
             entry.memCache,
             items.filter(document => !isDeleted(document))
@@ -677,7 +953,7 @@ export class DeltaSyncService {
           this._updateCacheAndCursor(entry.memCache, entry.config);
           this._emitEntry(entry);
         }
-        if (!this._entryIsActive(entry, capturedGeneration)) return;
+        if (!this._entryIsActive(entry, capturedGeneration) || this.isResourceLimitPaused(entry.key)) return;
         this._attachSingletonSnapshot(entry, capturedGeneration, isDeleted);
       } catch (error) {
         if (!this._entryIsActive(entry, capturedGeneration)) return;
@@ -697,15 +973,21 @@ export class DeltaSyncService {
     capturedGeneration: number,
     isDeleted: (document: any) => boolean
   ): void {
+    if (!this._entryIsActive(entry, capturedGeneration) || this.isResourceLimitPaused(entry.key)) return;
     const cursor = this._loadCursor(entry.config.cursorKey, entry.config);
     entry.unsub = this._setupSnapshotListener(
       entry.config,
       cursor,
       entry.memCache,
       data => {
-        if (!this._entryIsActive(entry, capturedGeneration)) return;
+        if (!this._entryIsActive(entry, capturedGeneration) || this.isResourceLimitPaused(entry.key)) return;
         entry.retryAttempt = 0;
         entry.status = 'listening';
+        entry.lastError = undefined;
+        this._pauses().delete(entry.key);
+        try {
+          entry.config.onReady?.();
+        } catch {}
         this._emitEntry(entry, data);
       },
       isDeleted,
@@ -714,9 +996,14 @@ export class DeltaSyncService {
         this._handleSingletonError(entry, error, 'listener');
       },
       () => {
-        if (this._entryIsActive(entry, capturedGeneration)) {
+        if (this._entryIsActive(entry, capturedGeneration) && !this.isResourceLimitPaused(entry.key)) {
           entry.retryAttempt = 0;
           entry.status = 'listening';
+          entry.lastError = undefined;
+          this._pauses().delete(entry.key);
+          try {
+            entry.config.onReady?.();
+          } catch {}
         }
       }
     );
@@ -727,20 +1014,33 @@ export class DeltaSyncService {
     error: unknown,
     phase: DeltaSyncPhase
   ): void {
+    entry.generation++;
     entry.unsub();
     entry.unsub = () => {};
+    if (entry.retryTimer) {
+      clearTimeout(entry.retryTimer);
+      entry.retryTimer = null;
+    }
     entry.retryAttempt++;
+    const resourceExhausted = isDeltaResourceExhaustedError(error);
     const maxAttempts = entry.config.retryMaxAttempts ?? DEFAULT_RETRY_ATTEMPTS;
-    const willRetry = isRetryableDeltaError(error) && entry.retryAttempt <= maxAttempts;
+    const willRetry = !resourceExhausted && isRetryableDeltaError(error) && entry.retryAttempt <= maxAttempts;
     const diagnostic = this._recordDiagnostic(
       entry.config,
       error,
       phase,
       entry.retryAttempt,
-      willRetry
+      willRetry,
+      recorded => {
+        entry.lastError = recorded;
+        entry.status = willRetry ? 'retrying' : 'failed';
+        if (resourceExhausted) {
+          const hasUsableCache = entry.memCache.length > 0
+            || this._hasConfirmedUsableCache(0, this._loadCursor(entry.config.cursorKey, entry.config), false);
+          this._recordResourceLimitPause(entry.config, recorded, hasUsableCache);
+        }
+      }
     );
-    entry.lastError = diagnostic;
-    entry.status = willRetry ? 'retrying' : 'failed';
     if (!willRetry) {
       if (isDeltaAuthorizationError(error)) {
         entry.memCache.splice(0);
@@ -757,7 +1057,7 @@ export class DeltaSyncService {
     );
     entry.retryTimer = setTimeout(() => {
       entry.retryTimer = null;
-      if (!entry.destroyed && this._singletons.get(entry.key) === entry) {
+      if (!entry.destroyed && this._singletons.get(entry.key) === entry && !this.isResourceLimitPaused(entry.key)) {
         this._startSingleton(entry);
       }
     }, delay);
@@ -891,7 +1191,23 @@ export class DeltaSyncService {
     sortAndTrimDeltaItems(items, sortField, sortDirection, maxCacheSize);
     if (cursorMillis > 0) this._volatileCursors.set(config.cursorKey, cursorMillis);
 
-    if (this._persistenceDisabledKeys.has(config.cacheKey)) return cursorMillis;
+    if (this.idb.isAvailable()) {
+      // Persist the snapshot and its cursor together. Never couple a successful
+      // IndexedDB write to localStorage quota recovery or advance its cursor
+      // independently of the corresponding documents.
+      void this.idb.set(config.cacheKey, items, cursorMillis).then(persisted => {
+        if (!persisted) this._persistLegacyCache(items, config, cursorMillis);
+      });
+      return cursorMillis;
+    }
+
+    this._persistLegacyCache(items, config, cursorMillis);
+    return cursorMillis;
+  }
+
+  private _persistLegacyCache<T>(items: T[], config: DeltaSyncConfig, cursorMillis: number): void {
+
+    if (this._persistenceDisabledKeys.has(config.cacheKey)) return;
 
     this._persistWithQuotaRecovery(config, () => {
       localStorage.setItem(config.cacheKey, JSON.stringify(items));
@@ -900,10 +1216,10 @@ export class DeltaSyncService {
         localStorage.setItem(this._syncAtKey(config.cursorKey), Date.now().toString());
       }
     });
-    return cursorMillis;
   }
 
   private _loadFromCache<T>(key: string, config?: DeltaSyncConfig): T[] {
+    if (this.idb.isAvailable()) return [];
     try {
       const data = localStorage.getItem(key);
       if (!data) return [];
@@ -943,6 +1259,7 @@ export class DeltaSyncService {
         localStorage.removeItem(this._syncAtKey(config.cursorKey));
       }
     } catch {}
+    void this.idb.remove(config.cacheKey);
     if (clearVolatileCursor && config.cursorKey) this._volatileCursors.delete(config.cursorKey);
   }
 
@@ -1014,7 +1331,10 @@ export class DeltaSyncService {
   private _evictPersistentKeys(keys: string[]): void {
     if (keys.length === 0) return;
     try {
-      keys.forEach(key => localStorage.removeItem(key));
+      keys.forEach(key => {
+        localStorage.removeItem(key);
+        void this.idb.remove(key);
+      });
     } catch {}
     this._unregisterStorageKeys(...keys);
   }
@@ -1052,7 +1372,8 @@ export class DeltaSyncService {
     error: unknown,
     phase: DeltaSyncPhase,
     attempt: number,
-    willRetry: boolean
+    willRetry: boolean,
+    beforeNotify?: (diagnostic: DeltaSyncDiagnostic) => void
   ): DeltaSyncDiagnostic {
     const diagnostic: DeltaSyncDiagnostic = {
       timestamp: Date.now(),
@@ -1066,6 +1387,7 @@ export class DeltaSyncService {
     };
     this._diagnostics.push(diagnostic);
     if (this._diagnostics.length > 100) this._diagnostics.splice(0, this._diagnostics.length - 100);
+    beforeNotify?.(diagnostic);
     config.onError?.(diagnostic);
     console.warn(
       `[DeltaSync] ${diagnostic.phase} ${diagnostic.collectionPath}: ${diagnostic.errorCode} `

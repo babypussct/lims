@@ -711,7 +711,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   } catch (error: any) {
     console.error('[Notifications API] Error:', error);
-    const status = error?.code?.startsWith?.('auth/') ? 401 : 500;
+    const resourceLimited = error?.code === 8 || error?.code === 'resource-exhausted'
+      || /RESOURCE_EXHAUSTED|quota exceeded/i.test(String(error?.message || ''));
+    const status = resourceLimited ? 429 : error?.code?.startsWith?.('auth/') ? 401 : 500;
     const errorMessage = error?.message || 'Không thể gửi thông báo.';
     return res.status(status).json({
       error: status === 401 ? 'Firebase ID token không hợp lệ.' : errorMessage

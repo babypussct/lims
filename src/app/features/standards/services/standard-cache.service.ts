@@ -1,17 +1,21 @@
-import { Injectable, inject, effect } from '@angular/core';
+import { Injectable, inject, effect, signal } from '@angular/core';
 import { FirebaseService } from '../../../core/services/firebase.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { FirestoreReadMonitor } from '../../../core/services/firestore-read-monitor.service';
 import {
-  collection, getDocs, getDoc, doc,
+  collection, getDocs, getDocsFromServer, getDoc, doc, documentId,
   Unsubscribe, limit, orderBy, query, startAfter, where,
   Query, QueryDocumentSnapshot, QuerySnapshot
 } from 'firebase/firestore';
 import { ReferenceStandard } from '../../../core/models/standard.model';
-import { buildScopedDeltaKey, DeltaSyncService } from '../../../core/services/delta-sync.service';
+import {
+  buildScopedDeltaKey,
+  DeltaSyncDiagnostic,
+  DeltaSyncResourceLimitState,
+  DeltaSyncService,
+} from '../../../core/services/delta-sync.service';
 import { isFefoCandidate, parseStandardDate } from '../../../shared/utils/standard-fefo';
 import { ACTIVE_STANDARD_STATUSES, isActiveStandardStatus } from '../../../shared/utils/standard-query';
-import { timestampToMillis } from '../../../shared/utils/timestamp';
 
 /**
  * StandardCacheService — Quản lý cache cho ReferenceStandards.
@@ -74,6 +78,12 @@ export class StandardCacheService {
   // before either result has a chance to populate the shared cache.
   private readonly standardByIdInFlight = new Map<string, Promise<ReferenceStandard | null>>();
 
+  readonly syncDiagnosticError = signal<DeltaSyncDiagnostic | null>(null);
+  readonly resourceLimitState = signal<DeltaSyncResourceLimitState | null>(null);
+  readonly isRetryingSync = signal(false);
+  private errorCallbacks = new Set<(diagnostic: DeltaSyncDiagnostic) => void>();
+  private readyCallbacks = new Set<() => void>();
+
   // Trạng thái view (giữ lại khi Back từ detail)
   listState = {
     searchTerm: '',
@@ -102,8 +112,59 @@ export class StandardCacheService {
       orderByField: 'lastUpdated',
       orderDirection: 'desc' as const,
       initialCollectionScan: false,
-      isDeletedFn: (doc: any) => doc._isDeleted === true || doc.status === 'DELETED'
+      isDeletedFn: (doc: any) => doc._isDeleted === true || doc.status === 'DELETED',
+      onError: (diagnostic: DeltaSyncDiagnostic) => this._handleDeltaSyncError(diagnostic),
+      onReady: () => this._handleDeltaSyncReady(),
     };
+  }
+
+  private _handleDeltaSyncError(diagnostic: DeltaSyncDiagnostic): void {
+    this.syncDiagnosticError?.set(diagnostic);
+    this.resourceLimitState?.set(this.deltaSync.getResourceLimitState(this._deltaCacheKey));
+    this.isRetryingSync?.set(false);
+    for (const cb of [...(this.errorCallbacks ?? [])]) {
+      try {
+        cb(diagnostic);
+      } catch (err) {
+        console.error('[StandardCacheService] Error in onError listener:', err);
+      }
+    }
+  }
+
+  private _handleDeltaSyncReady(): void {
+    const pauseState = this.deltaSync.getResourceLimitState(this._deltaCacheKey);
+    this.resourceLimitState?.set(pauseState);
+    if (!pauseState) {
+      this.syncDiagnosticError?.set(null);
+      this.isRetryingSync?.set(false);
+      for (const cb of [...(this.readyCallbacks ?? [])]) {
+        try {
+          cb();
+        } catch (err) {
+          console.error('[StandardCacheService] Error in onReady listener:', err);
+        }
+      }
+    }
+  }
+
+  private _handleDeltaSyncData(
+    data: ReferenceStandard[],
+    callback: (standards: ReferenceStandard[]) => void,
+  ): void {
+    const pauseState = this.deltaSync.getResourceLimitState(this._deltaCacheKey);
+    this.resourceLimitState?.set(pauseState);
+    if (!pauseState) {
+      this.syncDiagnosticError?.set(null);
+      this.isRetryingSync?.set(false);
+    }
+    // A filtered/bounded delta projection cannot prove catalogue completeness.
+    // Invalidate full snapshots when remote data changes; the next bulk caller
+    // shares a fresh server load, including legacy rows without lastUpdated.
+    this._memStandards = null;
+    this.completeCatalogueScope = null;
+    this.completeActiveStandards = null;
+    this.completeActiveScope = null;
+    callback(data);
   }
 
 
@@ -126,6 +187,9 @@ export class StandardCacheService {
     this.fullCatalogueLoad = undefined;
     this.fullCatalogueLoadScope = null;
     this.standardByIdInFlight.clear();
+    this.syncDiagnosticError?.set(null);
+    this.resourceLimitState?.set(null);
+    this.isRetryingSync?.set(false);
   }
 
   // ─── Singleton Listener (thay thế cả startRealtimeDeltaListener + listenToStandards) ──
@@ -139,22 +203,71 @@ export class StandardCacheService {
    *
    * Sau v2: 1 singleton duy nhất, cursor-based, in-memory cache.
    */
-  startRealtimeDeltaListener(cb: () => void): () => void {
-    // Wrap void callback thành data callback để phù hợp DeltaSync API
-    return this.deltaSync.startSingletonListener<ReferenceStandard>(
-      this._deltaSyncConfig(),
-      (_data) => cb()
-    );
+  startRealtimeDeltaListener(
+    cb: () => void,
+    onError?: (diagnostic: DeltaSyncDiagnostic) => void,
+    onReady?: () => void,
+  ): () => void {
+    return this.listenToStandards(() => cb(), onError, onReady);
   }
 
   // ─── Delta Sync Listener (backward compat) ─────────────────────────────────
-  listenToStandards(callback: (standards: ReferenceStandard[]) => void): Unsubscribe {
+  listenToStandards(
+    callback: (standards: ReferenceStandard[]) => void,
+    onError?: (diagnostic: DeltaSyncDiagnostic) => void,
+    onReady?: () => void,
+  ): Unsubscribe {
+    this.errorCallbacks ??= new Set();
+    this.readyCallbacks ??= new Set();
+    if (onError) {
+      this.errorCallbacks.add(onError);
+    }
+    if (onReady) {
+      this.readyCallbacks.add(onReady);
+    }
     const unregister = this.deltaSync.startSingletonListener<ReferenceStandard>(
       this._deltaSyncConfig(),
-      (data) => callback(data)
+      (data) => this._handleDeltaSyncData(data, callback),
     );
+    const currentPause = this.deltaSync.getResourceLimitState(this._deltaCacheKey);
+    this.resourceLimitState?.set(currentPause);
+    if (currentPause && onError) {
+      const currentDiag: DeltaSyncDiagnostic =
+        this.syncDiagnosticError?.() ?? currentPause.diagnostic;
+      onError(currentDiag);
+    } else if (!currentPause && onReady && this.deltaSync.getSingletonStatus?.(this._deltaCacheKey) === 'listening') {
+      onReady();
+    }
     // Trả về dưới dạng Unsubscribe để giữ type compatibility
-    return unregister as unknown as Unsubscribe;
+    return (() => {
+      if (onError) {
+        this.errorCallbacks?.delete(onError);
+      }
+      if (onReady) {
+        this.readyCallbacks?.delete(onReady);
+      }
+      unregister();
+    }) as unknown as Unsubscribe;
+  }
+
+  getStandardsResourceLimitState(): DeltaSyncResourceLimitState | null {
+    const state = this.deltaSync.getResourceLimitState(this._deltaCacheKey);
+    this.resourceLimitState?.set(state);
+    return state;
+  }
+
+  retryStandardsSync(): boolean {
+    const beforeStatus = this.deltaSync.getSingletonStatus?.(this._deltaCacheKey);
+    if (this.isRetryingSync?.() && beforeStatus === 'starting') return false;
+    this.isRetryingSync?.set(true);
+    this.syncDiagnosticError?.set(null);
+    const started = this.deltaSync.retryResourceLimitedSync(this._deltaCacheKey);
+    this.resourceLimitState?.set(this.deltaSync.getResourceLimitState(this._deltaCacheKey));
+    const afterStatus = this.deltaSync.getSingletonStatus?.(this._deltaCacheKey);
+    if (!started || afterStatus === 'listening') {
+      this.isRetryingSync?.set(false);
+    }
+    return started;
   }
 
   // ─── Cache Invalidation ──────────────────────────────────────────────────────
@@ -171,6 +284,9 @@ export class StandardCacheService {
     this.completeActiveLoadedAt = 0;
     this.fullCatalogueLoad = undefined;
     this.fullCatalogueLoadScope = null;
+    this.syncDiagnosticError.set(null);
+    this.resourceLimitState.set(null);
+    this.isRetryingSync.set(false);
     this.deltaSync.destroySingleton(this._deltaCacheKey);
     this.deltaSync.clearCache(this._deltaCacheKey, this._deltaCursorKey);
     // Xóa cả key cũ (legacy)
@@ -237,6 +353,18 @@ export class StandardCacheService {
    * completed for the current auth scope. A non-empty operational cache is not
    * sufficient proof of completeness.
    */
+  /**
+   * Unified asynchronous access to the complete standard catalogue.
+   * Only reuses snapshots obtained from a completed, unfiltered server scan.
+   */
+  async getCompleteCatalogue(options?: { allowStale?: boolean; forceRefresh?: boolean }): Promise<ReferenceStandard[]> {
+    if (!options?.forceRefresh) {
+      const mem = this.getCompleteCatalogueFromMemory();
+      if (mem) return mem;
+    }
+    return this.fetchAllAndCache();
+  }
+
   getCompleteCatalogueFromMemory(maxAgeMs = Number.POSITIVE_INFINITY): ReferenceStandard[] | null {
     if (!this._memStandards || this.completeCatalogueScope !== this.auth.getDeltaCacheScope()) return null;
     if (Date.now() - this.completeCatalogueLoadedAt > maxAgeMs) return null;
@@ -364,18 +492,8 @@ export class StandardCacheService {
     if (this.fullCatalogueLoad && this.fullCatalogueLoadScope === scope) return this.fullCatalogueLoad;
 
     const load = (async (): Promise<ReferenceStandard[]> => {
-      const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'reference_standards');
-      // Querying with orderBy excludes legacy documents that do not have received_date.
-      const snap = await getDocs(colRef);
-      this.readMonitor.record(
-        'getDocs',
-        `artifacts/${this.fb.APP_ID}/reference_standards`,
-        snap.size,
-        { phase: 'initial', fromCache: snap.metadata.fromCache }
-      );
-      const items: ReferenceStandard[] = snap.docs
-        .filter(d => d.data()['_isDeleted'] !== true && d.data()['status'] !== 'DELETED')
-        .map(d => ({ id: d.id, ...d.data() } as ReferenceStandard))
+      const items: ReferenceStandard[] = (await this.loadCompleteCatalogueRows())
+        .filter(item => item._isDeleted !== true && item.status !== 'DELETED')
         .sort((a, b) => (b.received_date || '').localeCompare(a.received_date || ''));
 
       // Do not mix legacy/non-operational rows into the DeltaSync projection.
@@ -387,7 +505,6 @@ export class StandardCacheService {
         this.completeCatalogueScope = scope;
         this.completeCatalogueLoadedAt = loadedAt;
         this.publishCompleteActiveCatalogue(items, loadedAt);
-        this._saveStdToCache(items.filter(standard => this.isOperationalStandard(standard)));
       }
       return items;
     })();
@@ -401,6 +518,22 @@ export class StandardCacheService {
         this.fullCatalogueLoad = undefined;
         this.fullCatalogueLoadScope = null;
       }
+    }
+  }
+
+  protected async loadCompleteCatalogueRows(): Promise<ReferenceStandard[]> {
+    const colRef = collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'reference_standards');
+    const items: ReferenceStandard[] = [];
+    let cursor: QueryDocumentSnapshot | null = null;
+    const pageSize = 500;
+    for (;;) {
+      const page: QuerySnapshot = await getDocsFromServer(query(colRef, orderBy(documentId()),
+        ...(cursor ? [startAfter(cursor)] : []), limit(pageSize)));
+      this.readMonitor.record('getDocs', `artifacts/${this.fb.APP_ID}/reference_standards`,
+        page.size, { phase: 'initial', fromCache: false });
+      items.push(...page.docs.map(snapshot => ({ id: snapshot.id, ...snapshot.data() } as ReferenceStandard)));
+      if (page.size < pageSize) return items;
+      cursor = page.docs[page.docs.length - 1];
     }
   }
 
@@ -429,21 +562,4 @@ export class StandardCacheService {
       .sort((a, b) => (b.received_date || '').localeCompare(a.received_date || ''));
   }
 
-  private _saveStdToCache(items: ReferenceStandard[]): void {
-    try {
-      const json = JSON.stringify(items);
-      localStorage.setItem(this._deltaCacheKey, json);
-
-      const maxMillis = items.reduce((max, item) => {
-        const millis = timestampToMillis(item.lastUpdated) ?? 0;
-        return millis > max ? millis : max;
-      }, 0);
-      if (maxMillis > 0) {
-        localStorage.setItem(this._deltaCursorKey, maxMillis.toString());
-      }
-    } catch (e: any) {
-      console.warn('[StandardCacheService] Cache write failed:', e?.name);
-      try { localStorage.removeItem(this._deltaCacheKey); } catch {}
-    }
-  }
 }

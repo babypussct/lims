@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.11.03-b03",
-    "title": "Hiển thị đầy đủ lịch trực đêm trên Dashboard",
+    "version": "v26.11.05-b01",
+    "title": "Hoàn thiện thu hồi và tra cứu vòng đời mã chất chuẩn",
     "features": [
-      "Lịch tháng hiển thị đầy đủ nhân sự, người chủ trì và các vị trí cần xác minh.",
-      "Thẻ ca cá nhân bổ sung mức kỳ vọng riêng, vai trò chủ trì và đồng nghiệp cùng ca.",
-      "Thống kê nhân sự bổ sung tỷ trọng lượt trực, chênh lệch so với kỳ vọng và ngày trực tiếp theo.",
-      "Hiển thị ghi chú, giờ trực tùy chỉnh và trạng thái chưa phân công trên lịch và các thẻ thông tin.",
-      "Đồng bộ ca cá nhân sắp tới trên máy tính và điện thoại trong phạm vi lịch đang tải."
+      "Thu hồi mã của chuẩn đã ẩn có xem trước, dừng và tiếp tục an toàn khi gián đoạn.",
+      "Bổ sung sổ mã và lịch sử cấp, trả, khôi phục để đối chiếu từng hồ sơ.",
+      "Tra cứu sổ mã theo trạng thái, tìm kiếm và xuất danh sách CSV.",
+      "Lưu bộ nhớ đệm danh mục bằng IndexedDB để giảm tải lại dữ liệu trên thiết bị.",
+      "Tái sử dụng danh mục đã tải đầy đủ cho nhập Excel; kiểm tra chuẩn hóa trước khi áp dụng truy vấn mã tối ưu."
     ]
   },
   "assetGroups": [

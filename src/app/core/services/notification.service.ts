@@ -22,6 +22,7 @@ const NOTIFICATION_LISTENER_LIMIT = 100;
 
 @Injectable({ providedIn: 'root' })
 export class NotificationService {
+    private resourceLimitUntil = 0;
     private fb = inject(FirebaseService);
     private auth = inject(AuthService);
     private router = inject(Router);
@@ -510,6 +511,9 @@ export class NotificationService {
     }
 
     private async callNotificationApi(payload: Record<string, unknown>): Promise<Record<string, unknown>> {
+        if (Date.now() < this.resourceLimitUntil) {
+            throw new Error('Thông báo đang tạm dừng do giới hạn tài nguyên Firestore. Vui lòng thử lại sau.');
+        }
         const doFetch = async (forceRefresh: boolean) => {
             const token = await this.auth.getIdToken(forceRefresh);
             if (!token) throw new Error('Phiên đăng nhập không hợp lệ.');
@@ -532,6 +536,10 @@ export class NotificationService {
 
         if (!response.ok) {
             const result = await response.json().catch(() => ({}));
+            if (response.status === 429 || /resource.exhausted|quota exceeded/i.test(String(result?.error || ''))) {
+                this.resourceLimitUntil = Date.now() + 60_000;
+                throw new Error('Không thể gửi thông báo do Firestore đang giới hạn tài nguyên. Vui lòng thử lại sau.');
+            }
             throw new Error(result?.error || `Không thể gửi thông báo (${response.status}).`);
         }
         return response.json().catch(() => ({}));

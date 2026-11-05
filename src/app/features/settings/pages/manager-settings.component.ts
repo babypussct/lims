@@ -1,7 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { collection, getCountFromServer } from 'firebase/firestore';
 import { PERMISSIONS, AuthService } from '../../../core/services/auth.service';
 import { BackupService, type BackupListItem, type BackupStatusResponse } from '../../../core/services/backup.service';
 import { FirebaseService } from '../../../core/services/firebase.service';
@@ -255,7 +254,6 @@ export class ManagerSettingsComponent implements OnInit {
   }
 
   private async loadMasterCounts(): Promise<void> {
-    const base = `artifacts/${this.fb.APP_ID}`;
     const names: [keyof MasterCounts, string][] = [
       ['analytes', 'master_analytes'],
       ['targetGroups', 'target_groups'],
@@ -263,10 +261,12 @@ export class ManagerSettingsComponent implements OnInit {
       ['sampleDescriptions', 'sample_description_master'],
       ['devices', 'master_devices'],
     ];
-    const results = await Promise.all(names.map(async ([key, collectionName]) => {
-      const snapshot = await getCountFromServer(collection(this.fb.db, `${base}/${collectionName}`));
-      return [key, snapshot.data().count] as const;
-    }));
+    const results: [keyof MasterCounts, number][] = [];
+    // Stop the group on the first quota error instead of issuing five failed
+    // aggregation requests in parallel on every visit.
+    for (const [key, collectionName] of names) {
+      results.push([key, await this.fb.getCollectionDocumentCount(collectionName)]);
+    }
     const counts: MasterCounts = {
       analytes: 0,
       targetGroups: 0,

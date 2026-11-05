@@ -12,6 +12,7 @@ import { InventoryService } from '../../inventory/inventory.service';
 import { StandardService } from '../../standards/standard.service';
 import { collection, getDocs, writeBatch, doc, query, where, onSnapshot, deleteDoc, orderBy, limit } from 'firebase/firestore';
 import { NotificationCenterService } from '../../../core/services/notification-center.service';
+import { FirestoreReadMonitor } from '../../../core/services/firestore-read-monitor.service';
 import { BackupService, type BackupListItem, type BackupStatusResponse, type BackupCreateResponse, type BackupVerificationResponse, type RestoreResponse, type RestoreCheckpointListItem } from '../../../core/services/backup.service';
 import { AppButtonComponent } from '../../../shared/components/ui/button/button.component';
 import { AppModalShellComponent } from '../../../shared/components/ui/modal-shell/modal-shell.component';
@@ -103,6 +104,7 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
   standardService = inject(StandardService);
   notificationCenter = inject(NotificationCenterService);
   backupService = inject(BackupService);
+  readMonitor = inject(FirestoreReadMonitor);
 
   versionControl = new FormControl('');
   maintenanceModeLocal = signal(false);
@@ -596,10 +598,13 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
           const inventoryRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/inventory`);
           const standardsRef = collection(this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards`);
 
-          const [invSnap, stdSnap] = await Promise.all([
+          const [invSnap, stdDeletedSnap, stdStatusDeletedSnap] = await Promise.all([
               getDocs(query(inventoryRef, where('_isDeleted', '==', true))),
-              getDocs(query(standardsRef, where('_isDeleted', '==', true)))
+              getDocs(query(standardsRef, where('_isDeleted', '==', true))),
+              getDocs(query(standardsRef, where('status', '==', 'DELETED'))),
           ]);
+          this.readMonitor?.record?.('getDocs', `artifacts/${this.fb.APP_ID}/inventory`, (invSnap as any).docs?.length || 0, { phase: 'batch' });
+          this.readMonitor?.record?.('getDocs', `artifacts/${this.fb.APP_ID}/reference_standards`, ((stdDeletedSnap as any).docs?.length || 0) + ((stdStatusDeletedSnap as any).docs?.length || 0), { phase: 'batch' });
 
           const results: RecycleItem[] = [];
           invSnap.forEach((d: any) => {
@@ -612,17 +617,19 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
                   data,
               });
           });
-          stdSnap.forEach((d: any) => {
-              const data = d.data();
+          const standardDocsMap = new Map<string, any>();
+          for (const d of [...stdDeletedSnap.docs, ...stdStatusDeletedSnap.docs]) {
+              standardDocsMap.set(d.id, d.data());
+          }
+          standardDocsMap.forEach((data, id) => {
               results.push({
                   type: 'standard',
-                  id: d.id,
+                  id,
                   name: data['name'] || '',
                   lastUpdated: data['lastUpdated'] || null,
                   data,
               });
           });
-
           results.sort((a, b) => {
               const ta = a.lastUpdated?.toMillis() || 0;
               const tb = b.lastUpdated?.toMillis() || 0;

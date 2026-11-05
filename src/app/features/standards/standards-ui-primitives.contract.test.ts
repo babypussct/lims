@@ -814,3 +814,20 @@ describe('standards shared UI primitive integration', () => {
     assert.match(dataCleanupModal, /Lịch sử chuẩn hóa & hoàn tác/);
   });
 });
+
+
+describe('standards DeltaSync resource-limit pause banner and manual retry wiring', () => {
+  it('renders pause status banner, clears loading on error, and exposes manual retry in StandardsComponent', () => {
+    const standardsHtml = read('./standards.component.html');
+    const standardsTs = read('./standards.component.ts');
+
+    assert.match(standardsHtml, /data-testid="standards-delta-sync-pause-banner"/);
+    assert.match(standardsHtml, /data-testid="standards-delta-sync-retry-btn"/);
+    assert.match(standardsHtml, /Thử đồng bộ lại/);
+    assert.match(standardsHtml, /retryDeltaSync\(\)/);
+    assert.match(standardsTs, /syncPauseState\s*=\s*signal/);
+    assert.match(standardsTs, /syncDiagnosticError\s*=\s*signal/);
+    assert.match(standardsTs, /retryDeltaSync\(\):\s*void/);
+    assert.match(standardsTs, /retryStandardsSync/);
+  });
+});

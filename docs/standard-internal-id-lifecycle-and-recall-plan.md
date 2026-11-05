@@ -459,12 +459,12 @@ Nếu rules mới làm client cũ mất khả năng thao tác an toàn, dùng gi
 
 ### 17.1. Trước phát hành
 
-- [ ] Review diff và các đường ghi liên quan.
-- [ ] Test/rules/typecheck/build và gate phát hành đạt.
-- [ ] Xác định rõ thứ tự cập nhật rules và frontend.
-- [ ] Có báo cáo đối soát ban đầu; kiểm chứng trên fixture/emulator trước.
-- [ ] Tính năng có cách tắt điểm vào thu hồi khi phát hiện lỗi.
-- [ ] Release notes viết bằng ngôn ngữ người dùng, tập trung thao tác và lợi ích.
+- [x] Review diff và các đường ghi liên quan.
+- [x] Test/rules/typecheck/build đạt trên môi trường kiểm thử cục bộ và Firestore Emulator.
+- [x] Xác định rõ thứ tự cập nhật rules và frontend.
+- [x] Có báo cáo đối soát ban đầu; kiểm chứng trên fixture/emulator trước.
+- [x] Tính năng có cách tắt điểm vào thu hồi khi phát hiện lỗi.
+- [ ] Release notes và gate phát hành (`release:prepare` / `release:verify`) thực hiện khi chuẩn bị phát hành.
 
 ### 17.2. Theo dõi sau phát hành
 
@@ -486,18 +486,18 @@ Tài liệu này không tự thực hiện deploy, commit, thu hồi dữ liệu
 
 ## 18. Tiêu chí nghiệm thu
 
-- [ ] Có nút đúng vị trí, đúng quyền; quét toàn bộ chuẩn đã ẩn.
-- [ ] Người dùng xem trước số mã duy nhất và lý do các mục bị chặn.
-- [ ] Thu hồi thành công làm hồ sơ và sổ mã nhất quán, có audit nguyên tử.
-- [ ] Ẩn hồ sơ không tự giải phóng mã qua bất kỳ luồng đồng bộ/import nào.
-- [ ] Không trả nhầm mã đã cấp cho chuẩn khác.
-- [ ] Request mở được bảo vệ cả khi dữ liệu cũ lệch cờ và khi thao tác đồng thời.
-- [ ] Chạy lại, mất mạng sau commit và retry không tạo lịch sử trùng.
-- [ ] Khôi phục sau trả mã luôn qua kiểm tra/cấp lại hợp lệ.
-- [ ] QR, request, usage và lịch sử vẫn trỏ đúng hồ sơ vật lý.
-- [ ] Quy tắc được kiểm chứng bằng emulator, không chỉ bằng UI.
-- [ ] Có báo cáo phần hoàn tất/phần còn chặn; không báo thành công toàn bộ khi chưa đủ.
-- [ ] Checklist/tài liệu cũ được cập nhật theo hành vi cuối cùng.
+- [x] Có nút đúng vị trí, đúng quyền; quét toàn bộ chuẩn đã ẩn.
+- [x] Người dùng xem trước số mã duy nhất và lý do các mục bị chặn.
+- [x] Thu hồi thành công làm hồ sơ và sổ mã nhất quán, có audit nguyên tử.
+- [x] Ẩn hồ sơ không tự giải phóng mã qua bất kỳ luồng đồng bộ/import nào.
+- [x] Không trả nhầm mã đã cấp cho chuẩn khác.
+- [x] Request mở được bảo vệ cả khi dữ liệu cũ lệch cờ và khi thao tác đồng thời.
+- [x] Chạy lại, mất mạng sau commit và retry không tạo lịch sử trùng.
+- [x] Khôi phục sau trả mã luôn qua kiểm tra/cấp lại hợp lệ.
+- [x] QR, request, usage và lịch sử vẫn trỏ đúng hồ sơ vật lý.
+- [x] Quy tắc được kiểm chứng bằng emulator, bao gồm giao dịch đồng thời qua service.
+- [x] Có báo cáo phần hoàn tất/phần còn chặn; không báo thành công toàn bộ hoặc `PERSISTED` khi còn projection chưa ghi hoặc mục chưa xác định.
+- [x] Checklist/tài liệu được cập nhật theo hành vi cuối cùng.
 
 ## 19. Các quyết định cần chốt trong bước thiết kế triển khai
 
@@ -515,3 +515,202 @@ Các điểm dưới đây có mặc định đề xuất để không làm giá
 | Có thêm backend không? | Ưu tiên kiến trúc hiện có với khóa và rules đúng | Nếu không bảo đảm được kiểm tra request/ownership nguyên tử |
 
 Các mặc định trên là phương án triển khai đề xuất, không phải mô tả hành vi đã có trong sản phẩm.
+
+## 20. Đặc tả triển khai Đợt 1 (Giảm chi phí đọc của thu hồi hàng loạt, dừng an toàn khi chạm giới hạn tài nguyên và bảo vệ DeltaSync)
+
+### 20.1. Phạm vi và giới hạn của Đợt 1
+
+1. **Loại bỏ quét toàn bộ `reference_standards` cho từng mục trong thu hồi hàng loạt (`StandardCodeRecallService` → `StandardCodeRegistryService.releaseStandardCode`)**: tận dụng danh sách ứng viên cùng mã đã thu được ở bước quét đầu đợt, kết hợp truy vấn điểm `where('internal_id', 'in', [code, code.toLowerCase()])` và đọc lại `standard_code_registry/{code}` trong `runTransaction`.
+2. **Dừng đợt xử lý ngay (fail-fast) khi gặp giới hạn tài nguyên Firestore (`resource-exhausted`) ở mọi bước**: bảo toàn các kết quả đã xác nhận, giữ nguyên `operationId` cho mục chưa xác định để đối soát idempotent.
+3. **Ngăn `DeltaSyncService` tự tạo lại yêu cầu đọc khi đang tạm dừng do giới hạn tài nguyên**: chặn việc tự khởi động lại do timer retry, subscriber mới, chuyển trang (destroy/recreate) hoặc yêu cầu `getDocs()` đang chạy dở hoàn tất muộn trong cùng chu kỳ tạm dừng.
+4. **Giới hạn phạm vi rõ ràng**: Đợt 1 giữ nguyên đường kiểm tra bảo thủ (quét toàn bảng) cho thao tác trả mã đơn lẻ ngoài recall (`scannedCandidates === undefined`), thêm mới (`reserveForNewStandard`) và khôi phục (`restoreStandard`). Bản sửa này giảm mạnh chi phí đọc của thu hồi hàng loạt nhưng chưa loại bỏ mọi lượt quét toàn bảng trong ứng dụng; backfill `internal_id_normalized`, IndexedDB hoặc Google Drive Pack thuộc các đợt tiếp theo.
+
+### 20.2. Giữ nguyên trạng thái thực thi từng mục (Không gộp sang `ALREADY_RELEASED`)
+
+Khi cập nhật báo cáo trong bộ nhớ hoặc tiếp tục đợt thu hồi trong cùng phiên, hệ thống giữ nguyên trạng thái thực thi của từng mục và tính riêng danh sách mục cần xử lý tiếp theo qua `selectRecallExecutionTargets`:
+
+| Kết quả thực thi | Cách xử lý khi tiếp tục đợt trong phiên |
+|---|---|
+| `RELEASED` (`CONFIRMED`) | Đã xác nhận trả mã; giữ nguyên `RELEASED`, không thực hiện lại và không đổi thành `ALREADY_RELEASED` |
+| `RECONCILED` (`CONFIRMED`) | Đã xác nhận đối soát; giữ nguyên `RECONCILED`, không thực hiện lại và không đổi thành `ALREADY_RELEASED` |
+| `ALREADY_RELEASED` (`CONFIRMED`) | Đã xác nhận xử lý trước đó; không thực hiện lại |
+| `BLOCKED` (`CONFIRMED`) | Giữ nguyên trạng thái `BLOCKED` và lý do bị chặn; không hiển thị thành công và không thực hiện lại |
+| `CHANGED_SINCE_SCAN` (`CONFIRMED`) | Giữ nguyên `CHANGED_SINCE_SCAN`; yêu cầu quét hoặc đánh giá lại (chỉ chạy lại nếu bật `includeFailed`) |
+| `FAILED` (`CONFIRMED`) | Lỗi nghiệp vụ xác định; giữ nguyên kết quả, chỉ thử lại khi `includeFailed = true` |
+| `FAILED` (`UNCONFIRMED`) | Chưa xác định kết quả do giới hạn tài nguyên/mạng; tự động chọn lại để đối soát bằng cùng `operationId` |
+| Chưa bắt đầu | Giữ nguyên trạng thái quét ban đầu (`RELEASED` / `RECONCILED`) và khả năng xử lý |
+
+### 20.3. Ràng buộc ứng viên từ bước quét với `expectedInternalId`
+
+`StandardCodeReleaseOptions` nhận tùy chọn có cấu trúc:
+
+```ts
+scannedCandidates?: {
+  expectedInternalId: string;
+  standardIds: readonly string[];
+};
+```
+
+Quy tắc an toàn trong `releaseStandardCode()`:
+
+1. Đọc lại hồ sơ mục tiêu và chuẩn hóa `currentCode = normalizeInternalId(standard.internal_id)`.
+2. Nếu `source === 'RECALL'` và hồ sơ không còn ở trạng thái ẩn (`_isDeleted !== true && status !== 'DELETED'`), dừng mục đó với lỗi dữ liệu thay đổi sau lần quét (`CHANGED_SINCE_SCAN`).
+3. Nếu `scannedCandidates` được truyền mà `normalizeInternalId(scannedCandidates.expectedInternalId) !== currentCode`, dừng mục đó với `CHANGED_SINCE_SCAN` trước khi dùng `scannedCandidates.standardIds`.
+4. Phân biệt rõ hai trường hợp:
+   - `scannedCandidates === undefined` (trả mã đơn lẻ ngoài recall): dùng đường bảo thủ quét toàn bảng `scanAllSameCodeStandardIds(currentCode)`.
+   - `scannedCandidates !== undefined` (thu hồi hàng loạt đã qua bước quét, kể cả khi `standardIds` là mảng rỗng `[]`): dùng đường tối ưu `Set(scannedCandidates.standardIds) ∪ querySameCodeStandardIds(currentCode)` và không rơi về quét toàn bảng.
+5. Trong `runTransaction`: đọc `standard_code_events/{operationId}`, đọc lại hồ sơ mục tiêu, kiểm tra lại trạng thái ẩn và `currentCode === initialCode`, đọc `standard_code_registry/{code}`, hợp nhất tập ứng viên với `registry?.currentStandardId` từ snapshot thực tế trong transaction, rồi `transaction.get()` toàn bộ ứng viên trước khi thực hiện bất kỳ lệnh ghi nào.
+
+### 20.4. Phối hợp trên `standard_code_registry/{code}` và các đường ghi liên quan
+
+- `releaseStandardCode`, `reserveForNewStandard`, `restoreStandard` và `StandardImportService.saveImportedData` cùng đọc và cập nhật `standard_code_registry/{code}`.
+- Trong `releaseStandardCode`, `registry?.currentStandardId` đọc trong `runTransaction` luôn được hợp nhất vào danh sách hồ sơ cần `transaction.get()` và kiểm tra quyền sở hữu trước khi ghi, bảo đảm phát hiện xung đột khi thao tác cấp mới/import/khôi phục xen kẽ sau thời điểm quét.
+
+### 20.5. Dừng an toàn (Fail-Fast) ở mọi bước của đợt thu hồi khi gặp `resource-exhausted`
+
+Cơ chế nhận diện `isDeltaResourceExhaustedError` được áp dụng cho tất cả các bước chạm Firestore trong `StandardCodeRecallService`:
+
+1. **`writeRun('RUNNING')` đầu đợt**: nếu gặp `resource-exhausted`, dừng ngay trước vòng lặp (`stopReason = 'RESOURCE_LIMIT'`, `serverState = 'UNCONFIRMED'`, `canAutoRescan = false`), giữ toàn bộ mục mục tiêu ở trạng thái chưa bắt đầu.
+2. **`releaseStandardCode()`**: nếu gặp `resource-exhausted`, ghi nhận mục hiện tại là `status: 'FAILED'`, `outcomeState: 'UNCONFIRMED'`, giữ nguyên `operationId`, bỏ qua `classifyExecutionFailure()` (`getDoc`), bỏ qua `writeRunItem()`, bỏ qua `writeRun('STOPPED')` và dừng vòng lặp ngay.
+3. **`classifyExecutionFailure()`**:
+   - Nếu lỗi từ `releaseStandardCode()` đã chỉ rõ hồ sơ thay đổi sau lần quét thì phân loại ngay `CHANGED_SINCE_SCAN` (`CONFIRMED`) mà không đọc phụ.
+   - Ưu tiên đọc `standard_code_events/{operationId}` trên máy chủ trước: nếu sự kiện đã tồn tại (`!fromCache`), xác minh chặt `type === 'RELEASED' || type === 'RECONCILED'`, `standardId`, `normalizeInternalId(internalId)` và `operationId`. Khi khớp đầy đủ mới lấy trạng thái trực tiếp từ `eventData.type` (`RELEASED` hoặc `RECONCILED`, `outcomeState: 'CONFIRMED'`); nếu sự kiện không khớp loại hoặc thuộc hồ sơ/mã khác thì báo rõ `FAILED` (`outcomeState: 'CONFIRMED'`, `errorCode: 'event-mismatch'`) chứ không chuyển thành thành công.
+   - Khi đọc `standard_code_events/{operationId}` hoặc `reference_standards/{standardId}`: nếu gặp `resource-exhausted` thì trả về `FAILED` (`UNCONFIRMED`, `resourceExhausted: true`) và dừng vòng lặp ngay; nếu gặp bất kỳ lỗi đọc nào khác (`unavailable`, mất mạng/offline, `deadline-exceeded`) hoặc dữ liệu chỉ đọc từ cache cục bộ (`fromCache === true`), giữ nguyên `outcomeState: 'UNCONFIRMED'` và `operationId` để lần tiếp tục đợt tự động đối soát/thử lại.
+   - Chỉ đặt `outcomeState: 'CONFIRMED'` khi đã đọc thành công từ máy chủ và xác nhận trạng thái tài liệu (`RELEASED`, `RECONCILED`, `ALREADY_RELEASED`, `BLOCKED`, `CHANGED_SINCE_SCAN`, xác nhận hồ sơ không còn tồn tại trên máy chủ, sự kiện không khớp hoặc lỗi phân quyền/tham số đầu cuối).
+4. **`writeRunItem()` sau khi `releaseStandardCode()` đã thành công và backfill khi tiếp tục đợt**:
+   - Nếu `releaseStandardCode(X)` đã cam kết nhưng `writeRunItem(X)` gặp `resource-exhausted`, mục `X` vẫn giữ nguyên kết quả đã cam kết (`RELEASED` hoặc `RECONCILED`, `outcomeState: 'CONFIRMED'`, `projectionPersisted: false`), đợt dừng ngay trước mục kế tiếp `Y`, và trạng thái đợt được đánh dấu `serverState = 'UNCONFIRMED'`.
+   - Khi tiếp tục đợt trong cùng phiên, các mục đã `CONFIRMED` nhưng có `projectionPersisted === false` được ghi bù `writeRunItem` mà không gọi lại `releaseStandardCode()`.
+5. **`writeRun()` cuối đợt và `scanAfterExecution()` trong modal**: khi `stopReason === 'RESOURCE_LIMIT'` thì bỏ qua `writeRun()` cuối đợt; nếu `writeRun()` cuối đợt gặp `resource-exhausted` thì đặt `stopReason = 'RESOURCE_LIMIT'`, `serverState = 'UNCONFIRMED'` và `canAutoRescan = false`. `serverState` chỉ đạt `'PERSISTED'` và `canAutoRescan` chỉ đạt `true` khi `unpersistedProjectionCount === 0 && unconfirmedCount === 0` và `writeRun()` cuối đợt thành công.
+
+### 20.6. Nhận diện lỗi giới hạn tài nguyên theo mã có cấu trúc
+
+Hàm `isDeltaResourceExhaustedError(error)` kiểm tra đệ quy qua `error` và `error.cause`:
+
+- Loại trừ lỗi bộ nhớ trình duyệt (`QuotaExceededError` / `NS_ERROR_DOM_QUOTA_REACHED`).
+- Ưu tiên `error.code` có cấu trúc: `'resource-exhausted'`, `'firestore/resource-exhausted'`, hậu tố `/resource-exhausted`, hoặc mã số gRPC `8`.
+- Kiểm tra trường trạng thái HTTP kiểu số (`error.status === 429` hoặc `error.statusCode === 429`).
+- Chỉ dùng biểu thức chính quy chặt trên `message` (`/\bresource[_\s-]?exhausted\b/i` hoặc `/\bquota exceeded\b/i`) làm phương án dự phòng cuối; không khớp chuỗi con `"429"` rời rạc để tránh nhận nhầm mã lô, ID tài liệu hoặc thông báo nghiệp vụ.
+
+### 20.7. Hợp đồng kết quả cấp đợt (`StandardCodeRecallBatchOutcome`) và giới hạn phiên bộ nhớ
+
+`recallEligibleCodesWithOutcome()` trả về `StandardCodeRecallBatchOutcome` gồm:
+- Nhóm trạng thái cấp đợt: `runId`, `results`, `stopReason` (`'NONE' | 'USER_REQUESTED' | 'RESOURCE_LIMIT'`), `serverState` (`'PERSISTED' | 'UNCONFIRMED'`), `requiresReconciliation`, `canAutoRescan`, `message`.
+- Nhóm bộ đếm toàn đợt (cùng phạm vi toàn bộ mục mục tiêu của báo cáo): `targetCount`, `confirmedCount`, `confirmedSuccessCount`, `confirmedBlockedCount`, `confirmedFailedCount`, `unconfirmedCount`, `unstartedCount`, `unpersistedProjectionCount`.
+- Nhóm bộ đếm riêng cho lượt chạy hiện tại: `attemptTargetCount`, `attemptedCount`, `backfilledProjectionCount`.
+
+Giới hạn phiên hiện tại được hiển thị rõ trên giao diện:
+
+> Khi đợt dừng và `serverState = 'UNCONFIRMED'`, việc tiếp tục đợt hoặc đối soát bằng cùng `operationId` chỉ áp dụng trong phiên màn hình hiện tại còn giữ `report()` và `executionResults()` trong bộ nhớ. Nếu đóng hộp thoại hoặc tải lại trang, người dùng phải quét lại trước khi thực hiện đợt mới.
+
+### 20.8. Quản lý trạng thái tạm dừng trong `DeltaSyncService` và nối lên màn hình Danh mục chuẩn (`StandardsComponent`)
+
+1. Mỗi khóa listener (`key`) có bộ đếm thế hệ `generation` và trạng thái tạm dừng trong `_resourceLimitPauses`.
+2. Khi phát hiện `resource-exhausted` (ở `getDocs()` khởi tạo hoặc `onSnapshot()`):
+   - Tăng `entry.generation`, hủy `unsubscribe` hiện tại, xóa timer retry, đặt `entry.status = 'failed'` và ghi nhận vào `_resourceLimitPauses`.
+   - Nếu một `getDocs()` khởi tạo bắt đầu trước khi tạm dừng nhưng hoàn tất sau đó, kiểm tra `!this._entryIsActive(entry, generation) || this.isResourceLimitPaused(entry.key)` sẽ chặn không cho gắn `onSnapshot()` mới.
+3. Trong thời gian khóa đang tạm dừng:
+   - Subscriber mới hoặc thao tác chuyển trang (destroy/recreate listener) không tự khởi động lại đồng bộ; chỉ phát dữ liệu nếu khóa đã có cache hợp lệ (`hasUsableCache || entry.memCache.length > 0`), và không phát mảng rỗng `[]` như dữ liệu đầy đủ khi chưa có cache hợp lệ.
+   - Chỉ tiếp tục lại khi gọi tường minh `retryResourceLimitedSync(cacheKey)` (bỏ qua các lần bấm lặp liên tiếp khi `entry.status === 'starting'`) hoặc khi đổi phạm vi đăng nhập qua `clearResourceLimitPausesForScope()`.
+4. Nối trạng thái lên `StandardCacheService`, `StandardService` và `StandardsComponent`:
+   - `StandardCacheService._deltaSyncConfig()` đăng ký cả `onError` và `onReady` để cập nhật `syncDiagnosticError`, `resourceLimitState`, `isRetryingSync` và thông báo cho các subscriber qua `listenToStandards(onData, onError, onReady)`.
+   - Khi listener kết nối lại thành công (`onReady`), kể cả khi snapshot không có thay đổi dữ liệu (`hasChanges === false`), `StandardCacheService` và `StandardsComponent` đều nhận tín hiệu sẵn sàng để tắt `isRetryingSync` / `isRetryingDeltaSync`, xóa cảnh báo tạm dừng và khôi phục nút `"Thử đồng bộ lại"`.
+   - Khi `DeltaSyncService` tạm dừng mà chưa có cache hợp lệ, `StandardsComponent` tắt `isLoading` (`isLoading.set(false)`), hiển thị thông báo cảnh báo đồng bộ đang tạm dừng do giới hạn tài nguyên và nút `"Thử đồng bộ lại"` (`retryDeltaSync()`).
+   - Khi `DeltaSyncService` tạm dừng nhưng đang hiển thị dữ liệu từ cache cục bộ, `StandardsComponent` hiển thị thanh cảnh báo nêu rõ dữ liệu đang lấy từ bộ nhớ đệm cục bộ gần nhất và cung cấp nút `"Thử đồng bộ lại"`.
+
+## 21. Đặc tả triển khai Đợt 2 (Chuẩn hóa `internal_id` có chứng nhận & Loại bỏ toàn bộ quét toàn bảng ở các thao tác đơn lẻ)
+
+### 21.1. Phạm vi và mục tiêu của Đợt 2
+
+1. **Loại bỏ quét toàn bảng `reference_standards` ở tất cả thao tác đơn lẻ**:
+   - `StandardCrudService.addStandard()`: thêm mới 1 chuẩn.
+   - `StandardCodeRegistryService.restoreStandard()`: khôi phục 1 chuẩn từ thùng rác.
+   - `StandardCodeRegistryService.releaseStandardCode()`: trả mã đơn lẻ ngoài quy trình thu hồi hàng loạt (`scannedCandidates === undefined`).
+2. **Cơ chế Chứng nhận Chuẩn hóa (`Normalization Certification Marker`)**:
+   - Lưu trữ tại tài liệu cấu hình `artifacts/{APP_ID}/config/standard_code_migration`.
+   - Cung cấp bằng chứng an toàn chứng minh toàn bộ dữ liệu máy chủ không còn mã chưa chuẩn hóa (`unnormalizedCount === 0`) và không còn xung đột sở hữu (`conflictsCount === 0`).
+   - Được cập nhật tự động bởi `StandardInternalIdSyncService` khi quản trị viên thực hiện đối soát (`scan()`) đạt chuẩn hoặc áp dụng đồng bộ (`apply()`) thành công.
+   - Được bảo vệ bằng Firestore Rules với quyền `hasAuditedStandardEdit(appId)`.
+3. **Thao tác đơn lẻ chuyển sang truy vấn điểm O(1)**:
+   - Khi hệ thống đã có chứng nhận (`isNormalizationCertified() === true`), các thao tác đơn lẻ truy vấn điểm chính xác qua `where('internal_id', '==', code)` kết hợp đọc `standard_code_registry/{code}` trong transaction.
+   - Khi chưa được chứng nhận (`isNormalizationCertified() === false`), dịch vụ tự động fallback an toàn về quét toàn bảng để bảo đảm không bỏ sót biến thể mã lịch sử.
+4. **Tối ưu hóa quét ẩn trong thu hồi hàng loạt (Fast Scan)**:
+   - `StandardCodeRecallService.scanHiddenStandardCodes()` chuyển sang Fast Scan khi hệ thống đã chứng nhận: chỉ đọc hồ sơ bị ẩn qua hai truy vấn có điều kiện `where('_isDeleted', '==', true)` và `where('status', '==', 'DELETED')`, sau đó truy vấn theo lô `where('internal_id', 'in', chunk)` cho các mã phát hiện được, đọc sổ mã và yêu cầu tương ứng. Không còn quét toàn bộ tập `reference_standards`.
+5. **Tối ưu thùng rác cấu hình (`ConfigGeneralComponent.openRecycleBin`)**:
+   - Truy vấn có điều kiện `where('_isDeleted', '==', true)` và `where('status', '==', 'DELETED')` thay vì quét toàn bộ danh mục chuẩn; loại trùng theo `id` và ghi nhận telemetry đọc vào `FirestoreReadMonitor`.
+
+## 22. Đặc tả triển khai Đợt 3 (IndexedDB L2 Persistent Cache & Single Source of Truth cho Danh mục chuẩn)
+
+### 22.1. Bộ đệm bền vững L2 qua IndexedDB (`DeltaIndexedDbStorage`)
+
+1. **Kiến trúc hai tầng bộ đệm (Tiered Cache Architecture)**:
+   - **Tầng L1 (In-Memory)**: Lưu trữ mảng đối tượng `memCache` trong bộ nhớ ứng dụng để các component đọc và phản hồi tức thì với độ trễ 0ms.
+   - **Tầng L2 (IndexedDB Persistence)**: Ưu tiên IndexedDB khi khả dụng; chỉ dùng cơ chế `localStorage` cũ làm fallback (vốn bị giới hạn dung lượng nghiêm ngặt 5MB và gây nghẽn UI thread qua I/O đồng bộ).
+   - Cơ sở dữ liệu IndexedDB `lims_delta_sync_v1` (phiên bản 1) với Object Store `cache_entries`, dùng khóa tổng hợp `cacheKey` (được cách ly chặt chẽ theo `authScope: [uid, role, permissions]`).
+2. **Khả năng tự suy thoái mềm dẻo (Graceful Degradation)**:
+   - Khi môi trường không hỗ trợ `indexedDB` (như SSR, Node.js unit tests hoặc trình duyệt chặn lưu trữ cục bộ), adapter tự động chuyển sang fallback localStorage/L1 có kiểm soát mà không phát sinh ngoại lệ.
+3. **Chống phân mảnh và giải phóng bộ nhớ cũ**:
+   - Khi đăng xuất hoặc chuyển đổi tài khoản, các bản ghi bộ đệm của phiên người dùng trước được thu dọn theo scope để tránh chiếm dụng tài nguyên máy khách.
+
+### 22.2. Điểm chân lý duy nhất cho Danh mục chuẩn (`getCompleteCatalogue()`)
+
+1. **Loại bỏ phân mảnh đọc toàn bảng trong `StandardCacheService`**:
+   - Khởi tạo hàm trung tâm `getCompleteCatalogue(forceFresh = false): Promise<ReferenceStandard[]>`.
+   - Nếu `StandardCacheService` đã có `completeCatalogue` hợp lệ trong bộ nhớ và không yêu cầu `forceFresh`, trả về ngay lập tức với **0 lượt đọc Firestore**.
+   - Nếu chưa có sẵn, kích hoạt tải nền phân trang, đưa kết quả vào bộ nhớ đệm L1 & L2 và chia sẻ cùng một `Promise` cho tất cả các caller gọi đồng thời.
+2. **Cập nhật các caller về nguồn duy nhất**:
+   - **Import Excel (`StandardImportService`)**:
+     - Thay thế các lời gọi `fetchAllAndCache()` phân tán bằng `getCompleteCatalogue()`, chỉ tái sử dụng snapshot đã tải đầy đủ từ máy chủ.
+   - **Công cụ dọn dẹp dữ liệu (`StandardsDataCleanupModalComponent`)**:
+     - Chuyển sang dùng `standardCache.getCompleteCatalogue()`, tránh phát sinh lượt đọc toàn bộ danh mục khi mở modal dọn rác/gộp chuẩn.
+   - **Tải danh mục cho Báo cáo / Thống kê (`StateService.loadReferenceStandards()`)**:
+     - Chỉ kiểm tra snapshot đầy đủ đã được xác nhận trước khi thực hiện truy vấn Firestore. Giảm triệt để việc đọc lại toàn bộ chuẩn khi người dùng điều hướng giữa Kho, SOP và Báo cáo.
+
+### 22.3. Tối ưu hóa Firestore Rules bảo vệ AST limit khi xử lý giao dịch đồng thời
+
+1. **Short-circuit quyền hạn quản trị (`role == 'manager'`)**:
+   - Bỏ việc khởi tạo biến cục bộ `let direct` và `let custom` trong `evaluateUserPermission` khi tài khoản có vai trò Quản lý, giảm mạnh số biểu thức AST tiêu tốn trong mỗi lần đánh giá quy tắc.
+2. **Inlined Path Expressions**:
+   - Tránh việc tính toán các đường dẫn document rỗng (`$(migratedTo) == ''` hay `$(previousHolderId) == ''`) ở đầu hàm trước khi kiểm tra điều kiện kích hoạt, ngăn chặn hoàn toàn lỗi `evaluation error` trong engine Firestore CEL.
+3. **Đồng bộ trạng thái sổ mã khi khôi phục chuẩn chưa trả mã**:
+   - Trong `StandardCodeRegistryService.restoreStandard()`, cập nhật `lastUpdated` trên sổ mã khi khôi phục hồ sơ có `lifecycle_status === 'ACTIVE'`, đảm bảo tài liệu sổ mã luôn nằm trong write set của transaction để vượt qua điều kiện kiểm tra `getAfter()` trong Firestore Security Rules.
+
+
+## 23. Đặc tả triển khai Đợt 4 (Bảng điều khiển Sổ mã & Nhật ký vòng đời sự kiện sở hữu)
+
+### 23.1. Hợp nhất Trung tâm Điều khiển Mã Quản lý (`StandardsInternalIdSyncModalComponent`)
+
+1. **Kiến trúc ba góc nhìn nghiệp vụ (Unified Workspace Views)**:
+   - Tích hợp góc nhìn thứ ba **`Sổ mã & Sự kiện`** (`activeView = 'registry'`) vào không gian làm việc của Quản lý phòng thí nghiệm, bên cạnh hai góc nhìn hiện hữu (`Quét & Đối chiếu`, `Lịch sử đồng bộ`).
+   - Cung cấp thuộc tính `initialView` cho phép mở trực tiếp chế độ tra cứu từ menu Toolbar hoặc từ các luồng phân tích khác.
+2. **Dải trạng thái và Chứng nhận Chuẩn hóa Tối ưu**:
+   - Hiển thị trực quan trạng thái chứng nhận toàn cục `certificationInfo.verified` (lấy từ cấu hình hệ thống `artifacts/{APP_ID}/config/standard_code_migration`):
+     - **Đã kích hoạt**: Xác nhận toàn bộ kho chuẩn đã chuẩn hóa 100%, các thao tác thêm mới/khôi phục/thu hồi đang chạy ở tốc độ cao $O(1)$ với truy vấn điểm, không cần quét toàn bộ danh mục.
+     - **Chưa kích hoạt**: Hướng dẫn quản trị viên chạy đối soát để hệ thống tự động chứng nhận.
+   - Thống kê thời gian thực: Tổng số mã quản lý, số lượng đang cấp (`ASSIGNED`), sẵn sàng cấp lại (`AVAILABLE`), xung đột (`CONFLICT`), và bí danh chuyển đổi (`MIGRATED`).
+3. **Bộ lọc và Tìm kiếm đa tiêu chí**:
+   - Lọc nhanh theo các trạng thái vòng đời: `Tất cả`, `Đang cấp`, `Sẵn sàng`, `Xung đột`, `Chuyển đổi (Alias)`.
+   - Tìm kiếm tức thì theo mã quản lý nội bộ, ID hồ sơ chuẩn đang giữ, hoặc ID chuẩn trả gần nhất.
+4. **Bảng dữ liệu Sổ mã và Xuất CSV chuẩn hóa**:
+   - Hiển thị chi tiết từng mã: Trạng thái sở hữu, hồ sơ đang giữ, số lượt đã cấp trong lịch sử, thời điểm cấp gần nhất, thời điểm trả gần nhất.
+   - Xuất dữ liệu bảng mã ra tệp CSV kèm BOM UTF-8 phục vụ báo cáo và kiểm toán độc lập.
+
+### 23.2. Bảng theo dõi Lịch sử Sự kiện Vòng đời Mã (`Standard Code Events`)
+
+1. **Giao diện dòng thời gian (Lifecycle Timeline Overlay)**:
+   - Hiển thị theo thứ tự thời gian đảo ngược mọi biến động sở hữu của từng mã quản lý, được ghi nhận bất biến trong tập hợp `standard_code_events`.
+2. **Phân loại sự kiện và nguồn gốc thao tác**:
+   - **Loại sự kiện (`type`)**: `Cấp mã (ASSIGNED)`, `Thu hồi / Trả mã (RELEASED)`, `Đổi chủ sở hữu (REASSIGNED)`, `Khắc phục đối soát (RECONCILED)`.
+   - **Nguồn gốc (`source`)**: `Tạo mới hồ sơ`, `Nhập từ tệp Excel`, `Trả mã đơn lẻ`, `Thu hồi mã chuẩn ẩn`, `Khôi phục từ thùng rác`, `Tự động tái cấp`, `Đồng bộ đối soát`.
+3. **Truy vết thay đổi hai chiều (Before/After Snapshots)**:
+   - Thể hiện rõ ràng hồ sơ chuẩn sở hữu và trạng thái kỹ thuật trước và sau khi diễn ra sự kiện, cùng với tên người thực hiện (`actorName`) và lý do thao tác (`reason`).
+
+
+## 24. Hoàn thiện kiểm chứng và phát hành 05/11/2026
+
+- Cache DeltaSync là projection có lọc/giới hạn, không chứng minh danh mục đầy đủ. `getCompleteCatalogue` chỉ tái sử dụng snapshot từ lượt đọc máy chủ hoàn chỉnh, phân trang theo document ID để không bỏ hồ sơ legacy thiếu ngày cập nhật. Các caller đồng thời dùng chung một promise; thay đổi từ listener làm mất hiệu lực snapshot đầy đủ.
+- IndexedDB lưu snapshot và cursor trong cùng một transaction. Lỗi quota localStorage không xóa bản IndexedDB hợp lệ. Cache cũ thiếu cursor hoặc quá hạn phải tải lại; đăng xuất và xóa cache vẫn xóa lớp lưu bền vững.
+- Quét chuẩn hóa đọc máy chủ, ghi nhận chứng nhận chỉ khi mọi mã hợp lệ/canonical và không còn ownership conflict/registry repair. Apply thu hồi chứng nhận trước khi ghi và quét lại sau commit. Không cache lâu kết quả chứng nhận dương tính.
+- Truy vấn sự kiện có orderBy(createdAt, desc) trước limit; index theo internalId/standardId và createdAt được triển khai cùng release. Cửa sổ hiện tại tối đa 100 mặc định, 300 khi yêu cầu; không tuyên bố hiển thị toàn bộ lịch sử vô hạn.
+- Khôi phục cạnh tranh: chỉ retry có giới hạn khi lỗi quyền kèm bằng chứng hồ sơ trên máy chủ thay đổi so với phiên bản transaction vừa đọc. Quyền không thay đổi, không bypass Rules. Emulator kiểm tra cả cạnh tranh và hai thứ tự commit tường minh.
+- Khi Firestore báo quota, các lượt đếm kế tiếp/gửi thông báo tạm dừng trong một phút để tránh gọi lặp. Xuất báo cáo báo rõ hạn mức; không thay thế kiểm tra phân quyền. API sao lưu làm mới token đúng một lần nếu trả 401.
+- Release frontend theo Git Integration + Deployment Check trong DEPLOYMENT.md. Không chạy Google Drive Pack, backfill hoặc thu hồi dữ liệu vận hành trong quá trình phát hành code.

@@ -215,12 +215,19 @@ export class BackupService {
     const headers = new Headers(init.headers);
     headers.set('Authorization', `Bearer ${token}`);
     headers.set('Content-Type', 'application/json');
-    const response = await fetch(url, {
+    const send = () => fetch(url, {
       ...init,
       headers,
       credentials: 'same-origin',
       cache: 'no-store',
     });
+    let response = await send();
+    if (response.status === 401) {
+      const refreshed = await this.auth.getIdToken(true);
+      if (!refreshed) throw new Error('Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại.');
+      headers.set('Authorization', `Bearer ${refreshed}`);
+      response = await send();
+    }
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) {
       const error = new Error(payload?.error || `Backup API HTTP ${response.status}`) as BackupRequestError;

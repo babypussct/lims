@@ -130,7 +130,7 @@ export class StandardCrudService {
     constraints.push(limit(pageSize));
 
     const snapshot = await getDocs(query(colRef, ...constraints));
-    this.readMonitor.record(
+    this.readMonitor?.record?.(
       'getDocs',
       `artifacts/${this.fb.APP_ID}/reference_standards`,
       snapshot.size,
@@ -166,17 +166,9 @@ export class StandardCrudService {
     const specialBusinessCode = isSpecialInternalId(std.internal_id);
     let legacyOwnerIds: string[] = [];
     if (!specialBusinessCode) {
-      // The registry is authoritative for the canonical owner, but legacy
-      // rows can still carry the same code (including a hidden row) without a
-      // registry entry. Always scan same-code physical records before a new
-      // assignment so an old duplicate cannot be silently masked by a current
-      // registry owner.
-      const legacyMatches = await getDocs(collection(
-        this.fb.db, `artifacts/${this.fb.APP_ID}/reference_standards`
-      ));
-      legacyOwnerIds = legacyMatches.docs
-        .filter(snapshot => snapshot.id !== std.id)
-        .map(snapshot => ({ id: snapshot.id, ...snapshot.data() } as ReferenceStandard))
+      const candidates = await this.codeRegistry.findSameCodeRecords(std.internal_id);
+      legacyOwnerIds = candidates
+        .filter(candidate => candidate.id !== std.id)
         .filter(candidate => normalizeInternalId(candidate.internal_id) === std.internal_id)
         .filter(candidate => hasUnreleasedCodeLifecycle(candidate))
         .map(candidate => candidate.id);

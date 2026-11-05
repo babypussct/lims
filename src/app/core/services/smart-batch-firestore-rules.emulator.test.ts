@@ -33,6 +33,9 @@ import type { Sop } from '../models/sop.model';
 import { persistDutyMonthImport } from '../../features/duty-stats/duty-tsv-import.persistence';
 import { DUTY_TSV_HEADER, parseDutyTsv } from '../../features/duty-stats/duty-tsv-import';
 import type { DutyScheduleEntry } from '../../features/duty-stats/duty-schedule.model';
+import { StandardCodeRegistryService } from '../../features/standards/services/standard-code-registry.service';
+import { StandardCodeRecallService } from '../../features/standards/services/standard-code-recall.service';
+import { StandardInternalIdSyncService } from '../../features/standards/services/standard-internal-id-sync.service';
 
 // These tests intentionally exercise denied reads/writes. Keep expected Rules
 // denials out of the test output so real warnings remain visible.
@@ -2735,4 +2738,415 @@ test('batch_run cannot promote pending to approved, while sop_approve and manage
     approvedAt: serverTimestamp(),
     lastUpdated: serverTimestamp()
   }));
+});
+
+test('interleaved recall, import and idempotent retry preserve single-owner registry invariants in the emulator', async () => {
+  const managerDb = dbFor(users.manager);
+  const fb = { db: managerDb, APP_ID };
+  const auth = {
+    canEditStandards: () => true,
+    currentUser: () => ({ uid: users.manager.uid, displayName: users.manager.displayName, email: users.manager.email }),
+  };
+  const registryService = Object.assign(Object.create(StandardCodeRegistryService.prototype), {
+    fb,
+    auth,
+    readMonitor: { recordRead: () => {} },
+  }) as StandardCodeRegistryService;
+  const recallService = Object.assign(Object.create(StandardCodeRecallService.prototype), {
+    fb,
+    auth,
+    registry: registryService,
+  }) as StandardCodeRecallService;
+
+  await env.withSecurityRulesDisabled(async context => {
+    const db = context.firestore();
+    const seedTime = Timestamp.fromMillis(1_700_000_000_000);
+    await Promise.all([
+      setDoc(doc(db, `artifacts/${APP_ID}/reference_standards/interleaved-hidden-ad21`), {
+        id: 'interleaved-hidden-ad21',
+        name: 'Hidden AD21',
+        internal_id: 'AD21',
+        initial_amount: 10,
+        current_amount: 10,
+        unit: 'mg',
+        status: 'DELETED',
+        _isDeleted: true,
+        lifecycle_status: 'ACTIVE',
+        internal_id_assignment_sequence: 1,
+        lastUpdated: seedTime,
+      }),
+      setDoc(doc(db, `artifacts/${APP_ID}/standard_code_registry/AD21`), {
+        id: 'AD21',
+        internal_id: 'AD21',
+        status: 'ASSIGNED',
+        currentStandardId: 'interleaved-hidden-ad21',
+        assignmentCount: 1,
+        lastUpdated: seedTime,
+      }),
+      setDoc(doc(db, `artifacts/${APP_ID}/reference_standards/interleaved-idem-ad22`), {
+        id: 'interleaved-idem-ad22',
+        name: 'Idempotent AD22',
+        internal_id: 'AD22',
+        initial_amount: 10,
+        current_amount: 10,
+        unit: 'mg',
+        status: 'DELETED',
+        _isDeleted: true,
+        lifecycle_status: 'ACTIVE',
+        internal_id_assignment_sequence: 1,
+        lastUpdated: seedTime,
+      }),
+      setDoc(doc(db, `artifacts/${APP_ID}/standard_code_registry/AD22`), {
+        id: 'AD22',
+        internal_id: 'AD22',
+        status: 'ASSIGNED',
+        currentStandardId: 'interleaved-idem-ad22',
+        assignmentCount: 1,
+        lastUpdated: seedTime,
+      }),
+    ]);
+  });
+
+  // 1. Scan captures AD21 with affectedStandardIds = [] and AD22 as eligible
+  const scanReport = await recallService.scanHiddenStandardCodes();
+  const itemAd21 = scanReport.items.find(item => item.standardId === 'interleaved-hidden-ad21');
+  const itemAd22 = scanReport.items.find(item => item.standardId === 'interleaved-idem-ad22');
+  assert.ok(itemAd21);
+  assert.ok(itemAd22);
+  assert.deepEqual(itemAd21.affectedStandardIds, []);
+
+  // 2. Interleaved Import/Assignment after scan assigns AD21 to a new active standard (`interleaved-import-new-ad21`)
+  // while leaving `interleaved-hidden-ad21` un-released (simulating an ownership conflict or concurrent assignment)
+  await env.withSecurityRulesDisabled(async context => {
+    const db = context.firestore();
+    await setDoc(doc(db, `artifacts/${APP_ID}/reference_standards/interleaved-import-new-ad21`), {
+      id: 'interleaved-import-new-ad21',
+      name: 'New Import AD21',
+      internal_id: 'AD21',
+      initial_amount: 25,
+      current_amount: 25,
+      unit: 'mg',
+      status: 'AVAILABLE',
+      _isDeleted: false,
+      lifecycle_status: 'ACTIVE',
+      internal_id_assignment_sequence: 2,
+      lastUpdated: Timestamp.now(),
+    });
+    await setDoc(doc(db, `artifacts/${APP_ID}/standard_code_registry/AD21`), {
+      id: 'AD21',
+      internal_id: 'AD21',
+      status: 'ASSIGNED',
+      currentStandardId: 'interleaved-import-new-ad21',
+      assignmentCount: 2,
+      lastUpdated: Timestamp.now(),
+    });
+  });
+
+  // 3. Running recall with the stale scan report must detect `interleaved-import-new-ad21` via registry/point-query,
+  // block AD21 without touching the new owner, and release AD22 cleanly
+  const scopedReport = {
+    ...scanReport,
+    items: [itemAd21, itemAd22],
+  };
+  const outcome = await recallService.recallEligibleCodesWithOutcome(scopedReport, 'Kiểm thử xen kẽ import và recall');
+  const resAd21 = outcome.results.find(r => r.standardId === 'interleaved-hidden-ad21');
+  const resAd22 = outcome.results.find(r => r.standardId === 'interleaved-idem-ad22');
+  assert.ok(resAd21);
+  assert.ok(resAd22);
+  assert.equal(resAd21.status, 'BLOCKED', 'stale recall must block when code was assigned to a new standard after scan');
+  assert.equal(resAd21.outcomeState, 'CONFIRMED');
+  assert.equal(resAd22.status, 'RELEASED');
+  assert.equal(resAd22.outcomeState, 'CONFIRMED');
+
+  // Verify AD21 registry still belongs to `interleaved-import-new-ad21`
+  const regAd21Snap = await getDoc(doc(managerDb, `artifacts/${APP_ID}/standard_code_registry/AD21`));
+  assert.equal(regAd21Snap.data()?.currentStandardId, 'interleaved-import-new-ad21');
+  assert.equal(regAd21Snap.data()?.status, 'ASSIGNED');
+
+  // 4. Stale import batch attempting to overwrite an active assigned registry without releasing its owner is denied by Rules
+  const staleImportBatch = writeBatch(managerDb);
+  staleImportBatch.set(doc(managerDb, `artifacts/${APP_ID}/reference_standards/stale-import-ad21`), {
+    id: 'stale-import-ad21',
+    name: 'Stale Import AD21',
+    internal_id: 'AD21',
+    status: 'AVAILABLE',
+    lifecycle_status: 'ACTIVE',
+    _isDeleted: false,
+    lastUpdated: serverTimestamp(),
+  });
+  staleImportBatch.set(doc(managerDb, `artifacts/${APP_ID}/standard_code_registry/AD21`), {
+    id: 'AD21',
+    internal_id: 'AD21',
+    status: 'ASSIGNED',
+    currentStandardId: 'stale-import-ad21',
+    assignmentCount: 3,
+    lastAssignedAt: serverTimestamp(),
+    lastUpdated: serverTimestamp(),
+  });
+  await assertFails(staleImportBatch.commit());
+
+  // 5. Retrying releaseStandardCode with the exact same operationId for AD22 returns idempotently without duplicate events
+  const retryRelease = await registryService.releaseStandardCode('interleaved-idem-ad22', 'Kiểm thử xen kẽ import và recall', {
+    operationId: itemAd22.operationId,
+    source: 'RECALL',
+    runId: scanReport.runId,
+    scannedCandidates: { expectedInternalId: 'AD22', standardIds: [] },
+  });
+  assert.equal(retryRelease.status, 'RELEASED');
+  assert.equal(retryRelease.operationId, itemAd22.operationId);
+
+  // Repeat the assertion at the end of the original test block:
+  await assertSucceeds(updateDoc(doc(dbFor(users.manager), `artifacts/${APP_ID}/requests/pending-manager-request`), {
+    status: 'approved',
+    approvedAt: serverTimestamp(),
+    lastUpdated: serverTimestamp()
+  }));
+});
+
+
+test('real concurrent StandardCodeRegistryService transactions (Promise.all) preserve registry invariants under Firestore Rules', async () => {
+  const { StandardCodeRegistryService } = await import('../../features/standards/services/standard-code-registry.service');
+
+  const managerDb = dbFor(users.manager);
+  const registryService = Object.create(StandardCodeRegistryService.prototype) as any;
+  registryService.fb = {
+    APP_ID,
+    db: managerDb,
+    updateMetadata: async () => {},
+  };
+  registryService.auth = {
+    canEditStandards: () => true,
+    currentUser: () => ({ uid: users.manager.uid, displayName: users.manager.displayName }),
+  };
+
+  await env.withSecurityRulesDisabled(async context => {
+    const db = context.firestore();
+    const seedTime = Timestamp.fromMillis(1_700_000_050_000);
+    await Promise.all([
+      setDoc(doc(db, `artifacts/${APP_ID}/config/standard_code_migration`), {
+        normalizedInvariantsVerified: true,
+        verifiedAt: seedTime,
+        schemaVersion: 1,
+      }),
+      setDoc(doc(db, `artifacts/${APP_ID}/reference_standards/concurrent-std-ad23`), {
+        id: 'concurrent-std-ad23',
+        name: 'Concurrent Same OpId AD23',
+        internal_id: 'AD23',
+        initial_amount: 10,
+        current_amount: 10,
+        unit: 'mg',
+        status: 'DELETED',
+        _isDeleted: true,
+        lifecycle_status: 'ACTIVE',
+        internal_id_assignment_sequence: 1,
+        lastUpdated: seedTime,
+      }),
+      setDoc(doc(db, `artifacts/${APP_ID}/standard_code_registry/AD23`), {
+        id: 'AD23',
+        internal_id: 'AD23',
+        status: 'ASSIGNED',
+        currentStandardId: 'concurrent-std-ad23',
+        assignmentCount: 1,
+        lastUpdated: seedTime,
+      }),
+      setDoc(doc(db, `artifacts/${APP_ID}/reference_standards/concurrent-std-ad24`), {
+        id: 'concurrent-std-ad24',
+        name: 'Concurrent Different OpId AD24',
+        internal_id: 'AD24',
+        initial_amount: 10,
+        current_amount: 10,
+        unit: 'mg',
+        status: 'DELETED',
+        _isDeleted: true,
+        lifecycle_status: 'ACTIVE',
+        internal_id_assignment_sequence: 1,
+        lastUpdated: seedTime,
+      }),
+      setDoc(doc(db, `artifacts/${APP_ID}/standard_code_registry/AD24`), {
+        id: 'AD24',
+        internal_id: 'AD24',
+        status: 'ASSIGNED',
+        currentStandardId: 'concurrent-std-ad24',
+        assignmentCount: 1,
+        lastUpdated: seedTime,
+      }),
+      setDoc(doc(db, `artifacts/${APP_ID}/reference_standards/concurrent-hidden-ad25`), {
+        id: 'concurrent-hidden-ad25',
+        name: 'Concurrent Release vs Restore AD25',
+        internal_id: 'AD25',
+        initial_amount: 10,
+        current_amount: 10,
+        unit: 'mg',
+        status: 'DELETED',
+        _isDeleted: true,
+        lifecycle_status: 'ACTIVE',
+        internal_id_assignment_sequence: 1,
+        lastUpdated: seedTime,
+      }),
+      setDoc(doc(db, `artifacts/${APP_ID}/standard_code_registry/AD25`), {
+        id: 'AD25',
+        internal_id: 'AD25',
+        status: 'ASSIGNED',
+        currentStandardId: 'concurrent-hidden-ad25',
+        assignmentCount: 1,
+        lastUpdated: seedTime,
+      }),
+    ]);
+  });
+
+  // 1. Concurrent releaseStandardCode with the SAME operationId via Promise.all
+  const [sameOp1, sameOp2] = await Promise.all([
+    registryService.releaseStandardCode('concurrent-std-ad23', 'Concurrent same opId', {
+      source: 'RECALL',
+      operationId: 'concurrent_op_ad23_same',
+      scannedCandidates: { expectedInternalId: 'AD23', standardIds: [] },
+    }),
+    registryService.releaseStandardCode('concurrent-std-ad23', 'Concurrent same opId', {
+      source: 'RECALL',
+      operationId: 'concurrent_op_ad23_same',
+      scannedCandidates: { expectedInternalId: 'AD23', standardIds: [] },
+    }),
+  ]);
+  assert.equal(sameOp1.status, 'RELEASED');
+  assert.equal(sameOp2.status, 'RELEASED');
+  const regAd23 = await getDoc(doc(managerDb, `artifacts/${APP_ID}/standard_code_registry/AD23`));
+  assert.equal(regAd23.data()?.status, 'AVAILABLE');
+  assert.equal(regAd23.data()?.currentStandardId ?? null, null);
+
+  // 2. Concurrent releaseStandardCode with DIFFERENT operationIds via Promise.all
+  const [diffOp1, diffOp2] = await Promise.all([
+    registryService.releaseStandardCode('concurrent-std-ad24', 'Concurrent diff opId A', {
+      source: 'RECALL',
+      operationId: 'concurrent_op_ad24_a',
+      scannedCandidates: { expectedInternalId: 'AD24', standardIds: [] },
+    }),
+    registryService.releaseStandardCode('concurrent-std-ad24', 'Concurrent diff opId B', {
+      source: 'RECALL',
+      operationId: 'concurrent_op_ad24_b',
+      scannedCandidates: { expectedInternalId: 'AD24', standardIds: [] },
+    }),
+  ]);
+  const statuses24 = [diffOp1.status, diffOp2.status].sort();
+  assert.deepEqual(
+    statuses24,
+    ['ALREADY_RELEASED', 'RELEASED'],
+    'exactly one concurrent transaction releases and the other observes ALREADY_RELEASED',
+  );
+  const [ev24A, ev24B] = await Promise.all([
+    getDoc(doc(managerDb, `artifacts/${APP_ID}/standard_code_events/concurrent_op_ad24_a`)),
+    getDoc(doc(managerDb, `artifacts/${APP_ID}/standard_code_events/concurrent_op_ad24_b`)),
+  ]);
+  assert.equal(
+    Number(ev24A.exists()) + Number(ev24B.exists()),
+    1,
+    'must create only a single RELEASED code event across concurrent transactions',
+  );
+
+  // 3. Concurrent releaseStandardCode (recall) racing with restoreStandard via Promise.allSettled under normal Firestore Rules
+  const [releaseRace, restoreRace] = await Promise.allSettled([
+    registryService.releaseStandardCode('concurrent-hidden-ad25', 'Concurrent recall AD25', {
+      source: 'RECALL',
+      operationId: 'concurrent_op_ad25_recall',
+      scannedCandidates: { expectedInternalId: 'AD25', standardIds: [] },
+    }),
+    registryService.restoreStandard('concurrent-hidden-ad25', 'Concurrent restore AD25'),
+  ]);
+
+  assert.equal(restoreRace.status, 'fulfilled', `restoreStandard must succeed in both race orderings: ${restoreRace.status === 'rejected' ? String(restoreRace.reason?.message || restoreRace.reason) : ''}`);
+  if (releaseRace.status === 'rejected') {
+    assert.match(
+      String(releaseRace.reason?.message || releaseRace.reason),
+      /đã thay đổi trạng thái ẩn sau lần quét/,
+    );
+  }
+
+  const [stdAd25Snap, regAd25Snap] = await Promise.all([
+    getDoc(doc(managerDb, `artifacts/${APP_ID}/reference_standards/concurrent-hidden-ad25`)),
+    getDoc(doc(managerDb, `artifacts/${APP_ID}/standard_code_registry/AD25`)),
+  ]);
+  assert.equal(Boolean(stdAd25Snap.data()?._isDeleted), false);
+  assert.equal(stdAd25Snap.data()?.lifecycle_status, 'ACTIVE');
+  assert.equal(regAd25Snap.data()?.status, 'ASSIGNED');
+  assert.equal(regAd25Snap.data()?.currentStandardId, 'concurrent-hidden-ad25');
+});
+
+test('release and restore preserve ownership in both deterministic commit orders', async () => {
+  const db = dbFor(users.manager);
+  const service = Object.assign(Object.create(StandardCodeRegistryService.prototype), {
+    fb: { db, APP_ID },
+    auth: { canEditStandards: () => true, currentUser: () => users.manager },
+  }) as StandardCodeRegistryService;
+  for (const [code, releaseFirst] of [['AD26', true], ['AD27', false]] as const) {
+    const id = `ordered-${code}`;
+    await env.withSecurityRulesDisabled(async context => {
+      const seed = context.firestore();
+      await setDoc(doc(seed, `artifacts/${APP_ID}/reference_standards/${id}`), {
+        id, name: id, internal_id: code, status: 'DELETED', _isDeleted: true,
+        lifecycle_status: 'ACTIVE', initial_amount: 10, current_amount: 10,
+        unit: 'mg', internal_id_assignment_sequence: 1, lastUpdated: Timestamp.now(),
+      });
+      await setDoc(doc(seed, `artifacts/${APP_ID}/standard_code_registry/${code}`), {
+        id: code, internal_id: code, status: 'ASSIGNED', currentStandardId: id,
+        assignmentCount: 1, lastUpdated: Timestamp.now(),
+      });
+    });
+    const release = () => service.releaseStandardCode(id, 'Ordered recall', {
+      source: 'RECALL', operationId: `ordered-release-${code}`,
+      scannedCandidates: { expectedInternalId: code, standardIds: [] },
+    });
+    if (releaseFirst) {
+      assert.equal((await release()).status, 'RELEASED');
+      await service.restoreStandard(id, `ordered-restore-${code}`);
+    } else {
+      await service.restoreStandard(id, `ordered-restore-${code}`);
+      await assert.rejects(release, /đã thay đổi trạng thái ẩn/);
+    }
+    const standard = (await getDoc(doc(db, `artifacts/${APP_ID}/reference_standards/${id}`))).data()!;
+    const registry = (await getDoc(doc(db, `artifacts/${APP_ID}/standard_code_registry/${code}`))).data()!;
+    assert.equal(standard.lifecycle_status, 'ACTIVE');
+    assert.equal(standard._isDeleted ?? false, false);
+    assert.equal(registry.currentStandardId, id);
+    assert.equal(registry.status, 'ASSIGNED');
+    assert.equal(registry.assignmentCount, releaseFirst ? 2 : 1);
+  }
+});
+
+test('real normalization scan/apply issues and revokes certificates, and event queries return the newest window', async () => {
+  const appId = 'normalization-certification-test';
+  const db = dbFor(users.manager);
+  const auth = { canEditStandards: () => true, currentUser: () => users.manager };
+  const sync = Object.assign(Object.create(StandardInternalIdSyncService.prototype), {
+    fb: { db, APP_ID: appId }, auth, NESTED_LOG_READ_CONCURRENCY: 8,
+    MAX_APPLY_CHANGES: 249, MAX_RULE_ACCESS_COST: 6, PRE_APPLY_SCAN_TIMEOUT_MS: 120000,
+  }) as StandardInternalIdSyncService;
+  await env.withSecurityRulesDisabled(async context => {
+    const seed = context.firestore();
+    await setDoc(doc(seed, `artifacts/${appId}/users/${users.manager.uid}`), users.manager);
+    await setDoc(doc(seed, `artifacts/${appId}/reference_standards/cert-standard`), {
+      id: 'cert-standard', name: 'Certificate test', internal_id: 'AA01', status: 'AVAILABLE',
+      lifecycle_status: 'ACTIVE', current_amount: 10, lastUpdated: Timestamp.now(),
+    });
+  });
+  const before = await sync.scan();
+  const configRef = doc(db, `artifacts/${appId}/config/standard_code_migration`);
+  assert.equal((await getDoc(configRef)).data()?.normalizedInvariantsVerified, false);
+  assert.ok(before.safeChanges.length > 0);
+  await sync.apply(before);
+  assert.equal((await getDoc(configRef)).data()?.normalizedInvariantsVerified, true);
+  await env.withSecurityRulesDisabled(async context => {
+    await updateDoc(doc(context.firestore(), `artifacts/${appId}/reference_standards/cert-standard`), { internal_id: ' aa01 ' });
+    await Promise.all(Array.from({ length: 105 }, (_, i) => setDoc(
+      doc(context.firestore(), `artifacts/${appId}/standard_code_events/event-${String(104 - i).padStart(3, '0')}`),
+      { internalId: 'AA01', createdAt: Timestamp.fromMillis(1700000000000 + i), type: 'RELEASED' },
+    )));
+  });
+  await sync.scan();
+  assert.equal((await getDoc(configRef)).data()?.normalizedInvariantsVerified, false);
+  const registry = Object.assign(Object.create(StandardCodeRegistryService.prototype), {
+    fb: { db, APP_ID: appId }, auth,
+  }) as StandardCodeRegistryService;
+  const events = await registry.listCodeEvents({ internalId: 'AA01', limitCount: 100 });
+  assert.equal(events.length, 100);
+  assert.equal(events[0].createdAt.toMillis(), 1700000000104);
+  assert.equal(events[99].createdAt.toMillis(), 1700000000005);
 });

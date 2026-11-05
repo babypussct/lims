@@ -53,6 +53,9 @@ import { AppPageHeaderComponent } from '../../../shared/components/ui/page-heade
                     <button role="menuitem" [appLockPermission]="'standard_edit'" (click)="runMenuAction(openInternalIdSync)" class="min-h-10 text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-amber-50 hover:text-amber-700 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2 md:min-h-0">
                         <i class="fa-solid fa-arrows-rotate text-amber-500 w-4"></i> Đồng bộ mã nội bộ
                     </button>
+                    <button role="menuitem" [appLockPermission]="'standard_edit'" (click)="runMenuAction(openCodeRegistry)" class="min-h-10 text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-indigo-50 hover:text-indigo-700 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2 md:min-h-0">
+                        <i class="fa-solid fa-book-bookmark text-indigo-500 w-4"></i> Sổ mã & Vòng đời mã
+                    </button>
                     <button role="menuitem" [appLockPermission]="'standard_edit'" (click)="runMenuAction(openHiddenCodeRecall)" class="min-h-10 text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2 md:min-h-0">
                         <i class="fa-solid fa-key text-rose-500 w-4"></i> Thu hồi mã chuẩn đã ẩn
                     </button>
@@ -109,6 +112,7 @@ export class StandardsToolbarComponent {
   openExportModal = output<void>();
   openCleanupModal = output<void>();
   openInternalIdSync = output<void>();
+  openCodeRegistry = output<void>();
   openHiddenCodeRecall = output<void>();
   openBulkTagModal = output<void>();
   openTagManager = output<void>();

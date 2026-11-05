@@ -16,7 +16,8 @@
           (openTagManager)="showTagManagerModal.set(true)"
           (openExportModal)="openExportModal()"
           (openCleanupModal)="showDataCleanupModal.set(true)"
-          (openInternalIdSync)="showInternalIdSyncModal.set(true)"
+          (openInternalIdSync)="openInternalIdSyncModal('scan')"
+          (openCodeRegistry)="openInternalIdSyncModal('registry')"
           (openHiddenCodeRecall)="showHiddenCodeRecallModal.set(true)">
         </app-standards-toolbar>
       }
@@ -46,6 +47,46 @@
               (methodTagFilterChange)="activeMethodTagFilter.set($event)"
               (deviceFilterChange)="activeDeviceFilter.set($event)">
           </app-standards-filter>
+
+          @if (syncPauseState() || syncDiagnosticError()) {
+            <div
+              role="alert"
+              aria-live="polite"
+              data-testid="standards-delta-sync-pause-banner"
+              class="mx-4 mt-3 mb-1 rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 px-4 py-3 text-xs text-amber-900 dark:text-amber-100 flex flex-wrap items-center justify-between gap-3 shrink-0"
+            >
+              <div class="space-y-1 max-w-4xl">
+                <div class="font-black">
+                  <i class="fa-solid fa-triangle-exclamation mr-1.5" aria-hidden="true"></i>
+                  @if (allStandards().length > 0) {
+                    Đồng bộ trực tiếp danh mục chuẩn đang tạm dừng do giới hạn tài nguyên hoặc lỗi kết nối Firestore.
+                  } @else {
+                    Chưa thể tải danh mục chuẩn do chạm giới hạn tài nguyên hoặc lỗi kết nối Firestore.
+                  }
+                </div>
+                <p class="text-[11px] font-semibold text-amber-800 dark:text-amber-200">
+                  @if (allStandards().length > 0) {
+                    Hệ thống đang hiển thị {{allStandards().length}} chuẩn từ bộ nhớ đệm cục bộ gần nhất (có thể chưa phản ánh thay đổi mới nhất trên máy chủ). Tự động kết nối lại đã tạm dừng để bảo vệ hạn mức đọc.
+                  } @else {
+                    Hệ thống đã tạm dừng tự động gọi lại để bảo vệ hạn mức đọc. Hãy bấm "Thử đồng bộ lại" khi hạn mức khả dụng.
+                  }
+                </p>
+              </div>
+              <button
+                type="button"
+                data-testid="standards-delta-sync-retry-btn"
+                (click)="retryDeltaSync()"
+                [disabled]="isRetryingDeltaSync()"
+                class="px-3.5 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-black transition disabled:opacity-50 shrink-0"
+              >
+                @if (isRetryingDeltaSync()) {
+                  <i class="fa-solid fa-spinner fa-spin mr-1" aria-hidden="true"></i>Đang thử lại...
+                } @else {
+                  <i class="fa-solid fa-rotate mr-1" aria-hidden="true"></i>Thử đồng bộ lại
+                }
+              </button>
+            </div>
+          }
 
           <!-- Content Body -->
            <div class="flex-1 min-h-0 overflow-auto custom-scrollbar relative bg-slate-50/30 dark:bg-slate-900/50">
@@ -185,6 +226,7 @@
       @if (showInternalIdSyncModal()) {
         <app-standards-internal-id-sync-modal
           [isOpen]="showInternalIdSyncModal()"
+          [initialView]="initialSyncModalView()"
           (close)="showInternalIdSyncModal.set(false)">
         </app-standards-internal-id-sync-modal>
       }

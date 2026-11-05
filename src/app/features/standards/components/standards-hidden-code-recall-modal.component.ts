@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
+  StandardCodeRecallBatchOutcome,
   StandardCodeRecallExecutionResult,
   StandardCodeRecallItem,
   StandardCodeRecallReport,
@@ -9,7 +10,12 @@ import {
 import { ConfirmationService } from '../../../core/services/confirmation.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { AppModalShellComponent } from '../../../shared/components/ui/modal-shell/modal-shell.component';
-import { StandardCodeRecallProgress, StandardCodeRecallService } from '../services/standard-code-recall.service';
+import {
+  applyRecallExecutionResultsToReport,
+  selectRecallExecutionTargets,
+  StandardCodeRecallProgress,
+  StandardCodeRecallService,
+} from '../services/standard-code-recall.service';
 
 /** Manager surface for scanning and returning codes owned by hidden records. */
 @Component({
@@ -52,7 +58,10 @@ import { StandardCodeRecallProgress, StandardCodeRecallService } from '../servic
                 <span class="rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-slate-600 dark:text-slate-300">{{current.summary.hiddenStandards}} hồ sơ đã ẩn</span>
                 <span class="rounded-full bg-emerald-50 dark:bg-emerald-950/30 px-2.5 py-1 text-emerald-700 dark:text-emerald-300">{{current.summary.eligibleCodes}} mã đủ điều kiện</span>
                 <span class="rounded-full bg-sky-50 dark:bg-sky-950/30 px-2.5 py-1 text-sky-700 dark:text-sky-300">{{current.summary.toReconcile}} cần hoàn tất đối soát</span>
-                <span class="rounded-full bg-amber-50 dark:bg-amber-950/30 px-2.5 py-1 text-amber-700 dark:text-amber-300">{{current.summary.alreadyReleased}} đã xử lý</span>
+                <span class="rounded-full bg-amber-50 dark:bg-amber-950/30 px-2.5 py-1 text-amber-700 dark:text-amber-300">{{current.summary.alreadyReleased}} đã xử lý trước đó</span>
+                @if (current.summary.released > 0) {
+                  <span class="rounded-full bg-emerald-100 dark:bg-emerald-950/50 px-2.5 py-1 text-emerald-800 dark:text-emerald-200">{{current.summary.released}} đã xác nhận trong đợt</span>
+                }
                 <span class="rounded-full bg-red-50 dark:bg-red-950/30 px-2.5 py-1 text-red-700 dark:text-red-300">{{current.summary.blocked}} bị chặn</span>
                 <span class="rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-slate-500 dark:text-slate-400">{{current.summary.excludedSpecial}} SDHET loại khỏi kho chung</span>
               </div>
@@ -65,6 +74,17 @@ import { StandardCodeRecallProgress, StandardCodeRecallService } from '../servic
               <div class="mt-2 h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden"><div class="h-full rounded-full bg-gradient-to-r from-amber-500 to-emerald-500 transition-all" [style.width.%]="currentProgress.percent"></div></div>
               <div class="mt-1 text-[11px] text-slate-500 dark:text-slate-400">{{currentProgress.current}} / {{currentProgress.total}} mã trong phạm vi xử lý</div>
             </div>
+          }
+
+          @if (batchOutcome(); as outcome) {
+            @if (outcome.stopReason === 'RESOURCE_LIMIT' || outcome.serverState === 'UNCONFIRMED' || outcome.requiresReconciliation) {
+              <div class="mx-5 sm:mx-6 mt-3 rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-100 px-4 py-3 text-xs space-y-1">
+                <div class="font-black"><i class="fa-solid fa-triangle-exclamation mr-1"></i>{{outcome.message}}</div>
+                <p class="font-semibold text-[11px] text-amber-800 dark:text-amber-200">
+                  Khi đợt dừng và trạng thái trên máy chủ là chưa xác nhận ({{outcome.serverState}}), việc tiếp tục đợt hoặc đối soát bằng cùng <code>operationId</code> chỉ áp dụng trong phiên màn hình hiện tại còn giữ kết quả trong bộ nhớ. Nếu đóng hộp thoại hoặc tải lại trang, người dùng phải quét lại trước khi thực hiện đợt mới.
+                </p>
+              </div>
+            }
           }
 
           @if (errorMessage()) {
@@ -86,7 +106,7 @@ import { StandardCodeRecallProgress, StandardCodeRecallService } from '../servic
               <div class="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
                 <table class="w-full min-w-[860px] text-left text-xs">
                   <thead class="bg-slate-50 dark:bg-slate-800/80 text-[10px] uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                    <tr><th class="px-3 py-2.5">Mã / hồ sơ</th><th class="px-3 py-2.5">Vòng đời</th><th class="px-3 py-2.5">Sổ mã</th><th class="px-3 py-2.5">Workflow</th><th class="px-3 py-2.5">Kết quả dự kiến</th><th class="px-3 py-2.5">Lý do</th></tr>
+                    <tr><th class="px-3 py-2.5">Mã / hồ sơ</th><th class="px-3 py-2.5">Vòng đời</th><th class="px-3 py-2.5">Sổ mã</th><th class="px-3 py-2.5">Workflow</th><th class="px-3 py-2.5">Kết quả / Trạng thái</th><th class="px-3 py-2.5">Lý do</th></tr>
                   </thead>
                   <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                     @for (item of filteredItems(); track item.id) {
@@ -95,7 +115,7 @@ import { StandardCodeRecallProgress, StandardCodeRecallService } from '../servic
                         <td class="px-3 py-3 font-bold text-slate-600 dark:text-slate-300">{{item.lifecycleStatus || 'Legacy'}}</td>
                         <td class="px-3 py-3 font-bold" [class.text-emerald-700]="item.registryStatus === 'AVAILABLE'" [class.text-amber-700]="item.registryStatus === 'ASSIGNED'" [class.text-red-700]="item.registryStatus === 'CONFLICT'">{{item.registryStatus}}</td>
                         <td class="px-3 py-3"><span [class]="item.workflowStatus === 'CLEAN' ? 'text-emerald-700 dark:text-emerald-300 font-bold' : 'text-red-700 dark:text-red-300 font-bold'">{{item.workflowStatus === 'CLEAN' ? 'Sạch' : 'Đang mở'}}</span></td>
-                        <td class="px-3 py-3"><span [class]="statusClass(item.status)">{{statusLabel(item.status)}}</span></td>
+                        <td class="px-3 py-3"><span [class]="itemStatusClass(item)">{{itemStatusLabel(item)}}</span></td>
                         <td class="px-3 py-3 max-w-[320px] text-slate-600 dark:text-slate-300 leading-5">{{item.message || item.reason}}</td>
                       </tr>
                     }
@@ -107,7 +127,13 @@ import { StandardCodeRecallProgress, StandardCodeRecallService } from '../servic
             @if (executionResults().length > 0) {
               <section class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 space-y-2">
                 <h3 class="text-sm font-black text-slate-800 dark:text-slate-100"><i class="fa-solid fa-list-check mr-2 text-emerald-600"></i>Kết quả lần chạy gần nhất</h3>
-                @for (result of executionResults(); track result.operationId) { <div class="flex items-start gap-2 text-xs"><span [class]="statusClass(result.status)">{{statusLabel(result.status)}}</span><span class="font-bold text-slate-700 dark:text-slate-200">{{result.internalId || 'Thiếu mã'}} · {{result.standardName}}</span><span class="text-slate-500 dark:text-slate-400">{{result.message || result.reason}}</span></div> }
+                @for (result of executionResults(); track result.operationId) {
+                  <div class="flex items-start gap-2 text-xs">
+                    <span [class]="resultStatusClass(result)">{{resultStatusLabel(result)}}</span>
+                    <span class="font-bold text-slate-700 dark:text-slate-200">{{result.internalId || 'Thiếu mã'}} · {{result.standardName}}</span>
+                    <span class="text-slate-500 dark:text-slate-400">{{result.message || result.reason}}</span>
+                  </div>
+                }
               </section>
             }
           </div>
@@ -138,6 +164,7 @@ export class StandardsHiddenCodeRecallModalComponent {
 
   report = signal<StandardCodeRecallReport | null>(null);
   executionResults = signal<StandardCodeRecallExecutionResult[]>([]);
+  batchOutcome = signal<StandardCodeRecallBatchOutcome | null>(null);
   progress = signal<StandardCodeRecallProgress | null>(null);
   reason = signal('Thu hồi mã của chuẩn đã ẩn theo kế hoạch vòng đời mã nội bộ.');
   searchQuery = signal('');
@@ -146,13 +173,49 @@ export class StandardsHiddenCodeRecallModalComponent {
   isRunning = signal(false);
   errorMessage = signal('');
   isBusy = computed(() => this.isScanning() || this.isRunning());
+  private executionByOperationId = computed(() => {
+    const map = new Map<string, StandardCodeRecallExecutionResult>();
+    for (const result of this.executionResults()) {
+      if (result?.operationId) {
+        map.set(result.operationId, result);
+      }
+    }
+    return map;
+  });
+  private targetSelection = computed(() => {
+    const current = this.report();
+    if (!current) {
+      return {
+        targets: [] as StandardCodeRecallItem[],
+        unpersistedConfirmedResults: [] as StandardCodeRecallExecutionResult[],
+      };
+    }
+    return selectRecallExecutionTargets(current.items, {
+      priorResults: this.executionResults(),
+    });
+  });
+  remainingTargets = computed(() => this.targetSelection().targets);
+  unpersistedProjections = computed(() => this.targetSelection().unpersistedConfirmedResults);
+  hasPendingRunPersistence = computed(() => {
+    const outcome = this.batchOutcome();
+    return Boolean(outcome && outcome.serverState !== 'PERSISTED');
+  });
   filteredItems = computed(() => {
     const current = this.report()?.items || [];
     const query = this.searchQuery().trim().toLocaleLowerCase('vi');
     if (!query) return current;
     return current.filter(item => [item.internalId, item.standardName, item.lotNumber, item.reason, item.status].some(value => String(value || '').toLocaleLowerCase('vi').includes(query)));
   });
-  canRecall = computed(() => Boolean(this.report() && !this.isBusy() && this.reason().trim() && this.report()!.items.some(item => item.status === 'RELEASED' || item.status === 'RECONCILED')));
+  canRecall = computed(() =>
+    Boolean(
+      this.report() &&
+        !this.isBusy() &&
+        this.reason().trim() &&
+        (this.remainingTargets().length > 0 ||
+          this.unpersistedProjections().length > 0 ||
+          this.hasPendingRunPersistence()),
+    ),
+  );
 
   constructor() {
     effect(() => {
@@ -173,6 +236,7 @@ export class StandardsHiddenCodeRecallModalComponent {
     this.isScanning.set(true);
     this.errorMessage.set('');
     this.executionResults.set([]);
+    this.batchOutcome.set(null);
     this.progress.set({ current: 0, total: 0, percent: 0, phase: 'SCANNING', message: 'Đang đọc dữ liệu nguồn...' });
     try {
       const report = await this.service.scanHiddenStandardCodes();
@@ -189,8 +253,9 @@ export class StandardsHiddenCodeRecallModalComponent {
   async recall(): Promise<void> {
     const report = this.report();
     if (!report || !this.canRecall()) return;
+    const targetCount = this.remainingTargets().length + this.unpersistedProjections().length || 1;
     const confirmed = await this.confirmation.confirm({
-      message: `Thu hồi ${report.summary.eligibleCodes} mã đủ điều kiện về kho mã chung? Các mục bị chặn sẽ không bị thay đổi.`,
+      message: `Thu hồi ${targetCount} mục đủ điều kiện hoặc cần hoàn tất đối soát về kho mã chung? Các mục bị chặn sẽ không bị thay đổi.`,
       confirmText: 'Thu hồi mã',
       cancelText: 'Hủy',
       isDangerous: true,
@@ -200,19 +265,33 @@ export class StandardsHiddenCodeRecallModalComponent {
     this.isRunning.set(true);
     this.errorMessage.set('');
     try {
-      const results = await this.service.recallEligibleCodes(report, this.reason(), {
+      const outcome = await this.service.recallEligibleCodesWithOutcome(report, this.reason(), {
         onProgress: value => this.progress.set(value),
         shouldStop: () => this.stopRequested(),
+        priorResults: this.executionResults(),
       });
-      this.executionResults.set(results);
-      const released = results.filter(result => result.status === 'RELEASED').length;
-      const reconciled = results.filter(result => result.status === 'RECONCILED').length;
+      this.executionResults.set(outcome.results);
+      this.batchOutcome.set(outcome);
+      this.report.set(applyRecallExecutionResultsToReport(report, outcome.results));
+
+      const results = outcome.results;
+      const released = results.filter(
+        result => result.outcomeState !== 'UNCONFIRMED' && result.status === 'RELEASED',
+      ).length;
+      const reconciled = results.filter(
+        result => result.outcomeState !== 'UNCONFIRMED' && result.status === 'RECONCILED',
+      ).length;
       const blocked = results.filter(result => ['BLOCKED', 'FAILED', 'CHANGED_SINCE_SCAN'].includes(result.status)).length;
-      const wasStopped = this.progress()?.phase === 'STOPPED';
-      this.toast.show(wasStopped
-        ? `Đã dừng sau khi xử lý ${released + reconciled} mã${blocked ? `; ${blocked} mục cần xử lý` : ''}.`
-        : `Đã xử lý ${released + reconciled} mã${blocked ? `; ${blocked} mục cần xử lý` : ''}.`, wasStopped || blocked ? 'warning' : 'success');
-      await this.scanAfterExecution(report);
+      const wasStopped = outcome.stopReason !== 'NONE' || this.progress()?.phase === 'STOPPED';
+      this.toast.show(
+        wasStopped
+          ? `Đã dừng sau khi xác nhận ${released + reconciled} mã${blocked ? `; ${blocked} mục cần kiểm tra/đối soát` : ''}.`
+          : `Đã xử lý ${released + reconciled} mã${blocked ? `; ${blocked} mục cần kiểm tra` : ''}.`,
+        wasStopped || blocked || outcome.serverState === 'UNCONFIRMED' ? 'warning' : 'success',
+      );
+      if (outcome.canAutoRescan) {
+        await this.scanAfterExecution(report);
+      }
     } catch (error: any) {
       this.errorMessage.set(error?.message || 'Không thể hoàn tất đợt thu hồi.');
       this.toast.show('Đợt thu hồi chưa hoàn tất.', 'error');
@@ -234,6 +313,7 @@ export class StandardsHiddenCodeRecallModalComponent {
       ...current,
       exportedAt: new Date().toISOString(),
       executionResults: this.executionResults(),
+      batchOutcome: this.batchOutcome(),
     }, null, 2);
     const blob = new Blob([`\uFEFF${payload}`], { type: 'application/json;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -251,6 +331,36 @@ export class StandardsHiddenCodeRecallModalComponent {
     } catch (error) {
       console.warn('[StandardHiddenCodeRecallModal] refresh failed after commit', previous.runId, error);
     }
+  }
+
+  itemStatusLabel(item: StandardCodeRecallItem): string {
+    const executed = this.executionByOperationId().get(item.operationId);
+    if (executed) {
+      return this.resultStatusLabel(executed);
+    }
+    return this.statusLabel(item.status);
+  }
+
+  itemStatusClass(item: StandardCodeRecallItem): string {
+    const executed = this.executionByOperationId().get(item.operationId);
+    if (executed) {
+      return this.resultStatusClass(executed);
+    }
+    return this.statusClass(item.status);
+  }
+
+  resultStatusLabel(result: StandardCodeRecallExecutionResult): string {
+    if (result.outcomeState === 'UNCONFIRMED') {
+      return 'Chưa xác định (cần đối soát)';
+    }
+    return this.statusLabel(result.status);
+  }
+
+  resultStatusClass(result: StandardCodeRecallExecutionResult): string {
+    if (result.outcomeState === 'UNCONFIRMED') {
+      return 'inline-flex rounded-full bg-amber-50 dark:bg-amber-950/30 px-2 py-1 text-[10px] font-black text-amber-700 dark:text-amber-300 whitespace-nowrap';
+    }
+    return this.statusClass(result.status);
   }
 
   statusLabel(status: StandardCodeRecallItem['status']): string {

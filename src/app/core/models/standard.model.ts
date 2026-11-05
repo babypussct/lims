@@ -201,11 +201,47 @@ export interface StandardCodeRecallItem {
   operationId: string;
   eventId?: string;
   message?: string;
+  completedAt?: any;
   affectedStandardIds?: string[];
 }
 
+export type StandardCodeRecallOutcomeState = 'CONFIRMED' | 'UNCONFIRMED';
+
 export interface StandardCodeRecallExecutionResult extends StandardCodeRecallItem {
   completedAt?: any;
+  outcomeState?: StandardCodeRecallOutcomeState;
+  projectionPersisted?: boolean;
+  errorCode?: string;
+}
+
+export type StandardCodeRecallStopReason =
+  | 'NONE'
+  | 'USER_REQUESTED'
+  | 'RESOURCE_LIMIT';
+
+export type StandardCodeRecallServerState =
+  | 'PERSISTED'
+  | 'UNCONFIRMED';
+
+export interface StandardCodeRecallBatchOutcome {
+  runId: string;
+  results: StandardCodeRecallExecutionResult[];
+  stopReason: StandardCodeRecallStopReason;
+  serverState: StandardCodeRecallServerState;
+  requiresReconciliation: boolean;
+  canAutoRescan: boolean;
+  targetCount: number;
+  confirmedCount: number;
+  unstartedCount: number;
+  confirmedSuccessCount: number;
+  confirmedBlockedCount: number;
+  confirmedFailedCount: number;
+  unconfirmedCount: number;
+  unpersistedProjectionCount?: number;
+  attemptTargetCount?: number;
+  attemptedCount?: number;
+  backfilledProjectionCount?: number;
+  message: string;
 }
 
 export interface StandardCodeRecallSummary {
@@ -323,6 +359,20 @@ export interface StandardInternalIdApplySummary {
     registrySync: number;
     snapshotUpdate: number;
     referenceRepair: number;
+  };
+}
+
+export interface StandardCodeMigrationConfig {
+  normalizedInvariantsVerified: boolean;
+  verifiedAt: any;
+  verifiedByUid: string;
+  verifiedByName: string;
+  schemaVersion: 1;
+  stats: {
+    totalScanned: number;
+    activeAssigned: number;
+    conflictsCount: number;
+    unnormalizedCount: number;
   };
 }
 

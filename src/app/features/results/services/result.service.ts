@@ -1094,7 +1094,10 @@ export class ResultService {
       };
     } catch (e: any) {
       console.error('Error publishing report:', e);
-      const error = e?.message || 'Không xác định được nguyên nhân lỗi.';
+      const rawError = e?.message || 'Không xác định được nguyên nhân lỗi.';
+      const error = /resource.exhausted|quota exceeded|HTTP 429/i.test(rawError)
+        ? 'Chưa thể phát hành báo cáo vì Firestore đang giới hạn tài nguyên. Vui lòng thử lại khi hạn mức khả dụng; không cần tạo lại báo cáo.'
+        : rawError;
       return { success: false, error };
     }
   }

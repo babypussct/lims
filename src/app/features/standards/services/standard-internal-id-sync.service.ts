@@ -4,14 +4,17 @@ import {
   deleteField,
   doc,
   getDocs,
+  getDocsFromServer,
   getDoc,
   serverTimestamp,
+  setDoc,
   writeBatch,
 } from 'firebase/firestore';
 import { FirebaseService } from '../../../core/services/firebase.service';
 import { AuthService } from '../../../core/services/auth.service';
 import {
   ReferenceStandard,
+  StandardCodeMigrationConfig,
   StandardCodeRegistry,
   StandardInternalIdSyncBatch,
   StandardInternalIdSyncChange,
@@ -65,6 +68,33 @@ export class StandardInternalIdSyncService {
   private readonly NESTED_LOG_READ_CONCURRENCY = 8;
   private readonly PRE_APPLY_SCAN_TIMEOUT_MS = 120_000;
 
+  async getNormalizationCertification(): Promise<StandardCodeMigrationConfig | null> {
+    const configRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/config/standard_code_migration`);
+    const snap = await getDoc(configRef);
+    if (!snap.exists()) return null;
+    return snap.data() as StandardCodeMigrationConfig;
+  }
+
+  async saveNormalizationCertification(
+    verified: boolean,
+    stats: { totalScanned: number; activeAssigned: number; conflictsCount: number; unnormalizedCount: number },
+  ): Promise<void> {
+    if (!this.auth.canEditStandards() || !this.auth.currentUser()) {
+      throw new Error('Bạn không có quyền chứng nhận chuẩn hóa mã.');
+    }
+    const currentUser = this.auth.currentUser();
+    const configRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/config/standard_code_migration`);
+    const payload: StandardCodeMigrationConfig = {
+      normalizedInvariantsVerified: verified,
+      verifiedAt: serverTimestamp(),
+      verifiedByUid: currentUser?.uid || '',
+      verifiedByName: currentUser?.displayName || currentUser?.email || 'Hệ thống',
+      schemaVersion: 1,
+      stats,
+    };
+    await setDoc(configRef, payload, { merge: true });
+  }
+
   async scan(): Promise<StandardInternalIdSyncReport> {
     if (!this.auth.canEditStandards()) {
       throw new Error('Bạn không có quyền quét và đồng bộ Mã quản lý nội bộ.');
@@ -72,11 +102,11 @@ export class StandardInternalIdSyncService {
 
     const base = `artifacts/${this.fb.APP_ID}`;
     const [standardSnapshot, requestSnapshot, purchaseRequestSnapshot, usageSnapshot, registrySnapshot] = await Promise.all([
-      getDocs(collection(this.fb.db, `${base}/reference_standards`)),
-      getDocs(collection(this.fb.db, `${base}/standard_requests`)),
-      getDocs(collection(this.fb.db, `${base}/purchase_requests`)),
-      getDocs(collection(this.fb.db, `${base}/standard_usages`)),
-      getDocs(collection(this.fb.db, `${base}/standard_code_registry`)),
+      getDocsFromServer(collection(this.fb.db, `${base}/reference_standards`)),
+      getDocsFromServer(collection(this.fb.db, `${base}/standard_requests`)),
+      getDocsFromServer(collection(this.fb.db, `${base}/purchase_requests`)),
+      getDocsFromServer(collection(this.fb.db, `${base}/standard_usages`)),
+      getDocsFromServer(collection(this.fb.db, `${base}/standard_code_registry`)),
     ]);
 
     const standards = standardSnapshot.docs.map(snapshot => ({ id: snapshot.id, ...snapshot.data() } as ReferenceStandard));
@@ -149,7 +179,7 @@ export class StandardInternalIdSyncService {
 
       const code = assessment.normalized;
       byCode.set(code, [...(byCode.get(code) || []), standard]);
-      if (assessment.kind === 'NORMALIZABLE' && !isSpecialInternalId(code)) {
+      if (assessment.kind === 'NORMALIZABLE') {
         addChange({
           collection: 'reference_standards', documentId: standard.id, field: 'internal_id',
           before: assessment.raw, after: code, reason: 'Chuẩn hóa chữ hoa và khoảng trắng của mã hợp lệ.',
@@ -359,7 +389,7 @@ export class StandardInternalIdSyncService {
       byKind,
     };
 
-    return {
+    const report: StandardInternalIdSyncReport = {
       scanId: `scan-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       generatedAt: Date.now(),
       standardsCount: standards.length,
@@ -374,6 +404,23 @@ export class StandardInternalIdSyncService {
       blockingIssues,
       summary,
     };
+    await this.certifyScan(report, standards);
+    return report;
+  }
+
+  protected async certifyScan(report: StandardInternalIdSyncReport, standards: ReferenceStandard[]): Promise<void> {
+    const unnormalizedCount = standards.filter(standard =>
+      !isValidInternalId(standard.internal_id) || standard.internal_id !== normalizeInternalId(standard.internal_id)
+    ).length;
+    const conflictsCount = (report.blockingIssues?.length ?? report.conflicts.length) + report.safeChanges.filter(change =>
+      change.collection === 'standard_code_registry'
+    ).length;
+    await this.saveNormalizationCertification(unnormalizedCount === 0 && conflictsCount === 0, {
+      totalScanned: standards.length,
+      activeAssigned: standards.filter(hasUnreleasedCodeLifecycle).length,
+      conflictsCount,
+      unnormalizedCount,
+    });
   }
 
   async apply(
@@ -437,6 +484,11 @@ export class StandardInternalIdSyncService {
     );
     const base = `artifacts/${this.fb.APP_ID}`;
     const standardsCollection = collection(this.fb.db, `${base}/reference_standards`);
+    // A partial apply must never leave a positive certificate behind.
+    await this.saveNormalizationCertification(false, {
+      totalScanned: freshReport.standardsCount, activeAssigned: 0,
+      conflictsCount: freshReport.blockingIssues?.length ?? freshReport.conflicts.length, unnormalizedCount: 0,
+    });
     for (const [standardId, rawCode] of Object.entries(corrections)) {
       const targetCode = normalizeInternalId(rawCode);
       if (!isValidInternalId(targetCode)) {
@@ -665,6 +717,8 @@ export class StandardInternalIdSyncService {
       message: `Đã đồng bộ thành công toàn bộ ${totalBatches} đợt xử lý (${totalChanges} thay đổi).`,
     });
 
+    // Certify only the post-write server state, never the proposed changes.
+    await this.scan();
     return batchIds;
   }
 

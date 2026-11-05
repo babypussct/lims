@@ -22,3 +22,17 @@ test('failed count telemetry is explicitly unknown instead of reporting a false 
   assert.match(estimateSource, /error:/);
   assert.doesNotMatch(estimateSource, /catch\s*\([^)]*\)\s*\{[\s\S]{0,160}count:\s*0/);
 });
+
+test('quota errors stop subsequent aggregation requests until cooldown expires', async () => {
+  await import('@angular/compiler');
+  const { FirebaseService } = await import('./firebase.service');
+  const service = Object.create(FirebaseService.prototype) as any;
+  let reads = 0;
+  service.readCollectionDocumentCount = async () => {
+    reads++;
+    throw Object.assign(new Error('Quota exceeded'), { code: 'resource-exhausted' });
+  };
+  await assert.rejects(() => service.getCollectionDocumentCount('master_analytes'));
+  await assert.rejects(() => service.getCollectionDocumentCount('matrix_types'));
+  assert.equal(reads, 1);
+});

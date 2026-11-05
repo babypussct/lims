@@ -7,6 +7,8 @@ import {
   StandardInternalIdSyncChange,
   StandardInternalIdSyncIssue,
   StandardInternalIdSyncReport,
+  StandardCodeRegistry,
+  StandardCodeEvent,
 } from '../../../core/models/standard.model';
 import { ConfirmationService } from '../../../core/services/confirmation.service';
 import { ToastService } from '../../../core/services/toast.service';
@@ -27,6 +29,8 @@ import {
 import { StandardService } from '../standard.service';
 
 export type SyncFilter = 'all' | 'manual' | 'safe' | 'duplicate' | 'registry' | 'reference';
+export type RegistryFilter = 'ALL' | 'ASSIGNED' | 'AVAILABLE' | 'CONFLICT' | 'MIGRATED';
+export type SyncView = 'scan' | 'history' | 'registry';
 export type { CorrectionValidationResult };
 
 /**
@@ -48,7 +52,7 @@ export type { CorrectionValidationResult };
         [closeDisabled]="isBusy()"
         (closed)="close.emit()"
       >
-        <div modalBody class="-mx-6 -my-5 flex h-full min-h-0 flex-col">
+        <div modalBody class="-mx-6 -my-5 flex h-full min-h-0 flex-col relative overflow-hidden">
 
           <div class="px-5 sm:px-6 py-2.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-wrap items-center justify-between gap-3 shrink-0">
             <div class="flex items-center gap-1 bg-slate-200/70 dark:bg-slate-800 p-1 rounded-xl text-xs font-bold" role="group" aria-label="Góc nhìn làm việc">
@@ -69,6 +73,15 @@ export type { CorrectionValidationResult };
                 class="px-3 py-1.5 rounded-lg transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50"
               >
                 <i class="fa-solid fa-clock-rotate-left mr-1.5" aria-hidden="true"></i>Lịch sử đồng bộ
+              </button>
+              <button
+                type="button"
+                [attr.aria-pressed]="activeView() === 'registry'"
+                (click)="setView('registry')"
+                [class]="activeView() === 'registry' ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-xs' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'"
+                class="px-3 py-1.5 rounded-lg transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50"
+              >
+                <i class="fa-solid fa-book-bookmark mr-1.5" aria-hidden="true"></i>Sổ mã & Sự kiện
               </button>
             </div>
 
@@ -103,7 +116,7 @@ export type { CorrectionValidationResult };
                   @if (isScanning()) { <i class="fa-solid fa-spinner fa-spin mr-1" aria-hidden="true"></i>Đang quét } @else { <i class="fa-solid fa-rotate mr-1" aria-hidden="true"></i>Quét lại }
                 </button>
               </div>
-            } @else {
+            } @else if (activeView() === 'history') {
               <button
                 type="button"
                 (click)="loadHistory()"
@@ -112,6 +125,27 @@ export type { CorrectionValidationResult };
               >
                 @if (isLoadingHistory()) { <i class="fa-solid fa-spinner fa-spin mr-1" aria-hidden="true"></i>Đang tải } @else { <i class="fa-solid fa-rotate mr-1" aria-hidden="true"></i>Làm mới lịch sử }
               </button>
+            } @else {
+              <div class="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  (click)="exportRegistryCsv()"
+                  [disabled]="isLoadingRegistry() || filteredRegistryEntries().length === 0"
+                  title="Xuất danh sách sổ mã ra tệp CSV"
+                  aria-label="Xuất danh sách sổ mã ra tệp CSV"
+                  class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold disabled:opacity-40 shadow-xs transition-all"
+                >
+                  <i class="fa-solid fa-file-csv mr-1.5 text-indigo-600 dark:text-indigo-400" aria-hidden="true"></i>Xuất CSV sổ mã
+                </button>
+                <button
+                  type="button"
+                  (click)="loadRegistry()"
+                  [disabled]="isLoadingRegistry()"
+                  class="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-black hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-40 transition-all"
+                >
+                  @if (isLoadingRegistry()) { <i class="fa-solid fa-spinner fa-spin mr-1" aria-hidden="true"></i>Đang tải } @else { <i class="fa-solid fa-rotate mr-1" aria-hidden="true"></i>Làm mới sổ mã }
+                </button>
+              </div>
             }
           </div>
 
@@ -473,6 +507,210 @@ export type { CorrectionValidationResult };
             </main>
           }
 
+
+          @if (activeView() === 'registry') {
+            <div class="px-5 sm:px-6 py-3 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-wrap items-center justify-between gap-3 shrink-0">
+              <div class="flex flex-wrap items-center gap-2">
+                @if (certificationInfo(); as cert) {
+                  @if (cert.verified) {
+                    <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/80 text-emerald-800 dark:text-emerald-200 text-xs font-bold" title="Hệ thống đã chứng nhận chuẩn hóa; các thao tác tạo/khôi phục/thu hồi chạy ở tốc độ cao không cần quét toàn bộ danh mục.">
+                      <i class="fa-solid fa-shield-check text-emerald-600 dark:text-emerald-400" aria-hidden="true"></i>
+                      <span>Chuẩn hóa tối ưu: <strong>ĐÃ KÍCH HOẠT</strong></span>
+                      @if (cert.verifiedAt) {
+                        <span class="text-[10px] text-emerald-700/80 dark:text-emerald-300/80">({{formatTimestamp(cert.verifiedAt)}})</span>
+                      }
+                    </div>
+                  } @else {
+                    <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/80 text-amber-800 dark:text-amber-200 text-xs font-bold" title="Chưa kích hoạt chứng nhận; hệ thống kiểm tra an toàn toàn diện khi thao tác.">
+                      <i class="fa-solid fa-triangle-exclamation text-amber-600 dark:text-amber-400" aria-hidden="true"></i>
+                      <span>Chuẩn hóa tối ưu: <strong>Chưa kích hoạt</strong></span>
+                    </div>
+                  }
+                } @else {
+                  <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold">
+                    <i class="fa-solid fa-circle-question text-slate-400" aria-hidden="true"></i>
+                    <span>Trạng thái chứng nhận: Đang kiểm tra...</span>
+                  </div>
+                }
+              </div>
+
+              <div aria-live="polite" class="flex flex-wrap items-center gap-2 text-[11px] font-bold">
+                <span class="rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-slate-700 dark:text-slate-300 font-mono">{{registryStats().total}} tổng mã</span>
+                <span class="rounded-full bg-emerald-50 dark:bg-emerald-950/30 px-2.5 py-1 text-emerald-700 dark:text-emerald-300">{{registryStats().assigned}} đang cấp</span>
+                <span class="rounded-full bg-blue-50 dark:bg-blue-950/30 px-2.5 py-1 text-blue-700 dark:text-blue-300">{{registryStats().available}} sẵn sàng cấp</span>
+                @if (registryStats().conflict > 0) {
+                  <span class="rounded-full bg-red-50 dark:bg-red-950/30 px-2.5 py-1 text-red-700 dark:text-red-300">{{registryStats().conflict}} xung đột</span>
+                }
+                @if (registryStats().migrated > 0) {
+                  <span class="rounded-full bg-purple-50 dark:bg-purple-950/30 px-2.5 py-1 text-purple-700 dark:text-purple-300">{{registryStats().migrated}} chuyển đổi (Alias)</span>
+                }
+              </div>
+            </div>
+
+            <section class="px-4 sm:px-6 py-3 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0 space-y-3">
+              <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="relative flex-1 min-w-[240px] max-w-xl">
+                  <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs" aria-hidden="true"></i>
+                  <input
+                    type="search"
+                    aria-label="Tìm theo mã quản lý hoặc mã hồ sơ chuẩn"
+                    [ngModel]="registrySearchQuery()"
+                    (ngModelChange)="registrySearchQuery.set($event)"
+                    placeholder="Tìm theo mã quản lý hoặc mã hồ sơ chuẩn..."
+                    class="w-full pl-8 pr-8 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500/40"
+                  >
+                  @if (registrySearchQuery()) {
+                    <button type="button" (click)="registrySearchQuery.set('')" class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 p-1" aria-label="Xóa tìm kiếm">
+                      <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                    </button>
+                  }
+                </div>
+                <span aria-live="polite" class="text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                  Hiển thị {{filteredRegistryEntries().length}} / {{registryEntries().length}} mã
+                </span>
+              </div>
+
+              <div class="flex items-center gap-1 overflow-x-auto pb-0.5 text-[11px] font-bold" role="group" aria-label="Bộ lọc sổ mã quản lý">
+                <button
+                  type="button"
+                  [attr.aria-pressed]="registryFilter() === 'ALL'"
+                  (click)="registryFilter.set('ALL')"
+                  [class]="registryFilter() === 'ALL' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'"
+                  class="px-3 py-1.5 rounded-lg transition-all"
+                >
+                  <i class="fa-solid fa-layer-group mr-1.5" aria-hidden="true"></i>Tất cả ({{registryStats().total}})
+                </button>
+                <button
+                  type="button"
+                  [attr.aria-pressed]="registryFilter() === 'ASSIGNED'"
+                  (click)="registryFilter.set('ASSIGNED')"
+                  [class]="registryFilter() === 'ASSIGNED' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'"
+                  class="px-3 py-1.5 rounded-lg transition-all"
+                >
+                  <i class="fa-solid fa-circle-check mr-1.5" aria-hidden="true"></i>Đang cấp ({{registryStats().assigned}})
+                </button>
+                <button
+                  type="button"
+                  [attr.aria-pressed]="registryFilter() === 'AVAILABLE'"
+                  (click)="registryFilter.set('AVAILABLE')"
+                  [class]="registryFilter() === 'AVAILABLE' ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'"
+                  class="px-3 py-1.5 rounded-lg transition-all"
+                >
+                  <i class="fa-solid fa-rotate-left mr-1.5" aria-hidden="true"></i>Sẵn sàng ({{registryStats().available}})
+                </button>
+                @if (registryStats().conflict > 0) {
+                  <button
+                    type="button"
+                    [attr.aria-pressed]="registryFilter() === 'CONFLICT'"
+                    (click)="registryFilter.set('CONFLICT')"
+                    [class]="registryFilter() === 'CONFLICT' ? 'bg-rose-600 text-white shadow-xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'"
+                    class="px-3 py-1.5 rounded-lg transition-all"
+                  >
+                    <i class="fa-solid fa-triangle-exclamation mr-1.5" aria-hidden="true"></i>Xung đột ({{registryStats().conflict}})
+                  </button>
+                }
+                @if (registryStats().migrated > 0) {
+                  <button
+                    type="button"
+                    [attr.aria-pressed]="registryFilter() === 'MIGRATED'"
+                    (click)="registryFilter.set('MIGRATED')"
+                    [class]="registryFilter() === 'MIGRATED' ? 'bg-purple-600 text-white shadow-xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'"
+                    class="px-3 py-1.5 rounded-lg transition-all"
+                  >
+                    <i class="fa-solid fa-arrow-right-arrow-left mr-1.5" aria-hidden="true"></i>Chuyển đổi ({{registryStats().migrated}})
+                  </button>
+                }
+              </div>
+            </section>
+
+            <main class="flex-1 overflow-y-auto custom-scrollbar bg-slate-50/60 dark:bg-slate-950/30 p-4 sm:p-6 space-y-4">
+              @if (isLoadingRegistry()) {
+                <div class="py-16 text-center text-slate-400">
+                  <i class="fa-solid fa-spinner fa-spin text-3xl mb-3 text-indigo-500" aria-hidden="true"></i>
+                  <p class="text-xs font-bold">Đang tải dữ liệu sổ mã và lịch sử sở hữu...</p>
+                </div>
+              } @else if (filteredRegistryEntries().length === 0) {
+                <div class="py-16 text-center text-slate-400">
+                  <i class="fa-solid fa-book-bookmark text-3xl mb-3 opacity-40" aria-hidden="true"></i>
+                  <p class="text-xs font-bold">Không tìm thấy mã quản lý nào phù hợp với bộ lọc hiện tại.</p>
+                </div>
+              } @else {
+                <div class="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs">
+                  <table class="w-full text-left text-xs">
+                    <thead class="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-[11px] font-black uppercase tracking-wider text-slate-500">
+                      <tr>
+                        <th class="px-4 py-3">Mã quản lý</th>
+                        <th class="px-4 py-3">Trạng thái</th>
+                        <th class="px-4 py-3">Hồ sơ đang giữ</th>
+                        <th class="px-3 py-3 text-center">Lượt cấp</th>
+                        <th class="px-4 py-3">Lần cấp gần nhất</th>
+                        <th class="px-4 py-3">Lần trả gần nhất</th>
+                        <th class="px-4 py-3 text-right">Lịch sử sự kiện</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
+                      @for (entry of visibleRegistryEntries(); track entry.internal_id) {
+                        <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
+                          <td class="px-4 py-3 font-mono font-black text-slate-800 dark:text-slate-100 whitespace-nowrap">
+                            {{entry.internal_id}}
+                          </td>
+                          <td class="px-4 py-3 whitespace-nowrap">
+                            @if (entry.migrationStatus === 'MIGRATED') {
+                              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300">
+                                <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>Alias → {{entry.migratedTo}}
+                              </span>
+                            } @else if (entry.status === 'ASSIGNED') {
+                              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                                <i class="fa-solid fa-circle-check" aria-hidden="true"></i>Đang cấp
+                              </span>
+                            } @else if (entry.status === 'AVAILABLE') {
+                              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300">
+                                <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>Sẵn sàng
+                              </span>
+                            } @else {
+                              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300">
+                                <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>Xung đột
+                              </span>
+                            }
+                          </td>
+                          <td class="px-4 py-3 text-slate-600 dark:text-slate-300">
+                            @if (entry.currentStandardId) {
+                              <span class="font-mono text-[11px] bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-slate-800 dark:text-slate-200">
+                                {{entry.currentStandardId}}
+                              </span>
+                            } @else if (entry.migrationStatus === 'MIGRATED') {
+                              <span class="text-purple-600 dark:text-purple-400 text-[11px]">Đã chuyển sang mã {{entry.migratedTo}}</span>
+                            } @else {
+                              <span class="text-slate-400 italic text-[11px]">(Trống - sẵn sàng cấp)</span>
+                            }
+                          </td>
+                          <td class="px-3 py-3 text-center font-bold text-slate-700 dark:text-slate-200">
+                            {{entry.assignmentCount || 0}}
+                          </td>
+                          <td class="px-4 py-3 text-slate-500 dark:text-slate-400 whitespace-nowrap text-[11px]">
+                            {{formatTimestamp(entry.lastAssignedAt)}}
+                          </td>
+                          <td class="px-4 py-3 text-slate-500 dark:text-slate-400 whitespace-nowrap text-[11px]">
+                            {{formatTimestamp(entry.lastReleasedAt)}}
+                          </td>
+                          <td class="px-4 py-3 text-right whitespace-nowrap">
+                            <button
+                              type="button"
+                              (click)="openCodeEvents(entry.internal_id)"
+                              class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 text-[11px] font-bold transition shadow-2xs"
+                              [title]="'Xem nhật ký sự kiện vòng đời của mã ' + entry.internal_id"
+                            >
+                              <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>Sự kiện
+                            </button>
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              }
+            </main>
+          }
         </div>
 
         <div modalFooter class="flex w-full flex-wrap items-center justify-between gap-3">
@@ -502,7 +740,7 @@ export type { CorrectionValidationResult };
                 @if (isApplying()) { <i class="fa-solid fa-spinner fa-spin mr-1"></i>Đang đồng bộ } @else { <i class="fa-solid fa-check mr-1"></i>Áp dụng đồng bộ }
               </button>
             </div>
-          } @else {
+          } @else if (activeView() === 'history') {
             <p class="text-[10px] text-slate-400"><i class="fa-solid fa-shield-halved mr-1"></i>Lịch sử các đợt đồng bộ chỉ xem để bảo đảm khả năng truy vết.</p>
             <div class="flex gap-2">
               <button type="button" (click)="close.emit()" [disabled]="isLoadingHistory()" class="px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-black disabled:opacity-40">Đóng</button>
@@ -510,8 +748,118 @@ export type { CorrectionValidationResult };
                 <i class="fa-solid fa-rotate mr-1"></i>Làm mới
               </button>
             </div>
+          } @else {
+            <p class="text-[10px] text-slate-400"><i class="fa-solid fa-book-bookmark mr-1"></i>Sổ mã quản lý nội bộ là nguồn chân lý duy nhất bảo đảm mỗi mã chỉ cấp cho 1 chuẩn tại một thời điểm.</p>
+            <div class="flex gap-2">
+              <button type="button" (click)="close.emit()" [disabled]="isLoadingRegistry()" class="px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-black disabled:opacity-40">Đóng</button>
+              <button type="button" (click)="loadRegistry()" [disabled]="isLoadingRegistry()" class="px-4 py-2 rounded-lg bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 text-xs font-black disabled:opacity-40 shadow-xs transition-colors">
+                <i class="fa-solid fa-rotate mr-1"></i>Làm mới
+              </button>
+            </div>
           }
         </div>
+
+        @if (showEventsDrawer()) {
+          <div class="absolute inset-0 z-30 flex flex-col bg-white dark:bg-slate-900 animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="events-drawer-title">
+            <div class="w-full h-full flex flex-col overflow-hidden">
+              <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3 bg-slate-50/70 dark:bg-slate-800/40 shrink-0">
+                <div class="flex items-center gap-2">
+                  <i class="fa-solid fa-clock-rotate-left text-indigo-600 dark:text-indigo-400" aria-hidden="true"></i>
+                  <h4 id="events-drawer-title" class="text-sm font-black text-slate-800 dark:text-slate-100">
+                    Lịch sử vòng đời mã: <span class="font-mono text-indigo-600 dark:text-indigo-400 font-black">{{selectedCodeForEvents()}}</span>
+                  </h4>
+                </div>
+                <button
+                  type="button"
+                  (click)="closeEventsDrawer()"
+                  class="w-7 h-7 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 flex items-center justify-center transition"
+                  aria-label="Đóng lịch sử sự kiện"
+                >
+                  <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                </button>
+              </div>
+
+              <div class="p-5 overflow-y-auto flex-1 custom-scrollbar space-y-3">
+                @if (isLoadingEvents()) {
+                  <div class="py-12 text-center text-slate-400">
+                    <i class="fa-solid fa-spinner fa-spin text-2xl mb-2 text-indigo-500" aria-hidden="true"></i>
+                    <p class="text-xs font-bold">Đang tải lịch sử sự kiện...</p>
+                  </div>
+                } @else if (selectedCodeEvents().length === 0) {
+                  <div class="py-12 text-center text-slate-400">
+                    <i class="fa-solid fa-clock-rotate-left text-2xl mb-2 opacity-40" aria-hidden="true"></i>
+                    <p class="text-xs font-bold">Chưa có sự kiện nào được ghi nhận cho mã này.</p>
+                  </div>
+                } @else {
+                  <div class="relative border-l-2 border-indigo-200 dark:border-indigo-900/60 ml-3 pl-4 space-y-4">
+                    @for (event of selectedCodeEvents(); track event.id || event.eventId || $index) {
+                      <div class="relative group">
+                        <span class="absolute -left-[23px] top-1.5 w-3 h-3 rounded-full border-2 border-white dark:border-slate-900" [ngClass]="codeEventDotClass(event.type)"></span>
+                        <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 p-3.5 space-y-2">
+                          <div class="flex flex-wrap items-center justify-between gap-2">
+                            <div class="flex items-center gap-2">
+                              <span [class]="codeEventTypeBadgeClass(event.type)">
+                                {{codeEventTypeLabel(event.type)}}
+                              </span>
+                              <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">
+                                {{codeEventSourceLabel(event.source)}}
+                              </span>
+                            </div>
+                            <span class="text-[11px] font-mono text-slate-400">
+                              {{formatTimestamp(event.createdAt)}}
+                            </span>
+                          </div>
+
+                          @if (event.reason) {
+                            <p class="text-xs text-slate-700 dark:text-slate-200 font-semibold">
+                              {{event.reason}}
+                            </p>
+                          }
+
+                          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-slate-200/60 dark:border-slate-700/60 text-[11px]">
+                            <div>
+                              <span class="text-slate-400">Người thực hiện: </span>
+                              <strong class="text-slate-700 dark:text-slate-200">{{event.actorName || event.actorUid || '(Hệ thống)'}}</strong>
+                            </div>
+                            @if (event.assignmentSequence) {
+                              <div class="sm:text-right">
+                                <span class="text-slate-400">Lượt cấp thứ: </span>
+                                <strong class="text-slate-700 dark:text-slate-200">#{{event.assignmentSequence}}</strong>
+                              </div>
+                            }
+                          </div>
+
+                          <div class="mt-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-2 text-[10px] font-mono grid grid-cols-2 gap-2">
+                            <div>
+                              <div class="text-slate-400 font-bold uppercase tracking-wider mb-0.5">Trước:</div>
+                              <div class="text-slate-600 dark:text-slate-300">Chuẩn: {{event.before.standardId || '(trống)'}}</div>
+                              <div class="text-slate-600 dark:text-slate-300">Trạng thái: {{event.before.registryStatus || event.before.lifecycleStatus || '(chưa có)'}}</div>
+                            </div>
+                            <div class="border-l border-slate-100 dark:border-slate-800 pl-2">
+                              <div class="text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider mb-0.5">Sau:</div>
+                              <div class="text-emerald-700 dark:text-emerald-300 font-bold">Chuẩn: {{event.after.standardId || '(trống)'}}</div>
+                              <div class="text-emerald-700 dark:text-emerald-300">Trạng thái: {{event.after.registryStatus || event.after.lifecycleStatus || '(chưa có)'}}</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+
+              <div class="px-5 py-3 border-t border-slate-100 dark:border-slate-800 flex justify-end bg-slate-50/70 dark:bg-slate-800/40 shrink-0">
+                <button
+                  type="button"
+                  (click)="closeEventsDrawer()"
+                  class="px-4 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 text-xs font-bold transition"
+                >
+                  Đóng
+                </button>
+              </div>
+            </div>
+          </div>
+        }
       </app-modal-shell>
     }
   `,
@@ -525,8 +873,19 @@ export class StandardsInternalIdSyncModalComponent {
 
   isOpen = input(false);
   close = output<void>();
+  initialView = input<SyncView>('scan');
 
-  activeView = signal<'scan' | 'history'>('scan');
+  activeView = signal<SyncView>('scan');
+  registryEntries = signal<StandardCodeRegistry[]>([]);
+  isLoadingRegistry = signal(false);
+  registryFilter = signal<RegistryFilter>('ALL');
+  registrySearchQuery = signal('');
+  certificationInfo = signal<{ verified: boolean; verifiedAt?: any; verifiedByName?: string; schemaVersion?: number } | null>(null);
+  isLoadingCertification = signal(false);
+  selectedCodeEvents = signal<StandardCodeEvent[]>([]);
+  selectedCodeForEvents = signal<string | null>(null);
+  isLoadingEvents = signal(false);
+  showEventsDrawer = signal(false);
   report = signal<StandardInternalIdSyncReport | null>(null);
   corrections = signal<Record<string, string>>({});
   /** null means the initial/default scope: all safe changes are selected. */
@@ -653,6 +1012,47 @@ export class StandardsInternalIdSyncModalComponent {
     calculateInternalIdApplySummary(this.selectedReport(), this.corrections())
   );
 
+  registryStats = computed(() => {
+    const entries = this.registryEntries();
+    let assigned = 0;
+    let available = 0;
+    let conflict = 0;
+    let migrated = 0;
+    for (const entry of entries) {
+      if (entry.migrationStatus === 'MIGRATED') migrated++;
+      if (entry.status === 'ASSIGNED') assigned++;
+      else if (entry.status === 'AVAILABLE') available++;
+      else if (entry.status === 'CONFLICT') conflict++;
+    }
+    return {
+      total: entries.length,
+      assigned,
+      available,
+      conflict,
+      migrated,
+    };
+  });
+
+  filteredRegistryEntries = computed(() => {
+    const filter = this.registryFilter();
+    const query = this.registrySearchQuery().trim().toLowerCase();
+    return this.registryEntries().filter(entry => {
+      if (filter === 'ASSIGNED' && entry.status !== 'ASSIGNED') return false;
+      if (filter === 'AVAILABLE' && entry.status !== 'AVAILABLE') return false;
+      if (filter === 'CONFLICT' && entry.status !== 'CONFLICT') return false;
+      if (filter === 'MIGRATED' && entry.migrationStatus !== 'MIGRATED') return false;
+      if (!query) return true;
+      return (
+        entry.internal_id.toLowerCase().includes(query) ||
+        (entry.currentStandardId && entry.currentStandardId.toLowerCase().includes(query)) ||
+        (entry.lastReleasedStandardId && entry.lastReleasedStandardId.toLowerCase().includes(query)) ||
+        (entry.migratedTo && entry.migratedTo.toLowerCase().includes(query))
+      );
+    });
+  });
+
+  visibleRegistryEntries = computed(() => this.filteredRegistryEntries().slice(0, 200));
+
   constructor() {
     effect(() => {
       const open = this.isOpen();
@@ -675,14 +1075,30 @@ export class StandardsInternalIdSyncModalComponent {
         this.activeView.set('scan');
         this.historyBatches.set([]);
         this.expandedBatchId.set(null);
+        this.registryEntries.set([]);
+        this.selectedCodeEvents.set([]);
+        this.selectedCodeForEvents.set(null);
+        this.showEventsDrawer.set(false);
+      }
+    });
+
+    effect(() => {
+      const view = this.initialView();
+      if (this.isOpen()) {
+        untracked(() => {
+          this.setView(view);
+        });
       }
     });
   }
 
-  setView(view: 'scan' | 'history'): void {
+  setView(view: SyncView): void {
     this.activeView.set(view);
     if (view === 'history') {
       void this.loadHistory();
+    } else if (view === 'registry') {
+      void this.loadRegistry();
+      void this.loadCertification();
     }
   }
 
@@ -1131,7 +1547,160 @@ export class StandardsInternalIdSyncModalComponent {
     return String(value);
   }
 
-  formatTimestamp(timestamp: any): string {
+  async loadRegistry(): Promise<void> {
+    if (this.isLoadingRegistry()) return;
+    this.isLoadingRegistry.set(true);
+    this.errorMessage.set('');
+    try {
+      const entries = await this.stdService.listRegistryEntries();
+      this.registryEntries.set(entries);
+    } catch (error: any) {
+      console.error('[StandardsInternalIdSync] Load registry failed:', error);
+      this.errorMessage.set('Không thể tải dữ liệu sổ mã quản lý. Vui lòng thử lại.');
+    } finally {
+      this.isLoadingRegistry.set(false);
+    }
+  }
+
+  async loadCertification(): Promise<void> {
+    this.isLoadingCertification.set(true);
+    try {
+      const info = await this.stdService.getCertificationInfo();
+      this.certificationInfo.set(info);
+    } catch (error: any) {
+      console.error('[StandardsInternalIdSync] Load certification failed:', error);
+      this.certificationInfo.set(null);
+    } finally {
+      this.isLoadingCertification.set(false);
+    }
+  }
+
+  async openCodeEvents(internalId: string): Promise<void> {
+    this.selectedCodeForEvents.set(internalId);
+    this.showEventsDrawer.set(true);
+    this.isLoadingEvents.set(true);
+    this.selectedCodeEvents.set([]);
+    try {
+      const events = await this.stdService.listCodeEvents({ internalId });
+      this.selectedCodeEvents.set(events);
+    } catch (error: any) {
+      console.error('[StandardsInternalIdSync] Load code events failed:', error);
+      this.toast.show('Không thể tải lịch sử sự kiện của mã ' + internalId, 'error');
+    } finally {
+      this.isLoadingEvents.set(false);
+    }
+  }
+
+  closeEventsDrawer(): void {
+    this.showEventsDrawer.set(false);
+    this.selectedCodeForEvents.set(null);
+    this.selectedCodeEvents.set([]);
+  }
+
+  exportRegistryCsv(): void {
+    const entries = this.filteredRegistryEntries();
+    if (entries.length === 0) return;
+
+    const headers = [
+      'Mã quản lý',
+      'Trạng thái',
+      'Chuẩn đang giữ',
+      'Số lượt cấp',
+      'Lần cấp gần nhất',
+      'Lần trả gần nhất',
+      'Chuẩn trả gần nhất',
+      'Trạng thái Alias',
+      'Mã đích Alias',
+    ];
+
+    const escapeCsv = (val: any) => {
+      const str = val === null || val === undefined ? '' : String(val);
+      return str.includes('"') || str.includes(',') || str.includes('\n') || str.includes('\r')
+        ? '"' + str.replace(/"/g, '""') + '"'
+        : str;
+    };
+
+    const rows = entries.map(e => [
+      escapeCsv(e.internal_id),
+      escapeCsv(e.status),
+      escapeCsv(e.currentStandardId || ''),
+      escapeCsv(e.assignmentCount || 0),
+      escapeCsv(this.formatTimestamp(e.lastAssignedAt)),
+      escapeCsv(this.formatTimestamp(e.lastReleasedAt)),
+      escapeCsv(e.lastReleasedStandardId || ''),
+      escapeCsv(e.migrationStatus || ''),
+      escapeCsv(e.migratedTo || ''),
+    ].join(','));
+
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows].join(String.fromCharCode(13, 10));
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    const now = new Date();
+    const dateStr = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, '0'),
+      String(now.getDate()).padStart(2, '0'),
+      '_',
+      String(now.getHours()).padStart(2, '0'),
+      String(now.getMinutes()).padStart(2, '0'),
+    ].join('');
+    link.download = 'so-ma-noi-bo-' + dateStr + '.csv';
+    link.click();
+    URL.revokeObjectURL(url);
+    this.toast.show('Đã xuất danh sách ' + entries.length + ' mã ra tệp CSV.', 'success');
+  }
+
+  codeEventTypeLabel(type: string): string {
+    switch (type) {
+      case 'ASSIGNED': return 'Cấp mã';
+      case 'RELEASED': return 'Thu hồi / Trả mã';
+      case 'REASSIGNED': return 'Đổi chủ sở hữu';
+      case 'RECONCILED': return 'Khắc phục đối soát';
+      default: return type || 'Sự kiện';
+    }
+  }
+
+  codeEventTypeBadgeClass(type: string): string {
+    switch (type) {
+      case 'ASSIGNED':
+        return 'inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300';
+      case 'RELEASED':
+        return 'inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300';
+      case 'REASSIGNED':
+        return 'inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300';
+      case 'RECONCILED':
+        return 'inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300';
+      default:
+        return 'inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300';
+    }
+  }
+
+  codeEventDotClass(type: string): string {
+    switch (type) {
+      case 'ASSIGNED': return 'bg-emerald-500';
+      case 'RELEASED': return 'bg-amber-500';
+      case 'REASSIGNED': return 'bg-purple-500';
+      case 'RECONCILED': return 'bg-blue-500';
+      default: return 'bg-slate-400';
+    }
+  }
+
+  codeEventSourceLabel(source: string): string {
+    switch (source) {
+      case 'CREATE': return 'Tạo mới hồ sơ';
+      case 'IMPORT': return 'Nhập từ tệp Excel';
+      case 'SINGLE_RELEASE': return 'Trả mã đơn lẻ';
+      case 'RECALL': return 'Thu hồi mã chuẩn ẩn';
+      case 'RESTORE': return 'Khôi phục từ thùng rác';
+      case 'AUTO_REUSE': return 'Tự động tái cấp';
+      case 'RECONCILIATION': return 'Đồng bộ đối soát';
+      default: return source || 'Thao tác';
+    }
+  }
+
+    formatTimestamp(timestamp: any): string {
     if (!timestamp) return '(chưa rõ)';
     let date: Date;
     if (typeof timestamp?.toDate === 'function') {

@@ -768,3 +768,130 @@ test('behavioral: a stalled post-apply verification scan times out instead of ha
   assert.equal(toasts.some((item: any) => item.type === 'success'), true);
   assert.equal(toasts.some((item: any) => item.type === 'warning'), true);
 });
+
+test('sync modal exposes registry view, code events drawer and certification contract', () => {
+  assert.match(source, /type RegistryFilter = 'ALL' \| 'ASSIGNED' \| 'AVAILABLE' \| 'CONFLICT' \| 'MIGRATED'/);
+  assert.match(source, /initialView = input<SyncView>\('scan'\)/);
+  assert.match(source, /registryEntries = signal/);
+  assert.match(source, /registryStats = computed/);
+  assert.match(source, /filteredRegistryEntries = computed/);
+  assert.match(source, /loadRegistry\(\)/);
+  assert.match(source, /loadCertification\(\)/);
+  assert.match(source, /openCodeEvents\(internalId: string\)/);
+  assert.match(source, /closeEventsDrawer\(\)/);
+  assert.match(source, /exportRegistryCsv\(\)/);
+  assert.match(source, /Sổ mã & Sự kiện/);
+  assert.match(source, /Xuất CSV sổ mã/);
+});
+
+test('behavioral: registry stats and filtering accurately group and search registry entries', async () => {
+  const { StandardsInternalIdSyncModalComponent } = await import('./standards-internal-id-sync-modal.component');
+  const modal = Object.create(StandardsInternalIdSyncModalComponent.prototype) as any;
+
+  const mockEntries = [
+    { id: 'AD01', internal_id: 'AD01', status: 'ASSIGNED', currentStandardId: 'std-1', assignmentCount: 2 },
+    { id: 'AD02', internal_id: 'AD02', status: 'AVAILABLE', currentStandardId: null, lastReleasedStandardId: 'std-2', assignmentCount: 1 },
+    { id: 'AD03', internal_id: 'AD03', status: 'CONFLICT', currentStandardId: 'std-3', assignmentCount: 1 },
+    { id: 'ad04', internal_id: 'ad04', status: 'AVAILABLE', migrationStatus: 'MIGRATED', migratedTo: 'AD04', assignmentCount: 1 },
+  ];
+
+  modal.registryEntries = signal(mockEntries);
+  modal.registryFilter = signal('ALL');
+  modal.registrySearchQuery = signal('');
+
+  // Evaluate registryStats
+  modal.registryStats = computed(() => {
+    const entries = modal.registryEntries();
+    let assigned = 0, available = 0, conflict = 0, migrated = 0;
+    for (const entry of entries) {
+      if (entry.migrationStatus === 'MIGRATED') migrated++;
+      if (entry.status === 'ASSIGNED') assigned++;
+      else if (entry.status === 'AVAILABLE') available++;
+      else if (entry.status === 'CONFLICT') conflict++;
+    }
+    return { total: entries.length, assigned, available, conflict, migrated };
+  });
+
+  const stats = modal.registryStats();
+  assert.equal(stats.total, 4);
+  assert.equal(stats.assigned, 1);
+  assert.equal(stats.available, 2);
+  assert.equal(stats.conflict, 1);
+  assert.equal(stats.migrated, 1);
+
+  // Evaluate filteredRegistryEntries
+  modal.filteredRegistryEntries = computed(() => {
+    const filter = modal.registryFilter();
+    const query = modal.registrySearchQuery().trim().toLowerCase();
+    return modal.registryEntries().filter((entry: any) => {
+      if (filter === 'ASSIGNED' && entry.status !== 'ASSIGNED') return false;
+      if (filter === 'AVAILABLE' && entry.status !== 'AVAILABLE') return false;
+      if (filter === 'CONFLICT' && entry.status !== 'CONFLICT') return false;
+      if (filter === 'MIGRATED' && entry.migrationStatus !== 'MIGRATED') return false;
+      if (!query) return true;
+      return (
+        entry.internal_id.toLowerCase().includes(query) ||
+        (entry.currentStandardId && entry.currentStandardId.toLowerCase().includes(query)) ||
+        (entry.lastReleasedStandardId && entry.lastReleasedStandardId.toLowerCase().includes(query)) ||
+        (entry.migratedTo && entry.migratedTo.toLowerCase().includes(query))
+      );
+    });
+  });
+
+  // Filter ASSIGNED
+  modal.registryFilter.set('ASSIGNED');
+  assert.equal(modal.filteredRegistryEntries().length, 1);
+  assert.equal(modal.filteredRegistryEntries()[0].internal_id, 'AD01');
+
+  // Filter MIGRATED
+  modal.registryFilter.set('MIGRATED');
+  assert.equal(modal.filteredRegistryEntries().length, 1);
+  assert.equal(modal.filteredRegistryEntries()[0].internal_id, 'ad04');
+
+  // Search by standard id
+  modal.registryFilter.set('ALL');
+  modal.registrySearchQuery.set('std-2');
+  assert.equal(modal.filteredRegistryEntries().length, 1);
+  assert.equal(modal.filteredRegistryEntries()[0].internal_id, 'AD02');
+});
+
+test('behavioral: openCodeEvents fetches lifecycle events and loads drawer', async () => {
+  const { StandardsInternalIdSyncModalComponent } = await import('./standards-internal-id-sync-modal.component');
+  const modal = Object.create(StandardsInternalIdSyncModalComponent.prototype) as any;
+
+  modal.selectedCodeForEvents = signal(null);
+  modal.showEventsDrawer = signal(false);
+  modal.isLoadingEvents = signal(false);
+  modal.selectedCodeEvents = signal([]);
+  modal.toast = { show: () => {} };
+
+  const mockEvents = [
+    {
+      id: 'evt-1', eventId: 'evt-1', internalId: 'AD01', type: 'ASSIGNED', source: 'CREATE',
+      standardId: 'std-1', createdAt: Date.now(),
+      before: { internalId: 'AD01' }, after: { internalId: 'AD01', standardId: 'std-1', registryStatus: 'ASSIGNED' },
+    },
+  ];
+
+  modal.stdService = {
+    listCodeEvents: async (options: any) => {
+      assert.equal(options?.internalId, 'AD01');
+      return mockEvents;
+    },
+  };
+
+  modal.openCodeEvents = StandardsInternalIdSyncModalComponent.prototype.openCodeEvents.bind(modal);
+  modal.closeEventsDrawer = StandardsInternalIdSyncModalComponent.prototype.closeEventsDrawer.bind(modal);
+
+  await modal.openCodeEvents('AD01');
+
+  assert.equal(modal.selectedCodeForEvents(), 'AD01');
+  assert.equal(modal.showEventsDrawer(), true);
+  assert.equal(modal.selectedCodeEvents().length, 1);
+  assert.equal(modal.selectedCodeEvents()[0].id, 'evt-1');
+
+  modal.closeEventsDrawer();
+  assert.equal(modal.showEventsDrawer(), false);
+  assert.equal(modal.selectedCodeForEvents(), null);
+  assert.equal(modal.selectedCodeEvents().length, 0);
+});

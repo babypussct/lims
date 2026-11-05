@@ -1,5 +1,31 @@
 [
   {
+    "version": "v26.11.05-b01",
+    "date": "5/11/2026",
+    "title": "Hoàn thiện thu hồi và tra cứu vòng đời mã chất chuẩn",
+    "highlights": [
+      "Thu hồi mã của chuẩn đã ẩn có xem trước, dừng và tiếp tục an toàn khi gián đoạn.",
+      "Bổ sung sổ mã và lịch sử cấp, trả, khôi phục để đối chiếu từng hồ sơ."
+    ],
+    "features": [
+      "Tra cứu sổ mã theo trạng thái, tìm kiếm và xuất danh sách CSV.",
+      "Lưu bộ nhớ đệm danh mục bằng IndexedDB để giảm tải lại dữ liệu trên thiết bị."
+    ],
+    "improvements": [
+      "Tái sử dụng danh mục đã tải đầy đủ cho nhập Excel; kiểm tra chuẩn hóa trước khi áp dụng truy vấn mã tối ưu.",
+      "Hiển thị trạng thái đồng bộ tạm dừng và cho phép thử lại sau khi kết nối hoặc hạn mức phục hồi.",
+      "Tải đúng các sự kiện vòng đời mới nhất và bảo vệ thao tác thu hồi, khôi phục diễn ra đồng thời."
+    ],
+    "fixes": [
+      "Giữ kết quả chưa xác định khi mất mạng và ghi bổ sung nhật ký mà không trả mã lặp.",
+      "Không coi danh mục có giới hạn hoặc thiếu hồ sơ cũ là danh mục đầy đủ.",
+      "Giữ cache IndexedDB khi localStorage hết dung lượng; đồng bộ dữ liệu và mốc cập nhật cùng nhau.",
+      "Dừng các lượt đếm và gửi thông báo lặp khi Firestore chạm hạn mức; giải thích rõ lỗi hạn mức khi phát hành báo cáo.",
+      "Thử làm mới phiên đăng nhập một lần khi API sao lưu từ chối token hết hạn."
+    ],
+    "releaseOrder": 26110500001
+  },
+  {
     "version": "v26.11.03-b03",
     "date": "3/11/2026",
     "title": "Hiển thị đầy đủ lịch trực đêm trên Dashboard",
