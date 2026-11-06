@@ -2,7 +2,26 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.11.05-b01
+## Phiên bản hiện tại: v26.11.06-b01
+
+### v26.11.06-b01
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Nhãn danh mục trong cửa sổ quản lý chất chuẩn hiển thị rõ chữ ở cả chế độ sáng và chế độ tối.
+
+#### ✨ Tính Năng Mới
+
+- Nhãn phạm vi công nhận, trạng thái đã ẩn và mã thiết bị có màu chữ phù hợp với nền hiển thị.
+- Các ô thống kê xem trước danh mục giữ độ tương phản rõ ràng trong cửa sổ bật lên.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Màu chữ và màu nền của nhãn danh mục được đồng bộ giữa chế độ sáng và chế độ tối.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Khắc phục lỗi một số nhãn danh mục bị hiện trắng hoặc khó đọc trong cửa sổ quản lý nhãn.
 
 ### v26.11.05-b01
 

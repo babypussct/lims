@@ -1,23 +1,16 @@
 {
-  "title": "Hoàn thiện thu hồi và tra cứu vòng đời mã chất chuẩn",
+  "title": "Hiển thị rõ nhãn danh mục",
   "highlights": [
-    "Thu hồi mã của chuẩn đã ẩn có xem trước, dừng và tiếp tục an toàn khi gián đoạn.",
-    "Bổ sung sổ mã và lịch sử cấp, trả, khôi phục để đối chiếu từng hồ sơ."
+    "Nhãn danh mục trong cửa sổ quản lý chất chuẩn hiển thị rõ chữ ở cả chế độ sáng và chế độ tối."
   ],
   "features": [
-    "Tra cứu sổ mã theo trạng thái, tìm kiếm và xuất danh sách CSV.",
-    "Lưu bộ nhớ đệm danh mục bằng IndexedDB để giảm tải lại dữ liệu trên thiết bị."
+    "Nhãn phạm vi công nhận, trạng thái đã ẩn và mã thiết bị có màu chữ phù hợp với nền hiển thị.",
+    "Các ô thống kê xem trước danh mục giữ độ tương phản rõ ràng trong cửa sổ bật lên."
   ],
   "improvements": [
-    "Tái sử dụng danh mục đã tải đầy đủ cho nhập Excel; kiểm tra chuẩn hóa trước khi áp dụng truy vấn mã tối ưu.",
-    "Hiển thị trạng thái đồng bộ tạm dừng và cho phép thử lại sau khi kết nối hoặc hạn mức phục hồi.",
-    "Tải đúng các sự kiện vòng đời mới nhất và bảo vệ thao tác thu hồi, khôi phục diễn ra đồng thời."
+    "Màu chữ và màu nền của nhãn danh mục được đồng bộ giữa chế độ sáng và chế độ tối."
   ],
   "fixes": [
-    "Giữ kết quả chưa xác định khi mất mạng và ghi bổ sung nhật ký mà không trả mã lặp.",
-    "Không coi danh mục có giới hạn hoặc thiếu hồ sơ cũ là danh mục đầy đủ.",
-    "Giữ cache IndexedDB khi localStorage hết dung lượng; đồng bộ dữ liệu và mốc cập nhật cùng nhau.",
-    "Dừng các lượt đếm và gửi thông báo lặp khi Firestore chạm hạn mức; giải thích rõ lỗi hạn mức khi phát hành báo cáo.",
-    "Thử làm mới phiên đăng nhập một lần khi API sao lưu từ chối token hết hạn."
+    "Khắc phục lỗi một số nhãn danh mục bị hiện trắng hoặc khó đọc trong cửa sổ quản lý nhãn."
   ]
 }

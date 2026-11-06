@@ -51,11 +51,11 @@ type SeedPreview = Awaited<ReturnType<StandardTagCatalogService['previewAccredit
                   <button type="button" (click)="loadPreview()" [disabled]="isBusy()" class="shrink-0 rounded-xl border border-fuchsia-300 dark:border-fuchsia-700 px-3 py-2 text-xs font-black text-fuchsia-700 dark:text-fuchsia-200 hover:bg-white/70 disabled:opacity-50">Xem trước</button>
                 </div>
                 @if (preview()) {
-                  <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center">
-                    <div class="rounded-lg bg-white/70 dark:bg-slate-800/70 p-2"><div class="text-lg font-black">{{preview()!.createIds.length}}</div><div class="text-[10px] uppercase text-slate-500">Tạo</div></div>
-                    <div class="rounded-lg bg-white/70 dark:bg-slate-800/70 p-2"><div class="text-lg font-black">{{preview()!.updateIds.length}}</div><div class="text-[10px] uppercase text-slate-500">Cập nhật</div></div>
-                    <div class="rounded-lg bg-white/70 dark:bg-slate-800/70 p-2"><div class="text-lg font-black">{{preview()!.unchangedIds.length}}</div><div class="text-[10px] uppercase text-slate-500">Giữ nguyên</div></div>
-                    <div class="rounded-lg bg-white/70 dark:bg-slate-800/70 p-2"><div class="text-lg font-black">{{preview()!.restoreIds.length}}</div><div class="text-[10px] uppercase text-slate-500">Khôi phục</div></div>
+                    <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center">
+                    <div class="rounded-lg bg-white/70 dark:bg-slate-800/70 p-2 text-slate-800 dark:text-slate-100"><div class="text-lg font-black">{{preview()!.createIds.length}}</div><div class="text-[10px] uppercase text-slate-500 dark:text-slate-400">Tạo</div></div>
+                    <div class="rounded-lg bg-white/70 dark:bg-slate-800/70 p-2 text-slate-800 dark:text-slate-100"><div class="text-lg font-black">{{preview()!.updateIds.length}}</div><div class="text-[10px] uppercase text-slate-500 dark:text-slate-400">Cập nhật</div></div>
+                    <div class="rounded-lg bg-white/70 dark:bg-slate-800/70 p-2 text-slate-800 dark:text-slate-100"><div class="text-lg font-black">{{preview()!.unchangedIds.length}}</div><div class="text-[10px] uppercase text-slate-500 dark:text-slate-400">Giữ nguyên</div></div>
+                    <div class="rounded-lg bg-white/70 dark:bg-slate-800/70 p-2 text-slate-800 dark:text-slate-100"><div class="text-lg font-black">{{preview()!.restoreIds.length}}</div><div class="text-[10px] uppercase text-slate-500 dark:text-slate-400">Khôi phục</div></div>
                     <div class="rounded-lg bg-red-100 dark:bg-red-900/30 p-2"><div class="text-lg font-black text-red-600 dark:text-red-300">{{preview()!.conflictIds.length}}</div><div class="text-[10px] uppercase text-red-600 dark:text-red-300">Xung đột</div></div>
                   </div>
                   <label class="flex items-center gap-2 text-xs font-bold text-fuchsia-800 dark:text-fuchsia-200">
@@ -80,9 +80,9 @@ type SeedPreview = Awaited<ReturnType<StandardTagCatalogService['previewAccredit
                         <div class="font-bold text-sm text-slate-700 dark:text-slate-200 truncate" [title]="option.label">{{option.label}}</div>
                         @if (option.methodName) { <div class="text-[10px] text-slate-500 dark:text-slate-400 line-clamp-2" [title]="option.methodName">{{option.methodName}}</div> }
                         <div class="flex flex-wrap gap-1 mt-1">
-                          @if (option.origin === 'ACCREDITATION_SCOPE') { <span class="rounded-full bg-fuchsia-100 text-fuchsia-700 px-1.5 py-0.5 text-[9px] font-black">PHẠM VI CÔNG NHẬN</span> }
-                          @if (option.archived) { <span class="rounded-full bg-slate-100 text-slate-500 px-1.5 py-0.5 text-[9px] font-black">ĐÃ ẨN</span> }
-                          @for (device of option.deviceCodes || []; track device) { <span class="rounded-full bg-fuchsia-50 text-fuchsia-700 px-1.5 py-0.5 text-[9px] font-black">{{device}}</span> }
+                          @if (option.origin === 'ACCREDITATION_SCOPE') { <span class="rounded-full bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-900/40 dark:text-fuchsia-300 px-1.5 py-0.5 text-[9px] font-black">PHẠM VI CÔNG NHẬN</span> }
+                          @if (option.archived) { <span class="rounded-full bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-300 px-1.5 py-0.5 text-[9px] font-black">ĐÃ ẨN</span> }
+                          @for (device of option.deviceCodes || []; track device) { <span class="rounded-full bg-fuchsia-50 text-fuchsia-700 dark:bg-fuchsia-900/30 dark:text-fuchsia-300 px-1.5 py-0.5 text-[9px] font-black">{{device}}</span> }
                         </div>
                       </div>
                       @if (option.origin !== 'ACCREDITATION_SCOPE') {

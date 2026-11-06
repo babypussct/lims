@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.11.05-b01",
-    "title": "Hoàn thiện thu hồi và tra cứu vòng đời mã chất chuẩn",
+    "version": "v26.11.06-b01",
+    "title": "Hiển thị rõ nhãn danh mục",
     "features": [
-      "Thu hồi mã của chuẩn đã ẩn có xem trước, dừng và tiếp tục an toàn khi gián đoạn.",
-      "Bổ sung sổ mã và lịch sử cấp, trả, khôi phục để đối chiếu từng hồ sơ.",
-      "Tra cứu sổ mã theo trạng thái, tìm kiếm và xuất danh sách CSV.",
-      "Lưu bộ nhớ đệm danh mục bằng IndexedDB để giảm tải lại dữ liệu trên thiết bị.",
-      "Tái sử dụng danh mục đã tải đầy đủ cho nhập Excel; kiểm tra chuẩn hóa trước khi áp dụng truy vấn mã tối ưu."
+      "Nhãn danh mục trong cửa sổ quản lý chất chuẩn hiển thị rõ chữ ở cả chế độ sáng và chế độ tối.",
+      "Nhãn phạm vi công nhận, trạng thái đã ẩn và mã thiết bị có màu chữ phù hợp với nền hiển thị.",
+      "Các ô thống kê xem trước danh mục giữ độ tương phản rõ ràng trong cửa sổ bật lên.",
+      "Màu chữ và màu nền của nhãn danh mục được đồng bộ giữa chế độ sáng và chế độ tối.",
+      "Khắc phục lỗi một số nhãn danh mục bị hiện trắng hoặc khó đọc trong cửa sổ quản lý nhãn."
     ]
   },
   "assetGroups": [
