@@ -2,14 +2,13 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.11.06-b02",
-    "title": "Hiển thị rõ nhãn danh mục",
+    "version": "v26.11.06-b03",
+    "title": "Sửa danh sách nhãn phương pháp khi hoàn trả chuẩn",
     "features": [
-      "Nhãn danh mục trong cửa sổ quản lý chất chuẩn và Hoàn trả chuẩn hiển thị rõ chữ ở cả chế độ sáng và chế độ tối.",
-      "Nhãn phạm vi công nhận, trạng thái đã ẩn và mã thiết bị có màu chữ phù hợp với nền hiển thị.",
-      "Các ô thống kê xem trước danh mục và danh sách nhãn phương pháp thử giữ độ tương phản rõ ràng trong cửa sổ bật lên.",
-      "Màu chữ và màu nền của nhãn danh mục được đồng bộ giữa chế độ sáng và chế độ tối, kể cả trong luồng Hoàn trả chuẩn.",
-      "Khắc phục lỗi danh sách Nhãn phương pháp thử trong Hoàn trả chuẩn bị hiện trắng hoặc không đọc được nội dung."
+      "Danh sách nhãn phương pháp thử trong Hoàn trả chuẩn hiển thị gọn trong hộp thoại, hỗ trợ tên phương pháp dài.",
+      "Danh sách có thanh cuộn, tự xuống dòng và thu gọn sau khi chọn; áp dụng cả khi Admin tiếp nhận chuẩn trả.",
+      "Khắc phục danh sách lựa chọn tràn màn hình và che nội dung hộp thoại.",
+      "Ngăn chọn trùng nhãn đã thêm và giữ giới hạn 10 nhãn."
     ]
   },
   "assetGroups": [

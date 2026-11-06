@@ -184,16 +184,26 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
                           <button type="button" (click)="returnSopTags.set([])" class="text-xs font-bold text-slate-500 hover:text-red-600">Xóa nhãn</button>
                       </div>
                        <p class="text-[11px] text-fuchsia-600/80 dark:text-fuchsia-300/80">Một báo cáo có thể gắn nhiều phương pháp hóa học cùng lúc.</p>
-                       <div class="flex gap-2">
-                          <select [ngModel]="returnTagToAdd()" (ngModelChange)="returnTagToAdd.set($event)" class="min-w-0 flex-1 rounded-xl border border-fuchsia-200 dark:border-fuchsia-800 bg-white dark:bg-slate-800 px-3 py-2 text-sm font-bold text-slate-700 dark:text-slate-200">
-                              <option value="" class="bg-white text-slate-700 dark:bg-slate-800 dark:text-slate-200">Chọn nhãn trong danh mục...</option>
-                               @for (option of tagOptions(); track option.key) { <option [value]="option.key" class="bg-white text-slate-700 dark:bg-slate-800 dark:text-slate-200">{{formatTagLabel(option)}}</option> }
-                          </select>
+                       <div class="flex items-start gap-2">
+                          <details #returnTagPicker class="min-w-0 flex-1 rounded-xl border border-fuchsia-200 dark:border-fuchsia-800 bg-white dark:bg-slate-800">
+                              <summary class="cursor-pointer px-3 py-2 text-sm font-bold text-slate-700 dark:text-slate-200 whitespace-normal [overflow-wrap:anywhere] focus-visible:outline focus-visible:outline-2 focus-visible:outline-fuchsia-500">
+                                  {{ pendingTagLabel(returnTagToAdd()) }}
+                              </summary>
+                              <div class="max-h-48 overflow-y-auto overscroll-contain border-t border-fuchsia-100 dark:border-fuchsia-800 p-1" role="group" aria-label="Chọn nhãn phương pháp thử">
+                                  @for (option of tagOptions(); track option.key) {
+                                      <button type="button" (click)="returnTagToAdd.set(option.key); returnTagPicker.open = false" [disabled]="returnSopTags().includes(option.key) || returnSopTags().length >= maxReturnTags" [attr.aria-pressed]="returnTagToAdd() === option.key" class="block w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-slate-700 dark:text-slate-200 whitespace-normal [overflow-wrap:anywhere] hover:bg-fuchsia-50 dark:hover:bg-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-fuchsia-500 disabled:opacity-40 disabled:cursor-not-allowed">
+                                          {{formatTagLabel(option)}}
+                                      </button>
+                                  } @empty {
+                                      <p class="px-3 py-2 text-sm text-slate-500 dark:text-slate-400">Chưa có nhãn trong danh mục.</p>
+                                  }
+                              </div>
+                          </details>
                           <button type="button" (click)="addReturnTag()" [disabled]="!returnTagToAdd() || returnSopTags().length >= maxReturnTags" class="rounded-xl bg-fuchsia-600 px-3 py-2 text-white font-bold disabled:opacity-40">Thêm</button>
                       </div>
                       <div class="flex flex-wrap gap-1.5">
                           @for (key of returnSopTags(); track key) {
-                               <span class="inline-flex items-center gap-1 rounded-full bg-white dark:bg-slate-800 border border-fuchsia-200 dark:border-fuchsia-700 px-2.5 py-1 text-xs font-bold text-fuchsia-700 dark:text-fuchsia-300" [title]="formatTagLabel(tagCatalog.resolveTag(key))">{{formatTagLabel(tagCatalog.resolveTag(key))}}<button type="button" (click)="removeReturnTag(key)" class="text-fuchsia-400 hover:text-red-500">×</button></span>
+                               <span class="inline-flex max-w-full items-start gap-1 rounded-full whitespace-normal [overflow-wrap:anywhere] bg-white dark:bg-slate-800 border border-fuchsia-200 dark:border-fuchsia-700 px-2.5 py-1 text-xs font-bold text-fuchsia-700 dark:text-fuchsia-300" [title]="formatTagLabel(tagCatalog.resolveTag(key))">{{formatTagLabel(tagCatalog.resolveTag(key))}}<button type="button" (click)="removeReturnTag(key)" class="text-fuchsia-400 hover:text-red-500">×</button></span>
                           }
                       </div>
                   </div>
@@ -291,16 +301,26 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
                           <button type="button" (click)="adminFinalSopTags.set([])" class="text-xs font-bold text-slate-500 hover:text-red-600">Xóa nhãn</button>
                       </div>
                        <p class="text-[11px] text-fuchsia-600/80 dark:text-fuchsia-300/80">Có thể xác nhận nhiều phương pháp áp dụng cho cùng một chuẩn.</p>
-                       <div class="flex gap-2">
-                          <select [ngModel]="adminTagToAdd()" (ngModelChange)="adminTagToAdd.set($event)" class="min-w-0 flex-1 rounded-xl border border-fuchsia-200 dark:border-fuchsia-800 bg-white dark:bg-slate-800 px-3 py-2 text-sm font-bold text-slate-700 dark:text-slate-200">
-                              <option value="" class="bg-white text-slate-700 dark:bg-slate-800 dark:text-slate-200">Chọn nhãn trong danh mục...</option>
-                               @for (option of tagOptions(); track option.key) { <option [value]="option.key" class="bg-white text-slate-700 dark:bg-slate-800 dark:text-slate-200">{{formatTagLabel(option)}}</option> }
-                          </select>
+                       <div class="flex items-start gap-2">
+                          <details #adminTagPicker class="min-w-0 flex-1 rounded-xl border border-fuchsia-200 dark:border-fuchsia-800 bg-white dark:bg-slate-800">
+                              <summary class="cursor-pointer px-3 py-2 text-sm font-bold text-slate-700 dark:text-slate-200 whitespace-normal [overflow-wrap:anywhere] focus-visible:outline focus-visible:outline-2 focus-visible:outline-fuchsia-500">
+                                  {{ pendingTagLabel(adminTagToAdd()) }}
+                              </summary>
+                              <div class="max-h-48 overflow-y-auto overscroll-contain border-t border-fuchsia-100 dark:border-fuchsia-800 p-1" role="group" aria-label="Chọn nhãn phương pháp thử">
+                                  @for (option of tagOptions(); track option.key) {
+                                      <button type="button" (click)="adminTagToAdd.set(option.key); adminTagPicker.open = false" [disabled]="adminFinalSopTags().includes(option.key) || adminFinalSopTags().length >= maxReturnTags" [attr.aria-pressed]="adminTagToAdd() === option.key" class="block w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-slate-700 dark:text-slate-200 whitespace-normal [overflow-wrap:anywhere] hover:bg-fuchsia-50 dark:hover:bg-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-fuchsia-500 disabled:opacity-40 disabled:cursor-not-allowed">
+                                          {{formatTagLabel(option)}}
+                                      </button>
+                                  } @empty {
+                                      <p class="px-3 py-2 text-sm text-slate-500 dark:text-slate-400">Chưa có nhãn trong danh mục.</p>
+                                  }
+                              </div>
+                          </details>
                           <button type="button" (click)="addAdminTag()" [disabled]="!adminTagToAdd() || adminFinalSopTags().length >= maxReturnTags" class="rounded-xl bg-fuchsia-600 px-3 py-2 text-white font-bold disabled:opacity-40">Thêm</button>
                       </div>
                       <div class="flex flex-wrap gap-1.5">
                           @for (key of adminFinalSopTags(); track key) {
-                               <span class="inline-flex items-center gap-1 rounded-full bg-white dark:bg-slate-800 border border-fuchsia-200 dark:border-fuchsia-700 px-2.5 py-1 text-xs font-bold text-fuchsia-700 dark:text-fuchsia-300" [title]="formatTagLabel(tagCatalog.resolveTag(key))">{{formatTagLabel(tagCatalog.resolveTag(key))}}<button type="button" (click)="removeAdminTag(key)" class="text-fuchsia-400 hover:text-red-500">×</button></span>
+                               <span class="inline-flex max-w-full items-start gap-1 rounded-full whitespace-normal [overflow-wrap:anywhere] bg-white dark:bg-slate-800 border border-fuchsia-200 dark:border-fuchsia-700 px-2.5 py-1 text-xs font-bold text-fuchsia-700 dark:text-fuchsia-300" [title]="formatTagLabel(tagCatalog.resolveTag(key))">{{formatTagLabel(tagCatalog.resolveTag(key))}}<button type="button" (click)="removeAdminTag(key)" class="text-fuchsia-400 hover:text-red-500">×</button></span>
                           }
                       </div>
                   </div>
@@ -358,6 +378,10 @@ export class RequestsActionModalsComponent implements OnChanges {
 
   formatTagLabel(option: { label: string; methodName?: string }): string {
     return formatMethodOptionLabel(option);
+  }
+
+  pendingTagLabel(key: string): string {
+    return key ? this.formatTagLabel(this.tagCatalog.resolveTag(key)) : 'Chọn nhãn trong danh mục...';
   }
 
   ngOnChanges(changes: SimpleChanges) {

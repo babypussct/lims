@@ -2,7 +2,26 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.11.06-b02
+## Phiên bản hiện tại: v26.11.06-b03
+
+### v26.11.06-b03
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Danh sách nhãn phương pháp thử trong Hoàn trả chuẩn hiển thị gọn trong hộp thoại, hỗ trợ tên phương pháp dài.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Danh sách có thanh cuộn, tự xuống dòng và thu gọn sau khi chọn; áp dụng cả khi Admin tiếp nhận chuẩn trả.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Khắc phục danh sách lựa chọn tràn màn hình và che nội dung hộp thoại.
+- Ngăn chọn trùng nhãn đã thêm và giữ giới hạn 10 nhãn.
 
 ### v26.11.06-b02
 
