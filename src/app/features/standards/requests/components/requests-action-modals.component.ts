@@ -185,9 +185,9 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
                       </div>
                        <p class="text-[11px] text-fuchsia-600/80 dark:text-fuchsia-300/80">Một báo cáo có thể gắn nhiều phương pháp hóa học cùng lúc.</p>
                        <div class="flex gap-2">
-                          <select [ngModel]="returnTagToAdd()" (ngModelChange)="returnTagToAdd.set($event)" class="min-w-0 flex-1 rounded-xl border border-fuchsia-200 dark:border-fuchsia-800 bg-white dark:bg-slate-800 px-3 py-2 text-sm font-bold">
-                              <option value="">Chọn nhãn trong danh mục...</option>
-                               @for (option of tagOptions(); track option.key) { <option [value]="option.key">{{formatTagLabel(option)}}</option> }
+                          <select [ngModel]="returnTagToAdd()" (ngModelChange)="returnTagToAdd.set($event)" class="min-w-0 flex-1 rounded-xl border border-fuchsia-200 dark:border-fuchsia-800 bg-white dark:bg-slate-800 px-3 py-2 text-sm font-bold text-slate-700 dark:text-slate-200">
+                              <option value="" class="bg-white text-slate-700 dark:bg-slate-800 dark:text-slate-200">Chọn nhãn trong danh mục...</option>
+                               @for (option of tagOptions(); track option.key) { <option [value]="option.key" class="bg-white text-slate-700 dark:bg-slate-800 dark:text-slate-200">{{formatTagLabel(option)}}</option> }
                           </select>
                           <button type="button" (click)="addReturnTag()" [disabled]="!returnTagToAdd() || returnSopTags().length >= maxReturnTags" class="rounded-xl bg-fuchsia-600 px-3 py-2 text-white font-bold disabled:opacity-40">Thêm</button>
                       </div>
@@ -292,9 +292,9 @@ export type ActionModalMode = 'approve' | 'reject' | 'return' | 'logUsage' | 'ad
                       </div>
                        <p class="text-[11px] text-fuchsia-600/80 dark:text-fuchsia-300/80">Có thể xác nhận nhiều phương pháp áp dụng cho cùng một chuẩn.</p>
                        <div class="flex gap-2">
-                          <select [ngModel]="adminTagToAdd()" (ngModelChange)="adminTagToAdd.set($event)" class="min-w-0 flex-1 rounded-xl border border-fuchsia-200 dark:border-fuchsia-800 bg-white dark:bg-slate-800 px-3 py-2 text-sm font-bold">
-                              <option value="">Chọn nhãn trong danh mục...</option>
-                               @for (option of tagOptions(); track option.key) { <option [value]="option.key">{{formatTagLabel(option)}}</option> }
+                          <select [ngModel]="adminTagToAdd()" (ngModelChange)="adminTagToAdd.set($event)" class="min-w-0 flex-1 rounded-xl border border-fuchsia-200 dark:border-fuchsia-800 bg-white dark:bg-slate-800 px-3 py-2 text-sm font-bold text-slate-700 dark:text-slate-200">
+                              <option value="" class="bg-white text-slate-700 dark:bg-slate-800 dark:text-slate-200">Chọn nhãn trong danh mục...</option>
+                               @for (option of tagOptions(); track option.key) { <option [value]="option.key" class="bg-white text-slate-700 dark:bg-slate-800 dark:text-slate-200">{{formatTagLabel(option)}}</option> }
                           </select>
                           <button type="button" (click)="addAdminTag()" [disabled]="!adminTagToAdd() || adminFinalSopTags().length >= maxReturnTags" class="rounded-xl bg-fuchsia-600 px-3 py-2 text-white font-bold disabled:opacity-40">Thêm</button>
                       </div>
