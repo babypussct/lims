@@ -1523,7 +1523,16 @@ service cloud.firestore {
 
       function canRequesterUpdateReferenceStandard(appId, changed) {
         let requestBorrow = changed.hasOnly(['has_pending_request', 'lastUpdated']) &&
-          request.resource.data.has_pending_request == true;
+          request.resource.data.has_pending_request == true &&
+          resource.data.get('has_pending_request', false) == false &&
+          resource.data.get('_isDeleted', false) == false &&
+          resource.data.get('status', '') == 'AVAILABLE' &&
+          resource.data.get('lifecycle_status', 'ACTIVE') == 'ACTIVE' &&
+          resource.data.get('current_amount', 0) > 0 &&
+          resource.data.get('current_holder', '') == '' &&
+          resource.data.get('current_holder_uid', '') == '' &&
+          resource.data.get('current_request_id', '') == '' &&
+          request.resource.data.lastUpdated == request.time;
         let requestRestock = changed.hasOnly(['restock_requested', 'lastUpdated']) &&
           request.resource.data.restock_requested == true;
         let requestCoa = changed.hasOnly(['coa_requested_by', 'lastUpdated']) &&
@@ -1637,9 +1646,28 @@ service cloud.firestore {
         (isActiveUser(appId) && hasPermission(appId, 'report_view'));
       allow create: if hasPermission(appId, 'standard_edit') &&
         validStandardTagArray(request.resource.data) &&
-        validInternalId(request.resource.data.get('internal_id', ''));
+        validInternalId(request.resource.data.get('internal_id', '')) &&
+        (request.resource.data.get('internal_id', '') == 'SDHET' || (
+          request.resource.data.get('_isDeleted', false) == false &&
+          request.resource.data.get('status', '') != 'DELETED' &&
+          request.resource.data.get('lifecycle_status', 'ACTIVE') == 'ACTIVE' &&
+          // The physical record and its exclusive ownership slot must be
+          // assigned together. The timestamp prevents a new record from
+          // borrowing an orphaned/stale registry row left by legacy data.
+          eventAssignedRegistryAfterMatches(
+            /databases/$(database)/documents/artifacts/$(appId)/standard_code_registry/$(request.resource.data.internal_id),
+            request.resource.data.internal_id,
+            stdId
+          )
+        ));
       allow update: if canUpdateReferenceStandard(appId);
-      allow delete: if hasPermission(appId, 'standard_delete') || isManager(appId);
+      // A hidden standard still holds its reusable code until the recall or
+      // release transaction closes that lifecycle. Keep its physical record
+      // available for registry ownership checks until then.
+      allow delete: if (hasPermission(appId, 'standard_delete') || isManager(appId)) &&
+        (resource.data.get('internal_id', '') == 'SDHET' ||
+          resource.data.get('internal_id', '') == '' ||
+          ['RELEASED', 'CLOSED'].hasAny([resource.data.get('lifecycle_status', 'ACTIVE')]));
 
       // Nhat ky muon/su dung chat chuan chi tiet
       match /logs/{logId} {
@@ -1705,15 +1733,21 @@ service cloud.firestore {
 
       function canReuseAssignedRegistrySlot(appId) {
         let previousHolderId = resource.data.get('currentStandardId', '');
+        let nextStatus = request.resource.data.get('status', '');
         return resource.data.get('status', '') != 'ASSIGNED' ||
-          request.resource.data.get('status', '') != 'ASSIGNED' ||
-          previousHolderId == request.resource.data.get('currentStandardId', '') ||
+          nextStatus == 'CONFLICT' ||
+          (nextStatus == 'ASSIGNED' && previousHolderId == request.resource.data.get('currentStandardId', '')) ||
           (
             previousHolderId is string && previousHolderId.size() > 0 &&
-            releasedStandardAfterMatches(
-              /databases/$(database)/documents/artifacts/$(appId)/reference_standards/$(previousHolderId),
-              request.time
-            )
+            (nextStatus == 'ASSIGNED'
+              ? releasedStandardAfterMatches(
+                  /databases/$(database)/documents/artifacts/$(appId)/reference_standards/$(previousHolderId),
+                  request.time
+                )
+              : (nextStatus == 'AVAILABLE' && releasedStandardAfterOwnsCode(
+                  /databases/$(database)/documents/artifacts/$(appId)/reference_standards/$(previousHolderId),
+                  code
+                )))
           );
       }
 
@@ -1854,6 +1888,7 @@ service cloud.firestore {
         let data = request.resource.data;
         let standardPath = /databases/$(database)/documents/artifacts/$(appId)/reference_standards/$(data.get('standardId', ''));
         let standard = get(standardPath);
+        let standardAfter = getAfter(standardPath);
         return hasPermission(appId, 'standard_request') &&
           data.keys().hasAll([
             'id', 'standardId', 'standardName', 'requestedBy', 'requestedByName',
@@ -1869,6 +1904,15 @@ service cloud.firestore {
           data.id == reqId &&
           data.standardId is string && data.standardId.size() > 0 &&
           exists(standardPath) &&
+          standard.data.get('_isDeleted', false) == false &&
+          standard.data.get('status', '') == 'AVAILABLE' &&
+          standard.data.get('lifecycle_status', 'ACTIVE') == 'ACTIVE' &&
+          standard.data.get('has_pending_request', false) == false &&
+          standard.data.get('current_amount', 0) > 0 &&
+          standard.data.get('current_holder', '') == '' &&
+          standard.data.get('current_holder_uid', '') == '' &&
+          standard.data.get('current_request_id', '') == '' &&
+          standardAfter.data.get('has_pending_request', false) == true &&
           data.standardName is string && data.standardName.size() > 0 &&
           data.standardName == standard.data.get('name', '') &&
           (!('lot_number' in standard.data)

@@ -1744,10 +1744,13 @@ test('requester cannot edit or delete historical usage journals', async () => {
 test('requester create enforces the trusted request schema and canonical identities', async () => {
   const batchDb = dbFor(users.batchA);
   const goodId = 'requester-create-good';
-  await assertSucceeds(setDoc(
-    doc(batchDb, `artifacts/${APP_ID}/standard_requests/${goodId}`),
-    requesterCreatePayload(goodId)
-  ));
+  const goodBatch = writeBatch(batchDb);
+  goodBatch.update(doc(batchDb, `artifacts/${APP_ID}/reference_standards/std-create`), {
+    has_pending_request: true,
+    lastUpdated: serverTimestamp()
+  });
+  goodBatch.set(doc(batchDb, `artifacts/${APP_ID}/standard_requests/${goodId}`), requesterCreatePayload(goodId));
+  await assertSucceeds(goodBatch.commit());
 
   const invalidCases: [string, Record<string, unknown>][] = [
     ['spoof-user', { requestedBy: users.batchB.uid }],
@@ -1780,6 +1783,61 @@ test('requester create enforces the trusted request schema and canonical identit
       doc(batchDb, `artifacts/${APP_ID}/standard_requests/${id}`),
       payload
     ));
+  }
+});
+
+test('requester cannot create a pending request without reserving the eligible standard atomically', async () => {
+  const db = dbFor(users.batchA);
+  const requestId = 'requester-no-reservation';
+  const requestRef = doc(db, `artifacts/${APP_ID}/standard_requests/${requestId}`);
+  const standardRef = doc(db, `artifacts/${APP_ID}/reference_standards/std-create`);
+
+  await assertFails(setDoc(requestRef, requesterCreatePayload(requestId)));
+
+  const batch = writeBatch(db);
+  batch.update(standardRef, { has_pending_request: true, lastUpdated: serverTimestamp() });
+  batch.set(requestRef, requesterCreatePayload(requestId));
+  await assertSucceeds(batch.commit());
+
+  await assertFails(setDoc(
+    doc(db, `artifacts/${APP_ID}/standard_requests/requester-double-reservation`),
+    requesterCreatePayload('requester-double-reservation')
+  ));
+});
+
+test('requester cannot reserve or request a hidden, released, or depleted reference standard', async () => {
+  const cases = [
+    ['hidden', { _isDeleted: true, status: 'DELETED' }],
+    ['released', { lifecycle_status: 'RELEASED' }],
+    ['depleted', { status: 'DEPLETED' }],
+    ['in-use', { status: 'IN_USE', current_holder_uid: users.batchB.uid }]
+  ] as const;
+  await env.withSecurityRulesDisabled(async context => {
+    const seedDb = context.firestore();
+    await Promise.all(cases.map(([key, fields]) => setDoc(
+      doc(seedDb, `artifacts/${APP_ID}/reference_standards/std-${key}`),
+      {
+        id: `std-${key}`, name: `Standard ${key}`, internal_id: 'AA02',
+        lot_number: `LOT-${key}`, current_amount: 20, status: 'AVAILABLE',
+        has_pending_request: false, ...fields
+      }
+    )));
+  });
+
+  const db = dbFor(users.batchA);
+  for (const [key] of cases) {
+    const standardRef = doc(db, `artifacts/${APP_ID}/reference_standards/std-${key}`);
+    const requestId = `requester-${key}-invalid`;
+    const requestRef = doc(db, `artifacts/${APP_ID}/standard_requests/${requestId}`);
+    const payload = requesterCreatePayload(requestId, {
+      standardId: `std-${key}`, standardName: `Standard ${key}`, lotNumber: `LOT-${key}`
+    });
+
+    const batch = writeBatch(db);
+    batch.update(standardRef, { has_pending_request: true, lastUpdated: serverTimestamp() });
+    batch.set(requestRef, payload);
+    await assertFails(batch.commit());
+    await assertFails(updateDoc(standardRef, { has_pending_request: true, lastUpdated: serverTimestamp() }));
   }
 });
 
@@ -2134,6 +2192,115 @@ test('standard-code events and recall projections require the atomic lifecycle s
   await assertSucceeds(getDoc(doc(managerDb, runPath)));
   await assertFails(deleteDoc(doc(managerDb, runPath)));
   await assertFails(getDoc(doc(dbFor(users.viewer), runPath)));
+});
+
+test('a reusable-code standard cannot be created without an atomic canonical registry assignment', async () => {
+  const managerDb = dbFor(users.manager);
+  const standardPath = `artifacts/${APP_ID}/reference_standards`;
+  const registryPath = `artifacts/${APP_ID}/standard_code_registry`;
+
+  await assertFails(setDoc(doc(managerDb, `${standardPath}/unreserved-AC81`), {
+    id: 'unreserved-AC81', name: 'Unreserved code', internal_id: 'AC81',
+    status: 'AVAILABLE', lifecycle_status: 'ACTIVE', _isDeleted: false,
+    lastUpdated: serverTimestamp(),
+  }));
+
+  await env.withSecurityRulesDisabled(async context => {
+    await setDoc(doc(context.firestore(), `${registryPath}/AC82`), {
+      id: 'AC82', internal_id: 'AC82', status: 'ASSIGNED',
+      currentStandardId: 'stale-AC82', assignmentCount: 1,
+      lastUpdated: Timestamp.fromMillis(1_700_000_000_000),
+    });
+  });
+  await assertFails(setDoc(doc(managerDb, `${standardPath}/stale-AC82`), {
+    id: 'stale-AC82', name: 'Stale ledger', internal_id: 'AC82',
+    status: 'AVAILABLE', lifecycle_status: 'ACTIVE', _isDeleted: false,
+    lastUpdated: serverTimestamp(),
+  }));
+
+  const standardId = 'reserved-AC83';
+  const eventId = 'atomic-assignment-AC83';
+  const batch = writeBatch(managerDb);
+  batch.set(doc(managerDb, `${standardPath}/${standardId}`), {
+    id: standardId, name: 'Assigned code', internal_id: 'AC83',
+    status: 'AVAILABLE', lifecycle_status: 'ACTIVE', _isDeleted: false,
+    lastUpdated: serverTimestamp(),
+  });
+  batch.set(doc(managerDb, `${registryPath}/AC83`), {
+    id: 'AC83', internal_id: 'AC83', status: 'ASSIGNED',
+    currentStandardId: standardId, assignmentCount: 1,
+    lastAssignedAt: serverTimestamp(), lastUpdated: serverTimestamp(),
+  });
+  batch.set(doc(managerDb, `artifacts/${APP_ID}/standard_code_events/${eventId}`), {
+    id: eventId, eventId, operationId: eventId, internalId: 'AC83', standardId,
+    assignmentSequence: 1, type: 'ASSIGNED', source: 'CREATE',
+    reason: 'Cấp mã trong một giao dịch.', actorUid: users.manager.uid,
+    actorName: users.manager.displayName, createdAt: serverTimestamp(),
+    before: { standardId: null, internalId: 'AC83', lifecycleStatus: null, registryStatus: null, registryStandardId: null },
+    after: { standardId, internalId: 'AC83', lifecycleStatus: 'ACTIVE', registryStatus: 'ASSIGNED', registryStandardId: standardId },
+  });
+  await assertSucceeds(batch.commit());
+
+  await assertFails(setDoc(doc(managerDb, `${standardPath}/duplicate-AC83`), {
+    id: 'duplicate-AC83', name: 'Duplicate code', internal_id: 'AC83',
+    status: 'AVAILABLE', lifecycle_status: 'ACTIVE', _isDeleted: false,
+    lastUpdated: serverTimestamp(),
+  }));
+});
+
+test('an assigned registry cannot be freed while its physical standard still owns the code', async () => {
+  const managerDb = dbFor(users.manager);
+  const standardPath = `artifacts/${APP_ID}/reference_standards/active-AE91`;
+  const registryPath = `artifacts/${APP_ID}/standard_code_registry/AE91`;
+  await env.withSecurityRulesDisabled(async context => {
+    const db = context.firestore();
+    const seedTime = Timestamp.fromMillis(1_700_000_000_000);
+    await setDoc(doc(db, standardPath), {
+      id: 'active-AE91', name: 'Active code', internal_id: 'AE91',
+      status: 'AVAILABLE', lifecycle_status: 'ACTIVE', _isDeleted: false,
+      lastUpdated: seedTime,
+    });
+    await setDoc(doc(db, registryPath), {
+      id: 'AE91', internal_id: 'AE91', status: 'ASSIGNED',
+      currentStandardId: 'active-AE91', assignmentCount: 1,
+      lastUpdated: seedTime,
+    });
+  });
+  await assertFails(updateDoc(doc(managerDb, registryPath), {
+    status: 'AVAILABLE', currentStandardId: deleteField(),
+    lastUpdated: serverTimestamp(),
+  }));
+});
+
+test('permanent deletion requires a reusable internal code to be released first', async () => {
+  const managerDb = dbFor(users.manager);
+  const activePath = `artifacts/${APP_ID}/reference_standards/hidden-AE92`;
+  const releasedPath = `artifacts/${APP_ID}/reference_standards/released-AE93`;
+  const legacyPath = `artifacts/${APP_ID}/reference_standards/legacy-ae94`;
+  await env.withSecurityRulesDisabled(async context => {
+    const db = context.firestore();
+    const seedTime = Timestamp.fromMillis(1_700_000_000_000);
+    await Promise.all([
+      setDoc(doc(db, activePath), {
+        id: 'hidden-AE92', name: 'Hidden but assigned', internal_id: 'AE92',
+        status: 'DELETED', _isDeleted: true, lifecycle_status: 'ACTIVE',
+        lastUpdated: seedTime,
+      }),
+      setDoc(doc(db, releasedPath), {
+        id: 'released-AE93', name: 'Released code', internal_id: 'AE93',
+        status: 'DELETED', _isDeleted: true, lifecycle_status: 'RELEASED',
+        lastUpdated: seedTime,
+      }),
+      setDoc(doc(db, legacyPath), {
+        id: 'legacy-ae94', name: 'Unnormalized code', internal_id: ' ae94 ',
+        status: 'DELETED', _isDeleted: true, lifecycle_status: 'ACTIVE',
+        lastUpdated: seedTime,
+      }),
+    ]);
+  });
+  await assertFails(deleteDoc(doc(managerDb, activePath)));
+  await assertFails(deleteDoc(doc(managerDb, legacyPath)));
+  await assertSucceeds(deleteDoc(doc(managerDb, releasedPath)));
 });
 
 test('a normal multi-code assignment batch stays within the Firestore rules access budget', async () => {

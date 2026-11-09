@@ -61,6 +61,24 @@ test('recall operation ids are stable document-safe keys', () => {
   assert.match(normalizeStandardCodeOperationId(''), /^code_operation_/);
 });
 
+test('full recall scan recognizes only the exact canonical registry document as authoritative', () => {
+  const service = Object.create(StandardCodeRecallService.prototype) as any;
+  const canonical = { id: 'AA01', internal_id: 'AA01', status: 'ASSIGNED', currentStandardId: 'std-1' };
+  const legacy = { ...canonical, id: 'aa01', internal_id: 'aa01' };
+  const migrated = { ...legacy, migrationStatus: 'MIGRATED', migratedTo: 'AA01' };
+
+  assert.equal(service.indexRegistries([canonical]).get('AA01')?.status, 'ASSIGNED');
+  assert.equal(service.indexRegistries([legacy]).get('AA01')?.status, 'CONFLICT', 'a lone lowercase key cannot release a code');
+  assert.equal(service.indexRegistries([canonical, legacy]).get('AA01')?.status, 'CONFLICT', 'two active keys remain ambiguous');
+  assert.equal(service.indexRegistries([canonical, migrated]).get('AA01')?.status, 'ASSIGNED', 'historical migrated alias must not block canonical owner');
+  assert.equal(service.indexRegistries([migrated]).get('AA01')?.status, 'CONFLICT', 'orphan migration marker is not an owner');
+  assert.equal(service.indexRegistries([{ ...canonical, internal_id: 'aa01' }]).get('AA01')?.status, 'CONFLICT', 'unnormalized canonical row must be audited first');
+
+  const mismatched = service.indexRegistries([{ ...canonical, id: 'BB01' }]);
+  assert.equal(mismatched.has('AA01'), false, 'embedded internal_id cannot stand in for a document ID');
+  assert.equal(mismatched.get('BB01')?.status, 'CONFLICT');
+});
+
 test('code events retain immutable ownership snapshots and idempotency identity', () => {
   const event = buildStandardCodeEvent({
     operationId: 'recall_run_AA01_std-1',

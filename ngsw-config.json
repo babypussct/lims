@@ -2,13 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.11.06-b03",
-    "title": "Sửa danh sách nhãn phương pháp khi hoàn trả chuẩn",
+    "version": "v26.11.09-b01",
+    "title": "Tăng an toàn sổ mã và thu hồi mã chất chuẩn",
     "features": [
-      "Danh sách nhãn phương pháp thử trong Hoàn trả chuẩn hiển thị gọn trong hộp thoại, hỗ trợ tên phương pháp dài.",
-      "Danh sách có thanh cuộn, tự xuống dòng và thu gọn sau khi chọn; áp dụng cả khi Admin tiếp nhận chuẩn trả.",
-      "Khắc phục danh sách lựa chọn tràn màn hình và che nội dung hộp thoại.",
-      "Ngăn chọn trùng nhãn đã thêm và giữ giới hạn 10 nhãn."
+      "Bảo vệ việc cấp, đồng bộ và thu hồi mã nội bộ của chất chuẩn bằng các kiểm tra vòng đời chặt chẽ hơn.",
+      "Sổ mã phân biệt bản ghi mã chuẩn với các mã bí danh lịch sử, hạn chế nhận nhầm quyền sở hữu khi thu hồi mã.",
+      "Thùng rác hướng dẫn đồng bộ và thu hồi mã chất chuẩn trước khi xóa vĩnh viễn hồ sơ.",
+      "Chặn tạo hồ sơ chất chuẩn với mã tái sử dụng khi chưa cấp quyền sở hữu mã đồng thời trong sổ mã.",
+      "Ngăn trả mã còn thuộc hồ sơ đang hoạt động và xóa vĩnh viễn chất chuẩn chưa kết thúc vòng đời mã."
     ]
   },
   "assetGroups": [

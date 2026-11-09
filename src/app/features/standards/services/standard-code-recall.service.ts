@@ -740,16 +740,29 @@ export class StandardCodeRecallService {
 
   private indexRegistries(registries: readonly StandardCodeRegistry[]): Map<string, StandardCodeRegistry | null> {
     const index = new Map<string, StandardCodeRegistry | null>();
+    const groups = new Map<string, StandardCodeRegistry[]>();
     for (const registry of registries) {
-      const code = normalizeInternalId(registry.internal_id || registry.id);
+      // The document ID is the ledger identity. An embedded internal_id is not
+      // proof that a legacy alias owns the canonical document path.
+      const code = normalizeInternalId(registry.id);
       if (!isValidInternalId(code) || isSpecialInternalId(code)) continue;
-      const existing = index.get(code);
-      const isCanonicalRow = normalizeInternalId(registry.id) === code && normalizeInternalId(registry.internal_id) === code;
-      if (existing || !isCanonicalRow) {
-        index.set(code, { ...(existing || registry), id: code, internal_id: code, status: 'CONFLICT' });
-      } else {
-        index.set(code, { ...registry, id: code, internal_id: code });
-      }
+      groups.set(code, [...(groups.get(code) || []), registry]);
+    }
+
+    for (const [code, rows] of groups) {
+      const active = rows.filter(row =>
+        row.id === code || row.migrationStatus !== 'MIGRATED' || normalizeInternalId(row.migratedTo) !== code
+      );
+      const canonical = active.length === 1 && active[0].id === code && active[0].internal_id === code
+        ? active[0]
+        : null;
+
+      // A migrated alias is historical only while the exact canonical row
+      // exists. Missing/malformed canonical rows and duplicate active rows
+      // must block recall until the sync audit repairs or reconciles them.
+      index.set(code, canonical
+        ? { ...canonical }
+        : { ...rows[0], id: code, internal_id: code, status: 'CONFLICT' });
     }
     return index;
   }

@@ -754,6 +754,14 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
           : `artifacts/${this.fb.APP_ID}/reference_standards/${item.id}`;
   }
 
+  private needsCodeRecallBeforePermanentDeletion(item: RecycleItem): boolean {
+      if (item.type !== 'standard') return false;
+      const code = item.data['internal_id'];
+      const lifecycle = item.data['lifecycle_status'] || 'ACTIVE';
+      return code !== undefined && code !== null && code !== '' && code !== 'SDHET' &&
+          lifecycle !== 'RELEASED' && lifecycle !== 'CLOSED';
+  }
+
   private removeRecycleItemFromState(item: RecycleItem): void {
       const nextItems = this.recycleItems().filter(entry => this.recycleItemKey(entry) !== this.recycleItemKey(item));
       this.recycleItems.set(nextItems);
@@ -807,6 +815,10 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
   }
 
   async permanentlyDeleteRecycleItem(item: RecycleItem) {
+      if (this.needsCodeRecallBeforePermanentDeletion(item)) {
+          this.toast.show(`Chất chuẩn “${item.name || item.id}” chưa kết thúc vòng đời mã. Hãy đồng bộ mã (nếu cần) và thu hồi mã chuẩn đã ẩn trước khi xóa vĩnh viễn.`, 'error');
+          return;
+      }
       if (!await this.confirmationService.confirm({
         title: 'Xóa vĩnh viễn bản ghi',
         message: `Bạn đang xóa vĩnh viễn “${item.name || item.id}” (${this.recycleTypeLabel(item)}). Thao tác này KHÔNG THỂ PHỤC HỒI.`,
@@ -833,6 +845,11 @@ export class ConfigGeneralComponent implements OnInit, OnDestroy {
   }
 
   async emptyRecycleBin() {
+      const awaitingRecall = this.recycleItems().filter(item => this.needsCodeRecallBeforePermanentDeletion(item));
+      if (awaitingRecall.length > 0) {
+          this.toast.show(`Có ${awaitingRecall.length} chất chuẩn đã ẩn chưa kết thúc vòng đời mã. Hãy đồng bộ và thu hồi mã trước khi dọn Thùng rác.`, 'error');
+          return;
+      }
       if (!await this.confirmationService.confirm({
         title: 'Xóa vĩnh viễn dữ liệu trong Thùng rác',
         message: `Thao tác này KHÔNG THỂ PHỤC HỒI. ${this.recycleItems().length} bản ghi sẽ bị xóa khỏi đám mây và hệ thống sẽ yêu cầu các thiết bị tải lại dữ liệu.`,

@@ -2,7 +2,28 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.11.06-b03
+## Phiên bản hiện tại: v26.11.09-b01
+
+### v26.11.09-b01
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Bảo vệ việc cấp, đồng bộ và thu hồi mã nội bộ của chất chuẩn bằng các kiểm tra vòng đời chặt chẽ hơn.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Sổ mã phân biệt bản ghi mã chuẩn với các mã bí danh lịch sử, hạn chế nhận nhầm quyền sở hữu khi thu hồi mã.
+- Thùng rác hướng dẫn đồng bộ và thu hồi mã chất chuẩn trước khi xóa vĩnh viễn hồ sơ.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Chặn tạo hồ sơ chất chuẩn với mã tái sử dụng khi chưa cấp quyền sở hữu mã đồng thời trong sổ mã.
+- Ngăn trả mã còn thuộc hồ sơ đang hoạt động và xóa vĩnh viễn chất chuẩn chưa kết thúc vòng đời mã.
+- Ngăn tạo yêu cầu mượn khi chất chuẩn không khả dụng hoặc chưa được giữ chỗ trong cùng giao dịch.
 
 ### v26.11.06-b03
 
