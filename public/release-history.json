@@ -1,5 +1,21 @@
 [
   {
+    "version": "v26.11.10-b03",
+    "date": "10/11/2026",
+    "title": "Sửa lỗi nút đối soát mã chất chuẩn bị khóa",
+    "highlights": [
+      "Có thể chọn Đối soát ngay sau khi chọn các mã đủ điều kiện."
+    ],
+    "features": [],
+    "improvements": [
+      "Tự ghi lý do mặc định vào lịch sử từng mã khi để trống ô lý do; vẫn cho phép nhập lý do riêng và xác nhận trước khi thực hiện."
+    ],
+    "fixes": [
+      "Khắc phục nút Đối soát mã đã chọn bị vô hiệu do điều kiện nhập tối thiểu 10 ký tự trong ô lý do."
+    ],
+    "releaseOrder": 26111000003
+  },
+  {
     "version": "v26.11.10-b02",
     "date": "10/11/2026",
     "title": "Tinh gọn xác nhận đối soát mã chất chuẩn",

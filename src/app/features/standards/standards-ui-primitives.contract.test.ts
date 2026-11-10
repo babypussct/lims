@@ -833,7 +833,7 @@ describe('standards DeltaSync resource-limit pause banner and manual retry wirin
 });
 
 describe('duplicate code reconciliation confirmation', () => {
-  it('allows eligible codes with a valid reason and still requires dialog confirmation', async () => {
+  it('enables selected eligible codes without requiring typed text and retains dialog confirmation', async () => {
     const { StandardsDuplicateCodeReconciliationModalComponent } = await import('./components/standards-duplicate-code-reconciliation-modal.component');
     const { StandardCodeDuplicateReconciliationService } = await import('./services/standard-code-duplicate-reconciliation.service');
     const { ConfirmationService } = await import('../../core/services/confirmation.service');
@@ -853,14 +853,44 @@ describe('duplicate code reconciliation confirmation', () => {
       cases: [{ internalId: 'AA01', status: 'READY' }] as any,
     });
     modal.selectedCodes.set(new Set(['AA01']));
-    assert.equal(modal.canReconcile(), false, 'Reason is still required');
-    modal.reason.set('Đã kiểm tra hồ sơ cũ và mới');
-    assert.equal(modal.canReconcile(), true, 'No typed confirmation should be required');
+    assert.equal(modal.canReconcile(), true, 'Selecting an eligible code should enable reconciliation without typing');
     await modal.reconcileSelected();
     assert.equal(confirmations.length, 1);
     assert.match(confirmations[0].message, /Đối soát 1 mã đã chọn/);
+    assert.match(confirmations[0].message, /Đối soát mã trùng: hồ sơ cũ đã ẩn/);
+    modal.reason.set('Đã kiểm tra hồ sơ cũ và mới');
+    assert.equal(modal.canReconcile(), true, 'Custom audit reasons are still supported');
+    await modal.reconcileSelected();
+    assert.equal(confirmations.length, 2);
+    assert.match(confirmations[1].message, /Đã kiểm tra hồ sơ cũ và mới/);
     modal.selectedCodes.set(new Set());
     assert.equal(modal.canReconcile(), false, 'A ready code must be selected');
+  });
+
+  it('records a meaningful default reason for each confirmed reconciliation when the input is blank', async () => {
+    const { StandardsDuplicateCodeReconciliationModalComponent } = await import('./components/standards-duplicate-code-reconciliation-modal.component');
+    const { StandardCodeDuplicateReconciliationService } = await import('./services/standard-code-duplicate-reconciliation.service');
+    const { ConfirmationService } = await import('../../core/services/confirmation.service');
+    const writtenReasons: string[] = [];
+    const injector = Injector.create({ providers: [
+      { provide: ɵChangeDetectionScheduler, useValue: { notify() {} } },
+      { provide: ɵEffectScheduler, useValue: { add() {}, remove() {} } },
+      { provide: StandardCodeDuplicateReconciliationService, useValue: {
+        scan: async () => ({ generatedAt: 0, readyCount: 0, blockedCount: 0, cases: [] }),
+        reconcile: async (_item: unknown, reason: string) => {
+          writtenReasons.push(reason);
+          return { message: 'Đã đối soát' };
+        },
+      } },
+      { provide: ConfirmationService, useValue: { confirm: async () => true } },
+    ] });
+    const modal = runInInjectionContext(injector, () => new StandardsDuplicateCodeReconciliationModalComponent());
+    modal.report.set({ generatedAt: 0, readyCount: 1, blockedCount: 0,
+      cases: [{ internalId: 'AA01', status: 'READY' }] as any });
+    modal.selectedCodes.set(new Set(['AA01']));
+    await modal.reconcileSelected();
+    assert.deepEqual(writtenReasons, [modal.defaultReason]);
+    assert.equal(modal.isBusy(), false);
   });
 
   it('removes the DOI SOAT entry while retaining the reason and confirmation dialog', () => {

@@ -2,7 +2,25 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.11.10-b02
+## Phiên bản hiện tại: v26.11.10-b03
+
+### v26.11.10-b03
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Có thể chọn Đối soát ngay sau khi chọn các mã đủ điều kiện.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Tự ghi lý do mặc định vào lịch sử từng mã khi để trống ô lý do; vẫn cho phép nhập lý do riêng và xác nhận trước khi thực hiện.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Khắc phục nút Đối soát mã đã chọn bị vô hiệu do điều kiện nhập tối thiểu 10 ký tự trong ô lý do.
 
 ### v26.11.10-b02
 

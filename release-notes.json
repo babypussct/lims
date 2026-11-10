@@ -1,11 +1,13 @@
 {
-  "title": "Tinh gọn xác nhận đối soát mã chất chuẩn",
+  "title": "Sửa lỗi nút đối soát mã chất chuẩn bị khóa",
   "highlights": [
-    "Bỏ bước nhập DOI SOAT khi xác nhận xử lý mã chất chuẩn trùng."
+    "Có thể chọn Đối soát ngay sau khi chọn các mã đủ điều kiện."
   ],
   "features": [],
   "improvements": [
-    "Cho phép đối soát ngay sau khi chọn mã đủ điều kiện và nhập lý do hợp lệ; vẫn hiển thị hộp thoại xác nhận trước khi thực hiện."
+    "Tự ghi lý do mặc định vào lịch sử từng mã khi để trống ô lý do; vẫn cho phép nhập lý do riêng và xác nhận trước khi thực hiện."
   ],
-  "fixes": []
+  "fixes": [
+    "Khắc phục nút Đối soát mã đã chọn bị vô hiệu do điều kiện nhập tối thiểu 10 ký tự trong ô lý do."
+  ]
 }

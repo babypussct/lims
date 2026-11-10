@@ -58,10 +58,11 @@ interface ReconciliationExecutionResult {
           }
 
           <section class="px-4 sm:px-5 py-3 shrink-0 space-y-2 border-b border-slate-100 dark:border-slate-800">
-            <label for="duplicate-reconcile-reason" class="block text-[11px] font-black text-slate-600 dark:text-slate-300">Lý do ghi vào lịch sử từng mã</label>
+            <label for="duplicate-reconcile-reason" class="block text-[11px] font-black text-slate-600 dark:text-slate-300">Lý do ghi vào lịch sử từng mã (không bắt buộc nhập)</label>
             <input id="duplicate-reconcile-reason" type="text" maxlength="500" [ngModel]="reason()" (ngModelChange)="reason.set($event)"
               [disabled]="isBusy()" class="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 dark:bg-slate-900 text-sm"
-              placeholder="Ghi rõ căn cứ đã kiểm tra hồ sơ cũ, hồ sơ mới và lô chất chuẩn">
+              placeholder="Có thể nhập lý do cụ thể cho lần đối soát này">
+            <p class="text-[11px] text-slate-500 dark:text-slate-400">Để trống sẽ tự ghi vào lịch sử: {{defaultReason}}</p>
             <div class="flex flex-wrap items-center gap-3">
               <input type="search" aria-label="Tìm mã trùng" placeholder="Lọc mã, tên chuẩn hoặc số lô..."
                 [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)"
@@ -156,6 +157,8 @@ export class StandardsDuplicateCodeReconciliationModalComponent {
   report = signal<HiddenDuplicateScanReport | null>(null);
   searchQuery = signal('');
   reason = signal('');
+  readonly defaultReason = 'Đối soát mã trùng: hồ sơ cũ đã ẩn và hồ sơ mới tiếp tục giữ mã.';
+  reconciliationReason = computed(() => this.reason().trim() || this.defaultReason);
   selectedCodes = signal<Set<string>>(new Set());
   isScanning = signal(false);
   isRunning = signal(false);
@@ -176,8 +179,7 @@ export class StandardsDuplicateCodeReconciliationModalComponent {
   });
   selectedReadyCases = computed(() => (this.report()?.cases || []).filter(item =>
     item.status === 'READY' && this.selectedCodes().has(item.internalId)));
-  canReconcile = computed(() => Boolean(!this.isBusy() && this.selectedReadyCases().length > 0 &&
-    this.reason().trim().length >= 10));
+  canReconcile = computed(() => !this.isBusy() && this.selectedReadyCases().length > 0);
 
   constructor() {
     effect(() => {
@@ -231,8 +233,9 @@ export class StandardsDuplicateCodeReconciliationModalComponent {
   async reconcileSelected(): Promise<void> {
     if (!this.canReconcile()) return;
     const targets = this.selectedReadyCases();
+    const reason = this.reconciliationReason();
     const confirmed = await this.confirmation.confirm({
-      message: `Đối soát ${targets.length} mã đã chọn? Hồ sơ cũ sẽ được đánh dấu RELEASED và sổ mã sẽ xác nhận hồ sơ mới. Mỗi mã có lịch sử riêng; mã thay đổi từ lần quét sẽ bị chặn.`,
+      message: `Đối soát ${targets.length} mã đã chọn? Hồ sơ cũ sẽ được đánh dấu RELEASED và sổ mã sẽ xác nhận hồ sơ mới. Lý do ghi lịch sử: ${reason} Mỗi mã có lịch sử riêng; mã thay đổi từ lần quét sẽ bị chặn.`,
       confirmText: 'Xác nhận đối soát', cancelText: 'Hủy', isDangerous: true,
     });
     if (!confirmed || this.isBusy()) return;
@@ -248,7 +251,7 @@ export class StandardsDuplicateCodeReconciliationModalComponent {
         if (this.stopRequested()) break;
         const operationId = `reconcile_${item.internalId}_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
         try {
-          const result = await this.service.reconcile(item, this.reason(), operationId);
+          const result = await this.service.reconcile(item, reason, operationId);
           results.push({ code: item.internalId, operationId, outcome: 'SUCCESS', message: result.message });
         } catch (error: any) {
           results.push({ code: item.internalId, operationId, outcome: 'FAILED',

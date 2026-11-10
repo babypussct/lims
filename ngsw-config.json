@@ -2,11 +2,12 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.11.10-b02",
-    "title": "Tinh gọn xác nhận đối soát mã chất chuẩn",
+    "version": "v26.11.10-b03",
+    "title": "Sửa lỗi nút đối soát mã chất chuẩn bị khóa",
     "features": [
-      "Bỏ bước nhập DOI SOAT khi xác nhận xử lý mã chất chuẩn trùng.",
-      "Cho phép đối soát ngay sau khi chọn mã đủ điều kiện và nhập lý do hợp lệ; vẫn hiển thị hộp thoại xác nhận trước khi thực hiện."
+      "Có thể chọn Đối soát ngay sau khi chọn các mã đủ điều kiện.",
+      "Tự ghi lý do mặc định vào lịch sử từng mã khi để trống ô lý do; vẫn cho phép nhập lý do riêng và xác nhận trước khi thực hiện.",
+      "Khắc phục nút Đối soát mã đã chọn bị vô hiệu do điều kiện nhập tối thiểu 10 ký tự trong ô lý do."
     ]
   },
   "assetGroups": [
