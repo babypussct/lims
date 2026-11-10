@@ -18,7 +18,8 @@
           (openCleanupModal)="showDataCleanupModal.set(true)"
           (openInternalIdSync)="openInternalIdSyncModal('scan')"
           (openCodeRegistry)="openInternalIdSyncModal('registry')"
-          (openHiddenCodeRecall)="showHiddenCodeRecallModal.set(true)">
+          (openHiddenCodeRecall)="showHiddenCodeRecallModal.set(true)"
+          (openDuplicateReconciliation)="showDuplicateReconciliationModal.set(true)">
         </app-standards-toolbar>
       }
 
@@ -236,6 +237,13 @@
           [isOpen]="showHiddenCodeRecallModal()"
           (close)="showHiddenCodeRecallModal.set(false)">
         </app-standards-hidden-code-recall-modal>
+      }
+
+      @if (showDuplicateReconciliationModal()) {
+        <app-standards-duplicate-code-reconciliation-modal
+          [isOpen]="showDuplicateReconciliationModal()"
+          (close)="showDuplicateReconciliationModal.set(false)">
+        </app-standards-duplicate-code-reconciliation-modal>
       }
 
       @if (showAssignModal()) {

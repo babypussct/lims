@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { DutyScheduleEntry } from './duty-schedule.model';
-import { dutyShiftSnapshot, dutyShiftSnapshotMatches, replaceDutyStaffAtExactIndex } from './duty-shift-swap.utils';
+import { dutyShiftSnapshot, dutyShiftSnapshotMatches, replaceDutyStaffAtExactIndex, swapDutyStaffAtExactIndexes } from './duty-shift-swap.utils';
 
 const schedule: DutyScheduleEntry = {
   id: '2026-09-15',
@@ -29,4 +29,22 @@ test('exact-index replacement preserves lead and collaborator positions', () => 
   assert.deepEqual(replaceDutyStaffAtExactIndex(['lead', 'a', 'b'], 'a', 'd'), ['lead', 'd', 'b']);
   assert.throws(() => replaceDutyStaffAtExactIndex(['lead', 'a'], 'missing', 'd'));
   assert.throws(() => replaceDutyStaffAtExactIndex(['lead', 'a'], 'a', 'lead'));
+});
+
+test('direct two-way swap preserves slot positions and does not mutate the original schedules', () => {
+  const first = ['a', 'b', 'c'];
+  const second = ['d', 'e'];
+  assert.deepEqual(swapDutyStaffAtExactIndexes(first, 'a', second, 'e'), {
+    sourceStaffIds: ['e', 'b', 'c'],
+    targetStaffIds: ['d', 'a'],
+  });
+  assert.deepEqual(first, ['a', 'b', 'c']);
+  assert.deepEqual(second, ['d', 'e']);
+});
+
+test('direct two-way swap rejects invalid rosters instead of duplicating a person', () => {
+  assert.throws(() => swapDutyStaffAtExactIndexes(['a', 'b'], 'a', ['a', 'c'], 'c'));
+  assert.throws(() => swapDutyStaffAtExactIndexes(['a', 'b'], 'a', ['b', 'c'], 'b'));
+  assert.throws(() => swapDutyStaffAtExactIndexes(['a'], 'a', ['b'], 'a'));
+  assert.throws(() => swapDutyStaffAtExactIndexes(['a'], 'missing', ['b'], 'b'));
 });

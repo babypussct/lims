@@ -30,6 +30,7 @@ import {
   dutyShiftSnapshotMatches,
   isDutySwapExpired,
   replaceDutyStaffAtExactIndex,
+  swapDutyStaffAtExactIndexes,
 } from './duty-shift-swap.utils';
 import { findLinkedDutyStaff, isDutyDateKey } from './duty-schedule.utils';
 
@@ -334,6 +335,57 @@ export class DutyShiftSwapService {
       }));
     } catch (error) {
       console.warn('[DutySwap] Không ghi được activity cho đổi ca trực tiếp:', error);
+    }
+  }
+
+  async directSwap(sourceDate: string, sourceStaffId: string, targetDate: string, targetStaffId: string, reason: string): Promise<void> {
+    this.assertCanManage();
+    const user = this.requireUser();
+    if (!isDutyDateKey(sourceDate) || !isDutyDateKey(targetDate)) throw new Error('Ngày ca trực không hợp lệ.');
+    if (sourceDate === targetDate) throw new Error('Hai người phải thuộc hai ngày trực khác nhau.');
+    if (sourceStaffId === targetStaffId) throw new Error('Phải chọn hai người khác nhau để hoán đổi.');
+    const sourceStaff = this.requireTargetStaff(sourceStaffId);
+    const targetStaff = this.requireTargetStaff(targetStaffId);
+    const sourceRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/duty_schedules`, sourceDate);
+    const targetRef = doc(this.fb.db, `artifacts/${this.fb.APP_ID}/duty_schedules`, targetDate);
+
+    await runTransaction(this.fb.db, async transaction => {
+      // Read both documents before writing so the swap is all-or-nothing on concurrent edits.
+      const [sourceSnap, targetSnap] = await Promise.all([
+        transaction.get(sourceRef),
+        transaction.get(targetRef),
+      ]);
+      if (!sourceSnap.exists() || !targetSnap.exists()) throw new Error('Một trong hai ca trực không còn tồn tại.');
+      const source = asDutyScheduleEntry(sourceSnap.id, sourceSnap.data());
+      const target = asDutyScheduleEntry(targetSnap.id, targetSnap.data());
+      this.assertPlannedMember(source, sourceStaffId, `Người đã chọn không còn trong ca ${sourceDate}.`);
+      this.assertPlannedMember(target, targetStaffId, `Người đã chọn không còn trong ca ${targetDate}.`);
+
+      const next = swapDutyStaffAtExactIndexes(source.staffIds, sourceStaffId, target.staffIds, targetStaffId);
+      transaction.update(sourceRef, {
+        staffIds: next.sourceStaffIds,
+        updatedAt: serverTimestamp(),
+        updatedByUid: user.uid,
+      });
+      transaction.update(targetRef, {
+        staffIds: next.targetStaffIds,
+        updatedAt: serverTimestamp(),
+        updatedByUid: user.uid,
+      });
+    });
+
+    try {
+      await this.activity.write(this.activity.build({
+        action: 'UPDATE_DUTY_SCHEDULE',
+        details: `Hoán đổi ca trực tiếp: ${sourceStaff.displayName} (${sourceDate}) ↔ ${targetStaff.displayName} (${targetDate}). ${reason.trim().slice(0, 500)}`.trim(),
+        targetType: 'DUTY_SCHEDULE',
+        targetId: sourceDate,
+        targetName: `Ca trực ${sourceDate} ↔ ${targetDate}`,
+        actionUrl: '/duty-stats',
+        metadata: { directDutySwap: true, dutySwapType: 'SWAP', sourceDate, targetDate, sourceStaffId, targetStaffId },
+      }));
+    } catch (error) {
+      console.warn('[DutySwap] Không ghi được activity cho hoán đổi hai ca:', error);
     }
   }
 

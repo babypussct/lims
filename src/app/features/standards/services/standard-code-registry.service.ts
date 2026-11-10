@@ -8,6 +8,7 @@ import {
   getDoc,
   getDocFromServer,
   getDocs,
+  getDocsFromServer,
   limit,
   orderBy,
   query,
@@ -36,6 +37,8 @@ import {
   normalizeInternalId,
 } from '../../../shared/utils/standard-internal-id';
 import { canAutoReleaseExpiredStandard } from '../../../shared/utils/standard-fefo';
+import { isActiveStandardRequestStatus } from '../../../shared/utils/standard-workflow';
+import { assessHiddenDuplicateCode } from './standard-code-duplicate-reconciliation.utils';
 
 export interface StandardCodeReserveOptions {
   operationId?: string;
@@ -582,6 +585,134 @@ export class StandardCodeRegistryService {
 
     if (!releaseResult) throw new Error('Không xác định được kết quả trả mã.');
     return releaseResult;
+  }
+
+  /**
+   * Repair the legacy collision where a hidden, unreleased standard and a
+   * visible standard share one code. The new physical standard keeps its
+   * identity; the old one stays in trash with an audited RELEASED lifecycle.
+   * Never expose this as an automatic step of general synchronization.
+   */
+  async reconcileHiddenDuplicateCode(
+    oldStandardId: string,
+    newStandardId: string,
+    internalId: string,
+    reason: string,
+    operationId: string,
+  ): Promise<StandardCodeReleaseResult> {
+    if (!this.auth.currentUser() || !this.auth.canEditStandards()) {
+      throw new Error('Bạn không có quyền đối soát mã chất chuẩn.');
+    }
+    const code = normalizeInternalId(internalId);
+    const normalizedReason = reason.trim();
+    if (!isValidInternalId(code) || isSpecialInternalId(code)) throw new Error('Mã cần đối soát không hợp lệ.');
+    if (!oldStandardId || !newStandardId || oldStandardId === newStandardId) {
+      throw new Error('Phải xác định hai hồ sơ cũ và mới khác nhau.');
+    }
+    if (!normalizedReason) throw new Error('Cần ghi rõ lý do đối soát.');
+    if (!operationId?.trim()) throw new Error('Thiếu mã thao tác đối soát.');
+    const normalizedOperationId = normalizeStandardCodeOperationId(operationId);
+    const eventRef = this.getCodeEventRef(normalizedOperationId);
+
+    const verifiedReplay = (event: DocumentData): StandardCodeReleaseResult => {
+      if (event['type'] !== 'RECONCILED' || event['source'] !== 'RECONCILIATION' ||
+          event['internalId'] !== code || event['standardId'] !== oldStandardId ||
+          event['after']?.['registryStandardId'] !== newStandardId) {
+        throw new Error('Mã thao tác đã được dùng cho một nghiệp vụ khác.');
+      }
+      return {
+        status: 'RECONCILED', operationId: normalizedOperationId, internalId: code,
+        standardId: oldStandardId, eventId: normalizedOperationId,
+        message: `Đã đối soát mã ${code} trước đó; hồ sơ mới vẫn là chủ mã.`,
+      };
+    };
+
+    const previousEvent = await this.readDocument(eventRef);
+    if (previousEvent.exists()) return verifiedReplay(previousEvent.data() || {});
+
+    // Detect open requests even when legacy standard flags were not updated.
+    if (await this.hasOpenStandardRequests(oldStandardId)) {
+      throw new Error('Hồ sơ cũ còn yêu cầu mượn đang mở; cần kết thúc yêu cầu trước khi đối soát.');
+    }
+    // Query by normalized code only after the migration invariant is certified.
+    // Otherwise scan the entire catalogue to catch legacy lowercase owners.
+    const candidateIds = await this.findSameCodeCandidateIds(code, [oldStandardId, newStandardId]);
+    const candidateRefs = candidateIds.map(id => this.getStandardRef(id));
+    const registryRef = this.getRegistryRef(code);
+    let result: StandardCodeReleaseResult | null = null;
+
+    await this.runInTransaction(async transaction => {
+      const eventSnapshot = await transaction.get(eventRef);
+      if (eventSnapshot.exists()) {
+        result = verifiedReplay(eventSnapshot.data() || {});
+        return;
+      }
+      const registrySnapshot = await transaction.get(registryRef);
+      const candidateSnapshots = await Promise.all(candidateRefs.map(ref => transaction.get(ref)));
+      const standards = candidateSnapshots
+        .filter(snapshot => snapshot.exists())
+        .map(snapshot => ({ id: snapshot.id, ...snapshot.data() } as ReferenceStandard))
+        .filter(standard => normalizeInternalId(standard.internal_id) === code);
+      const registry = registrySnapshot.exists()
+        ? ({ id: registrySnapshot.id, ...registrySnapshot.data() } as StandardCodeRegistry)
+        : undefined;
+      const assessment = assessHiddenDuplicateCode(code, standards, registry);
+      if (assessment.status !== 'READY' || assessment.oldStandard?.id !== oldStandardId ||
+          assessment.newStandard?.id !== newStandardId) {
+        throw new Error(`Không thể đối soát mã ${code}: ${assessment.reason} Hãy quét lại.`);
+      }
+
+      transaction.update(this.getStandardRef(oldStandardId), {
+        lifecycle_status: 'RELEASED',
+        internal_id_released_at: serverTimestamp(),
+        internal_id_release_reason: normalizedReason.slice(0, 500),
+        lastUpdated: serverTimestamp(),
+      });
+      transaction.set(registryRef, {
+        id: code,
+        internal_id: code,
+        status: 'ASSIGNED',
+        currentStandardId: newStandardId,
+        assignmentCount: Number(registry?.assignmentCount || 0),
+        lastReleasedAt: serverTimestamp(),
+        lastReleasedStandardId: oldStandardId,
+        lastUpdated: serverTimestamp(),
+      }, { merge: true });
+      this.setEvent(transaction, normalizedOperationId, {
+        internalId: code,
+        standardId: oldStandardId,
+        assignmentSequence: assessment.oldStandard.internal_id_assignment_sequence ?? null,
+        type: 'RECONCILED',
+        source: 'RECONCILIATION',
+        reason: normalizedReason,
+        before: {
+          standardId: oldStandardId, internalId: code,
+          lifecycleStatus: assessment.oldStandard.lifecycle_status || 'ACTIVE',
+          registryStatus: registry!.status, registryStandardId: registry!.currentStandardId || null,
+        },
+        after: {
+          standardId: oldStandardId, internalId: code,
+          lifecycleStatus: 'RELEASED', registryStatus: 'ASSIGNED', registryStandardId: newStandardId,
+        },
+      });
+      result = {
+        status: 'RECONCILED', operationId: normalizedOperationId, internalId: code,
+        standardId: oldStandardId, eventId: normalizedOperationId,
+        message: `Đã đóng vòng đời hồ sơ cũ; mã ${code} thuộc hồ sơ mới.`,
+      };
+    });
+    if (!result) throw new Error('Không xác định được kết quả đối soát; hãy kiểm tra sổ mã.');
+    return result;
+  }
+
+  protected async hasOpenStandardRequests(standardId: string): Promise<boolean> {
+    const requests = await getDocsFromServer(query(
+      collection(this.fb.db, `artifacts/${this.fb.APP_ID}/standard_requests`),
+      where('standardId', '==', standardId),
+    ));
+    this.readMonitor?.record?.('getDocs', `artifacts/${this.fb.APP_ID}/standard_requests`, requests.docs.length, { phase: 'single' });
+    return requests.docs.some(item => item.data()?.['_isDeleted'] !== true &&
+      isActiveStandardRequestStatus(item.data()?.['status']));
   }
 
   protected getStandardRef(standardId: string): DocumentReference<DocumentData> {

@@ -1,5 +1,26 @@
 [
   {
+    "version": "v26.11.10-b01",
+    "date": "10/11/2026",
+    "title": "Hoán đổi ca trực và đối soát mã chất chuẩn trùng",
+    "highlights": [
+      "Bổ sung hoán đổi nhân sự giữa hai ca trực và đối soát mã nội bộ chất chuẩn trùng giữa hồ sơ cũ đã ẩn và hồ sơ mới."
+    ],
+    "features": [
+      "Người quản lý có thể hoán đổi trực tiếp hai người ở hai ngày trực khác nhau và giữ nguyên vị trí phân công, bao gồm vị trí chủ trì.",
+      "Công cụ đối soát mã chất chuẩn trùng cho phép quét, lọc, chọn mã đủ điều kiện và xác nhận xử lý có kiểm soát."
+    ],
+    "improvements": [
+      "Hoán đổi hai ca trong một giao dịch Firestore và ghi nhật ký điều chỉnh lịch trực.",
+      "Hiển thị hồ sơ cũ, hồ sơ mới, trạng thái sổ mã, lý do chặn và kết quả xử lý theo từng mã đối soát."
+    ],
+    "fixes": [
+      "Kiểm tra điều kiện vòng đời và quyền sở hữu khi giải phóng mã ở hồ sơ chất chuẩn đã ẩn, hạn chế ảnh hưởng đến hồ sơ mới đang sử dụng mã.",
+      "Bổ sung kiểm thử hồi quy cho hoán đổi ca trực, đối soát mã trùng và giao dịch theo Firestore Rules."
+    ],
+    "releaseOrder": 26111000001
+  },
+  {
     "version": "v26.11.09-b01",
     "date": "9/11/2026",
     "title": "Tăng an toàn sổ mã và thu hồi mã chất chuẩn",

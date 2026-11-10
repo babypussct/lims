@@ -34,6 +34,19 @@ export function replaceDutyStaffAtExactIndex(
   return next;
 }
 
+export function swapDutyStaffAtExactIndexes(
+  sourceStaffIds: readonly string[],
+  sourceStaffId: string,
+  targetStaffIds: readonly string[],
+  targetStaffId: string,
+): { sourceStaffIds: string[]; targetStaffIds: string[] } {
+  if (sourceStaffId === targetStaffId) throw new Error('Phải chọn hai người khác nhau để hoán đổi.');
+  return {
+    sourceStaffIds: replaceDutyStaffAtExactIndex(sourceStaffIds, sourceStaffId, targetStaffId),
+    targetStaffIds: replaceDutyStaffAtExactIndex(targetStaffIds, targetStaffId, sourceStaffId),
+  };
+}
+
 export function dutySwapExpiresAtMillis(value: unknown): number {
   if (value && typeof value === 'object' && 'toMillis' in value && typeof (value as { toMillis?: unknown }).toMillis === 'function') {
     return (value as { toMillis: () => number }).toMillis();

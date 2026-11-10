@@ -9,7 +9,8 @@
     </div>
     <div class="flex items-center gap-2">
       @if (duty.canManage()) {
-        <app-button variant="secondary" size="sm" (click)="directOpen.set(!directOpen())"><i class="fa-solid fa-bolt mr-1" aria-hidden="true"></i>Đổi trực tiếp</app-button>
+        <app-button variant="secondary" size="sm" [disabled]="!!actionBusyId()" (click)="toggleAdminSwap()"><i class="fa-solid fa-right-left mr-1" aria-hidden="true"></i>Hoán đổi 2 ca</app-button>
+        <app-button variant="secondary" size="sm" [disabled]="!!actionBusyId()" (click)="toggleDirect()"><i class="fa-solid fa-bolt mr-1" aria-hidden="true"></i>Đổi trực tiếp</app-button>
       }
       @if (swap.requests().length > 4) {
         <button type="button" class="text-[10px] font-black text-blue-600 dark:text-blue-300" (click)="expanded.set(!expanded())">{{ expanded() ? 'Thu gọn' : 'Xem tất cả' }}</button>
@@ -41,6 +42,57 @@
         <input aria-label="Lý do đổi ca trực tiếp" [ngModel]="directReason()" (ngModelChange)="directReason.set($event)" maxlength="500" class="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium normal-case dark:border-slate-700 dark:bg-slate-950" placeholder="Ghi chú ngắn">
       </label>
       <div class="self-end"><app-button size="sm" [disabled]="!directDate() || !directOutgoingStaffId() || !directIncomingStaffId() || actionBusyId() === 'direct'" [loading]="actionBusyId() === 'direct'" (click)="submitDirect()">Áp dụng</app-button></div>
+    </div>
+  }
+
+  @if (adminSwapOpen() && duty.canManage()) {
+    <div class="space-y-3 border-b border-blue-100 bg-blue-50/40 p-4 dark:border-blue-900/40 dark:bg-blue-950/15" aria-label="Hoán đổi hai người giữa hai ca">
+      <div>
+        <h3 class="text-xs font-black text-blue-700 dark:text-blue-300">Hoán đổi trực tiếp giữa 2 ca</h3>
+        <p class="mt-1 text-[11px] text-slate-500 dark:text-slate-400">Chọn 2 ngày và 2 người đang trực. Mỗi người sẽ thay đúng vị trí của người kia, kể cả vị trí chủ trì. Chỉ hiển thị ca trong khoảng lịch đang tải.</p>
+      </div>
+      <div class="grid gap-3 sm:grid-cols-2">
+        <label class="text-[10px] font-black uppercase text-slate-500">Ca thứ nhất
+          <select aria-label="Chọn ngày ca thứ nhất" [ngModel]="adminSwapSourceDate()" (ngModelChange)="chooseAdminSwapSourceDate($event)" [disabled]="!!actionBusyId()" class="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-2 text-xs font-bold normal-case dark:border-slate-700 dark:bg-slate-950">
+            <option value="">— Chọn ngày —</option>
+            @for (schedule of duty.schedules(); track schedule.date) { @if (schedule.status === 'planned' && schedule.staffIds.length) { <option [value]="schedule.date">{{ schedule.date }}</option> } }
+          </select>
+        </label>
+        <label class="text-[10px] font-black uppercase text-slate-500">Người ở ca thứ nhất
+          <select aria-label="Chọn người ca thứ nhất" [ngModel]="adminSwapSourceStaffId()" (ngModelChange)="chooseAdminSwapSourceStaff($event)" [disabled]="!!actionBusyId() || !adminSwapSource()" class="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-2 text-xs font-bold normal-case dark:border-slate-700 dark:bg-slate-950">
+            <option value="">— Chọn người —</option>
+            @for (staffId of adminSwapSourceStaff(); track staffId) { <option [value]="staffId">{{ staffName(staffId) }} · {{ positionLabel(adminSwapSource()!.staffIds, staffId) }}</option> }
+          </select>
+        </label>
+        <label class="text-[10px] font-black uppercase text-slate-500">Ca thứ hai
+          <select aria-label="Chọn ngày ca thứ hai" [ngModel]="adminSwapTargetDate()" (ngModelChange)="chooseAdminSwapTargetDate($event)" [disabled]="!!actionBusyId() || !adminSwapSourceStaffId()" class="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-2 text-xs font-bold normal-case dark:border-slate-700 dark:bg-slate-950">
+            <option value="">— Chọn ngày —</option>
+            @for (schedule of adminSwapTargetSchedules(); track schedule.date) { <option [value]="schedule.date">{{ schedule.date }}</option> }
+          </select>
+        </label>
+        <label class="text-[10px] font-black uppercase text-slate-500">Người ở ca thứ hai
+          <select aria-label="Chọn người ca thứ hai" [ngModel]="adminSwapTargetStaffId()" (ngModelChange)="adminSwapTargetStaffId.set($event)" [disabled]="!!actionBusyId() || !adminSwapTarget()" class="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-2 text-xs font-bold normal-case dark:border-slate-700 dark:bg-slate-950">
+            <option value="">— Chọn người —</option>
+            @for (staffId of adminSwapTargetStaff(); track staffId) { <option [value]="staffId">{{ staffName(staffId) }} · {{ positionLabel(adminSwapTarget()!.staffIds, staffId) }}</option> }
+          </select>
+        </label>
+      </div>
+      @if (adminSwapSourceStaffId() && adminSwapTargetSchedules().length === 0) {
+        <p class="text-[11px] font-bold text-amber-700 dark:text-amber-300">Không có ca thứ hai phù hợp trong khoảng lịch đang tải.</p>
+      }
+      @if (canSubmitAdminSwap()) {
+        <div class="rounded-xl border border-blue-200 bg-white p-3 text-[11px] font-medium text-slate-700 dark:border-blue-900 dark:bg-slate-900 dark:text-slate-200" role="status">
+          <strong>Xác nhận vị trí sau hoán đổi:</strong>
+          <p class="mt-1">{{ staffName(adminSwapTargetStaffId()) }} → ca {{ adminSwapSourceDate() }} ({{ positionLabel(adminSwapSource()!.staffIds, adminSwapSourceStaffId()) }})</p>
+          <p>{{ staffName(adminSwapSourceStaffId()) }} → ca {{ adminSwapTargetDate() }} ({{ positionLabel(adminSwapTarget()!.staffIds, adminSwapTargetStaffId()) }})</p>
+        </div>
+      }
+      <div class="flex flex-wrap items-end gap-3">
+        <label class="min-w-[180px] flex-1 text-[10px] font-black uppercase text-slate-500">Ghi chú (không bắt buộc)
+          <input aria-label="Ghi chú hoán đổi hai ca" [ngModel]="adminSwapReason()" (ngModelChange)="adminSwapReason.set($event)" [disabled]="!!actionBusyId()" maxlength="500" class="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium normal-case dark:border-slate-700 dark:bg-slate-950" placeholder="Lý do điều chỉnh">
+        </label>
+        <app-button size="sm" [disabled]="!canSubmitAdminSwap() || !!actionBusyId()" [loading]="actionBusyId() === 'admin-swap'" (click)="submitAdminSwap()">Xác nhận hoán đổi</app-button>
+      </div>
     </div>
   }
 

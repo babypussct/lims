@@ -2,7 +2,28 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.11.09-b01
+## Phiên bản hiện tại: v26.11.10-b01
+
+### v26.11.10-b01
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Bổ sung hoán đổi nhân sự giữa hai ca trực và đối soát mã nội bộ chất chuẩn trùng giữa hồ sơ cũ đã ẩn và hồ sơ mới.
+
+#### ✨ Tính Năng Mới
+
+- Người quản lý có thể hoán đổi trực tiếp hai người ở hai ngày trực khác nhau và giữ nguyên vị trí phân công, bao gồm vị trí chủ trì.
+- Công cụ đối soát mã chất chuẩn trùng cho phép quét, lọc, chọn mã đủ điều kiện và xác nhận xử lý có kiểm soát.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Hoán đổi hai ca trong một giao dịch Firestore và ghi nhật ký điều chỉnh lịch trực.
+- Hiển thị hồ sơ cũ, hồ sơ mới, trạng thái sổ mã, lý do chặn và kết quả xử lý theo từng mã đối soát.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Kiểm tra điều kiện vòng đời và quyền sở hữu khi giải phóng mã ở hồ sơ chất chuẩn đã ẩn, hạn chế ảnh hưởng đến hồ sơ mới đang sử dụng mã.
+- Bổ sung kiểm thử hồi quy cho hoán đổi ca trực, đối soát mã trùng và giao dịch theo Firestore Rules.
 
 ### v26.11.09-b01
 

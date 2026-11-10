@@ -303,6 +303,8 @@ test('M7 shift swap UI exposes requester, target, manager and dashboard workflow
   assert.match(panel, /Đồng ý/);
   assert.match(panel, /Duyệt & cập nhật lịch/);
   assert.match(panel, /Đổi trực tiếp/);
+  assert.match(panel, /Hoán đổi 2 ca/);
+  assert.match(panel, /canSubmitAdminSwap\(\)/);
   assert.match(week, /Xin đổi ca/);
   assert.match(dutyTemplate, /<app-duty-shift-swap-panel/);
   assert.match(dutyTemplate, /<app-duty-shift-swap-request/);

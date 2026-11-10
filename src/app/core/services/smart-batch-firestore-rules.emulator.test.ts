@@ -2051,6 +2051,74 @@ test('internal-id ownership cannot be rewritten without the lifecycle transactio
   await assertSucceeds(batch.commit());
 });
 
+test('hidden-duplicate reconciliation releases only the old lifecycle with a valid atomic audit event', async () => {
+  const managerDb = dbFor(users.manager);
+  const registryService = Object.create(StandardCodeRegistryService.prototype) as any;
+  registryService.fb = { APP_ID, db: managerDb };
+  registryService.auth = {
+    canEditStandards: () => true,
+    currentUser: () => ({ uid: users.manager.uid, displayName: users.manager.displayName }),
+  };
+
+  const candidates = [
+    { code: 'AA71', holder: 'old' },
+    { code: 'AB71', holder: 'new' },
+  ];
+  await env.withSecurityRulesDisabled(async context => {
+    const db = context.firestore();
+    await setDoc(doc(db, `artifacts/${APP_ID}/config/standard_code_migration`), {
+      normalizedInvariantsVerified: true, schemaVersion: 1, verifiedAt: Timestamp.now(),
+    });
+    for (const { code, holder } of candidates) {
+      await Promise.all([
+        setDoc(doc(db, `artifacts/${APP_ID}/reference_standards/old-${code}`), {
+          id: `old-${code}`, name: `Hidden ${code}`, internal_id: code,
+          initial_amount: 10, current_amount: 0, unit: 'mg',
+          _isDeleted: true, status: 'DELETED', lifecycle_status: 'ACTIVE', lastUpdated: Timestamp.now(),
+        }),
+        setDoc(doc(db, `artifacts/${APP_ID}/reference_standards/new-${code}`), {
+          id: `new-${code}`, name: `Visible ${code}`, internal_id: code,
+          initial_amount: 10, current_amount: 10, unit: 'mg',
+          _isDeleted: false, status: 'AVAILABLE', lifecycle_status: 'ACTIVE', lastUpdated: Timestamp.now(),
+        }),
+        setDoc(doc(db, `artifacts/${APP_ID}/standard_code_registry/${code}`), {
+          id: code, internal_id: code, status: 'ASSIGNED',
+          currentStandardId: `${holder}-${code}`, assignmentCount: 2, lastUpdated: Timestamp.now(),
+        }),
+      ]);
+    }
+  });
+
+  for (const { code, holder } of candidates) {
+    const operationId = `emulator_reconcile_${code}`;
+    const response = await registryService.reconcileHiddenDuplicateCode(
+      `old-${code}`, `new-${code}`, code, 'Đã xác minh hồ sơ thay thế và lô chất chuẩn', operationId,
+    );
+    assert.equal(response.status, 'RECONCILED');
+    const [oldSnapshot, newSnapshot, registrySnapshot, eventSnapshot] = await Promise.all([
+      getDoc(doc(managerDb, `artifacts/${APP_ID}/reference_standards/old-${code}`)),
+      getDoc(doc(managerDb, `artifacts/${APP_ID}/reference_standards/new-${code}`)),
+      getDoc(doc(managerDb, `artifacts/${APP_ID}/standard_code_registry/${code}`)),
+      getDoc(doc(managerDb, `artifacts/${APP_ID}/standard_code_events/${operationId}`)),
+    ]);
+    assert.equal(oldSnapshot.data()?.lifecycle_status, 'RELEASED');
+    assert.equal(oldSnapshot.data()?._isDeleted, true);
+    assert.equal(newSnapshot.data()?.lifecycle_status, 'ACTIVE');
+    assert.equal(registrySnapshot.data()?.status, 'ASSIGNED');
+    assert.equal(registrySnapshot.data()?.currentStandardId, `new-${code}`);
+    assert.equal(registrySnapshot.data()?.assignmentCount, 2);
+    assert.equal(registrySnapshot.data()?.lastReleasedStandardId, `old-${code}`);
+    assert.equal(eventSnapshot.data()?.source, 'RECONCILIATION');
+    assert.equal(eventSnapshot.data()?.type, 'RECONCILED');
+    assert.equal(eventSnapshot.data()?.before.registryStandardId, `${holder}-${code}`);
+    assert.equal(eventSnapshot.data()?.after.registryStandardId, `new-${code}`);
+    const replay = await registryService.reconcileHiddenDuplicateCode(
+      `old-${code}`, `new-${code}`, code, 'Đã xác minh hồ sơ thay thế và lô chất chuẩn', operationId,
+    );
+    assert.equal(replay.status, 'RECONCILED');
+  }
+});
+
 test('standard-code events and recall projections require the atomic lifecycle shape and remain append-only', async () => {
   const managerDb = dbFor(users.manager);
   const restoreStandardPath = `artifacts/${APP_ID}/reference_standards/event-restore`;

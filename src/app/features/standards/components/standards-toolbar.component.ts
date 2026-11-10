@@ -59,6 +59,9 @@ import { AppPageHeaderComponent } from '../../../shared/components/ui/page-heade
                     <button role="menuitem" [appLockPermission]="'standard_edit'" (click)="runMenuAction(openHiddenCodeRecall)" class="min-h-10 text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2 md:min-h-0">
                         <i class="fa-solid fa-key text-rose-500 w-4"></i> Thu hồi mã chuẩn đã ẩn
                     </button>
+                    <button role="menuitem" [appLockPermission]="'standard_edit'" (click)="runMenuAction(openDuplicateReconciliation)" class="min-h-10 text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-amber-50 hover:text-amber-700 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2 md:min-h-0">
+                        <i class="fa-solid fa-code-compare text-amber-500 w-4"></i> Đối soát mã trùng (đã ẩn)
+                    </button>
                     <button role="menuitem" [appLockPermission]="'standard_edit'" (click)="openFilePicker(fileInput)" class="min-h-10 text-left px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-slate-700 rounded-lg transition flex items-center gap-2 md:min-h-0">
                         <i class="fa-solid fa-file-excel text-emerald-500 w-4"></i> Nhập danh mục chuẩn
                     </button>
@@ -114,6 +117,7 @@ export class StandardsToolbarComponent {
   openInternalIdSync = output<void>();
   openCodeRegistry = output<void>();
   openHiddenCodeRecall = output<void>();
+  openDuplicateReconciliation = output<void>();
   openBulkTagModal = output<void>();
   openTagManager = output<void>();
 

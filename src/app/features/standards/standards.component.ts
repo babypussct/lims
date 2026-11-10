@@ -32,6 +32,7 @@ import { StandardsBulkCoaModalComponent } from './components/standards-bulk-coa-
 import { StandardsToolbarComponent } from './components/standards-toolbar.component';
 import { StandardsInternalIdSyncModalComponent } from './components/standards-internal-id-sync-modal.component';
 import { StandardsHiddenCodeRecallModalComponent } from './components/standards-hidden-code-recall-modal.component';
+import { StandardsDuplicateCodeReconciliationModalComponent } from './components/standards-duplicate-code-reconciliation-modal.component';
 import { StandardsFilterComponent } from './components/standards-filter.component';
 import { StandardsListViewComponent } from './components/standards-list-view.component';
 import { StandardsGridViewComponent } from './components/standards-grid-view.component';
@@ -49,7 +50,7 @@ type StandardAuditSort = 'name_asc' | 'name_desc' | 'expiry_asc' | 'expiry_desc'
 @Component({
   selector: 'app-standards',
   standalone: true,
-  imports: [CommonModule, FormsModule, StandardsFormModalComponent, StandardsPrintModalComponent, StandardsImportDataModalComponent, StandardsImportUsageModalComponent, StandardsHistoryModalComponent, StandardsPurchaseModalComponent, StandardsBulkCoaModalComponent, StandardsToolbarComponent, StandardsInternalIdSyncModalComponent, StandardsHiddenCodeRecallModalComponent, StandardsFilterComponent, StandardsListViewComponent, StandardsGridViewComponent, StandardsAssignModalComponent, StandardsDataCleanupModalComponent, StandardsBackfillModalComponent, StandardsBulkTagModalComponent, StandardsTagManagerModalComponent, ExportModalComponent],
+  imports: [CommonModule, FormsModule, StandardsFormModalComponent, StandardsPrintModalComponent, StandardsImportDataModalComponent, StandardsImportUsageModalComponent, StandardsHistoryModalComponent, StandardsPurchaseModalComponent, StandardsBulkCoaModalComponent, StandardsToolbarComponent, StandardsInternalIdSyncModalComponent, StandardsHiddenCodeRecallModalComponent, StandardsDuplicateCodeReconciliationModalComponent, StandardsFilterComponent, StandardsListViewComponent, StandardsGridViewComponent, StandardsAssignModalComponent, StandardsDataCleanupModalComponent, StandardsBackfillModalComponent, StandardsBulkTagModalComponent, StandardsTagManagerModalComponent, ExportModalComponent],
   providers: [DatePipe],
   templateUrl: './standards.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -414,6 +415,7 @@ export class StandardsComponent implements OnInit, OnDestroy {
 
   initialSyncModalView = signal<'scan' | 'history' | 'registry'>('scan');
   showHiddenCodeRecallModal = signal(false);
+  showDuplicateReconciliationModal = signal(false);
 
   // --- Backfill Usage Log State (Manager) ---
   showBackfillModal = signal(false);
