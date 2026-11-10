@@ -1,5 +1,5 @@
 import '@angular/compiler';
-import { Injector, runInInjectionContext, signal } from '@angular/core';
+import { Injector, runInInjectionContext, signal, ɵChangeDetectionScheduler, ɵEffectScheduler } from '@angular/core';
 import { DOCUMENT, Location } from '@angular/common';
 import { DomSanitizer } from '@angular/platform-browser';
 import { ActivatedRoute, convertToParamMap, Router } from '@angular/router';
@@ -829,5 +829,44 @@ describe('standards DeltaSync resource-limit pause banner and manual retry wirin
     assert.match(standardsTs, /syncDiagnosticError\s*=\s*signal/);
     assert.match(standardsTs, /retryDeltaSync\(\):\s*void/);
     assert.match(standardsTs, /retryStandardsSync/);
+  });
+});
+
+describe('duplicate code reconciliation confirmation', () => {
+  it('allows eligible codes with a valid reason and still requires dialog confirmation', async () => {
+    const { StandardsDuplicateCodeReconciliationModalComponent } = await import('./components/standards-duplicate-code-reconciliation-modal.component');
+    const { StandardCodeDuplicateReconciliationService } = await import('./services/standard-code-duplicate-reconciliation.service');
+    const { ConfirmationService } = await import('../../core/services/confirmation.service');
+    const confirmations: { message: string }[] = [];
+    const injector = Injector.create({ providers: [
+      { provide: ɵChangeDetectionScheduler, useValue: { notify() {} } },
+      { provide: ɵEffectScheduler, useValue: { add() {}, remove() {} } },
+      { provide: StandardCodeDuplicateReconciliationService, useValue: { scan: async () => { throw new Error('Unexpected scan'); } } },
+      { provide: ConfirmationService, useValue: { confirm: async (options: { message: string }) => {
+        confirmations.push(options);
+        return false;
+      } } },
+    ] });
+    const modal = runInInjectionContext(injector, () => new StandardsDuplicateCodeReconciliationModalComponent());
+    modal.report.set({
+      generatedAt: 0, readyCount: 1, blockedCount: 0,
+      cases: [{ internalId: 'AA01', status: 'READY' }] as any,
+    });
+    modal.selectedCodes.set(new Set(['AA01']));
+    assert.equal(modal.canReconcile(), false, 'Reason is still required');
+    modal.reason.set('Đã kiểm tra hồ sơ cũ và mới');
+    assert.equal(modal.canReconcile(), true, 'No typed confirmation should be required');
+    await modal.reconcileSelected();
+    assert.equal(confirmations.length, 1);
+    assert.match(confirmations[0].message, /Đối soát 1 mã đã chọn/);
+    modal.selectedCodes.set(new Set());
+    assert.equal(modal.canReconcile(), false, 'A ready code must be selected');
+  });
+
+  it('removes the DOI SOAT entry while retaining the reason and confirmation dialog', () => {
+    const source = read('./components/standards-duplicate-code-reconciliation-modal.component.ts');
+    assert.doesNotMatch(source, /DOI SOAT|confirmationText/);
+    assert.match(source, /duplicate-reconcile-reason/);
+    assert.match(source, /this\.confirmation\.confirm\(/);
   });
 });

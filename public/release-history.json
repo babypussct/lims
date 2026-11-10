@@ -1,5 +1,19 @@
 [
   {
+    "version": "v26.11.10-b02",
+    "date": "10/11/2026",
+    "title": "Tinh gọn xác nhận đối soát mã chất chuẩn",
+    "highlights": [
+      "Bỏ bước nhập DOI SOAT khi xác nhận xử lý mã chất chuẩn trùng."
+    ],
+    "features": [],
+    "improvements": [
+      "Cho phép đối soát ngay sau khi chọn mã đủ điều kiện và nhập lý do hợp lệ; vẫn hiển thị hộp thoại xác nhận trước khi thực hiện."
+    ],
+    "fixes": [],
+    "releaseOrder": 26111000002
+  },
+  {
     "version": "v26.11.10-b01",
     "date": "10/11/2026",
     "title": "Hoán đổi ca trực và đối soát mã chất chuẩn trùng",

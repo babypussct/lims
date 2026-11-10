@@ -2,7 +2,25 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.11.10-b01
+## Phiên bản hiện tại: v26.11.10-b02
+
+### v26.11.10-b02
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Bỏ bước nhập DOI SOAT khi xác nhận xử lý mã chất chuẩn trùng.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Cho phép đối soát ngay sau khi chọn mã đủ điều kiện và nhập lý do hợp lệ; vẫn hiển thị hộp thoại xác nhận trước khi thực hiện.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Không có thay đổi trong nhóm này.
 
 ### v26.11.10-b01
 

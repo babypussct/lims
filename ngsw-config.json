@@ -2,14 +2,11 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.11.10-b01",
-    "title": "Hoán đổi ca trực và đối soát mã chất chuẩn trùng",
+    "version": "v26.11.10-b02",
+    "title": "Tinh gọn xác nhận đối soát mã chất chuẩn",
     "features": [
-      "Bổ sung hoán đổi nhân sự giữa hai ca trực và đối soát mã nội bộ chất chuẩn trùng giữa hồ sơ cũ đã ẩn và hồ sơ mới.",
-      "Người quản lý có thể hoán đổi trực tiếp hai người ở hai ngày trực khác nhau và giữ nguyên vị trí phân công, bao gồm vị trí chủ trì.",
-      "Công cụ đối soát mã chất chuẩn trùng cho phép quét, lọc, chọn mã đủ điều kiện và xác nhận xử lý có kiểm soát.",
-      "Hoán đổi hai ca trong một giao dịch Firestore và ghi nhật ký điều chỉnh lịch trực.",
-      "Hiển thị hồ sơ cũ, hồ sơ mới, trạng thái sổ mã, lý do chặn và kết quả xử lý theo từng mã đối soát."
+      "Bỏ bước nhập DOI SOAT khi xác nhận xử lý mã chất chuẩn trùng.",
+      "Cho phép đối soát ngay sau khi chọn mã đủ điều kiện và nhập lý do hợp lệ; vẫn hiển thị hộp thoại xác nhận trước khi thực hiện."
     ]
   },
   "assetGroups": [

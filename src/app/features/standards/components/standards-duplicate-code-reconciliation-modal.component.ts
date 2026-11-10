@@ -127,10 +127,7 @@ interface ReconciliationExecutionResult {
 
           <div modalFooter class="flex flex-wrap gap-3 justify-between items-center">
             <div class="space-y-1">
-              <p class="text-xs text-slate-500">Đã chọn {{selectedReadyCases().length}} mã. Nhập <strong>DOI SOAT</strong> để xác nhận:</p>
-              <input type="text" [ngModel]="confirmationText()" (ngModelChange)="confirmationText.set($event)"
-                [disabled]="isBusy()" aria-label="Nhập DOI SOAT" placeholder="DOI SOAT"
-                class="px-3 py-2 w-40 rounded-lg border border-slate-200 dark:border-slate-700 dark:bg-slate-900 text-xs">
+              <p class="text-xs text-slate-500">Đã chọn {{selectedReadyCases().length}} mã.</p>
               @if (isRunning()) { <p class="text-xs text-amber-700">Đang xử lý {{processedCount()}}/{{runTotal()}} mã. Mỗi mã là một giao dịch riêng.</p> }
             </div>
             <div class="flex gap-2 flex-wrap">
@@ -160,7 +157,6 @@ export class StandardsDuplicateCodeReconciliationModalComponent {
   searchQuery = signal('');
   reason = signal('');
   selectedCodes = signal<Set<string>>(new Set());
-  confirmationText = signal('');
   isScanning = signal(false);
   isRunning = signal(false);
   stopRequested = signal(false);
@@ -181,7 +177,7 @@ export class StandardsDuplicateCodeReconciliationModalComponent {
   selectedReadyCases = computed(() => (this.report()?.cases || []).filter(item =>
     item.status === 'READY' && this.selectedCodes().has(item.internalId)));
   canReconcile = computed(() => Boolean(!this.isBusy() && this.selectedReadyCases().length > 0 &&
-    this.reason().trim().length >= 10 && this.confirmationText().trim() === 'DOI SOAT'));
+    this.reason().trim().length >= 10));
 
   constructor() {
     effect(() => {
@@ -201,12 +197,10 @@ export class StandardsDuplicateCodeReconciliationModalComponent {
     try {
       this.report.set(await this.service.scan());
       this.selectedCodes.set(new Set());
-      this.confirmationText.set('');
     } catch (error: any) {
       // A failed refresh must not leave stale candidates available for selection.
       this.report.set(null);
       this.selectedCodes.set(new Set());
-      this.confirmationText.set('');
       this.errorMessage.set(error?.message || 'Không quét được dữ liệu từ máy chủ.');
     } finally {
       this.isScanning.set(false);
