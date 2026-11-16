@@ -25,9 +25,9 @@ export type ReportPublishState = 'working' | 'success' | 'error' | 'timeout';
         </div>
 
         @if (state() === 'working') {
-          <div class="h-2 w-full overflow-hidden rounded-full bg-fuchsia-100 dark:bg-fuchsia-950/60"
+          <div class="h-2 w-full overflow-hidden rounded-full bg-indigo-100 dark:bg-indigo-950/60"
                role="progressbar" aria-label="Đang xuất bản báo cáo">
-            <div class="report-progress-indeterminate h-full rounded-full bg-fuchsia-600 dark:bg-fuchsia-400"></div>
+            <div class="report-progress-indeterminate h-full rounded-full bg-indigo-600 dark:bg-indigo-400"></div>
           </div>
           <p class="text-xs text-slate-600 dark:text-slate-300" role="status">
             Hệ thống vẫn đang làm việc. Vui lòng giữ trang này mở trong khi chờ Google Apps Script trả PDF.
@@ -46,14 +46,14 @@ export type ReportPublishState = 'working' | 'success' | 'error' | 'timeout';
         <ol class="space-y-3" aria-label="Các bước xuất bản">
           @for (step of steps; track $index; let idx = $index) {
             <li class="flex items-start gap-3 text-sm"
-                [class.text-fuchsia-700]="state() === 'working' && stepIndex() === idx"
-                [class.dark:text-fuchsia-300]="state() === 'working' && stepIndex() === idx"
+                [class.text-indigo-700]="state() === 'working' && stepIndex() === idx"
+                [class.dark:text-indigo-300]="state() === 'working' && stepIndex() === idx"
                 [class.text-slate-500]="stepIndex() < idx"
                 [attr.aria-current]="state() === 'working' && stepIndex() === idx ? 'step' : null">
               <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-bold"
                     [class.border-emerald-300]="stepIndex() > idx || state() === 'success'"
                     [class.text-emerald-600]="stepIndex() > idx || state() === 'success'"
-                    [class.border-fuchsia-400]="state() === 'working' && stepIndex() === idx">
+                    [class.border-indigo-400]="state() === 'working' && stepIndex() === idx">
                 @if (stepIndex() > idx || state() === 'success') {
                   <i class="fa-solid fa-check" aria-hidden="true"></i>
                 } @else if (stepIndex() === idx && state() === 'working') {

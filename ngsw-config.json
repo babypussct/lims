@@ -2,12 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.11.10-b03",
-    "title": "Sửa lỗi nút đối soát mã chất chuẩn bị khóa",
+    "version": "v26.11.16-b01",
+    "title": "Nâng cấp Kết quả phân tích và bảo vệ toàn vẹn dữ liệu",
     "features": [
-      "Có thể chọn Đối soát ngay sau khi chọn các mã đủ điều kiện.",
-      "Tự ghi lý do mặc định vào lịch sử từng mã khi để trống ô lý do; vẫn cho phép nhập lý do riêng và xác nhận trước khi thực hiện.",
-      "Khắc phục nút Đối soát mã đã chọn bị vô hiệu do điều kiện nhập tối thiểu 10 ký tự trong ô lý do."
+      "Nâng cấp không gian nhập kết quả, kiểm tra trước xuất bản và tra cứu báo cáo PDF.",
+      "Chọn mẻ nguồn cho từng mã mẫu trùng khi gộp mẻ và lưu nguồn kết quả để truy xuất.",
+      "Thống nhất bảng nhập SOP, thao tác dán và hoàn tác, trạng thái báo cáo và bố cục màn hình kết quả.",
+      "Siết quyền ghi Firestore theo nghiệp vụ, trạng thái mẻ và chủ sở hữu khóa; tách quyền duyệt SOP khỏi quyền nhập kết quả.",
+      "Nhận, gia hạn, tiếp quản và giải phóng khóa bằng giao dịch nguyên tử, xử lý xung đột giữa các tài khoản."
     ]
   },
   "assetGroups": [

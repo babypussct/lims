@@ -1,9 +1,10 @@
-<div class="h-full flex flex-col fade-in">
+<div class="h-full flex flex-col fade-in" [class.p-3]="isFocusMode()" [class.sm:p-4]="isFocusMode()">
   <!-- Sticky Header -->
   <app-result-entry-header
     [run]="run()"
     [draft]="draft()"
     [historyList]="historyList()"
+    [preflightState]="livePreflightState()"
     [autoSaveStatus]="autoSaveStatus()"
     [lastSavedAt]="lastSavedAt()"
     [hasExistingReport]="hasAnyActiveReports()"
@@ -11,8 +12,15 @@
     [isPublishing]="isPublishing()"
     [isReadOnly]="isReadOnly()"
     [canReassignSop]="canReassignSop()"
+    [canViewDetail]="true"
+    [canEditResults]="canEditResults()"
+    [lockedByOthers]="lockedByOthers()"
     [showRestoreMenu]="showRestoreMenu()"
     [showActionsMenu]="showActionsMenu()"
+    [isPdfPaneOpen]="isPdfPaneOpen()"
+    [reportsCount]="reportsProjection().cards.length"
+    [hasStaleReports]="reportsProjection().hasStaleReport"
+    [isFocusMode]="isFocusMode()"
     [currentPdfUrl]="getCurrentPdfUrl()"
     [currentDocsUrl]="getCurrentDocsUrl()"
     [printButtonLabel]="getPrintButtonLabel()"
@@ -32,11 +40,19 @@
     (closeRestoreMenu)="closeRestoreMenu()"
     (toggleActionsMenu)="toggleActionsMenu()"
     (closeActionsMenu)="closeActionsMenu()"
+    (togglePdfPane)="togglePdfPane()"
+    (openReportsHistory)="openReportsHistoryPane()"
+    (toggleFocusMode)="toggleFocusMode()"
+    (goToViewMode)="goToViewMode()"
+    (jumpToPreflightTarget)="jumpToPreflightTarget($event)"
     (importExcel)="openExcelImport($event)">
   </app-result-entry-header>
 
-  <!-- Main Form Area -->
-  <div class="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-6 bg-slate-50/50 dark:bg-slate-950/20">
+  <!-- Main Split-Pane Workspace -->
+  <div #workspaceContainer class="flex-1 min-h-0 flex gap-4 p-4 sm:p-6 bg-slate-50/50 dark:bg-slate-950/20 overflow-hidden">
+    <!-- Left Pane: SOP Form Workspace -->
+    <div [class]="isPdfPaneOpen() && canSplitSideBySide() ? 'flex-[6] min-w-[420px] min-h-0 overflow-y-auto custom-scrollbar pb-24 md:pb-6 pr-1' : 'flex-1 min-w-0 min-h-0 overflow-y-auto custom-scrollbar pb-24 md:pb-6'"
+         [class.hidden]="isPdfPaneOpen() && !canSplitSideBySide()">
     @if (isLoading()) {
       <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 space-y-6">
         <div class="flex justify-between items-center">
@@ -50,8 +66,9 @@
         </div>
       </div>
     } @else if (run() && draft() && config()) {
-      <!-- Status Banners (Locked / Completed) -->
+      <!-- Status Banners (No Permission / Locked / Completed) -->
       <app-result-entry-status-banner
+        [canEditResults]="canEditResults()"
         [lockedByOthers]="lockedByOthers()"
         [lockerName]="run()?.lockedByName || ''"
         [lockedAt]="(convertToDate(run()?.lockedAt) | date: 'HH:mm dd/MM/yyyy') || ''"
@@ -64,7 +81,6 @@
         (unlockToEdit)="triggerUnlockToEdit()">
       </app-result-entry-status-banner>
 
-
       <!-- Run Metadata Banner -->
       <app-result-run-metadata
         [run]="run()"
@@ -74,26 +90,6 @@
         [formatAnalysisDateFn]="formatAnalysisDate.bind(this)"
         (toggleExpand)="isMetadataExpanded.set(!isMetadataExpanded())">
       </app-result-run-metadata>
-
-
-
-
-      <!-- Active Reports Panel (cards + progress bar) -->
-      <app-result-active-reports-panel
-        [hasAnyReports]="hasAnyActiveReports()"
-        [generalReport]="getGeneralReport()"
-        [prefixes]="detectedPrefixes()"
-        [getAllReportsForPrefixFn]="getAllReportsForPrefix.bind(this)"
-        [draftStatus]="draft()?.status || 'draft'"
-        [progress]="samplePublishProgress()"
-        [sampleList]="run()?.sampleList || []"
-        [historyList]="historyList()"
-        (openPdf)="openPdfPreview($event.pdfUrl, $event.docsUrl)">
-      </app-result-active-reports-panel>
-
-
-
-
 
       <!-- Data toolbar: prefix scope + report splitting -->
       @if (detectedPrefixes().length > 1 || !isReadOnly()) {
@@ -122,15 +118,13 @@
                   (input)="samplesPerReport.set($any($event.target).valueAsNumber || null)"
                   aria-label="Số mẫu trên mỗi phiếu in"
                   placeholder="Tất cả"
-                  class="h-8 w-16 rounded-lg border border-slate-200 bg-white px-2 text-center text-xs font-bold text-slate-700 shadow-soft-sm outline-none transition focus:border-fuchsia-400 focus:ring-2 focus:ring-fuchsia-400/20 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200" />
+                  class="h-8 w-16 rounded-lg border border-slate-200 bg-white px-2 text-center text-xs font-bold text-slate-700 shadow-soft-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200" />
                 <span class="text-[11px] text-slate-400">mẫu/phiếu</span>
               </span>
             </label>
           }
         </div>
       }
-
-
 
       @if (renderDraftForm()) {
       <div [class.pointer-events-none]="formIsReadOnly()" [class.opacity-95]="formIsReadOnly()">
@@ -159,7 +153,78 @@
         </app-empty-state>
       </div>
     }
+    </div>
+
+    <!-- Right Pane: PDF Preview & Reports/History -->
+    @if (isPdfPaneOpen() && run() && draft()) {
+      <div [class]="canSplitSideBySide() ? 'flex-[4] min-w-[380px] min-h-0 flex flex-col' : 'flex-1 min-w-0 min-h-0 flex flex-col'">
+        <app-result-pdf-report-pane
+          class="flex-1 min-h-0 flex flex-col"
+          [run]="run()"
+          [draft]="draft()"
+          [historyList]="historyList()"
+          [activeFilter]="activeFilter()"
+          [selectedReportId]="selectedPdfReportId()"
+          [canRestore]="canEditResults() && !lockedByOthers()"
+          [isReadOnly]="isReadOnly()"
+          [isProcessing]="isProcessing()"
+          [initialTab]="pdfPaneInitialTab()"
+          [showCloseButton]="true"
+          (selectedReportIdChange)="selectedPdfReportId.set($event)"
+          (filterSyncRequested)="activeFilter.set($event)"
+          (openModalPreview)="onPdfPaneModalPreview($event)"
+          (restoreVersion)="restoreFromVersion($event.version, $event.prefix, $event.reportId)"
+          (closed)="closePdfPane()" />
+      </div>
+    }
   </div>
+
+  <!-- Mobile (< md) Sticky Bottom Action Bar -->
+  @if (run() && draft() && config() && !isPdfPaneOpen()) {
+    <div class="sticky bottom-0 z-30 md:hidden shrink-0 border-t border-slate-200/80 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur px-3 py-2.5 flex items-center justify-between gap-2 shadow-soft-xl">
+      <button type="button"
+              (click)="togglePdfPane()"
+              aria-label="Mở Báo cáo và PDF"
+              class="inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 text-xs font-bold text-slate-700 dark:text-slate-200 transition active:scale-95">
+        <span class="h-2 w-2 rounded-full shrink-0"
+              [class]="autoSaveStatus() === 'saving'
+                ? 'bg-amber-500 animate-pulse'
+                : (autoSaveStatus() === 'error'
+                  ? 'bg-red-500'
+                  : (autoSaveStatus() === 'modified' ? 'bg-amber-400' : 'bg-emerald-500'))"></span>
+        <i class="fa-solid fa-file-pdf text-rose-500 text-xs" aria-hidden="true"></i>
+        <span>PDF ({{ reportsProjection().cards.length }})</span>
+      </button>
+
+      <div class="flex items-center gap-2 shrink-0">
+        @if (!isReadOnly()) {
+          <button type="button"
+                  (click)="triggerSaveDraft()"
+                  [disabled]="isProcessing()"
+                  class="inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 text-xs font-bold text-slate-700 dark:text-slate-200 transition active:scale-95 disabled:opacity-50">
+            <i class="fa-solid fa-floppy-disk text-xs" aria-hidden="true"></i>
+            <span>Lưu nháp</span>
+          </button>
+
+          <button type="button"
+                  (click)="triggerPublishReport()"
+                  [disabled]="isProcessing() || isReadOnly()"
+                  class="inline-flex h-10 items-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-3.5 text-xs font-bold text-white shadow-soft-sm transition active:scale-95 disabled:opacity-50">
+            <i class="fa-solid" [class.fa-circle-check]="!isPublishing()" [class.fa-spinner]="isPublishing()" [class.fa-spin]="isPublishing()" aria-hidden="true"></i>
+            <span>Xuất PDF</span>
+          </button>
+        } @else if (canEditResults() && !lockedByOthers() && draft()?.status === 'completed') {
+          <button type="button"
+                  (click)="triggerUnlockToEdit()"
+                  [disabled]="isProcessing()"
+                  class="inline-flex h-10 items-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-3.5 text-xs font-bold text-white shadow-soft-sm transition active:scale-95 disabled:opacity-50">
+            <i class="fa-solid fa-unlock text-xs" aria-hidden="true"></i>
+            <span>Mở khóa sửa</span>
+          </button>
+        }
+      </div>
+    </div>
+  }
 
   @if (excelImportFile() && run() && draft() && config()) {
     <app-excel-result-import-modal
@@ -398,7 +463,7 @@
             <div class="space-y-2">
               @for (chunk of preflightSummary()!.chunks; track $index; let idx = $index) {
                 <div class="flex items-start gap-2 text-xs">
-                  <span class="shrink-0 px-2 py-0.5 rounded-lg bg-fuchsia-50 dark:bg-fuchsia-950/30 text-fuchsia-600 dark:text-fuchsia-400 font-black">Phiếu {{ idx + 1 }}</span>
+                  <span class="shrink-0 px-2 py-0.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 font-black">Phiếu {{ idx + 1 }}</span>
                   <span class="font-mono text-slate-600 dark:text-slate-300 break-all">{{ chunk.join(', ') }}</span>
                 </div>
               }

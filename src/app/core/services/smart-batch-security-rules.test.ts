@@ -71,6 +71,12 @@ test('batch_run cannot approve or arbitrarily rewrite an existing request', () =
   assert.match(block, /hasPermission\(appId, 'report_view'\)/);
   assert.doesNotMatch(block, /allow write:\s*if[^;]*batch_run/);
   assert.match(block, /validBatchRequestUpdate\(appId\)/);
+  assert.match(block, /validSopApprovalTransition\(appId, reqId\)/);
+  assert.match(block, /validWorksheetParameterUpdate\(appId, reqId\)/);
+  assert.doesNotMatch(block, /isManager\(appId\)\s*\|\|\s*hasPermission\(appId,\s*'sop_approve'\)\s*\|\|\s*validBatchRequestUpdate/);
+  assert.match(rules, /function isUnlockedOrOwnedOrExpired\(data\)/);
+  assert.match(rules, /function validResultHistoryCreate\(appId, reqId, histId\)/);
+  assert.match(rules, /allow update, delete:\s*if false;\s*\n\s*\}\s*\n\s*\}\s*\n\s*match \/artifacts\/\{appId\}\/public_traceability/);
   assert.match(rules, /function validResultUpdate\(\)/);
   assert.match(rules, /function validLockUpdate\(appId\)/);
   assert.match(rules, /function validVirtualMasterUpdate\(\)/);
@@ -94,7 +100,7 @@ test('result details require an operational role to write', () => {
     'match /artifacts/{appId}/results_details/{docId}',
     '// Yeu cau in an nhan / barcode'
   );
-  assert.match(block, /allow create, update:\s*if canEditResults\(appId\)/);
+  assert.match(block, /allow create, update:\s*if isActiveUser\(appId\) && hasPermission\(appId, 'batch_run'\) &&\s*validResultDetailWrite\(appId, docId\)/);
   assert.doesNotMatch(block, /allow read, write:\s*if isSignedIn\(\)/);
 });
 

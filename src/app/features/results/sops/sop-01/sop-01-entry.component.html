@@ -1,377 +1,408 @@
-<div class="space-y-6">
-
+<div class="space-y-5 animate-fade-in">
   <!-- 1. Metadata Form & Checkboxes -->
   <app-sop-header-metadata
-    title="Thông tin chung & Đánh giá (SOP-01)"
+    title="Thông tin chung &amp; Đánh giá (SOP-01)"
     [draft]="draft"
     [checkboxList]="checkboxList"
     [isReadOnly]="isReadOnly"
     (draftChanged)="onDataChanged()">
 
-    <!-- Fipronil specific inputs (Mã hồ sơ, Hệ số pha loãng, Loại mẫu, Tình trạng mẫu) -->
-    <div sop-metadata-extra class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 rounded-2xl bg-fuchsia-50/15 dark:bg-fuchsia-955/5 border border-fuchsia-100/40 dark:border-fuchsia-950/20 mt-4">
-      <!-- Mã hồ sơ -->
+    <!-- Fipronil specific inputs -->
+    <div sop-metadata-extra class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 rounded-2xl bg-indigo-50/40 dark:bg-indigo-950/20 border border-indigo-100/80 dark:border-indigo-900/40 mt-4">
       <div>
-        <label class="flex items-center justify-between text-[10px] font-black text-fuchsia-650 dark:text-fuchsia-400 mb-1.5 uppercase tracking-widest">
+        <label class="flex items-center justify-between text-[10px] font-bold text-indigo-700 dark:text-indigo-300 mb-1.5 uppercase tracking-wider">
           <span>1. Mã hồ sơ</span>
           <button type="button"
-            (click)="autoFillMaHoSo()"
-            [disabled]="isReadOnly"
-            class="text-fuchsia-500 hover:text-fuchsia-700 dark:hover:text-fuchsia-300 transition-colors"
-            title="Tự động điền bằng các mẫu đang chọn">
-            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                  (click)="autoFillMaHoSo()"
+                  [disabled]="isReadOnly"
+                  class="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 transition-colors disabled:opacity-50"
+                  title="Tự động điền bằng các mẫu đang chọn">
+            <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
           </button>
         </label>
         <input type="text"
-          [(ngModel)]="draft.page1Data['maHoSo']"
-          (ngModelChange)="onDataChanged()"
-          [disabled]="isReadOnly"
-          placeholder="Nhập mã hồ sơ..."
-          class="w-full bg-white dark:bg-slate-850 border border-slate-200/80 dark:border-slate-700/80 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 transition outline-none shadow-sm">
-        </div>
+               [(ngModel)]="draft.page1Data['maHoSo']"
+               (ngModelChange)="onDataChanged()"
+               [disabled]="isReadOnly"
+               placeholder="Nhập mã hồ sơ..."
+               class="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition outline-none" />
+      </div>
 
-        <!-- Hệ số pha loãng -->
-        <div>
-          <label class="block text-[10px] font-black text-fuchsia-650 dark:text-fuchsia-400 mb-1.5 uppercase tracking-widest">3. Hệ số pha loãng (f)</label>
-          <div class="flex items-center gap-1.5">
-            <button type="button"
-              (click)="draft.page1Data['heSoPhaLoang'] = '1'; onDataChanged()"
-              [disabled]="isReadOnly"
+      <div>
+        <label class="block text-[10px] font-bold text-indigo-700 dark:text-indigo-300 mb-1.5 uppercase tracking-wider">3. Hệ số pha loãng (f)</label>
+        <div class="flex items-center gap-1.5">
+          <button type="button"
+                  (click)="draft.page1Data['heSoPhaLoang'] = '1'; onDataChanged()"
+                  [disabled]="isReadOnly"
                   [class]="draft.page1Data['heSoPhaLoang'] === '1'
-                    ? 'px-3 py-2 text-xs font-extrabold rounded-xl bg-fuchsia-600 text-white shadow-sm border border-fuchsia-600 transition shrink-0 active:scale-95'
-                    : 'px-3 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition shrink-0 active:scale-95'"
-              title="Chọn f=1">
-              f=1
-            </button>
-            <input type="text"
-              [(ngModel)]="draft.page1Data['heSoPhaLoang']"
-              (ngModelChange)="onDataChanged()"
-              [disabled]="isReadOnly"
-              placeholder="Hệ số f..."
-              class="w-full bg-white dark:bg-slate-850 border border-slate-200/80 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 transition outline-none shadow-sm">
-            </div>
-          </div>
+                    ? 'px-3 py-2 text-xs font-bold rounded-xl bg-indigo-600 text-white shadow-xs border border-indigo-600 transition shrink-0 active:scale-95'
+                    : 'px-3 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition shrink-0 active:scale-95'"
+                  title="Chọn f=1">f=1</button>
+          <input type="text"
+                 [(ngModel)]="draft.page1Data['heSoPhaLoang']"
+                 (ngModelChange)="onDataChanged()"
+                 [disabled]="isReadOnly"
+                 placeholder="Hệ số f..."
+                 class="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition outline-none" />
+        </div>
+      </div>
 
-          <!-- Loại mẫu -->
-          <div>
-            <label class="block text-[10px] font-black text-fuchsia-650 dark:text-fuchsia-400 mb-1.5 uppercase tracking-widest">4. Loại mẫu</label>
-            <div class="flex items-center gap-1.5">
-              <button type="button"
-                (click)="draft.page1Data['loaiMau'] = 'Thủy sản'; onDataChanged()"
-                [disabled]="isReadOnly"
+      <div>
+        <label class="block text-[10px] font-bold text-indigo-700 dark:text-indigo-300 mb-1.5 uppercase tracking-wider">4. Loại mẫu</label>
+        <div class="flex items-center gap-1.5">
+          <button type="button"
+                  (click)="draft.page1Data['loaiMau'] = 'Thủy sản'; onDataChanged()"
+                  [disabled]="isReadOnly"
                   [class]="draft.page1Data['loaiMau'] === 'Thủy sản' || draft.page1Data['loaiMau'] === 'Thuỷ sản'
-                    ? 'px-3 py-2 text-xs font-extrabold rounded-xl bg-fuchsia-600 text-white shadow-sm border border-fuchsia-600 transition shrink-0 active:scale-95'
-                    : 'px-3 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition shrink-0 active:scale-95'"
-                title="Chọn Thủy sản">
-                Thủy Sản
-              </button>
-              <input type="text"
-                [(ngModel)]="draft.page1Data['loaiMau']"
-                (ngModelChange)="onDataChanged()"
-                [disabled]="isReadOnly"
-                placeholder="Loại mẫu..."
-                class="w-full bg-white dark:bg-slate-850 border border-slate-200/80 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 transition outline-none shadow-sm">
-              </div>
-            </div>
+                    ? 'px-3 py-2 text-xs font-bold rounded-xl bg-indigo-600 text-white shadow-xs border border-indigo-600 transition shrink-0 active:scale-95'
+                    : 'px-3 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition shrink-0 active:scale-95'"
+                  title="Chọn Thủy sản">Thủy Sản</button>
+          <input type="text"
+                 [(ngModel)]="draft.page1Data['loaiMau']"
+                 (ngModelChange)="onDataChanged()"
+                 [disabled]="isReadOnly"
+                 placeholder="Loại mẫu..."
+                 class="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition outline-none" />
+        </div>
+      </div>
 
-            <!-- Tình trạng mẫu -->
-            <div>
-              <label class="block text-[10px] font-black text-fuchsia-650 dark:text-fuchsia-400 mb-1.5 uppercase tracking-widest">5. Tình trạng mẫu</label>
-              <div class="flex items-center gap-1.5">
-                <button type="button"
+      <div>
+        <label class="block text-[10px] font-bold text-indigo-700 dark:text-indigo-300 mb-1.5 uppercase tracking-wider">5. Tình trạng mẫu</label>
+        <div class="flex items-center gap-1.5">
+          <button type="button"
                   (click)="draft.page1Data['tinhTrangMau'] = 'Bình thường'; onDataChanged()"
                   [disabled]="isReadOnly"
                   [class]="draft.page1Data['tinhTrangMau'] === 'Bình thường'
-                    ? 'px-3 py-2 text-xs font-extrabold rounded-xl bg-fuchsia-600 text-white shadow-sm border border-fuchsia-600 transition shrink-0 active:scale-95'
-                    : 'px-3 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition shrink-0 active:scale-95'"
-                  title="Chọn Bình thường">
-                  Bình Thường
-                </button>
-                <input type="text"
-                  [(ngModel)]="draft.page1Data['tinhTrangMau']"
-                  (ngModelChange)="onDataChanged()"
-                  [disabled]="isReadOnly"
-                  placeholder="Tình trạng..."
-                  class="w-full bg-white dark:bg-slate-850 border border-slate-200/80 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 transition outline-none shadow-sm">
+                    ? 'px-3 py-2 text-xs font-bold rounded-xl bg-indigo-600 text-white shadow-xs border border-indigo-600 transition shrink-0 active:scale-95'
+                    : 'px-3 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition shrink-0 active:scale-95'"
+                  title="Chọn Bình thường">Bình Thường</button>
+          <input type="text"
+                 [(ngModel)]="draft.page1Data['tinhTrangMau']"
+                 (ngModelChange)="onDataChanged()"
+                 [disabled]="isReadOnly"
+                 placeholder="Tình trạng..."
+                 class="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition outline-none" />
+        </div>
+      </div>
+    </div>
+  </app-sop-header-metadata>
+
+  <!-- 1.5. Section 7 Đường chuẩn -->
+  <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/80 dark:border-slate-800 p-5 space-y-4">
+    <h4 class="text-xs font-bold text-slate-800 dark:text-slate-100 border-b border-slate-100 dark:border-slate-800 pb-2.5 uppercase tracking-wider flex items-center gap-2 m-0">
+      <i class="fa-solid fa-chart-line text-indigo-600 dark:text-indigo-400 text-sm" aria-hidden="true"></i>
+      <span>7. Khai Báo Đường Chuẩn</span>
+    </h4>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+      <div class="lg:col-span-5 space-y-3">
+        <div class="p-4 bg-slate-50/70 dark:bg-slate-950/30 border border-slate-200/80 dark:border-slate-800 rounded-2xl space-y-3">
+          <h5 class="text-xs font-bold text-indigo-700 dark:text-indigo-300 uppercase tracking-wider flex items-center gap-1.5 m-0">
+            <i class="fa-solid fa-flask-vial" aria-hidden="true"></i>
+            <span>Cấu Hình Mẫu QC &amp; Tên Tuỳ Chỉnh</span>
+          </h5>
+
+          <div class="flex flex-col gap-2">
+            <label class="flex items-center gap-2 cursor-pointer py-2 px-3 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 transition select-none">
+              <input type="checkbox"
+                     [(ngModel)]="draft.page1Data['hasCheckSample']"
+                     (ngModelChange)="onHasCheckSampleChange()"
+                     [disabled]="isReadOnly"
+                     class="w-4 h-4 rounded text-indigo-600 border-slate-300 dark:border-slate-700 focus:ring-indigo-500" />
+              <span class="text-xs font-bold text-slate-700 dark:text-slate-200">Áp dụng mẫu CHECK_SAMPLE</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer py-2 px-3 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 transition select-none">
+              <input type="checkbox"
+                     [(ngModel)]="draft.page1Data['hasSpikeSample']"
+                     (ngModelChange)="onDataChanged()"
+                     [disabled]="isReadOnly"
+                     class="w-4 h-4 rounded text-indigo-600 border-slate-300 dark:border-slate-700 focus:ring-indigo-500" />
+              <span class="text-xs font-bold text-slate-700 dark:text-slate-200">Tự động thêm mẫu thêm chuẩn</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer py-2 px-3 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 transition select-none">
+              <input type="checkbox"
+                     [(ngModel)]="draft.page1Data['hasSpikeNSample']"
+                     (ngModelChange)="onDataChanged()"
+                     [disabled]="isReadOnly"
+                     class="w-4 h-4 rounded text-indigo-600 border-slate-300 dark:border-slate-700 focus:ring-indigo-500" />
+              <span class="text-xs font-bold text-slate-700 dark:text-slate-200">Tự động thêm mẫu thêm chuẩn_N</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer py-2 px-3 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 transition select-none">
+              <input type="checkbox"
+                     [(ngModel)]="draft.page1Data['hasFinalSample']"
+                     (ngModelChange)="onDataChanged()"
+                     [disabled]="isReadOnly"
+                     class="w-4 h-4 rounded text-indigo-600 border-slate-300 dark:border-slate-700 focus:ring-indigo-500" />
+              <span class="text-xs font-bold text-slate-700 dark:text-slate-200">Tự động thêm mẫu kiểm tra cuối mẻ</span>
+            </label>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2.5">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Tên mẫu trắng (Blank)</label>
+              <input type="text"
+                     [(ngModel)]="draft.page1Data['blankName']"
+                     (ngModelChange)="onDataChanged()"
+                     [disabled]="isReadOnly"
+                     placeholder="BLANK"
+                     class="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition outline-none" />
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Tên mẫu thêm chuẩn (Spike)</label>
+              <input type="text"
+                     [(ngModel)]="draft.page1Data['spikeName']"
+                     (ngModelChange)="onDataChanged()"
+                     [disabled]="isReadOnly"
+                     placeholder="SPIKE"
+                     class="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition outline-none" />
+            </div>
+          </div>
+
+          @if (draft.page1Data['hasCheckSample']) {
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Tên mẫu kiểm tra</label>
+              <input type="text"
+                     [(ngModel)]="draft.page1Data['checkSampleName']"
+                     (ngModelChange)="onDataChanged()"
+                     [disabled]="isReadOnly"
+                     placeholder="CHECK_SAMPLE"
+                     class="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition outline-none" />
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Calibration Points Grid -->
+      <div class="lg:col-span-7 flex flex-col justify-center">
+        <app-sop-calibration-points
+          title="5 Điểm Đường chuẩn (Calibration Curve Points)"
+          [calibPoints]="draft.page1Data['calibPoints']"
+          [pointLabels]="['0 ppb', '5 ppb', '10 ppb', '20 ppb', '50 ppb']"
+          pointPrefix="Điểm C"
+          suffixText="IS: 20 ppb"
+          [isSuffixVisible]="true"
+          [isReadOnly]="isReadOnly"
+          (pointsChanged)="onDataChanged()">
+        </app-sop-calibration-points>
+      </div>
+    </div>
+  </div>
+
+  <!-- 1.8. Transparent Recovery Evaluation -->
+  <app-sop-recovery-section
+    title="Độ thu hồi QC Spike (Nồng độ thêm chuẩn 5 ppb)"
+    [entries]="recoveryEntries()"
+    [showFormula]="true" />
+
+  <!-- 2. Grid Sample Spreadsheet & Bulk Actions -->
+  <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/80 dark:border-slate-800 p-5 space-y-4">
+    <app-sop-spreadsheet-toolbar
+      title="Lưới nhập kết quả SOP-01"
+      [isReadOnly]="isReadOnly"
+      [canUndo]="pasteCtrl.undoStack.size > 0"
+      [undoSummary]="pasteCtrl.undoStack.peek()?.summary || ''"
+      [pendingPlan]="pasteCtrl.pendingPlan"
+      [showClearAll]="true"
+      [showMobileCardToggle]="true"
+      [mobileViewMode]="mobileViewMode()"
+      (mobileViewModeChange)="mobileViewMode.set($event)"
+      (pasteRequested)="openClipboardPaste()"
+      (undoRequested)="undoLastPaste()"
+      (confirmPaste)="confirmPendingPaste()"
+      (cancelPaste)="pasteCtrl.cancelPending()"
+      (fillNdRequested)="pasteCtrl.bumpRevision(); bulkFillND()"
+      (clearAllRequested)="confirmClearAll()">
+      <div toolbar-extra class="flex flex-wrap items-center gap-2">
+        @if (!isReadOnly) {
+          <div class="flex flex-wrap items-center gap-1.5 bg-indigo-50/50 dark:bg-indigo-950/30 border border-indigo-200/70 dark:border-indigo-900/40 rounded-xl px-2.5 py-1 text-xs">
+            <span class="font-bold text-indigo-700 dark:text-indigo-300 uppercase text-[10px]">Khay:</span>
+            <input type="number"
+                   [(ngModel)]="bulkRackStart"
+                   [disabled]="isReadOnly"
+                   aria-label="Khay chạy máy"
+                   class="w-11 h-7 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-1 text-center font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500" />
+            <span class="text-slate-500 font-bold text-[10px]">Lọ đầu:</span>
+            <input type="number"
+                   [(ngModel)]="bulkVialStartFip"
+                   [disabled]="isReadOnly"
+                   aria-label="Số lọ bắt đầu"
+                   class="w-11 h-7 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-1 text-center font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500" />
+            <span class="text-slate-500 font-bold text-[10px]">/khay:</span>
+            <input type="number"
+                   [(ngModel)]="bulkVialsPerRack"
+                   [disabled]="isReadOnly"
+                   aria-label="Số lọ tối đa mỗi khay"
+                   class="w-11 h-7 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-1 text-center font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500" />
+            <button type="button"
+                    (click)="applyBulkVials()"
+                    [disabled]="isReadOnly"
+                    class="h-7 px-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold transition flex items-center gap-1 active:scale-95 text-[11px]"
+                    title="Điền tự động số khay và số lọ cho toàn bộ danh sách mẫu">
+              <i class="fa-solid fa-wand-magic-sparkles text-[10px]" aria-hidden="true"></i>
+              <span>Điền lọ</span>
+            </button>
+          </div>
+        }
+      </div>
+    </app-sop-spreadsheet-toolbar>
+
+    <!-- Mobile Cards View (< md screens) -->
+    @if (mobileViewMode() === 'cards') {
+      <div class="md:hidden space-y-3">
+        @for (row of getDisplayRowsForFipronil(); track row.key) {
+          @if (draft.resultData[row.key]) {
+            <div class="rounded-2xl border p-3.5 space-y-3"
+                 [class]="row.isQC
+                   ? 'border-amber-200 dark:border-amber-900/50 bg-amber-50/40 dark:bg-amber-950/20'
+                   : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900'">
+              <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2 font-mono text-xs font-bold text-slate-800 dark:text-slate-100">
+                  @if (!row.isQC) {
+                    <input type="checkbox"
+                           [(ngModel)]="draft.resultData[row.key]['selected']"
+                           (ngModelChange)="onDataChanged()"
+                           [disabled]="isReadOnly"
+                           class="w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500" />
+                  } @else {
+                    <i class="fa-solid fa-flask text-amber-500 text-[11px]" aria-hidden="true"></i>
+                  }
+                  <span>{{ row.label }}</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <span class="text-[10px] font-bold text-slate-400">Lọ:</span>
+                  <input type="text"
+                         [readOnly]="isReadOnly"
+                         [(ngModel)]="draft.resultData[row.key]['loSo']"
+                         (ngModelChange)="pasteCtrl.bumpRevision(); onDataChanged()"
+                         class="w-16 h-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-center font-mono text-xs font-bold" />
                 </div>
               </div>
+              <div class="grid grid-cols-2 gap-2.5 text-xs">
+                @for (col of activeColumns; track col) {
+                  @if (isTargetAssigned(row.key, col)) {
+                    <label class="block">
+                      <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400 block mb-1 truncate">{{ columnDisplayNames()[col] || col }}</span>
+                      <input type="text"
+                             [readOnly]="isReadOnly"
+                             [(ngModel)]="draft.resultData[row.key][col]"
+                             (ngModelChange)="pasteCtrl.bumpRevision(); onCellChanged(row.key)"
+                             placeholder="..."
+                             class="h-9 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-2.5 text-center font-bold outline-none focus:border-indigo-500" />
+                    </label>
+                  }
+                }
+              </div>
             </div>
-          </app-sop-header-metadata>
+          }
+        }
+      </div>
+    }
 
-          <!-- 1.5. Section 7 Đường chuẩn -->
-          <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800/80 p-5 space-y-4 animate-fade-in">
-            <h4 class="text-xs font-black text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800 pb-2.5 uppercase tracking-wider flex items-center">
-              <i class="fa-solid fa-chart-line mr-2 text-fuchsia-500 text-sm"></i> 7. Khai Báo Đường Chuẩn
-            </h4>
+    <!-- Spreadsheet Table Grid -->
+    <div [class.hidden]="mobileViewMode() === 'cards'" class="md:!block overflow-x-auto custom-scrollbar border border-slate-200/80 dark:border-slate-800 rounded-2xl max-h-[550px] overflow-y-auto">
+      <table class="w-full text-sm border-collapse">
+        <thead>
+          <tr class="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-20 shadow-xs">
+            <th class="py-3 px-2.5 text-center w-10 sticky left-0 z-30 bg-slate-50 dark:bg-slate-950">
+              <input type="checkbox"
+                     [checked]="isAllSelected()"
+                     (change)="toggleSelectAll($event)"
+                     [disabled]="isReadOnly"
+                     title="Chọn/Bỏ chọn tất cả mẫu để xuất kết quả"
+                     class="w-4 h-4 rounded text-indigo-600 border-slate-300 dark:border-slate-700 focus:ring-indigo-500 cursor-pointer" />
+            </th>
+            <th class="py-3 px-3 text-left font-bold text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider w-24 min-w-[96px] sticky left-10 z-30 bg-slate-50 dark:bg-slate-950 border-r border-slate-200/70 dark:border-slate-800">Số lọ</th>
+            <th class="py-3 px-3 text-left font-bold text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider min-w-[140px] sticky left-[136px] z-30 bg-slate-50 dark:bg-slate-950 border-r border-slate-200/70 dark:border-slate-800">Mẫu thử</th>
 
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              <div class="lg:col-span-5 space-y-3">
-                <div class="p-4 bg-fuchsia-50/15 dark:bg-fuchsia-955/5 border border-fuchsia-100/40 dark:border-fuchsia-950/20 rounded-2xl space-y-3 shadow-xs">
-                  <h5 class="text-xs font-black text-fuchsia-700 dark:text-fuchsia-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <i class="fa-solid fa-flask-vial"></i> Cấu Hình Mẫu QC & Tên Tuỳ Chỉnh
-                  </h5>
+            @for (col of activeColumns; track col) {
+              <th class="py-3 px-3 text-left font-bold text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider min-w-[130px]">
+                {{ columnDisplayNames()[col] || col }} (µg/kg)
+              </th>
+            }
 
-                  <div class="flex flex-col gap-2">
-                    <label class="flex items-center gap-2 cursor-pointer py-2 px-3 bg-white dark:bg-slate-850 hover:bg-slate-50 dark:hover:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-800 transition select-none shadow-2xs">
-                      <input type="checkbox"
-                        [(ngModel)]="draft.page1Data['hasCheckSample']"
-                        (ngModelChange)="onHasCheckSampleChange()"
-                        [disabled]="isReadOnly"
-                        class="w-4 h-4 rounded text-fuchsia-600 border-slate-350 dark:border-slate-700 focus:ring-fuchsia-500 dark:bg-slate-900">
-                        <span class="text-xs font-bold text-slate-700 dark:text-slate-200">Áp dụng mẫu CHECK_SAMPLE</span>
-                      </label>
-                    <label class="flex items-center gap-2 cursor-pointer py-2 px-3 bg-white dark:bg-slate-850 hover:bg-slate-50 dark:hover:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-800 transition select-none shadow-2xs">
-                      <input type="checkbox"
-                        [(ngModel)]="draft.page1Data['hasSpikeSample']"
-                        (ngModelChange)="onDataChanged()"
-                        [disabled]="isReadOnly"
-                        class="w-4 h-4 rounded text-fuchsia-600 border-slate-350 dark:border-slate-700 focus:ring-fuchsia-500 dark:bg-slate-900">
-                        <span class="text-xs font-bold text-slate-700 dark:text-slate-200">Tự động thêm mẫu thêm chuẩn</span>
-                      </label>
-                    <label class="flex items-center gap-2 cursor-pointer py-2 px-3 bg-white dark:bg-slate-850 hover:bg-slate-50 dark:hover:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-800 transition select-none shadow-2xs">
-                      <input type="checkbox"
-                        [(ngModel)]="draft.page1Data['hasSpikeNSample']"
-                        (ngModelChange)="onDataChanged()"
-                        [disabled]="isReadOnly"
-                        class="w-4 h-4 rounded text-fuchsia-600 border-slate-350 dark:border-slate-700 focus:ring-fuchsia-500 dark:bg-slate-900">
-                        <span class="text-xs font-bold text-slate-700 dark:text-slate-200">Tự động thêm mẫu thêm chuẩn_N</span>
-                      </label>
-                    <label class="flex items-center gap-2 cursor-pointer py-2 px-3 bg-white dark:bg-slate-850 hover:bg-slate-50 dark:hover:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-800 transition select-none shadow-2xs">
-                      <input type="checkbox"
-                        [(ngModel)]="draft.page1Data['hasFinalSample']"
-                        (ngModelChange)="onDataChanged()"
-                        [disabled]="isReadOnly"
-                        class="w-4 h-4 rounded text-fuchsia-600 border-slate-350 dark:border-slate-700 focus:ring-fuchsia-500 dark:bg-slate-900">
-                        <span class="text-xs font-bold text-slate-700 dark:text-slate-200">Tự động thêm mẫu kiểm tra cuối mẻ</span>
-                      </label>
-                  </div>
+            <th class="py-3 px-3 text-center font-bold text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider w-24">Thao tác</th>
+          </tr>
+        </thead>
 
-                    <div class="grid grid-cols-2 gap-2.5">
-                      <div>
-                        <label class="block text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase mb-1.5 tracking-wider">Tên mẫu trắng (blank)</label>
-                        <input type="text"
-                          [(ngModel)]="draft.page1Data['blankName']"
-                          (ngModelChange)="onDataChanged()"
-                          [disabled]="isReadOnly"
-                          placeholder="BLANK"
-                          class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 transition outline-none shadow-xs">
-                        </div>
-                        <div>
-                          <label class="block text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase mb-1.5 tracking-wider">Tên mẫu thêm chuẩn (spike)</label>
-                          <input type="text"
-                            [(ngModel)]="draft.page1Data['spikeName']"
-                            (ngModelChange)="onDataChanged()"
-                            [disabled]="isReadOnly"
-                            placeholder="SPIKE"
-                            class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 transition outline-none shadow-xs">
-                          </div>
-                        </div>
-
-                        @if (draft.page1Data['hasCheckSample']) {
-                          <div class="animate-fade-in">
-                            <label class="block text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase mb-1.5 tracking-wider">Tên mẫu kiểm tra</label>
-                            <input type="text"
-                              [(ngModel)]="draft.page1Data['checkSampleName']"
-                              (ngModelChange)="onDataChanged()"
-                              [disabled]="isReadOnly"
-                              placeholder="CHECK_SAMPLE"
-                              class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 transition outline-none shadow-xs">
-                            </div>
-                          }
-                        </div>
-                      </div>
-
-                      <!-- Calibration Points Grid -->
-                      <div class="lg:col-span-7 flex flex-col justify-center">
-                        <app-sop-calibration-points
-                          title="5 Điểm Đường chuẩn (Calibration Curve Points)"
-                          [calibPoints]="draft.page1Data['calibPoints']"
-                          [pointLabels]="['0 ppb', '5 ppb', '10 ppb', '20 ppb', '50 ppb']"
-                          pointPrefix="Điểm C"
-                          suffixText="IS: 20 ppb"
-                          [isSuffixVisible]="true"
-                          [isFuchsiaRing]="true"
-                          [isReadOnly]="isReadOnly"
-                          (pointsChanged)="onDataChanged()">
-                        </app-sop-calibration-points>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- 2. Grid Sample Spreadsheet & Bulk Actions -->
-                  <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800/80 p-5 space-y-4">
-                    <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-3.5">
-                      <h4 class="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
-                        <i class="fa-solid fa-table-cells mr-1 text-fuchsia-500 text-sm"></i> Lưới nhập kết quả SOP-01
-                      </h4>
-
-                      <div class="flex flex-wrap items-center gap-3">
-                        <span class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mr-1">Thao tác nhanh:</span>
-
-                          <button (click)="bulkFillND()"
-                            [disabled]="isReadOnly"
-                            class="px-3 py-2 bg-slate-50 dark:bg-slate-850 hover:bg-amber-50 dark:hover:bg-amber-955/20 text-slate-700 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 border border-slate-200 dark:border-slate-800 hover:border-amber-200 dark:hover:border-amber-900/30 rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 active:scale-95 shadow-2xs"
-                            title="Đặt toàn bộ các ô kết quả chưa điền là ND">
-                            <i class="fa-solid fa-pen-clip text-amber-500"></i>
-                            <span>Điền ND Ô Trống</span>
-                          </button>
-
-                          <button (click)="bulkClearAll()"
-                            [disabled]="isReadOnly"
-                            class="px-3 py-2 bg-slate-50 dark:bg-slate-850 hover:bg-rose-50 dark:hover:bg-rose-955/20 text-slate-600 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 border border-slate-200 dark:border-slate-800 hover:border-rose-200 dark:hover:border-rose-900/30 rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 active:scale-95 shadow-2xs"
-                            title="Xóa toàn bộ các ô kết quả của bảng">
-                            <i class="fa-solid fa-trash-can text-rose-500"></i>
-                            <span>Xóa Hết Bảng</span>
-                          </button>
-
-                          <!-- Quick Vial Rack Input for Fipronil -->
-                          <div class="flex items-center gap-2 bg-fuchsia-50/15 dark:bg-fuchsia-955/5 border border-fuchsia-100/40 dark:border-fuchsia-950/20 rounded-2xl px-3.5 py-1.5 text-xs shadow-2xs">
-                            <span class="font-black text-fuchsia-700 dark:text-fuchsia-400 uppercase tracking-widest">Nhập nhanh số lọ:</span>
-                            <div class="flex items-center gap-1.5">
-                              <span class="text-slate-450 dark:text-slate-500 font-bold">Khay:</span>
-                              <input type="number"
-                                [(ngModel)]="bulkRackStart"
-                                [disabled]="isReadOnly"
-                                title="Khay chạy máy"
-                                placeholder="Khay"
-                                class="w-12 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-1.5 py-0.5 text-center font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 outline-none shadow-inner">
-                              </div>
-                              <div class="flex items-center gap-1.5">
-                                <span class="text-slate-450 dark:text-slate-500 font-bold">Lọ đầu:</span>
-                                <input type="number"
-                                  [(ngModel)]="bulkVialStartFip"
-                                  [disabled]="isReadOnly"
-                                  title="Số lọ bắt đầu"
-                                  placeholder="Lọ"
-                                  class="w-12 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-1.5 py-0.5 text-center font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 outline-none shadow-inner">
-                                </div>
-                                <div class="flex items-center gap-1.5">
-                                  <span class="text-slate-450 dark:text-slate-500 font-bold">Số lọ/khay:</span>
-                                  <input type="number"
-                                    [(ngModel)]="bulkVialsPerRack"
-                                    [disabled]="isReadOnly"
-                                    title="Số lọ tối đa trên một khay"
-                                    placeholder="Tối đa"
-                                    class="w-12 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-1.5 py-0.5 text-center font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 outline-none shadow-inner">
-                                  </div>
-                                   <button (click)="applyBulkVials()"
-                                     [disabled]="isReadOnly"
-                                    class="px-3 py-1 bg-fuchsia-600 hover:bg-fuchsia-700 text-white rounded-xl font-extrabold transition shadow-sm flex items-center gap-1 active:scale-95"
-                                    title="Điền tự động số khay và số lọ cho toàn bộ danh sách mẫu">
-                                    <i class="fa-solid fa-magic text-[10px]"></i>
-                                    <span>Điền Nhanh</span>
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-
-                            <!-- Spreadsheet Table Grid -->
-                            <div class="overflow-x-auto custom-scrollbar border border-slate-200/80 dark:border-slate-800 rounded-2xl max-h-[550px] overflow-y-auto">
-                              <table class="w-full text-sm border-collapse">
-                                <thead>
-                                  <tr class="bg-slate-50 dark:bg-slate-955 border-b border-slate-250/80 dark:border-slate-800 sticky top-0 z-20 shadow-2xs">
-                                    <th class="py-3 px-3 text-center w-12">
-                                      <input type="checkbox"
-                                             [checked]="isAllSelected()"
-                                             (change)="toggleSelectAll($event)"
-                                             [disabled]="isReadOnly"
-                                             title="Chọn/Bỏ chọn tất cả mẫu để xuất kết quả"
-                                             class="w-4 h-4 rounded text-fuchsia-600 border-slate-350 dark:border-slate-700 focus:ring-fuchsia-500 dark:bg-slate-900 cursor-pointer">
-                                    </th>
-                                    <th class="py-3 px-4 text-left font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest w-24">Số lọ</th>
-                                    <th class="py-3 px-4 text-left font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest min-w-[140px]">Mẫu thử</th>
-
-                                    <!-- Dynamic active columns -->
-                                    @for (col of activeColumns; track col) {
-                                      <th class="py-3 px-4 text-left font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest min-w-[130px]">
-                                        {{ columnDisplayNames()[col] || col }} (µg/kg)
-                                      </th>
-                                    }
-
-                                    <th class="py-3 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest w-28">Hành động</th>
-                                  </tr>
-                                </thead>
-
-                                <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80">
-                                  @for (row of getDisplayRowsForFipronil(); track row.key; let rowIdx = $index) {
-                                    @if (draft.resultData[row.key]) {
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80">
+          @for (row of getDisplayRowsForFipronil(); track row.key; let rowIdx = $index) {
+            @if (draft.resultData[row.key]) {
               <tr [class]="row.isQC
-                    ? 'bg-amber-50/15 dark:bg-amber-955/5 border-l-4 border-l-amber-500/80 hover:bg-amber-50/25 dark:hover:bg-amber-955/10 transition-colors'
-                    : 'hover:bg-slate-50/40 dark:hover:bg-slate-800/20 transition-all focus-within:bg-fuchsia-50/10 dark:focus-within:bg-fuchsia-500/5 border-l-4 border-l-transparent focus-within:border-l-fuchsia-500 duration-150 ' + (draft.resultData[row.key]['selected'] === false ? 'opacity-60' : '')">
+                    ? 'bg-amber-50/50 dark:bg-amber-950/20 border-l-4 border-l-amber-500 hover:bg-amber-50/80 transition-colors'
+                    : 'bg-white dark:bg-slate-900 hover:bg-slate-50/70 dark:hover:bg-slate-800/30 focus-within:bg-indigo-50/20 dark:focus-within:bg-indigo-950/20 border-l-4 border-l-transparent focus-within:border-l-indigo-500 transition-colors ' + (draft.resultData[row.key]['selected'] === false ? 'opacity-60' : '')">
+                <td class="py-2 px-2.5 text-center w-10 sticky left-0 z-10 bg-inherit">
+                  @if (!row.isQC) {
+                    <input type="checkbox"
+                           [(ngModel)]="draft.resultData[row.key]['selected']"
+                           (ngModelChange)="onDataChanged()"
+                           [disabled]="isReadOnly"
+                           title="Chọn xuất kết quả cho mẫu này"
+                           class="w-4 h-4 rounded text-indigo-600 border-slate-300 dark:border-slate-700 focus:ring-indigo-500 cursor-pointer" />
+                  } @else {
+                    <input type="checkbox" checked disabled class="w-4 h-4 rounded border-slate-300 text-amber-500/60 cursor-not-allowed" />
+                  }
+                </td>
 
-                                        <!-- Select Checkbox -->
-                                        <td class="py-2.5 px-3 text-center">
-                                          @if (!row.isQC) {
-                                            <input type="checkbox"
-                                                   [(ngModel)]="draft.resultData[row.key]['selected']"
-                                                   (ngModelChange)="onDataChanged()"
-                                                   [disabled]="isReadOnly"
-                                                   title="Chọn xuất kết quả cho mẫu này"
-                                                   class="w-4 h-4 rounded text-fuchsia-600 border-slate-350 dark:border-slate-700 focus:ring-fuchsia-500 dark:bg-slate-900 cursor-pointer">
-                                          } @else {
-                                            <input type="checkbox" checked disabled class="w-4 h-4 rounded border-slate-300 text-amber-500/50 dark:text-amber-500/30 focus:ring-amber-500 cursor-not-allowed">
-                                          }
-                                        </td>
+                <td class="py-1.5 px-2.5 w-24 min-w-[96px] sticky left-10 z-10 bg-inherit border-r border-slate-100 dark:border-slate-800">
+                  <input type="text"
+                         [(ngModel)]="draft.resultData[row.key]['loSo']"
+                         (ngModelChange)="pasteCtrl.bumpRevision(); onDataChanged()"
+                         [readOnly]="isReadOnly"
+                         [id]="'cell-' + rowIdx + '-loSo'"
+                         (keydown)="handleGridNavigation($event, rowIdx, 'loSo', 0)"
+                         (paste)="onCellPaste($event, rowIdx, 0)"
+                         (focus)="$any($event.target).select()"
+                         placeholder="..."
+                         class="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-2 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition outline-none text-center" />
+                </td>
 
-                                        <!-- Vial No input cell -->
-                                        <td class="py-1.5 px-3 w-24">
-                                          <input type="text"
-                                            [(ngModel)]="draft.resultData[row.key]['loSo']"
-                                            (ngModelChange)="onDataChanged()"
-                                            [disabled]="isReadOnly"
-                                            [id]="'cell-' + rowIdx + '-loSo'"
-                                            (keydown)="handleGridNavigation($event, rowIdx, 'loSo', 0)"
-                                            (focus)="$any($event.target).select()"
-                                            placeholder="..."
-                                            class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-extrabold focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 transition outline-none text-center shadow-inner">
-                                          </td>
+                <td class="py-2 px-3 font-mono font-bold text-xs text-slate-700 dark:text-slate-200 break-all sticky left-[136px] z-10 bg-inherit border-r border-slate-100 dark:border-slate-800">
+                  @if (row.isQC) {
+                    <span class="inline-flex items-center gap-1.5 text-amber-700 dark:text-amber-300">
+                      <i class="fa-solid fa-flask text-[10px]" aria-hidden="true"></i> {{ row.label }}
+                    </span>
+                  } @else {
+                    <span>{{ row.label }}</span>
+                  }
+                </td>
 
-                                          <!-- Sample/QC Identifier with tag styling -->
-                                          <td class="py-2.5 px-4 font-mono font-extrabold text-xs text-slate-700 dark:text-slate-300 break-all">
-                                            @if (row.isQC) {
-                                              <span class="inline-flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
-                                                <i class="fa-solid fa-flask text-[10px]"></i> {{ row.label }}
-                                              </span>
-                                            } @else {
-                                              <span>{{ row.label }}</span>
-                                            }
-                                          </td>
+                @for (col of activeColumns; track col; let colIdx = $index) {
+                  <td class="py-1.5 px-2">
+                    <input type="text"
+                           [(ngModel)]="draft.resultData[row.key][col]"
+                           (ngModelChange)="pasteCtrl.bumpRevision(); onCellChanged(row.key)"
+                           [id]="'cell-' + rowIdx + '-' + col"
+                           [readOnly]="isReadOnly"
+                           [disabled]="!isTargetAssigned(row.key, col)"
+                           (keydown)="handleGridNavigation($event, rowIdx, col, colIdx + 1)"
+                           (paste)="onCellPaste($event, rowIdx, colIdx + 1)"
+                           (focus)="$any($event.target).select()"
+                           placeholder="..."
+                           class="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition outline-none text-center disabled:bg-slate-100 dark:disabled:bg-slate-900 disabled:opacity-60 disabled:cursor-not-allowed" />
+                  </td>
+                }
 
-                                          <!-- Dynamic active columns inputs -->
-                                          @for (col of activeColumns; track col; let colIdx = $index) {
-                                            <td class="py-1.5 px-2">
-                                              <input type="text"
-                                                [(ngModel)]="draft.resultData[row.key][col]"
-                                                (ngModelChange)="onCellChanged(row.key)"
-                                                [id]="'cell-' + rowIdx + '-' + col"
-                                                [disabled]="isReadOnly || !isTargetAssigned(row.key, col)"
-                                                (keydown)="handleGridNavigation($event, rowIdx, col, colIdx + 1)"
-                                                (focus)="$any($event.target).select()"
-                                                placeholder="..."
-                                                class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-extrabold focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 transition outline-none text-center shadow-inner disabled:bg-slate-100 dark:disabled:bg-slate-900 disabled:opacity-60 disabled:cursor-not-allowed">
-                                              </td>
-                                            }
-
-                                            <!-- Quick Row actions / Badges -->
-                                            <td class="py-1.5 px-4 text-center">
-                                              @if (row.isQC) {
-                                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-amber-500/10 text-amber-500 dark:bg-amber-400/5 dark:text-amber-400 border border-amber-500/20">
-                                                  QC Active
-                                                </span>
-                                              } @else {
-                                                <button (click)="copyRowToAll(row.key)"
-                                                  [disabled]="isReadOnly"
-                                                  class="p-1.5 bg-slate-50 hover:bg-fuchsia-600 dark:bg-slate-850 dark:hover:bg-fuchsia-600 text-slate-500 hover:text-white dark:text-slate-400 rounded-lg text-[10px] font-bold transition border border-slate-200 dark:border-slate-800 active:scale-90"
-                                                  title="Sao chép kết quả của dòng này cho tất cả các dòng còn lại">
-                                                  <i class="fa-solid fa-copy"></i>
-                                                </button>
-                                              }
-                                            </td>
-                                          </tr>
-                                        }
-                                      }
-                                    </tbody>
-                                  </table>
-                                </div>
-                              </div>
-                            </div>
+                <td class="py-1.5 px-3 text-center">
+                  @if (row.isQC) {
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300 border border-amber-200/70 dark:border-amber-800/50">
+                      QC
+                    </span>
+                  } @else {
+                    <button type="button"
+                            (click)="pasteCtrl.bumpRevision(); copyRowToAll(row.key)"
+                            [disabled]="isReadOnly"
+                            aria-label="Sao chép kết quả dòng {{ row.label }} sang tất cả mẫu"
+                            class="p-1.5 bg-slate-50 hover:bg-indigo-600 dark:bg-slate-800 dark:hover:bg-indigo-600 text-slate-500 hover:text-white dark:text-slate-300 rounded-lg text-[10px] font-bold transition border border-slate-200 dark:border-slate-700 active:scale-90 disabled:opacity-40"
+                            title="Sao chép kết quả của dòng này cho tất cả các dòng còn lại">
+                      <i class="fa-solid fa-copy" aria-hidden="true"></i>
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

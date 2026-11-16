@@ -79,25 +79,35 @@ describe('results entry shared UI primitive integration', () => {
     assert.match(template, /<app-result-prefix-tabs\b/);
     assert.match(template, /<app-sop-entry-outlet\b/);
     assert.match(template, /<app-excel-result-import-modal\b/);
+    assert.match(template, /<app-result-pdf-report-pane\b/);
+    assert.match(template, /md:hidden[^\"]*border-t[^\"]*bg-white\/95/);
     assert.match(template, /Tách phiếu in/);
     assert.match(template, /samplesPerReport\.set/);
     assert.doesNotMatch(header, /Tách phiếu in/);
   });
 
-  it('reuses timeline and thin progress primitives for report publication history', () => {
-    const component = read('./components/result-active-reports-panel.component.ts');
-    const template = read('./components/result-active-reports-panel.component.html');
+  it('reuses timeline and thin progress primitives in the unified PDF & report history pane', () => {
+    const component = read('./components/result-pdf-report-pane.component.ts');
 
     assert.match(component, /AppUiTimelineComponent/);
     assert.match(component, /AppUiProgressComponent/);
-    assert.match(component, /getHistoryTimelineItems\(\): TimelineItem\[]/);
-    assert.match(template, /<app-ui-timeline\b/);
-    assert.match(template, /\[items\]="getHistoryTimelineItems\(\)"/);
-    assert.match(template, /<app-ui-progress\b/);
-    assert.match(template, /ariaLabel="Tiến độ xuất báo cáo"/);
+    assert.match(component, /buildBatchReportsProjection/);
+    assert.match(component, /<app-ui-timeline\b/);
+    assert.match(component, /<app-ui-progress\b/);
+    assert.match(component, /ariaLabel="Tiến độ xuất báo cáo"/);
   });
 
-  it('uses the shared detail header contract on batch details', () => {
+  it('enforces the master-detail compound grid contract for Type3B & 9.14 full forms', () => {
+    const component = read('./sops/shared/sop-master-detail-compound-grid.component.ts');
+
+    assert.match(component, /lg:w-\[270px\]/);
+    assert.match(component, /lg:hidden sticky top-1/);
+    assert.match(component, /Chỉ chất chỉ định/);
+    assert.match(component, /undoStack\.undoLast/);
+    assert.match(component, /Ket qua|Kết quả/);
+  });
+
+  it('uses the shared detail header and split PDF pane contract on batch details', () => {
     const component = read('../results-view/batch-detail-view.component.ts');
 
     assert.match(component, /AppPageHeaderComponent/);
@@ -107,5 +117,7 @@ describe('results entry shared UI primitive integration', () => {
     assert.match(component, /pageHeaderActions/);
     assert.match(component, /pageHeaderMeta/);
     assert.match(component, /title="Chi tiết kết quả mẻ phân tích"/);
+    assert.match(component, /<app-result-pdf-report-pane\b/);
+    assert.match(component, /\[isReadOnly\]="true"/);
   });
 });

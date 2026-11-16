@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, OnDestroy, computed, effect, HostListener } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy, computed, effect, HostListener, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
@@ -41,13 +41,27 @@ import {
   buildChloroformPdfPayload
 } from './result-pdf-helper';
 import { buildPublishPreflightSummary, PublishPreflightSummary } from './result-preflight';
+import {
+  buildLivePreflightState,
+  LivePreflightState,
+  PreflightActionItem,
+  resolvePublishPreflightConfig,
+} from './result-preflight-ui';
+import { buildBatchReportsProjection } from './services/result-reports-projection';
 import { buildReportCoverage } from './report-completion.utils';
+import {
+  canUserEditResults,
+  evaluateResultWriteGuard,
+  isRunActivelyLockedByOthers,
+  ResultEditCapability,
+  ResultWriteOperation
+} from './services/result-write-guard';
 
 // Refactored sub-components
 import { ResultPrefixTabsComponent } from './components/result-prefix-tabs.component';
 import { ResultRunMetadataComponent } from './components/result-run-metadata.component';
 import { ResultEntryStatusBannerComponent } from './components/result-entry-status-banner.component';
-import { ResultActiveReportsPanelComponent } from './components/result-active-reports-panel.component';
+import { ResultPdfReportPaneComponent, PdfPaneModalEvent } from './components/result-pdf-report-pane.component';
 import { ResultEntryHeaderComponent } from './components/result-entry-header.component';
 import { SopEntryOutletComponent } from './components/sop-entry-outlet.component';
 import { ExcelResultImportModalComponent } from './components/excel-result-import-modal.component';
@@ -73,7 +87,7 @@ interface AutoSaveEnvelope {
     ResultPrefixTabsComponent,
     ResultRunMetadataComponent,
     ResultEntryStatusBannerComponent,
-    ResultActiveReportsPanelComponent,
+    ResultPdfReportPaneComponent,
     ResultEntryHeaderComponent,
     SopEntryOutletComponent,
     ExcelResultImportModalComponent,
@@ -106,37 +120,47 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   private hasUnsavedChangesActivity = false;
   private previousLockedBy: string | null = null;
 
+  canEditResults = computed(() => canUserEditResults(this.getEditCapability()));
+
   isReadOnly = computed(() => {
+    if (!this.canEditResults()) return true;
     const d = this.draft();
     const r = this.run();
     const user = this.auth.currentUser();
-    
+
     if (d?.status === 'completed') return true;
-    if (r?.lockedBy && user && r.lockedBy.toLowerCase() !== user.email.toLowerCase()) {
-      if (r.lastActiveAt) {
-        const lastActive = this.convertToDate(r.lastActiveAt);
-        if (lastActive && (new Date().getTime() - lastActive.getTime()) > 3 * 60 * 1000) {
-          return false;
-        }
-      }
-      return true;
-    }
-    return false;
+    return isRunActivelyLockedByOthers(r, user?.email);
   });
 
   lockedByOthers = computed(() => {
     const r = this.run();
     const user = this.auth.currentUser();
-    if (!r?.lockedBy || !user || r.lockedBy.toLowerCase() === user.email.toLowerCase()) return false;
-    
-    if (r.lastActiveAt) {
-      const lastActive = this.convertToDate(r.lastActiveAt);
-      if (lastActive && (new Date().getTime() - lastActive.getTime()) > 3 * 60 * 1000) {
-        return false;
-      }
-    }
-    return true;
+    return isRunActivelyLockedByOthers(r, user?.email);
   });
+
+  private getEditCapability(): ResultEditCapability {
+    return {
+      isManager: this.auth.isManager(),
+      canRunBatch: this.auth.canRunBatch(),
+      canApprove: this.auth.canApprove(),
+      permissions: this.auth.userPermissions()
+    };
+  }
+
+  private assertWriteAllowed(operation: ResultWriteOperation, showToast = true): boolean {
+    const guard = evaluateResultWriteGuard({
+      capability: this.getEditCapability(),
+      userEmail: this.auth.currentUser()?.email,
+      run: this.run(),
+      draftStatus: this.draft()?.status,
+      isPublishing: this.isPublishing(),
+      operation
+    });
+    if (!guard.allowed && showToast && guard.reason) {
+      this.toast.show(guard.reason, 'error');
+    }
+    return guard.allowed;
+  }
 
   convertToDate(timestamp: any): Date | null {
     return timestampToDate(timestamp);
@@ -157,9 +181,10 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   }
 
   private releaseLockIfNeeded() {
+    if (!this.canEditResults()) return;
     const r = this.run();
     const user = this.auth.currentUser();
-    if (r && user && r.lockedBy === user.email) {
+    if (r && user && r.lockedBy?.toLowerCase() === user.email.toLowerCase()) {
       this.resultService.releaseLock(this.requestId);
     }
   }
@@ -201,6 +226,8 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   private autoSavePaused = false;
   private autoSaveQueue: Promise<void> = Promise.resolve();
   private completionReconcileChecked = false;
+  private lockAcquireInFlight = false;
+  private isTakingOverLock = false;
 
   // Emergency feature toggle for the new modular strategy architecture
   readonly ENABLE_MODULAR_SOPS = true;
@@ -244,6 +271,119 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   // Actions dropdown toggle (click-based instead of hover)
   showActionsMenu = signal(false);
   private sopReassignmentRouteRequested = false;
+
+  // Workspace Split-Pane, Focus Mode & Live Preflight
+  isFocusMode = this.state.focusMode;
+  isPdfPaneOpen = signal(false);
+  pdfPaneInitialTab = signal<'preview' | 'reports'>('preview');
+  selectedPdfReportId = signal('');
+  focusedSampleCode = signal('');
+  workspaceWidth = signal(typeof window !== 'undefined' ? window.innerWidth : 1280);
+  canSplitSideBySide = computed(() => this.workspaceWidth() >= 1120);
+  private workspaceResizeObserver?: ResizeObserver;
+  private preflightJumpTimers: ReturnType<typeof setTimeout>[] = [];
+
+  @ViewChild('workspaceContainer')
+  set workspaceContainerRef(el: ElementRef<HTMLElement> | undefined) {
+    this.workspaceResizeObserver?.disconnect();
+    this.workspaceResizeObserver = undefined;
+    if (!el) return;
+    const measure = () => {
+      const w = el.nativeElement.clientWidth;
+      if (w > 0) this.workspaceWidth.set(w);
+    };
+    measure();
+    if (typeof ResizeObserver !== 'undefined') {
+      this.workspaceResizeObserver = new ResizeObserver(entries => {
+        const width = entries[0]?.contentRect?.width;
+        if (typeof width === 'number' && width > 0) {
+          this.workspaceWidth.set(width);
+        }
+      });
+      this.workspaceResizeObserver.observe(el.nativeElement);
+    }
+  }
+
+  @HostListener('window:lims-active-sample-changed', ['$event'])
+  onChildActiveSampleChanged(event: Event) {
+    const sampleCode = (event as CustomEvent<{ sampleCode?: string }>).detail?.sampleCode;
+    if (typeof sampleCode === 'string' && sampleCode) {
+      this.focusedSampleCode.set(sampleCode);
+    }
+  }
+
+  toggleFocusMode() {
+    this.state.toggleFocusMode();
+  }
+
+  togglePdfPane() {
+    if (!this.isPdfPaneOpen()) {
+      this.pdfPaneInitialTab.set('preview');
+    }
+    this.isPdfPaneOpen.update(v => !v);
+  }
+
+  openReportsHistoryPane() {
+    this.pdfPaneInitialTab.set('reports');
+    this.isPdfPaneOpen.set(true);
+  }
+
+  closePdfPane() {
+    this.isPdfPaneOpen.set(false);
+  }
+
+  onPdfPaneModalPreview(event: PdfPaneModalEvent) {
+    this.openPdfPreview(
+      event.pdfUrl,
+      event.docsUrl,
+      event.version,
+      event.publishedBy,
+      event.publishedAt,
+      event.prefix
+    );
+  }
+
+  private announceSelectSample(sampleCode: string) {
+    if (!sampleCode || typeof window === 'undefined') return;
+    window.dispatchEvent(new CustomEvent('lims-preflight-select-sample', { detail: { sampleCode } }));
+  }
+
+  jumpToPreflightTarget(item: PreflightActionItem) {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    const runScrollAndFocus = (selector: string) => {
+      const targetEl = document.querySelector(selector) as HTMLElement | null;
+      if (!targetEl) return;
+      targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const focusable = (targetEl.matches('input, select, textarea, button')
+        ? targetEl
+        : targetEl.querySelector('input, select, textarea, button')) as HTMLElement | null;
+      focusable?.focus({ preventScroll: true });
+    };
+
+    if (item.targetKind === 'date_analyst' || item.targetKind === 'date_reviewer' || item.targetKind === 'r2') {
+      window.dispatchEvent(new CustomEvent('lims-preflight-expand-metadata'));
+      const timer = setTimeout(() => {
+        runScrollAndFocus(`[data-preflight-target="${item.targetKind}"]`);
+      }, 90);
+      this.preflightJumpTimers.push(timer);
+      return;
+    }
+
+    if (item.targetKind === 'sample_selection') {
+      runScrollAndFocus('[data-preflight-target="sample_selection"], .sop-sample-selector');
+      return;
+    }
+
+    if (item.targetKind === 'incomplete_sample' && item.sampleCode) {
+      this.focusedSampleCode.set(item.sampleCode);
+      this.announceSelectSample(item.sampleCode);
+      const timer = setTimeout(() => {
+        const escaped = typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(item.sampleCode!) : item.sampleCode!;
+        runScrollAndFocus(`[data-sample-code="${escaped}"]`);
+      }, 90);
+      this.preflightJumpTimers.push(timer);
+    }
+  }
 
   canReassignSop = computed(() => {
     const request = this.run();
@@ -582,6 +722,26 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     return published;
   });
 
+  reportsProjection = computed(() => buildBatchReportsProjection(this.run(), this.draft()));
+
+  livePreflightState = computed<LivePreflightState | null>(() => {
+    const r = this.run();
+    const d = this.draft();
+    const conf = this.config();
+    if (!r || !d || !conf) return null;
+    const preflightConfig = resolvePublishPreflightConfig(this.configKey(), d, conf);
+    return buildLivePreflightState({
+      run: r,
+      draft: d,
+      config: preflightConfig,
+      configKey: this.configKey(),
+      activeFilter: this.activeFilter(),
+      samplesPerReport: this.samplesPerReport(),
+      unpublishedSamples: this.samplePublishProgress().unpublishedSamples,
+      masterTargets: this.masterTargets(),
+    });
+  });
+
   getDisplayDevice(): string {
     const r = this.run();
     if (!r) return 'GC-MS/MS / LC-MS/MS';
@@ -653,17 +813,25 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     effect(() => {
       const user = this.auth.currentUser();
       const runDoc = this.run();
+      if (!this.canEditResults() || this.lockAcquireInFlight || this.isTakingOverLock) return;
       if (user && runDoc && runDoc.status !== 'completed') {
         const isLockedByMe = runDoc.lockedBy?.toLowerCase() === user.email.toLowerCase();
-        let isStale = false;
-        if (runDoc.lockedBy && !isLockedByMe && runDoc.lastActiveAt) {
-          const lastActive = this.convertToDate(runDoc.lastActiveAt);
-          if (lastActive && (new Date().getTime() - lastActive.getTime()) > 3 * 60 * 1000) {
-            isStale = true;
-          }
-        }
-        if (!runDoc.lockedBy || isStale) {
-          this.resultService.acquireLock(this.requestId, user.email, user.displayName);
+        const lockedOthers = isRunActivelyLockedByOthers(runDoc, user.email);
+        if (!runDoc.lockedBy || (!isLockedByMe && !lockedOthers)) {
+          this.lockAcquireInFlight = true;
+          void this.resultService
+            .acquireLock(this.requestId, user.email, user.displayName, { mode: 'acquire' })
+            .then((result) => {
+              if (!result.acquired && result.reason === 'locked_by_others') {
+                this.toast.show(
+                  `Mẻ này vừa được mở chỉnh sửa bởi ${result.lockedByName || 'người dùng khác'}.`,
+                  'info'
+                );
+              }
+            })
+            .finally(() => {
+              this.lockAcquireInFlight = false;
+            });
         }
       }
     });
@@ -689,19 +857,23 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     this.heartbeatInterval = setInterval(async () => {
       const r = this.run();
       const user = this.auth.currentUser();
-      if (r && user && r.lockedBy === user.email && this.hasUnsavedChangesActivity) {
+      if (this.canEditResults() && r && user && r.lockedBy?.toLowerCase() === user.email.toLowerCase() && this.hasUnsavedChangesActivity) {
         this.hasUnsavedChangesActivity = false;
         await this.resultService.updateHeartbeat(this.requestId);
       }
-      if (r?.resultStatusReason === 'manual_edit' && this.autoSaveStatus() === 'synced') {
+      if (this.canEditResults() && r?.resultStatusReason === 'manual_edit' && this.autoSaveStatus() === 'synced') {
         await this.resultService.relockUnchangedManualEdit(this.requestId);
       }
     }, 60000);
     
-    // Read prefix from route query params
+    // Read prefix & sample from route query params
     this.route.queryParams.subscribe(params => {
       if (params['prefix'] !== undefined) {
         this.activeFilter.set(params['prefix']);
+      }
+      if (params['sample']) {
+        this.focusedSampleCode.set(params['sample']);
+        this.announceSelectSample(params['sample']);
       }
       if (params['action'] === 'reassign-sop') {
         this.sopReassignmentRouteRequested = true;
@@ -720,8 +892,12 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
         const user = this.auth.currentUser();
 
         // Phát hiện bị giành khóa chỉnh sửa (Take Over - Optimized 2)
-        if (this.previousLockedBy && user && this.previousLockedBy === user.email && runDoc.lockedBy && runDoc.lockedBy !== user.email) {
+        if (this.previousLockedBy && user && this.previousLockedBy.toLowerCase() === user.email.toLowerCase() && runDoc.lockedBy && runDoc.lockedBy.toLowerCase() !== user.email.toLowerCase()) {
+          this.autoSaveGeneration++;
           this.toast.show(`Quyền chỉnh sửa mẻ này đã bị giành bởi ${runDoc.lockedByName || 'người dùng khác'}. Trạng thái của bạn chuyển về Chỉ xem.`, 'warning');
+          if (this.autoSaveStatus() !== 'synced') {
+            this.autoSaveStatus.set('synced');
+          }
           
           // Lưu backup cục bộ phần thay đổi chưa kịp lưu
           if (this.draft()) {
@@ -751,8 +927,10 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
             }
 
             const explicitEditMode = this.route.snapshot.queryParamMap.get('edit') === '1';
-            if (draftDoc.status === 'completed' && !explicitEditMode) {
-              const queryParams = this.activeFilter() !== 'ALL' ? { prefix: this.activeFilter() } : {};
+            if (draftDoc.status === 'completed' && (!explicitEditMode || !this.canEditResults())) {
+              const queryParams: Record<string, string> = {};
+              if (this.activeFilter() !== 'ALL') queryParams['prefix'] = this.activeFilter();
+              if (this.focusedSampleCode()) queryParams['sample'] = this.focusedSampleCode();
               this.router.navigate(['/results-view', this.requestId], { queryParams, replaceUrl: true });
               return;
             }
@@ -767,12 +945,12 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
 
           // Phiên manual_edit cũ hoặc bị bỏ quên sẽ tự khóa lại sau thời gian chờ
           // nếu chưa có bất kỳ thay đổi dữ liệu báo cáo nào.
-          if (runDoc.resultStatusReason === 'manual_edit' && this.autoSaveStatus() === 'synced') {
+          if (this.canEditResults() && runDoc.resultStatusReason === 'manual_edit' && this.autoSaveStatus() === 'synced') {
             void this.resultService.relockUnchangedManualEdit(this.requestId);
           }
 
           // Tự chữa các mẻ cũ đã in đủ 100% nhưng bị autosave kéo ngược về draft.
-          if (!this.completionReconcileChecked && draftDoc.status !== 'completed') {
+          if (this.canEditResults() && !this.completionReconcileChecked && draftDoc.status !== 'completed') {
             this.completionReconcileChecked = true;
             void this.resultService.reconcileCompletionStatus(
               this.requestId,
@@ -785,6 +963,10 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
       }
       this.isLoading.set(false);
       this.tryOpenRequestedSopReassignment();
+      if (this.focusedSampleCode()) {
+        const sampleTimer = setTimeout(() => this.announceSelectSample(this.focusedSampleCode()), 120);
+        this.preflightJumpTimers.push(sampleTimer);
+      }
     });
 
     // Load Master Targets
@@ -802,6 +984,10 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.state.focusMode.set(false);
+    this.workspaceResizeObserver?.disconnect();
+    this.preflightJumpTimers.forEach(t => clearTimeout(t));
+    this.preflightJumpTimers = [];
     this.stopPublishElapsedTimer();
     this.reloadSafety.clearBlocker('result-entry-autosave');
     if (this.unsubscribeFromDraft) {
@@ -860,11 +1046,15 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     const pdf = this.publishPdf();
     if (!pdf) return;
     this.closePublishProgress();
-    this.openPdfPreview(pdf.url, pdf.docsUrl, pdf.version, pdf.publishedBy, pdf.publishedAt, pdf.prefix);
+    if (pdf.prefix && pdf.prefix !== '_NO_PREFIX_' && pdf.prefix !== 'ALL' && this.activeFilter() !== pdf.prefix) {
+      this.activeFilter.set(pdf.prefix);
+    }
+    this.pdfPaneInitialTab.set('preview');
+    this.isPdfPaneOpen.set(true);
   }
 
   onDraftChanged(updatedDraft: AnalysisResultDraft) {
-    if (this.formIsReadOnly()) return;
+    if (this.formIsReadOnly() || !this.assertWriteAllowed('autosave', false)) return;
     // Tạo shallow copy để Angular signal luôn nhận new reference,
     // đảm bảo signal trigger change detection ngay cả khi child emit
     // cùng object reference (e.g., sau onSopSpecificInit trong ngOnInit).
@@ -884,7 +1074,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
    * Lưu nháp thủ công (Force manual save)
    */
   async triggerSaveDraft() {
-    if (!this.draft() || this.isProcessing()) return;
+    if (!this.draft() || this.isProcessing() || !this.assertWriteAllowed('manual_save')) return;
     this.isSavingDraft.set(true);
     try {
       const success = await this.flushCurrentDraft(true);
@@ -898,7 +1088,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   }
 
   openExcelImport(file: File) {
-    if (this.formIsReadOnly()) return;
+    if (this.formIsReadOnly() || !this.assertWriteAllowed('import')) return;
     this.closeActionsMenu();
     this.excelImportFile.set(file);
   }
@@ -913,6 +1103,10 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     originalFileSaved: boolean;
     originalFileName?: string;
   }) {
+    if (this.formIsReadOnly() || !this.assertWriteAllowed('import')) {
+      this.excelImportFile.set(null);
+      return;
+    }
     this.onDraftChanged(event.draft);
     this.excelImportFile.set(null);
     this.toast.show(
@@ -927,20 +1121,42 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
    * Giành quyền chỉnh sửa mẻ chạy (Take Over)
    */
   async takeOverLock() {
+    if (!this.assertWriteAllowed('acquire_lock') || this.isTakingOverLock) return;
     const user = this.auth.currentUser();
     const run = this.run();
     if (!user || !run) return;
-    
+
     const confirmed = await this.confirmation.confirm({
       message: `Bạn có chắc chắn muốn giành quyền chỉnh sửa mẻ này?\nThao tác này sẽ chuyển màn hình của ${run.lockedByName || 'người khác'} về chế độ Chỉ xem. Dữ liệu chưa lưu của họ có thể bị mất.`,
       confirmText: 'Giành quyền chỉnh sửa',
       isDangerous: true
     });
-    if (confirmed) {
-      this.isLoading.set(true);
-      await this.resultService.acquireLock(this.requestId, user.email, user.displayName);
+    if (!confirmed) return;
+
+    this.isTakingOverLock = true;
+    this.isLoading.set(true);
+    try {
+      const result = await this.resultService.acquireLock(
+        this.requestId,
+        user.email,
+        user.displayName,
+        { mode: 'takeover', expectedLockerEmail: run.lockedBy }
+      );
+      if (result.acquired) {
+        this.toast.show('Bạn đã giành quyền chỉnh sửa mẻ này thành công!', 'success');
+      } else if (result.reason === 'completed') {
+        this.toast.show('Mẻ đã hoàn thành, cần mở khóa trước khi giành quyền chỉnh sửa.', 'warning');
+      } else if (result.reason === 'conflict' || result.reason === 'locked_by_others') {
+        this.toast.show(
+          `Trạng thái khóa đã thay đổi (${result.lockedByName || 'người dùng khác'} đang giữ khóa). Vui lòng kiểm tra và thử lại.`,
+          'warning'
+        );
+      } else {
+        this.toast.show('Không thể giành quyền chỉnh sửa mẻ này. Vui lòng thử lại.', 'error');
+      }
+    } finally {
+      this.isTakingOverLock = false;
       this.isLoading.set(false);
-      this.toast.show('Bạn đã giành quyền chỉnh sửa mẻ này thành công!', 'success');
     }
   }
 
@@ -948,6 +1164,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
    * Phục hồi bản in trước đó (Fallback backup)
    */
   async restoreBackup() {
+    if (!this.assertWriteAllowed('restore')) return;
     this.isSavingDraft.set(true);
     const restored = await this.resultService.restoreFromBackup(this.requestId);
     if (restored) {
@@ -960,7 +1177,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
    * Khôi phục số liệu từ một phiên bản cụ thể
    */
   async restoreFromVersion(version: number, prefix?: string, reportId?: string) {
-    if (this.isProcessing()) return;
+    if (this.isProcessing() || !this.assertWriteAllowed('restore')) return;
     
     const displayName = prefix && prefix !== 'ALL' ? (prefix === '_NO_PREFIX_' ? ' (Không tiền tố)' : ` (${prefix})`) : '';
     const confirmed = await this.confirmation.confirm({
@@ -993,18 +1210,11 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
     const currentConf = this.config();
     if (!currentRun || !currentDraft || !currentConf) return;
 
-    if (this.isReadOnly()) {
-      if (currentDraft.status !== 'completed') {
-        this.toast.show('Mẻ chạy đang bị khóa bởi người khác, không thể xuất báo cáo mới!', 'error');
-        return;
-      }
+    if (!this.assertWriteAllowed('publish')) {
+      return;
     }
 
-    const isSop914ShortForm = this.configKey() === 'tbvtv-thuc-pham-gcmsms'
-      && currentDraft.page1Data?.['printFormType'] === 'formRutGon';
-    const preflightConfig = isSop914ShortForm
-      ? ANGULAR_SOP_CONFIG['tbvtv-thuc-pham-gcmsms-rut-gon']
-      : currentConf;
+    const preflightConfig = resolvePublishPreflightConfig(this.configKey(), currentDraft, currentConf);
 
     const preflight = buildPublishPreflightSummary({
       run: currentRun,
@@ -1202,7 +1412,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
    * Hủy xuất bản kết quả (Mở khóa chỉnh sửa)
    */
   async triggerUnlockToEdit() {
-    if (this.isProcessing()) return;
+    if (this.isProcessing() || !this.assertWriteAllowed('unlock')) return;
     const confirmed = await this.confirmation.confirm({
       message: 'Bạn có chắc chắn muốn mở khóa mẻ chạy này để chỉnh sửa?\nNếu không thay đổi số liệu, mẻ sẽ tự khóa lại và giữ nguyên báo cáo hiện tại. Chỉ khi có thay đổi dữ liệu, báo cáo cũ mới cần xuất lại phiên bản mới.',
       confirmText: 'Mở khóa chỉnh sửa',
@@ -1226,6 +1436,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
 
   // Reset results modal actions
   openResetModal() {
+    if (!this.assertWriteAllowed('reset')) return;
     this.resetConfirmText.set('');
     this.showResetModal.set(true);
   }
@@ -1241,7 +1452,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   }
 
   async triggerResetResults() {
-    if (this.resetConfirmText() !== 'XÓA' || this.isProcessing()) return;
+    if (this.resetConfirmText() !== 'XÓA' || this.isProcessing() || !this.assertWriteAllowed('reset')) return;
     const run = this.run();
     const config = this.config();
     if (!run || !config) return;
@@ -1281,7 +1492,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   }
 
   async triggerDeleteVirtualMaster() {
-    if (!this.run()?.isVirtualMaster || this.isProcessing()) return;
+    if (!this.run()?.isVirtualMaster || this.isProcessing() || !this.assertWriteAllowed('delete_master')) return;
     
     // Yêu cầu confirm
     if (!await this.confirmation.confirm({
@@ -1523,11 +1734,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const run = this.run();
-    const user = this.auth.currentUser();
-    const isLockedByOthers = run?.lockedBy && user
-      && run.lockedBy.toLowerCase() !== user.email.toLowerCase();
-    if (isLockedByOthers) return;
+    if (!this.assertWriteAllowed('autosave', false)) return;
 
     this.autoSaveStatus.set('saving');
     const success = await this.resultService.saveDraft(
@@ -1605,7 +1812,7 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
 
   async goBack() {
     const r = this.run();
-    if (r?.resultStatusReason === 'manual_edit' && this.draft()) {
+    if (this.canEditResults() && r?.resultStatusReason === 'manual_edit' && this.draft()) {
       if (this.autoSaveStatus() !== 'synced') {
         const saved = await this.flushCurrentDraft(false);
         this.resumeAutoSave();
@@ -1614,6 +1821,22 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
       await this.resultService.relockUnchangedManualEdit(this.requestId, 0, true);
     }
     this.router.navigate(['/results']);
+  }
+
+  async goToViewMode() {
+    if (this.canEditResults() && this.autoSaveStatus() !== 'synced' && this.draft()) {
+      const saved = await this.flushCurrentDraft(false);
+      this.resumeAutoSave();
+      if (!saved) return;
+    }
+    const queryParams: Record<string, string> = {};
+    if (this.activeFilter() !== 'ALL') {
+      queryParams['prefix'] = this.activeFilter();
+    }
+    if (this.focusedSampleCode()) {
+      queryParams['sample'] = this.focusedSampleCode();
+    }
+    this.router.navigate(['/results-view', this.requestId], { queryParams });
   }
 
   openPdfPreview(

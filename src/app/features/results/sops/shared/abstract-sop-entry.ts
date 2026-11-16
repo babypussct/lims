@@ -152,14 +152,16 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
     // 10. Load master analytes từ Firestore (async — thực hiện sau các init đồng bộ)
     await this.loadMasterAnalytes();
 
-    // 11. Sau khi có master analytes, làm sạch và điền N/A
-    this.cleanUpPooledSampleResults();
-    this.prefillUnassignedTargets();
+    // 11. Sau khi có master analytes, làm sạch và điền N/A (chỉ khi không ở chế độ chỉ xem)
+    if (!this.isReadOnly) {
+      this.cleanUpPooledSampleResults();
+      this.prefillUnassignedTargets();
 
-    // 12. Trigger update to ensure UI renders default states correctly when opening new form
-    setTimeout(() => {
-      this.onDataChanged();
-    }, 100);
+      // 12. Trigger update to ensure UI renders default states correctly when opening new form
+      setTimeout(() => {
+        if (!this.isReadOnly) this.onDataChanged();
+      }, 100);
+    }
   }
 
   // ── Hook cho SOP đặc thù ─────────────────────────────────────────────────
@@ -383,7 +385,7 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
       }
     }
 
-    if (didMigrate) {
+    if (didMigrate && !this.isReadOnly) {
       console.info('[AbstractSopEntry] Migrated legacy display-string keys → canonical ids in draft.resultData');
       // Trigger save để persist migration
       this.draftChanged.emit(this.draft);
@@ -552,6 +554,7 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
 
   // ── Helper cho Mã Hồ Sơ ───────────────────────────────────────────────────
   autoFillMaHoSo() {
+    if (this.isReadOnly) return;
     const selectedSamples = (this.run?.sampleList || []).filter((sampleCode: string) => 
       this.draft.resultData[sampleCode]?.['selected'] !== false
     );
@@ -589,6 +592,7 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
   }
 
   applyCalibVials() {
+    if (this.isReadOnly) return;
     const start = parseInt(String(this.bulkCalibVialStart), 10);
     if (isNaN(start)) return;
     const calibPoints = this.draft.page1Data['calibPoints'];
@@ -637,6 +641,7 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
   }
 
   onBulkCalibPointsChanged() {
+    if (this.isReadOnly) return;
     this.syncSpreadsheetVialsFromCalibration();
     this.onDataChanged();
   }
@@ -650,6 +655,7 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
   }
 
   applyBulkVials() {
+    if (this.isReadOnly) return;
     const start = parseInt(String(this.bulkVialStart), 10);
     if (isNaN(start)) return;
     const regularSamples = this.run?.sampleList || [];
@@ -694,6 +700,7 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
   }
 
   onChromResultChanged(key: string) {
+    if (this.isReadOnly) return;
     if (key === 'QC_SPIKE' || key === 'QC_FINAL') {
       this.updateRecovery(key, this.draft.page1Data['activeCompound']);
     }
@@ -707,12 +714,14 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
   }
 
   syncDilution(sampleCode: string) {
+    if (this.isReadOnly) return;
     const val = this.draft.resultData[sampleCode]['heSoPhaLoang'] || '1';
     this.draft.resultData[sampleCode]['hSoPhaLoang'] = val;
     this.onDataChanged();
   }
 
   on10gCheckChange(event: any) {
+    if (this.isReadOnly) return;
     const oldKhoiLuong = this.draft.page1Data['khoiLuong'] || '10.0';
     this.draft.page1Data['is10gChecked'] = event.target.checked;
     if (this.draft.page1Data['is10gChecked']) {
@@ -726,6 +735,7 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
   }
 
   onKhoiLuongKhacChange() {
+    if (this.isReadOnly) return;
     const oldKhoiLuong = this.draft.page1Data['khoiLuong'] || '10.0';
     if (this.draft.page1Data['khoiLuongKhac']) {
       this.draft.page1Data['is10gChecked'] = false;
@@ -753,6 +763,7 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
 
   /** Ngẫu nhiên hoá khối lượng mẫu (dùng cho formDon thực tế) */
   bulkRandomizeMasses() {
+    if (this.isReadOnly) return;
     (this.run?.sampleList || []).forEach((sampleCode: string) => {
       if (this.draft.resultData[sampleCode]) {
         this.draft.resultData[sampleCode]['khoiLuong'] = (10.01 + Math.random() * 0.08).toFixed(3);
@@ -768,6 +779,7 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
 
   /** Khi checkbox KPH/ND thay đổi: làm sạch ô kết quả và tự động đánh Đạt */
   onNdCheckboxChanged(compound: string) {
+    if (this.isReadOnly) return;
     const active = this.activeSampleCode();
     const row = this.draft.resultData[active];
     if (row && this.isTargetAssigned(active, compound)) {
@@ -785,6 +797,7 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
 
   /** Khi nhập giá trị kết quả: tự bỏ check KPH/ND */
   onResultInputChanged(compound: string) {
+    if (this.isReadOnly) return;
     const active = this.activeSampleCode();
     const row = this.draft.resultData[active];
     if (row && this.isTargetAssigned(active, compound)) {
@@ -798,6 +811,7 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
 
   /** Bulk: Đặt tất cả hoạt chất của mẫu đang chọn là KPH */
   sampleBulkFillND() {
+    if (this.isReadOnly) return;
     const active = this.activeSampleCode();
     const row = this.draft.resultData[active];
     if (row && this.config?.compounds) {
@@ -816,6 +830,7 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
 
   /** Bulk: Đặt tất cả QC (qc1, qc2, qc3) của mẫu đang chọn là "Đạt" */
   sampleBulkQC() {
+    if (this.isReadOnly) return;
     const active = this.activeSampleCode();
     const row = this.draft.resultData[active];
     if (row && this.config?.compounds) {
@@ -832,6 +847,7 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
 
   /** Bulk: Sao chép kết quả mẫu đang chọn sang tất cả mẫu khác */
   copyActiveSampleToAll() {
+    if (this.isReadOnly) return;
     const sourceSample = this.activeSampleCode();
     const sourceData = this.draft.resultData[sourceSample];
     if (!sourceData || !this.config?.compounds) return;
@@ -863,6 +879,7 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
 
   /** Đặt trạng thái QC cho một hoạt chất cụ thể */
   setCompoundQc(compound: string, qcKey: 'qc1' | 'qc2' | 'qc3', status: 'Đạt' | 'Không đạt' | 'N/A') {
+    if (this.isReadOnly) return;
     const active = this.activeSampleCode();
     const row = this.draft.resultData[active];
     if (row && this.isTargetAssigned(active, compound)) {
@@ -886,6 +903,7 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
   }
 
   toggleSampleSelected(sampleCode: string, checked: boolean) {
+    if (this.isReadOnly) return;
     if (!this.draft.resultData[sampleCode]) {
       this.draft.resultData[sampleCode] = {};
     }
@@ -901,6 +919,7 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
   }
 
   toggleSelectAllSamples() {
+    if (this.isReadOnly) return;
     const targetState = !this.isAllSamplesSelected();
     (this.run?.sampleList || []).forEach((s: string) => {
       if (!this.draft.resultData[s]) this.draft.resultData[s] = {};
@@ -913,6 +932,7 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
   // ── Form Type (formCheck / formDon) ──────────────────────────────────────
 
   setPrintFormType(type: 'formCheck' | 'formDon') {
+    if (this.isReadOnly) return;
     this.draft.page1Data['printFormType'] = type;
 
     // Gán vial mặc định cho QC samples
@@ -946,6 +966,7 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
   }
 
   onActiveCompoundChanged() {
+    if (this.isReadOnly) return;
     const activeCompound = this.draft.page1Data['activeCompound'];
     const byCompound = this.draft.page1Data['r2ByCompound'] ||= {};
     if (activeCompound && byCompound[activeCompound] === undefined) {
@@ -959,6 +980,7 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
   protected onSetPrintFormType(_type: 'formCheck' | 'formDon'): void {}
 
   onFinalToggled() {
+    if (this.isReadOnly) return;
     if (this.draft.page1Data['hasFinal']) {
       const spike = this.draft.resultData['QC_SPIKE'];
       this.draft.resultData['QC_FINAL'] = {
@@ -1058,6 +1080,7 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
 
   /** Bulk: Điền ND cho formDon với hoạt chất đang active */
   bulkFillNDFormDon() {
+    if (this.isReadOnly) return;
     const active = this.draft.page1Data['activeCompound'];
     if (!active) return;
     this.getChromatographyRows().forEach((row: ChromatographyRow) => {
@@ -1073,6 +1096,7 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
 
   /** Bulk: Xóa dữ liệu formDon của hoạt chất đang active */
   bulkClearAllFormDon() {
+    if (this.isReadOnly) return;
     const active = this.draft.page1Data['activeCompound'];
     if (!active) return;
     this.getChromatographyRows().forEach((row: ChromatographyRow) => {
@@ -1089,6 +1113,7 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
 
   /** Xử lý chuyển đổi giữa "Tất cả ND" và "Có mẫu phát hiện" */
   onCheckboxChange(changedKey: string) {
+    if (this.isReadOnly) return;
     const p = this.draft.page1Data;
     if (changedKey === 'checkTatCaND' && p['checkTatCaND']) {
       p['checkCoMauPhatHien'] = false;
@@ -1105,6 +1130,7 @@ export abstract class AbstractSopEntry implements OnInit, OnChanges {
   }
 
   setQcStatus(key: string, value: boolean | null) {
+    if (this.isReadOnly) return;
     this.draft.page1Data[key] = value;
     this.onDataChanged();
   }

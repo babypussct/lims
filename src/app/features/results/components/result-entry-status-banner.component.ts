@@ -8,6 +8,9 @@ import { CommonModule } from '@angular/common';
   templateUrl: './result-entry-status-banner.component.html'
 })
 export class ResultEntryStatusBannerComponent {
+  /** Người dùng có quyền sửa kết quả không */
+  @Input() canEditResults = true;
+
   /** Mẻ đang bị người khác lock */
   @Input() lockedByOthers = false;
   @Input() lockerName = '';

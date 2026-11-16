@@ -1,13 +1,18 @@
 {
-  "title": "Sửa lỗi nút đối soát mã chất chuẩn bị khóa",
+  "title": "Nâng cấp Kết quả phân tích và bảo vệ toàn vẹn dữ liệu",
   "highlights": [
-    "Có thể chọn Đối soát ngay sau khi chọn các mã đủ điều kiện."
+    "Nâng cấp không gian nhập kết quả, kiểm tra trước xuất bản và tra cứu báo cáo PDF."
   ],
-  "features": [],
+  "features": [
+    "Chọn mẻ nguồn cho từng mã mẫu trùng khi gộp mẻ và lưu nguồn kết quả để truy xuất."
+  ],
   "improvements": [
-    "Tự ghi lý do mặc định vào lịch sử từng mã khi để trống ô lý do; vẫn cho phép nhập lý do riêng và xác nhận trước khi thực hiện."
+    "Thống nhất bảng nhập SOP, thao tác dán và hoàn tác, trạng thái báo cáo và bố cục màn hình kết quả."
   ],
   "fixes": [
-    "Khắc phục nút Đối soát mã đã chọn bị vô hiệu do điều kiện nhập tối thiểu 10 ký tự trong ô lý do."
+    "Siết quyền ghi Firestore theo nghiệp vụ, trạng thái mẻ và chủ sở hữu khóa; tách quyền duyệt SOP khỏi quyền nhập kết quả.",
+    "Nhận, gia hạn, tiếp quản và giải phóng khóa bằng giao dịch nguyên tử, xử lý xung đột giữa các tài khoản.",
+    "Bảo vệ lịch sử báo cáo đã xuất bản chỉ được thêm mới; lưu kết quả và lịch sử xuất bản trong cùng một lần ghi nguyên tử.",
+    "Yêu cầu mở lại mẻ đã hoàn thành trước khi sửa hoặc xuất bản phiên bản mới."
   ]
 }

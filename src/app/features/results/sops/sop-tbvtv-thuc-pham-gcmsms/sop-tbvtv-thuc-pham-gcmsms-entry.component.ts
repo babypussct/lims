@@ -1,9 +1,23 @@
-import { Component, signal, computed, OnChanges } from '@angular/core';
+import { Component, signal, computed, OnChanges, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { AuthService } from '../../../../core/services/auth.service';
+import { ConfirmationService } from '../../../../core/services/confirmation.service';
+import { ToastService } from '../../../../core/services/toast.service';
 import { AbstractSopEntry } from '../shared/abstract-sop-entry';
 import { SopHeaderMetadataComponent } from '../shared/sop-header-metadata.component';
 import { SopCalibrationPointsComponent } from '../shared/sop-calibration-points.component';
+import { SopMasterDetailCompoundGridComponent } from '../shared/sop-master-detail-compound-grid.component';
+import { SopSpreadsheetToolbarComponent } from '../shared/sop-spreadsheet-toolbar.component';
+import { SopRecoverySectionComponent, RecoveryCheckEntry } from '../shared/sop-recovery-section.component';
+import {
+  applyPasteTransaction,
+  parseSpreadsheetPasteText,
+  PasteTransactionPlan,
+  PasteUndoStack,
+  planSpreadsheetPaste,
+  WriteGuardContext,
+} from '../shared/sop-paste-undo';
 import { calculateSop01Recovery } from '../sop-01/sop-01-engine';
 import { navigateGrid } from '../shared/sop-grid-helper';
 import { getAssignedTargetsForSample, SOP01_COLUMN_TO_CANONICAL, getSop01DisplayName } from '../../shared/compound-id-resolver';
@@ -17,14 +31,29 @@ import {
 @Component({
   selector: 'app-sop-tbvtv-thuc-pham-gcmsms-entry',
   standalone: true,
-  imports: [CommonModule, FormsModule, SopHeaderMetadataComponent, SopCalibrationPointsComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    SopHeaderMetadataComponent,
+    SopCalibrationPointsComponent,
+    SopMasterDetailCompoundGridComponent,
+    SopSpreadsheetToolbarComponent,
+    SopRecoverySectionComponent,
+  ],
   templateUrl: './sop-tbvtv-thuc-pham-gcmsms-entry.component.html'
 })
 export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry implements OnChanges {
+  private auth = inject(AuthService);
+  private confirmation = inject(ConfirmationService);
+  private toast = inject(ToastService);
 
   // ── UI State đặc thù của SOP TBVTV Thực Phẩm ────────────────────────────
   activeTab = signal<'compounds' | 'chromatography'>('compounds');
   searchQuery = signal<string>('');
+  shortFormMobileViewMode = signal<'table' | 'cards'>('table');
+  pendingShortFormPastePlan = signal<PasteTransactionPlan | null>(null);
+  shortFormUndoStack = new PasteUndoStack();
+  private shortFormRevision = 0;
 
   // Các thuộc tính cho Form Rút Gọn (Grid Spreadsheet)
   bulkRackStart = 1;
@@ -175,6 +204,7 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
 
   // ── Override: mass default (10.0g) ───────────────────────────────────────
   override on10gCheckChange(event: any) {
+    if (this.isReadOnly) return;
     this.draft.page1Data['is10gChecked'] = event.target.checked;
     if (this.draft.page1Data['is10gChecked']) {
       this.draft.page1Data['khoiLuongKhac'] = '';
@@ -186,6 +216,7 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
   }
 
   override onKhoiLuongKhacChange() {
+    if (this.isReadOnly) return;
     if (this.draft.page1Data['khoiLuongKhac']) {
       this.draft.page1Data['is10gChecked'] = false;
       this.draft.page1Data['khoiLuong'] = this.draft.page1Data['khoiLuongKhac'];
@@ -197,6 +228,7 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
   }
 
   override bulkRandomizeMasses() {
+    if (this.isReadOnly) return;
     (this.run?.sampleList || []).forEach((sampleCode: string) => {
       if (this.draft.resultData[sampleCode]) {
         this.draft.resultData[sampleCode]['khoiLuong'] = (10.0 + (Math.random() - 0.5) * 0.2).toFixed(2);
@@ -210,6 +242,7 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
 
   // ── Override: View Mode Switcher ─────────────────────────────────────────
   setPrintFormMode(type: 'formDayDu' | 'formRutGon') {
+    if (this.isReadOnly) return;
     this.draft.page1Data['printFormType'] = type;
     this.applyTemplateMetadata(type);
     if (type === 'formRutGon') {
@@ -225,6 +258,7 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
   }
 
   override onDataChanged() {
+    if (this.isReadOnly) return;
     const sampleList = this.run?.sampleList || [];
     const isShortForm = this.draft.page1Data['printFormType'] === 'formRutGon';
     const resultKeys: string[] = isShortForm ? [...this.activeColumns] : (this.config?.compounds || []);
@@ -260,6 +294,7 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
   // ── SPREADSHEET (FORM RÚT GỌN, SPREADSHEET UI/DATA) METHODS ──────────────────
 
   onHasCheckSampleChange() {
+    if (this.isReadOnly) return;
     if (this.draft.page1Data['hasCheckSample']) {
       this.ensureQcRow('QC_CHECK_SAMPLE', '1.9');
       this.draft.page1Data['qcKiemTraNoiBo'] = true;
@@ -373,6 +408,7 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
   }
 
   onCellChanged(sampleCode: string) {
+    if (this.isReadOnly) return;
     this.updateRecovery(sampleCode);
     this.onDataChanged();
   }
@@ -496,6 +532,7 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
 
 
   override applyBulkVials() {
+    if (this.isReadOnly) return;
     const rackStart = parseInt(String(this.bulkRackStart), 10);
     const vialStart = parseInt(String(this.bulkVialStartFip), 10);
     const perRack = parseInt(String(this.bulkVialsPerRack), 10);
@@ -528,6 +565,7 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
   }
 
   bulkFillND() {
+    if (this.isReadOnly) return;
     const allRowKeys = this.getDisplayRowsForSpreadsheet().map(row => row.key);
 
     allRowKeys.forEach((key: string) => {
@@ -553,6 +591,7 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
   }
 
   bulkClearAll() {
+    if (this.isReadOnly) return;
     const allRowKeys = this.getDisplayRowsForSpreadsheet().map(row => row.key);
     allRowKeys.forEach((key: string) => {
       const row = this.draft.resultData[key];
@@ -567,6 +606,7 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
   }
 
   copyRowToAll(sourceKey: string) {
+    if (this.isReadOnly) return;
     const sourceData = this.draft.resultData[sourceKey];
     if (!sourceData) return;
 
@@ -595,6 +635,177 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
     const columnsList = ['loSo', ...this.activeColumns];
     const rows = this.getDisplayRowsForSpreadsheet();
     navigateGrid(event, rowIdx, colIdx, columnsList, rows.length, 0);
+  }
+
+  shortFormRecoveryEntries(): RecoveryCheckEntry[] {
+    const spike = this.draft?.resultData?.['QC_SPIKE'] || {};
+    const blank = this.draft?.resultData?.['QC_BLANK'] || {};
+    return this.activeColumns
+      .filter(col => this.isTargetAssignedToAnySample(col))
+      .map(col => ({
+        id: col,
+        label: this.columnDisplayNames()[col] || col,
+        spikeConc: spike[col],
+        blankConc: blank[col],
+        addedConc: 5,
+        unit: 'µg/kg',
+      }));
+  }
+
+  private getShortFormWriteGuard(): WriteGuardContext {
+    const canEdit = this.auth.isManager() || this.auth.canRunBatch() || this.auth.canApprove();
+    return {
+      canEdit,
+      isReadOnly: this.isReadOnly,
+      isLockedByOthers: false,
+      isCompleted: this.draft?.status === 'completed',
+    };
+  }
+
+  async confirmClearAllShortForm() {
+    if (this.isReadOnly) return;
+    const confirmed = await this.confirmation.confirm({
+      message: 'Xóa toàn bộ giá trị kết quả đang hiển thị trên bảng rút gọn SOP 9.14?',
+      confirmText: 'Xóa bảng',
+      isDangerous: true,
+    });
+    if (confirmed) {
+      this.shortFormRevision++;
+      this.shortFormUndoStack.clear();
+      this.bulkClearAll();
+    }
+  }
+
+  async openShortFormClipboardPrompt() {
+    if (this.isReadOnly) return;
+    try {
+      const text = await navigator.clipboard?.readText?.();
+      if (!text) {
+        this.toast.show('Clipboard trống. Hãy sao chép vùng dữ liệu từ Excel trước.', 'warning');
+        return;
+      }
+      this.planShortFormPaste(text, 0, 1);
+    } catch {
+      this.toast.show('Trình duyệt chặn đọc clipboard trực tiếp. Hãy chọn ô và nhấn Ctrl+V.', 'info');
+    }
+  }
+
+  onShortFormCellPaste(event: ClipboardEvent, rowIdx: number, colIdx: number) {
+    if (this.isReadOnly) {
+      event.preventDefault();
+      return;
+    }
+    const text = event.clipboardData?.getData('text/plain') || '';
+    const matrix = parseSpreadsheetPasteText(text);
+    if (matrix.length <= 1 && (matrix[0]?.length || 0) <= 1) return;
+    event.preventDefault();
+    this.planShortFormPaste(text, rowIdx, colIdx);
+  }
+
+  private planShortFormPaste(text: string, startRowIdx: number, startColIdx: number) {
+    const matrix = parseSpreadsheetPasteText(text);
+    const rows = this.getDisplayRowsForSpreadsheet();
+    const columns = [
+      { colKey: 'loSo', colLabel: 'Số lọ' },
+      ...this.activeColumns.map(col => ({ colKey: col, colLabel: this.columnDisplayNames()[col] || col })),
+    ];
+
+    const grid = {
+      rows: rows.map(r => ({ rowKey: r.key, rowLabel: r.label })),
+      columns,
+      startRowIndex: startRowIdx,
+      startColIndex: startColIdx,
+      minNumericValue: 0,
+      allowTextNotesForCol: (colKey: string) => colKey === 'loSo',
+      getCellSpec: (rowKey: string, colKey: string) => ({
+        rowKey,
+        rowLabel: rowKey,
+        colKey,
+        colLabel: columns.find(c => c.colKey === colKey)?.colLabel || colKey,
+        editable: !this.isReadOnly,
+        assigned: colKey === 'loSo' ? true : this.isTargetAssigned(rowKey, colKey),
+      }),
+      readCell: (rowKey: string, colKey: string) => ({
+        value: String(this.draft?.resultData?.[rowKey]?.[colKey] ?? ''),
+      }),
+    };
+
+    const plan = planSpreadsheetPaste(matrix, grid, this.getShortFormWriteGuard());
+    if (!plan.allowed) {
+      this.toast.show(plan.blockedReason || 'Không thể dán dữ liệu.', 'error');
+      return;
+    }
+
+    if (plan.invalidCells.length > 0 || plan.overwriteCount > 0 || plan.skippedUnassigned.length > 0) {
+      this.pendingShortFormPastePlan.set(plan);
+      return;
+    }
+
+    this.executeShortFormPaste(plan);
+  }
+
+  cancelPendingShortFormPaste() {
+    this.pendingShortFormPastePlan.set(null);
+  }
+
+  confirmPendingShortFormPaste() {
+    const plan = this.pendingShortFormPastePlan();
+    if (!plan) return;
+    this.pendingShortFormPastePlan.set(null);
+    this.executeShortFormPaste(plan);
+  }
+
+  private executeShortFormPaste(plan: PasteTransactionPlan) {
+    const touchedRows = new Set<string>();
+    const res = applyPasteTransaction(
+      plan,
+      this.getShortFormWriteGuard(),
+      this.shortFormRevision,
+      (rowKey, colKey, value) => {
+        if (!this.draft.resultData[rowKey]) this.draft.resultData[rowKey] = {};
+        this.draft.resultData[rowKey][colKey] = value;
+        touchedRows.add(rowKey);
+      },
+      `Dán ${plan.diffs.length} ô bảng SOP 9.14`
+    );
+
+    if (!res.applied || !res.transaction) {
+      this.toast.show(res.reason || 'Không thể dán dữ liệu.', 'error');
+      return;
+    }
+
+    this.shortFormRevision = res.nextRevision;
+    this.shortFormUndoStack.push(res.transaction);
+    touchedRows.forEach(rowKey => this.updateRecovery(rowKey));
+    this.onDataChanged();
+    this.toast.show(`Đã dán ${res.appliedCount} ô dữ liệu thành công.`, 'success');
+  }
+
+  undoLastShortFormPaste() {
+    if (this.isReadOnly) return;
+    const touchedRows = new Set<string>();
+    const res = this.shortFormUndoStack.undoLast(
+      this.getShortFormWriteGuard(),
+      this.shortFormRevision,
+      (rowKey, colKey) => ({
+        value: String(this.draft?.resultData?.[rowKey]?.[colKey] ?? ''),
+      }),
+      (rowKey, colKey, value) => {
+        if (!this.draft.resultData[rowKey]) this.draft.resultData[rowKey] = {};
+        this.draft.resultData[rowKey][colKey] = value;
+        touchedRows.add(rowKey);
+      }
+    );
+
+    if (!res.undone) {
+      this.toast.show(res.reason || 'Không thể hoàn tác.', 'warning');
+      return;
+    }
+
+    this.shortFormRevision = res.nextRevision;
+    touchedRows.forEach(rowKey => this.updateRecovery(rowKey));
+    this.onDataChanged();
+    this.toast.show(`Đã hoàn tác ${res.restoredCount} ô vừa dán.`, 'success');
   }
 
 }

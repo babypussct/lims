@@ -3,12 +3,13 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AbstractSopEntry } from '../shared/abstract-sop-entry';
 import { SopHeaderMetadataComponent } from '../shared/sop-header-metadata.component';
-import { SopCalibrationPointsComponent } from '../shared/sop-calibration-points.component';
+import { SopMasterDetailCompoundGridComponent } from '../shared/sop-master-detail-compound-grid.component';
+import { SopFormDonWorkspaceComponent } from '../shared/sop-form-don-workspace.component';
 
 @Component({
   selector: 'app-sop-tbvtv-trong-nuoc-gcmsms-entry',
   standalone: true,
-  imports: [CommonModule, FormsModule, SopHeaderMetadataComponent, SopCalibrationPointsComponent],
+  imports: [CommonModule, FormsModule, SopHeaderMetadataComponent, SopMasterDetailCompoundGridComponent, SopFormDonWorkspaceComponent],
   templateUrl: './sop-tbvtv-trong-nuoc-gcmsms-entry.component.html'
 })
 export class SopTbvtvTrongNuocGcmsmsEntryComponent extends AbstractSopEntry implements OnChanges {
@@ -73,6 +74,7 @@ export class SopTbvtvTrongNuocGcmsmsEntryComponent extends AbstractSopEntry impl
 
   // ── Override: volume default (100ml) instead of weight (10g) ─────────────
   override on10gCheckChange(event: any) {
+    if (this.isReadOnly) return;
     this.draft.page1Data['is10gChecked'] = event.target.checked;
     if (this.draft.page1Data['is10gChecked']) {
       this.draft.page1Data['khoiLuongKhac'] = '';
@@ -84,6 +86,7 @@ export class SopTbvtvTrongNuocGcmsmsEntryComponent extends AbstractSopEntry impl
   }
 
   override onKhoiLuongKhacChange() {
+    if (this.isReadOnly) return;
     if (this.draft.page1Data['khoiLuongKhac']) {
       this.draft.page1Data['is10gChecked'] = false;
       this.draft.page1Data['khoiLuong'] = this.draft.page1Data['khoiLuongKhac'];
@@ -95,6 +98,7 @@ export class SopTbvtvTrongNuocGcmsmsEntryComponent extends AbstractSopEntry impl
   }
 
   override bulkRandomizeMasses() {
+    if (this.isReadOnly) return;
     (this.run?.sampleList || []).forEach((sampleCode: string) => {
       if (this.draft.resultData[sampleCode]) {
         this.draft.resultData[sampleCode]['khoiLuong'] = (100.0 + (Math.random() - 0.5) * 0.8).toFixed(1);

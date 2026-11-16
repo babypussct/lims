@@ -5,24 +5,25 @@ import { AppDatePickerComponent } from '../../shared/components/ui';
 import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
 import { MasterTargetService } from '../targets/master-target.service';
 import { getAssignedTargetsForSample, resolveCompoundDisplayName, isCompoundAssigned } from './shared/compound-id-resolver';
+import { SopMasterDetailCompoundGridComponent } from './sops/shared/sop-master-detail-compound-grid.component';
 
 @Component({
   selector: 'app-result-entry-type3b',
   standalone: true,
-  imports: [CommonModule, FormsModule, AppDatePickerComponent],
+  imports: [CommonModule, FormsModule, AppDatePickerComponent, SopMasterDetailCompoundGridComponent],
   template: `
-    <fieldset [disabled]="isReadOnly" class="space-y-6 animate-fade-in">
+    <div class="space-y-5 animate-fade-in">
       
       <!-- 1. Metadata Form & Checkboxes -->
-      <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800/80 p-5 space-y-4">
-        <h4 class="text-xs font-black text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800 pb-2.5 uppercase tracking-wider flex items-center">
-          <i class="fa-solid fa-file-invoice mr-2 text-fuchsia-500 text-sm"></i> Thông Tin Chung & Đánh Giá (Dạng 3B)
+      <fieldset [disabled]="isReadOnly" class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/80 dark:border-slate-800 p-5 space-y-4">
+        <h4 class="text-xs font-bold text-slate-800 dark:text-slate-100 border-b border-slate-100 dark:border-slate-800 pb-2.5 uppercase tracking-wider flex items-center">
+          <i class="fa-solid fa-file-invoice mr-2 text-indigo-600 dark:text-indigo-400 text-sm"></i> Thông Tin Chung & Đánh Giá (Dạng 3B)
         </h4>
 
         <!-- Signature Dates -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Ngày ký Người phân tích</label>
+          <div data-preflight-target="date_analyst">
+            <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Ngày ký Người phân tích</label>
             <app-date-picker
                    [(ngModel)]="draft.page1Data['ngayNguoiPhanTich']"
                    (ngModelChange)="onDataChanged()"
@@ -30,8 +31,8 @@ import { getAssignedTargetsForSample, resolveCompoundDisplayName, isCompoundAssi
                    [disabled]="isReadOnly">
             </app-date-picker>
           </div>
-          <div>
-            <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Ngày ký Người thẩm tra</label>
+          <div data-preflight-target="date_reviewer">
+            <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Ngày ký Người thẩm tra</label>
             <app-date-picker
                    [(ngModel)]="draft.page1Data['ngayNguoiThamTra']"
                    (ngModelChange)="onDataChanged()"
@@ -44,64 +45,64 @@ import { getAssignedTargetsForSample, resolveCompoundDisplayName, isCompoundAssi
         <!-- Device & Discussion -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Thiết bị phân tích</label>
+            <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Thiết bị phân tích</label>
             <input type="text" 
                    [(ngModel)]="draft.page1Data['device']" 
                    (ngModelChange)="onDataChanged()"
                    placeholder="Ví dụ: GC-MS/MS / LC-MS/MS"
-                   class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200/80 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 transition outline-none">
+                   class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition outline-none">
           </div>
           <div>
-            <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-1.5 uppercase tracking-widest">Thảo luận / Nhận xét</label>
+            <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Thảo luận / Nhận xét</label>
             <input type="text" 
                    [(ngModel)]="draft.page1Data['thaoLuan']" 
                    (ngModelChange)="onDataChanged()"
                    placeholder="Ý kiến thảo luận hoặc ghi chú kết quả..."
-                   class="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200/80 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-fuchsia-500/10 focus:border-fuchsia-500 transition outline-none">
+                   class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition outline-none">
           </div>
         </div>
 
         <!-- Checkbox & QC segment controls grid (Dynamic from SOP metadata configuration) -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-2">
           @for (checkbox of checkboxList; track checkbox.key) {
             @if (isGeneralObservation(checkbox.key)) {
               <!-- Standard observation checkbox -->
-              <label class="flex items-start gap-3 p-3.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-850 border border-slate-100 dark:border-slate-800/60 cursor-pointer select-none transition bg-slate-50/20 dark:bg-slate-900/10">
+              <label class="flex items-start gap-3 p-3.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200/70 dark:border-slate-800 cursor-pointer select-none transition bg-slate-50/40 dark:bg-slate-950/30">
                 <input type="checkbox" 
                        [(ngModel)]="draft.page1Data[checkbox.key]" 
                        (ngModelChange)="onCheckboxChange(checkbox.key)"
-                       class="mt-0.5 w-4 h-4 rounded text-fuchsia-650 border-slate-350 dark:border-slate-700 focus:ring-fuchsia-500 focus:ring-2 dark:bg-slate-800 dark:border-slate-700">
+                       class="mt-0.5 w-4 h-4 rounded text-indigo-600 border-slate-300 dark:border-slate-700 focus:ring-indigo-500 focus:ring-2 dark:bg-slate-800">
                 <div>
-                  <span class="text-xs font-bold text-slate-700 dark:text-slate-300 leading-tight block">{{ checkbox.label }}</span>
+                  <span class="text-xs font-bold text-slate-700 dark:text-slate-200 leading-tight block">{{ checkbox.label }}</span>
                 </div>
               </label>
             } @else {
               <!-- QC evaluation with Đạt / Không đạt Segment Control -->
-              <div class="flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-50/40 dark:bg-slate-955/40 border border-slate-250/25 dark:border-slate-800/60 transition hover:border-slate-350 dark:hover:border-slate-700 shadow-xs">
+              <div class="flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-50/50 dark:bg-slate-950/30 border border-slate-200/70 dark:border-slate-800 transition hover:border-slate-300 dark:hover:border-slate-700">
                 <div class="flex-1 min-w-0 pr-1">
-                  <span class="text-[11px] font-extrabold text-slate-700 dark:text-slate-200 leading-snug block break-words">
+                  <span class="text-[11px] font-bold text-slate-700 dark:text-slate-200 leading-snug block break-words">
                     {{ checkbox.label }}
                   </span>
                 </div>
                 
                 <!-- Pass / Fail selector -->
-                <div class="flex items-center bg-slate-100 dark:bg-slate-900 p-0.5 rounded-lg border border-slate-250/30 dark:border-slate-800 shrink-0 select-none">
+                <div class="flex items-center bg-slate-100 dark:bg-slate-900 p-0.5 rounded-lg border border-slate-200/70 dark:border-slate-800 shrink-0 select-none">
                   <!-- Button 'Đạt' (true) -->
                   <button type="button"
                           (click)="setQcStatus(checkbox.key, true)"
-                          [class]="draft.page1Data[checkbox.key] === true 
-                            ? 'px-2.5 py-1 text-[10px] font-black rounded bg-emerald-500 hover:bg-emerald-600 text-white shadow-xs transition duration-150 active:scale-95' 
-                            : 'px-2.5 py-1 text-[10px] font-bold rounded text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition duration-150 active:scale-95'"
+                          [class]="draft.page1Data[checkbox.key] === true
+                            ? 'px-2.5 py-1 text-[10px] font-bold rounded bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition duration-150 active:scale-95'
+                            : 'px-2.5 py-1 text-[10px] font-semibold rounded text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition duration-150 active:scale-95'"
                           title="Đạt tiêu chí">
                     Đạt
                   </button>
-                  
+
                   <!-- Button 'Không đạt' (false) -->
                   <button type="button"
                           (click)="setQcStatus(checkbox.key, false)"
-                          [class]="draft.page1Data[checkbox.key] === false 
-                            ? 'px-2.5 py-1 text-[10px] font-black rounded bg-rose-500 hover:bg-rose-600 text-white shadow-xs transition duration-150 active:scale-95' 
-                            : 'px-2.5 py-1 text-[10px] font-bold rounded text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition duration-150 active:scale-95'"
+                          [class]="draft.page1Data[checkbox.key] === false
+                            ? 'px-2.5 py-1 text-[10px] font-bold rounded bg-rose-600 hover:bg-rose-700 text-white shadow-xs transition duration-150 active:scale-95'
+                            : 'px-2.5 py-1 text-[10px] font-semibold rounded text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition duration-150 active:scale-95'"
                           title="Không đạt tiêu chí">
                     K.Đạt
                   </button>
@@ -110,8 +111,8 @@ import { getAssignedTargetsForSample, resolveCompoundDisplayName, isCompoundAssi
                   <button type="button"
                           (click)="setQcStatus(checkbox.key, null)"
                           [class]="draft.page1Data[checkbox.key] === undefined || draft.page1Data[checkbox.key] === null
-                            ? 'px-2 py-1 text-[9px] font-black rounded bg-slate-350 dark:bg-slate-700 text-slate-750 dark:text-slate-250 shadow-xs transition duration-150 active:scale-95' 
-                            : 'px-2 py-1 text-[9px] font-bold rounded text-slate-400 dark:text-slate-500 hover:text-slate-600 transition duration-150 active:scale-95'"
+                            ? 'px-2 py-1 text-[9px] font-bold rounded bg-slate-300 dark:bg-slate-700 text-slate-800 dark:text-slate-200 shadow-xs transition duration-150 active:scale-95'
+                            : 'px-2 py-1 text-[9px] font-semibold rounded text-slate-400 dark:text-slate-500 hover:text-slate-600 transition duration-150 active:scale-95'"
                           title="Chưa đánh giá">
                     N/A
                   </button>
@@ -120,162 +121,28 @@ import { getAssignedTargetsForSample, resolveCompoundDisplayName, isCompoundAssi
             }
           }
         </div>
-      </div>
+      </fieldset>
 
-      <!-- 2. Sample Navigation Tabs -->
-      <div class="flex items-center gap-3 overflow-x-auto custom-scrollbar py-2.5 px-3 shrink-0 bg-fuchsia-50/15 dark:bg-fuchsia-955/15 border border-fuchsia-100/40 dark:border-fuchsia-950/20 rounded-2xl shadow-2xs">
-        <span class="text-[10px] font-black text-fuchsia-700 dark:text-fuchsia-400 uppercase tracking-widest mr-1">Danh sách mẫu:</span>
-        @for (sampleCode of run.sampleList; track sampleCode; let idx = $index) {
-          <button (click)="selectSample(sampleCode)"
-                  [class]="activeSampleCode() === sampleCode 
-                    ? 'bg-fuchsia-600 text-white font-extrabold shadow-sm border border-fuchsia-650 transition shrink-0 active:scale-95'
-                    : 'bg-white dark:bg-slate-900 text-slate-655 dark:text-slate-455 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800/80 transition shrink-0 active:scale-95 shadow-2xs'"
-                  class="px-4 py-2.5 rounded-xl text-xs flex items-center gap-2">
-            <span [class]="activeSampleCode() === sampleCode
-                    ? 'w-4 h-4 rounded-full bg-white/20 flex items-center justify-center text-[10px] font-black text-white'
-                    : 'w-4 h-4 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-black text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700/80'">
-              {{ idx + 1 }}
-            </span>
-            <span class="font-mono font-bold">{{ sampleCode }}</span>
-          </button>
-        }
-      </div>
-
-      <!-- 3. Compound Checklist & QCs -->
-      <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800/80 p-5 space-y-4 animate-fade-in">
-        <!-- Panel Header -->
-        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-3.5">
-          <div>
-            <h4 class="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center">
-              <i class="fa-solid fa-flask-vial mr-2 text-fuchsia-500 text-sm"></i>
-              Bảng Kết Quả Mẫu: <span class="font-mono text-fuchsia-600 dark:text-fuchsia-400 font-extrabold ml-1 bg-fuchsia-50 dark:bg-fuchsia-950/30 px-2 py-0.5 rounded-lg border border-fuchsia-100 dark:border-fuchsia-900/30">{{ activeSampleCode() }}</span>
-            </h4>
-            <p class="text-[10px] text-slate-400 dark:text-slate-500 font-bold mt-1 tracking-wide">
-              Tổng cộng {{ config.compounds?.length || 0 }} hoạt chất cần kiểm nghiệm.
-            </p>
-          </div>
-
-          <!-- Bulk Actions for the Selected Sample -->
-          <div class="flex flex-wrap items-center gap-2.5">
-            <span class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mr-1">Mẫu này:</span>
-            
-            <button (click)="sampleBulkFillND()" 
-                    class="px-3 py-2 bg-slate-50 dark:bg-slate-850 hover:bg-amber-50 dark:hover:bg-amber-950/20 text-slate-700 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 border border-slate-200 dark:border-slate-800 hover:border-amber-200 dark:hover:border-amber-900/30 rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 active:scale-95 shadow-2xs">
-              <i class="fa-solid fa-pen-nib text-amber-500"></i>
-              <span>Đặt Tất Cả ND</span>
-            </button>
-
-            <button (click)="sampleBulkQC()" 
-                    class="px-3 py-2 bg-slate-50 dark:bg-slate-850 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 text-slate-700 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 border border-slate-200 dark:border-slate-800 hover:border-emerald-200 dark:hover:border-emerald-900/30 rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 active:scale-95 shadow-2xs">
-              <i class="fa-solid fa-circle-check text-emerald-500"></i>
-              <span>Tất Cả QC Đạt</span>
-            </button>
-
-            <button (click)="copyActiveSampleToAll()" 
-                    class="px-3.5 py-2 bg-fuchsia-600 hover:bg-fuchsia-700 text-white rounded-xl text-xs font-black shadow-sm transition flex items-center gap-1.5 active:scale-95"
-                    title="Sao chép toàn bộ kết quả của mẫu đang hiển thị cho tất cả các mẫu khác trong mẻ chạy này">
-              <i class="fa-solid fa-copy"></i>
-              <span>Sao Chép Mẫu cho Cả Mẻ</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Compound List Table -->
-        <div class="overflow-x-auto custom-scrollbar border border-slate-200/80 dark:border-slate-800 rounded-2xl max-h-[550px] overflow-y-auto">
-          <table class="w-full text-sm border-collapse">
-            <thead>
-              <tr class="bg-slate-50 dark:bg-slate-955 border-b border-slate-255/80 dark:border-slate-800 sticky top-0 z-20 shadow-2xs">
-                <th class="py-3 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest w-16">STT</th>
-                <th class="py-3 px-4 text-left font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest min-w-[150px]">Hoạt chất</th>
-                <th class="py-3 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest w-28">KPH / ND</th>
-                <th class="py-3 px-4 text-left font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest min-w-[130px]">Kết quả (µg/kg)</th>
-                
-                <!-- 3 QC Columns -->
-                <th class="py-3 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest w-36">Độ thu hồi R%</th>
-                <th class="py-3 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest w-36">Hệ số tuyến tính R2</th>
-                <th class="py-3 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest w-36">Kết luận</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80">
-              @for (compound of config.compounds; track compound; let idx = $index) {
-                @let isAssigned = isTargetAssigned(activeSampleCode(), compound);
-                <tr [class]="isAssigned 
-                      ? 'hover:bg-slate-50/40 dark:hover:bg-slate-800/20 transition-all focus-within:bg-fuchsia-50/10 dark:focus-within:bg-fuchsia-500/5 border-l-4 border-l-transparent focus-within:border-l-fuchsia-500 duration-150'
-                      : 'bg-slate-50/50 dark:bg-slate-955/20 opacity-60 text-slate-400 select-none border-l-4 border-l-slate-200 dark:border-l-slate-800'"
-                    class="transition-all duration-155">
-                  <td class="py-2.5 px-4 font-mono text-xs text-slate-400 font-bold text-center">
-                    @if (isAssigned) {
-                      {{ idx + 1 }}
-                    } @else {
-                      <i class="fa-solid fa-lock text-[10px] text-slate-450 dark:text-slate-500" title="Chỉ tiêu không được phân tích cho mẫu này"></i>
-                    }
-                  </td>
-                  <td [class.line-through]="!isAssigned" class="py-2.5 px-4 text-slate-700 dark:text-slate-200 font-extrabold text-xs">
-                    {{ compoundDisplayNames()[compound] || compound }}
-                  </td>
-                  
-                  <!-- ND Checkbox -->
-                  <td class="py-2.5 px-4 text-center">
-                    <input type="checkbox"
-                           [disabled]="!isAssigned"
-                           [(ngModel)]="draft.resultData[activeSampleCode()][compound + '_nd']"
-                           (ngModelChange)="onNdCheckboxChanged(compound)"
-                           class="w-4 h-4 rounded text-fuchsia-600 border-slate-350 dark:border-slate-700 focus:ring-fuchsia-500 dark:bg-slate-900 disabled:opacity-50">
-                  </td>
-
-                  <!-- Result Input -->
-                  <td class="py-1.5 px-2">
-                    <input type="text"
-                           [readonly]="!isAssigned"
-                           [(ngModel)]="draft.resultData[activeSampleCode()][compound]"
-                           (ngModelChange)="onResultInputChanged(compound)"
-                           placeholder="{{ isAssigned ? 'ND / Số lượng...' : 'N/A' }}"
-                           class="w-full border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-extrabold focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 outline-none text-center shadow-inner transition
-                                  {{ isAssigned ? 'bg-white dark:bg-slate-850 text-slate-850 dark:text-slate-200' : 'bg-slate-100/50 dark:bg-slate-900/50 text-slate-400 dark:text-slate-655 cursor-not-allowed border-dashed' }}">
-                  </td>
-
-                  <!-- QC1 Dropdown -->
-                  <td class="py-1.5 px-2">
-                    <select [disabled]="!isAssigned"
-                            [(ngModel)]="draft.resultData[activeSampleCode()][compound + '_qc1']"
-                            (ngModelChange)="onDataChanged()"
-                            class="w-full border border-slate-200 dark:border-slate-800 rounded-xl px-2 py-1.5 text-xs font-extrabold focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 outline-none shadow-2xs transition
-                                   {{ isAssigned ? 'bg-white dark:bg-slate-850 text-slate-850 dark:text-slate-200' : 'bg-slate-100/50 dark:bg-slate-900/50 text-slate-400 dark:text-slate-655 cursor-not-allowed border-dashed' }}">
-                      <option value="Đạt">Đạt</option>
-                      <option value="Không đạt">Không đạt</option>
-                    </select>
-                  </td>
-
-                  <!-- QC2 Dropdown -->
-                  <td class="py-1.5 px-2">
-                    <select [disabled]="!isAssigned"
-                            [(ngModel)]="draft.resultData[activeSampleCode()][compound + '_qc2']"
-                            (ngModelChange)="onDataChanged()"
-                            class="w-full border border-slate-200 dark:border-slate-800 rounded-xl px-2 py-1.5 text-xs font-extrabold focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 outline-none shadow-2xs transition
-                                   {{ isAssigned ? 'bg-white dark:bg-slate-850 text-slate-850 dark:text-slate-200' : 'bg-slate-100/50 dark:bg-slate-900/50 text-slate-400 dark:text-slate-655 cursor-not-allowed border-dashed' }}">
-                      <option value="Đạt">Đạt</option>
-                      <option value="Không đạt">Không đạt</option>
-                    </select>
-                  </td>
-
-                  <!-- QC3 Dropdown -->
-                  <td class="py-1.5 px-2">
-                    <select [disabled]="!isAssigned"
-                            [(ngModel)]="draft.resultData[activeSampleCode()][compound + '_qc3']"
-                            (ngModelChange)="onDataChanged()"
-                            class="w-full border border-slate-200 dark:border-slate-800 rounded-xl px-2 py-1.5 text-xs font-extrabold focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 outline-none shadow-2xs transition
-                                   {{ isAssigned ? 'bg-white dark:bg-slate-850 text-slate-850 dark:text-slate-200' : 'bg-slate-100/50 dark:bg-slate-900/50 text-slate-400 dark:text-slate-655 cursor-not-allowed border-dashed' }}">
-                      <option value="Đạt">Đạt</option>
-                      <option value="Không đạt">Không đạt</option>
-                    </select>
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </fieldset>
+      <!-- 2 & 3. Master-Detail Sample List + Composite Compound Grid -->
+      <app-sop-master-detail-compound-grid
+        [run]="run"
+        [draft]="draft"
+        [config]="config"
+        [compoundDisplayNames]="compoundDisplayNames()"
+        [activeSampleCode]="activeSampleCode()"
+        [publishedSampleSet]="publishedSampleSet"
+        [isReadOnly]="isReadOnly"
+        [showSelectionControls]="false"
+        [showMassControl]="false"
+        [allowQcNa]="false"
+        (activeSampleChange)="selectSample($event)"
+        (bulkFillNd)="sampleBulkFillND()"
+        (bulkQcPass)="sampleBulkQC()"
+        (copySampleToAll)="copyActiveSampleToAll()"
+        (ndChanged)="onNdCheckboxChanged($event)"
+        (resultChanged)="onResultInputChanged($event)"
+        (qcChanged)="setCompoundQc($event.compound, $event.qcKey, $event.status)" />
+    </div>
   `
 })
 export class ResultEntryType3bComponent implements OnInit {
@@ -314,7 +181,9 @@ export class ResultEntryType3bComponent implements OnInit {
     }
 
     // Auto-prefill unassigned compounds during grid bootstrap
-    this.prefillUnassignedTargets();
+    if (!this.isReadOnly) {
+      this.prefillUnassignedTargets();
+    }
   }
 
   buildDisplayNameMap() {
@@ -380,6 +249,7 @@ export class ResultEntryType3bComponent implements OnInit {
   }
 
   onCheckboxChange(changedKey: string) {
+    if (this.isReadOnly) return;
     if (changedKey === 'checkTatCaND' && this.draft.page1Data['checkTatCaND']) {
       this.draft.page1Data['checkCoMauPhatHien'] = false;
     } else if (changedKey === 'checkCoMauPhatHien' && this.draft.page1Data['checkCoMauPhatHien']) {
@@ -392,6 +262,7 @@ export class ResultEntryType3bComponent implements OnInit {
    * Đồng bộ khi nhấn check KPH/ND: tự điền 'KPH' vào ô kết quả
    */
   onNdCheckboxChanged(compound: string) {
+    if (this.isReadOnly) return;
     const active = this.activeSampleCode();
     const row = this.draft.resultData[active];
     if (row) {
@@ -408,6 +279,7 @@ export class ResultEntryType3bComponent implements OnInit {
    * Đồng bộ khi sửa ô kết quả: tự bỏ chọn KPH/ND nếu điền số lượng cụ thể
    */
   onResultInputChanged(compound: string) {
+    if (this.isReadOnly) return;
     const active = this.activeSampleCode();
     const row = this.draft.resultData[active];
     if (row) {
@@ -426,6 +298,7 @@ export class ResultEntryType3bComponent implements OnInit {
    * Bulk Action: Đặt tất cả hoạt chất của mẫu đang mở là KPH (Không phát hiện)
    */
   sampleBulkFillND() {
+    if (this.isReadOnly) return;
     const active = this.activeSampleCode();
     const row = this.draft.resultData[active];
     if (row && this.config.compounds) {
@@ -443,6 +316,7 @@ export class ResultEntryType3bComponent implements OnInit {
    * Bulk Action: Đặt tất cả các QC (QC1, QC2, QC3) của mẫu đang mở là "Đạt"
    */
   sampleBulkQC() {
+    if (this.isReadOnly) return;
     const active = this.activeSampleCode();
     const row = this.draft.resultData[active];
     if (row && this.config.compounds) {
@@ -461,6 +335,7 @@ export class ResultEntryType3bComponent implements OnInit {
    * Bulk Action: Sao chép toàn bộ kết quả của mẫu đang mở sang tất cả các mẫu khác trong mẻ chạy
    */
   copyActiveSampleToAll() {
+    if (this.isReadOnly) return;
     const sourceSample = this.activeSampleCode();
     const sourceData = this.draft.resultData[sourceSample];
     if (!sourceData || !this.config.compounds) return;
@@ -491,7 +366,18 @@ export class ResultEntryType3bComponent implements OnInit {
   }
 
   setQcStatus(key: string, value: boolean | null) {
+    if (this.isReadOnly) return;
     this.draft.page1Data[key] = value;
     this.onDataChanged();
+  }
+
+  setCompoundQc(compound: string, qcKey: 'qc1' | 'qc2' | 'qc3', status: 'Đạt' | 'Không đạt' | 'N/A') {
+    if (this.isReadOnly) return;
+    const active = this.activeSampleCode();
+    const row = this.draft.resultData[active];
+    if (row && this.isTargetAssigned(active, compound)) {
+      row[`${compound}_${qcKey}`] = status;
+      this.onDataChanged();
+    }
   }
 }

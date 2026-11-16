@@ -1,18 +1,35 @@
 import { Component, Input, Output, EventEmitter, OnInit, signal, inject } from '@angular/core';
-
+import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AnalysisResultDraft } from '../../../../core/models/analysis-result.model';
+import { AuthService } from '../../../../core/services/auth.service';
+import { ConfirmationService } from '../../../../core/services/confirmation.service';
+import { ToastService } from '../../../../core/services/toast.service';
 import { calculateSop01Recovery } from './sop-01-engine';
 import { MasterTargetService } from '../../../targets/master-target.service';
 import { getAssignedTargetsForSample, resolveCompoundDisplayName, SOP01_COLUMN_TO_CANONICAL, getSop01DisplayName } from '../../shared/compound-id-resolver';
 import { SopHeaderMetadataComponent } from '../shared/sop-header-metadata.component';
 import { SopCalibrationPointsComponent } from '../shared/sop-calibration-points.component';
+import { SopSpreadsheetToolbarComponent } from '../shared/sop-spreadsheet-toolbar.component';
+import { SopRecoverySectionComponent, RecoveryCheckEntry } from '../shared/sop-recovery-section.component';
 import { navigateGrid } from '../shared/sop-grid-helper';
+import {
+  GridPasteController,
+  GridPasteGridSpec,
+  WriteGuardContext,
+} from '../shared/sop-paste-undo';
 
 @Component({
   selector: 'app-sop-01-entry',
   standalone: true,
-  imports: [FormsModule, SopHeaderMetadataComponent, SopCalibrationPointsComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    SopHeaderMetadataComponent,
+    SopCalibrationPointsComponent,
+    SopSpreadsheetToolbarComponent,
+    SopRecoverySectionComponent,
+  ],
   templateUrl: './sop-01-entry.component.html'
 })
 export class Sop01EntryComponent implements OnInit {
@@ -23,11 +40,16 @@ export class Sop01EntryComponent implements OnInit {
   @Input() publishedSampleSet: Set<string> | null = null;
   @Output() draftChanged = new EventEmitter<AnalysisResultDraft>();
 
+  private auth = inject(AuthService);
+  private confirmation = inject(ConfirmationService);
+  private toast = inject(ToastService);
   private masterTargetService = inject(MasterTargetService);
   masterTargets = signal<any[]>([]);
   columnDisplayNames = signal<Record<string, string>>({});
   activeColumns: string[] = [];
   checkboxList: { key: string; label: string }[] = [];
+  mobileViewMode = signal<'table' | 'cards'>('table');
+  pasteCtrl = new GridPasteController();
   // Bulk rack properties
   bulkRackStart = 1;
   bulkVialStartFip = 10;
@@ -502,6 +524,144 @@ export class Sop01EntryComponent implements OnInit {
     const columnsList = ['loSo', ...this.activeColumns];
     const rows = this.getDisplayRowsForFipronil();
     navigateGrid(event, rowIdx, colIdx, columnsList, rows.length, 0);
+  }
+
+  recoveryEntries(): RecoveryCheckEntry[] {
+    const spike = this.draft?.resultData?.['QC_SPIKE'] || {};
+    const blank = this.draft?.resultData?.['QC_BLANK'] || {};
+    return this.activeColumns
+      .filter(col => this.isTargetAssignedToAnySample(col))
+      .map(col => ({
+        id: col,
+        label: this.columnDisplayNames()[col] || col,
+        spikeConc: spike[col],
+        blankConc: blank[col],
+        addedConc: 5,
+        unit: 'µg/kg',
+      }));
+  }
+
+  private getWriteGuard(): WriteGuardContext {
+    return {
+      canEdit: this.auth.isManager() || this.auth.canRunBatch() || this.auth.canApprove(),
+      isReadOnly: this.isReadOnly,
+      isLockedByOthers: false,
+      isCompleted: this.draft?.status === 'completed',
+    };
+  }
+
+  private buildPasteGridSpec(startRowIndex: number, startColIndex: number): GridPasteGridSpec {
+    const rows = this.getDisplayRowsForFipronil().map(r => ({ rowKey: r.key, rowLabel: r.label }));
+    const columns = [
+      { colKey: 'loSo', colLabel: 'Số lọ' },
+      ...this.activeColumns.map(c => ({ colKey: c, colLabel: this.columnDisplayNames()[c] || c })),
+    ];
+    return {
+      rows,
+      columns,
+      startRowIndex,
+      startColIndex,
+      minNumericValue: 0,
+      allowTextNotesForCol: colKey => colKey === 'loSo',
+      getCellSpec: (rowKey, colKey) => ({
+        rowKey,
+        rowLabel: rowKey,
+        colKey,
+        colLabel: columns.find(c => c.colKey === colKey)?.colLabel || colKey,
+        editable: !this.isReadOnly,
+        assigned: colKey === 'loSo' ? true : this.isTargetAssigned(rowKey, colKey),
+      }),
+      readCell: (rowKey, colKey) => ({ value: String(this.draft?.resultData?.[rowKey]?.[colKey] ?? '') }),
+    };
+  }
+
+  private makePasteWriter(touchedRows: Set<string>) {
+    return (rowKey: string, colKey: string, value: string) => {
+      if (!this.draft.resultData[rowKey]) this.draft.resultData[rowKey] = { selected: true };
+      this.draft.resultData[rowKey][colKey] = value;
+      touchedRows.add(rowKey);
+    };
+  }
+
+  async openClipboardPaste() {
+    if (this.isReadOnly) return;
+    try {
+      const text = await navigator.clipboard?.readText?.();
+      if (!text) {
+        this.toast.show('Clipboard trống.', 'warning');
+        return;
+      }
+      const touched = new Set<string>();
+      const res = this.pasteCtrl.planOrApply(text, this.buildPasteGridSpec(0, 1), this.getWriteGuard(), this.makePasteWriter(touched));
+      if (res.error) this.toast.show(res.error, 'error');
+      else if (res.applied) {
+        touched.forEach(k => this.updateRecovery(k));
+        this.onDataChanged();
+        this.toast.show(`Đã dán ${res.count} ô dữ liệu.`, 'success');
+      }
+    } catch {
+      this.toast.show('Hãy chọn một ô và nhấn Ctrl+V để dán từ Excel.', 'info');
+    }
+  }
+
+  onCellPaste(event: ClipboardEvent, rowIdx: number, colIdx: number) {
+    if (this.isReadOnly) {
+      event.preventDefault();
+      return;
+    }
+    const text = event.clipboardData?.getData('text/plain') || '';
+    if (!text.includes('\t') && !text.includes('\n')) return;
+    event.preventDefault();
+    const touched = new Set<string>();
+    const res = this.pasteCtrl.planOrApply(text, this.buildPasteGridSpec(rowIdx, colIdx), this.getWriteGuard(), this.makePasteWriter(touched));
+    if (res.error) this.toast.show(res.error, 'error');
+    else if (res.applied) {
+      touched.forEach(k => this.updateRecovery(k));
+      this.onDataChanged();
+      this.toast.show(`Đã dán ${res.count} ô dữ liệu.`, 'success');
+    }
+  }
+
+  confirmPendingPaste() {
+    const res = this.pasteCtrl.confirmPending(this.getWriteGuard());
+    if (res.applied) {
+      this.getDisplayRowsForFipronil().forEach(r => this.updateRecovery(r.key));
+      this.onDataChanged();
+      this.toast.show(`Đã dán ${res.count} ô dữ liệu.`, 'success');
+    } else if (res.error) {
+      this.toast.show(res.error, 'error');
+    }
+  }
+
+  undoLastPaste() {
+    if (this.isReadOnly) return;
+    const touched = new Set<string>();
+    const res = this.pasteCtrl.undoLast(
+      this.getWriteGuard(),
+      (rowKey, colKey) => ({ value: String(this.draft?.resultData?.[rowKey]?.[colKey] ?? '') }),
+      this.makePasteWriter(touched)
+    );
+    if (res.undone) {
+      touched.forEach(k => this.updateRecovery(k));
+      this.onDataChanged();
+      this.toast.show(`Đã hoàn tác ${res.restoredCount} ô vừa dán.`, 'success');
+    } else if (res.reason) {
+      this.toast.show(res.reason, 'warning');
+    }
+  }
+
+  async confirmClearAll() {
+    if (this.isReadOnly) return;
+    const ok = await this.confirmation.confirm({
+      message: 'Xóa toàn bộ kết quả đã nhập trên bảng SOP-01?',
+      confirmText: 'Xóa bảng',
+      isDangerous: true,
+    });
+    if (ok) {
+      this.pasteCtrl.bumpRevision();
+      this.pasteCtrl.reset();
+      this.bulkClearAll();
+    }
   }
 
 }

@@ -86,10 +86,14 @@ export function sanitizeReportMapUrls<T extends Record<string, any> | undefined>
     }
     sanitized[key] = {
       ...value,
-      pdfUrl: value.pdfUrl == null ? value.pdfUrl : getSafeGoogleUrl(value.pdfUrl, 'pdf'),
-      pdfViewUrl: value.pdfViewUrl == null ? value.pdfViewUrl : getSafeGoogleUrl(value.pdfViewUrl, 'pdf'),
-      docsUrl: value.docsUrl == null ? value.docsUrl : getSafeGoogleUrl(value.docsUrl, 'doc'),
     };
+    // Firestore rejects undefined values, including optional report links.
+    for (const field of ['pdfUrl', 'pdfViewUrl', 'docsUrl']) {
+      if (value[field] === undefined) delete sanitized[key][field];
+      else if (value[field] !== null) {
+        sanitized[key][field] = getSafeGoogleUrl(value[field], field === 'docsUrl' ? 'doc' : 'pdf');
+      }
+    }
   }
   return sanitized as T;
 }

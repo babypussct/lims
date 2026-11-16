@@ -25,12 +25,13 @@ import {
   ExcelImportCandidateKind,
   ExcelImportContext
 } from '../import/excel-result-import.models';
-import { ModalA11yDirective } from '../../../shared/directives/modal-a11y.directive';
+import { AppModalShellComponent } from '../../../shared/components/ui/modal-shell/modal-shell.component';
+import { AppButtonComponent } from '../../../shared/components/ui/button/button.component';
 
 @Component({
   selector: 'app-excel-result-import-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, ModalA11yDirective],
+  imports: [CommonModule, FormsModule, AppModalShellComponent, AppButtonComponent],
   templateUrl: './excel-result-import-modal.component.html'
 })
 export class ExcelResultImportModalComponent implements OnChanges, OnDestroy {
@@ -65,6 +66,7 @@ export class ExcelResultImportModalComponent implements OnChanges, OnDestroy {
   writeNdToResult = false;
   saveOriginalFile = false;
   uploadErrorMessage = '';
+  resultFilter: 'all' | 'manual' | 'overwrite' | 'new' = 'all';
 
   async ngOnChanges(changes: SimpleChanges) {
     if (changes['file'] && this.file) {
@@ -84,6 +86,38 @@ export class ExcelResultImportModalComponent implements OnChanges, OnDestroy {
 
   get resultCandidates(): ExcelImportCandidate[] {
     return this.candidates.filter(candidate => candidate.kind === 'result');
+  }
+
+  get manualFixCount(): number {
+    return this.resultCandidates.filter(c => c.status === 'unmatched' || c.status === 'ambiguous').length;
+  }
+
+  get overwriteCount(): number {
+    return this.resultCandidates.filter(c => c.status === 'overwrite').length;
+  }
+
+  get newValueCount(): number {
+    return this.resultCandidates.filter(c => c.status === 'ready').length;
+  }
+
+  get filteredResultCandidates(): ExcelImportCandidate[] {
+    const list = this.resultCandidates;
+    if (this.resultFilter === 'manual') {
+      return list.filter(c => c.status === 'unmatched' || c.status === 'ambiguous');
+    }
+    if (this.resultFilter === 'overwrite') {
+      return list.filter(c => c.status === 'overwrite');
+    }
+    if (this.resultFilter === 'new') {
+      return list.filter(c => c.status === 'ready');
+    }
+    return list;
+  }
+
+  get modalDescription(): string {
+    const fileName = this.file?.name || 'Tệp Excel';
+    const sopLabel = this.run?.sopName || this.configKey || '';
+    return sopLabel ? `${fileName} · SOP: ${sopLabel}` : fileName;
   }
 
   get metadataCandidates(): ExcelImportCandidate[] {
@@ -250,6 +284,7 @@ export class ExcelResultImportModalComponent implements OnChanges, OnDestroy {
     this.candidates = [];
     this.decimalMode = 'source';
     this.uploadErrorMessage = '';
+    this.resultFilter = 'all';
 
     try {
       const parsed = await readExcelResultFile(

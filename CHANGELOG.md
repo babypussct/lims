@@ -2,7 +2,28 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.11.10-b03
+## Phiên bản hiện tại: v26.11.16-b01
+
+### v26.11.16-b01
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Nâng cấp không gian nhập kết quả, kiểm tra trước xuất bản và tra cứu báo cáo PDF.
+
+#### ✨ Tính Năng Mới
+
+- Chọn mẻ nguồn cho từng mã mẫu trùng khi gộp mẻ và lưu nguồn kết quả để truy xuất.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Thống nhất bảng nhập SOP, thao tác dán và hoàn tác, trạng thái báo cáo và bố cục màn hình kết quả.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Siết quyền ghi Firestore theo nghiệp vụ, trạng thái mẻ và chủ sở hữu khóa; tách quyền duyệt SOP khỏi quyền nhập kết quả.
+- Nhận, gia hạn, tiếp quản và giải phóng khóa bằng giao dịch nguyên tử, xử lý xung đột giữa các tài khoản.
+- Bảo vệ lịch sử báo cáo đã xuất bản chỉ được thêm mới; lưu kết quả và lịch sử xuất bản trong cùng một lần ghi nguyên tử.
+- Yêu cầu mở lại mẻ đã hoàn thành trước khi sửa hoặc xuất bản phiên bản mới.
 
 ### v26.11.10-b03
 

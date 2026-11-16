@@ -16,34 +16,37 @@ import { FormsModule } from '@angular/forms';
   standalone: true,
   imports: [FormsModule],
   template: `
-    <div class="space-y-3">
-      <label class="block text-[10px] font-black text-slate-400 dark:text-slate-500 mb-3 uppercase tracking-widest">{{ title }}</label>
+    <div class="space-y-2.5">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <label class="text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">{{ title }}</label>
+        @if (isSuffixVisible && suffixText) {
+          <span class="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[10px] font-bold border border-slate-200/70 dark:border-slate-700">
+            {{ suffixText }}
+          </span>
+        }
+      </div>
 
-      <!-- Layout thống nhất: Grid các thẻ điểm chuẩn -->
-      <div [class]="'grid gap-3 ' + gridCols">
+      <!-- Compact Horizontal Strip / Grid for Calibration Points -->
+      <div [class]="'grid gap-2.5 ' + gridCols">
         @for (pt of (calibPoints || []); track $index) {
-          <div [class]="cardClass($index)">
-
-            <!-- Header thẻ: Tên điểm (C0/C1…) + màu dot -->
-            <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-1.5 mb-2">
-              <span [class]="badgeClass($index)">
+          <div class="bg-slate-50/70 dark:bg-slate-950/30 border border-slate-200/80 dark:border-slate-800 rounded-xl p-2.5 transition-colors hover:border-indigo-200 dark:hover:border-indigo-800/60">
+            <!-- Header: Point Name + Static Label -->
+            <div class="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-800 pb-1.5 mb-2 gap-1.5">
+              <span class="inline-flex items-center justify-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-900/40">
                 {{ pt['loSo'] || (pointPrefix + $index) }}
               </span>
               @if ((pointLabels || []).length > $index) {
-                <span class="text-[10px] font-extrabold text-slate-600 dark:text-slate-300">
+                <span class="text-[11px] font-bold text-slate-700 dark:text-slate-200">
                   {{ (pointLabels || [])[$index] }}
                 </span>
               }
-              <span [class]="'w-1.5 h-1.5 rounded-full ' + dotColor"></span>
             </div>
 
-            <!-- 3 Cột: Tên điểm | Số lọ | Nồng độ -->
+            <!-- Fields: Tên điểm | Số lọ | Nồng độ -->
             <div [class]="'grid gap-1.5 ' + ((pointLabels || []).length > 0 ? 'grid-cols-1' : 'grid-cols-3')">
-
-              <!-- Cột 1: Tên điểm chuẩn (loSo) — chỉ hiển thị nếu pointLabels rỗng -->
               @if ((pointLabels || []).length === 0) {
                 <div>
-                  <label class="block text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">Tên điểm</label>
+                  <label class="block text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">Điểm</label>
                   <input type="text"
                          [(ngModel)]="pt['loSo']"
                          (ngModelChange)="onPointsChanged()"
@@ -54,9 +57,8 @@ import { FormsModule } from '@angular/forms';
                 </div>
               }
 
-              <!-- Cột 2: Số lọ (vialNo) — LUÔN HIỂN THỊ, đây là nơi bulk điền -->
               <div>
-                <label class="block text-[8px] font-black text-cyan-600 dark:text-cyan-400 uppercase tracking-wider mb-0.5">Số lọ</label>
+                <label class="block text-[9px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mb-0.5">Số lọ</label>
                 <input type="text"
                        [(ngModel)]="pt['vialNo']"
                        (ngModelChange)="onPointsChanged()"
@@ -66,10 +68,9 @@ import { FormsModule } from '@angular/forms';
                        [class]="vialInputClass">
               </div>
 
-              <!-- Cột 3: Nồng độ (hamLuong) — chỉ hiển thị nếu pointLabels rỗng -->
               @if ((pointLabels || []).length === 0) {
                 <div>
-                  <label class="block text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">{{ valLabel }}</label>
+                  <label class="block text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">{{ valLabel }}</label>
                   <input type="text"
                          [(ngModel)]="pt['hamLuong']"
                          (ngModelChange)="onPointsChanged()"
@@ -80,7 +81,6 @@ import { FormsModule } from '@angular/forms';
                 </div>
               }
             </div>
-
           </div>
         }
       </div>
@@ -97,67 +97,24 @@ export class SopCalibrationPointsComponent {
   @Input() suffixText = 'IS: 20 ppb';
   @Input() isSuffixVisible = true;
   @Input() valLabel = 'Nồng độ';
-  @Input() isFuchsiaRing = true;
   @Input() isReadOnly = false;
 
   @Output() pointsChanged = new EventEmitter<any[]>();
-
-  get dotColor(): string {
-    return this.isFuchsiaRing ? 'bg-fuchsia-400' : 'bg-fuchsia-400';
-  }
 
   get gridCols(): string {
     const n = (this.calibPoints || []).length;
     if (n <= 3) return 'grid-cols-1 sm:grid-cols-3';
     if (n === 5) return 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5';
-    // 6 điểm
     return 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-6';
   }
 
-  get inputClass(): string {
-    const ring = this.isFuchsiaRing
-      ? 'focus:ring-fuchsia-500/10 focus:border-fuchsia-500'
-      : 'focus:ring-fuchsia-500/10 focus:border-fuchsia-500';
-    return `w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60
-            rounded-lg px-2 py-1 text-xs text-slate-800 dark:text-slate-200 font-semibold
-            focus:ring-2 outline-none text-center transition ${ring}`;
-  }
+  readonly inputClass = `w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/70
+            rounded-lg px-2 py-1 text-xs text-slate-800 dark:text-slate-100 font-semibold
+            focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-center transition disabled:opacity-60`;
 
-  get vialInputClass(): string {
-    const ring = this.isFuchsiaRing
-      ? 'focus:ring-fuchsia-500/20 focus:border-fuchsia-500'
-      : 'focus:ring-cyan-500/20 focus:border-cyan-500';
-    return `w-full bg-cyan-50 dark:bg-cyan-950/20 border border-cyan-200 dark:border-cyan-800/60
-            rounded-lg px-2 py-1 text-xs text-cyan-800 dark:text-cyan-200 font-extrabold
-            focus:ring-2 outline-none text-center transition shadow-inner ${ring}`;
-  }
-
-  cardClass(idx: number): string {
-    const borderColors = [
-      'border-t-slate-400/80',
-      'border-t-emerald-500',
-      'border-t-teal-500',
-      'border-t-fuchsia-500',
-      'border-t-fuchsia-500',
-      'border-t-fuchsia-500',
-    ];
-    const color = borderColors[idx] ?? 'border-t-slate-400/80';
-    return `bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80
-            border-t-4 ${color} rounded-2xl p-3 shadow-sm hover:shadow-md transition duration-200`;
-  }
-
-  badgeClass(idx: number): string {
-    const configs = [
-      'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400',
-      'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400',
-      'bg-teal-50 dark:bg-teal-950/30 text-teal-700 dark:text-teal-400',
-      'bg-fuchsia-50 dark:bg-fuchsia-950/30 text-fuchsia-700 dark:text-fuchsia-400',
-      'bg-fuchsia-50 dark:bg-fuchsia-950/30 text-fuchsia-700 dark:text-fuchsia-400',
-      'bg-fuchsia-50 dark:bg-fuchsia-950/30 text-fuchsia-700 dark:text-fuchsia-400',
-    ];
-    const cls = configs[idx] ?? configs[0];
-    return `inline-flex items-center justify-center px-2 py-0.5 rounded text-[9px] font-black uppercase ${cls}`;
-  }
+  readonly vialInputClass = `w-full bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800/70
+            rounded-lg px-2 py-1 text-xs text-indigo-700 dark:text-indigo-300 font-bold font-mono
+            focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-center transition disabled:opacity-60`;
 
   onPointsChanged() {
     this.pointsChanged.emit(this.calibPoints);

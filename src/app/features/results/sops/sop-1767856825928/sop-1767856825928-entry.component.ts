@@ -3,12 +3,13 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AbstractSopEntry } from '../shared/abstract-sop-entry';
 import { SopHeaderMetadataComponent } from '../shared/sop-header-metadata.component';
-import { SopCalibrationPointsComponent } from '../shared/sop-calibration-points.component';
+import { SopMasterDetailCompoundGridComponent } from '../shared/sop-master-detail-compound-grid.component';
+import { SopFormDonWorkspaceComponent } from '../shared/sop-form-don-workspace.component';
 
 @Component({
   selector: 'app-sop-1767856825928-entry',
   standalone: true,
-  imports: [CommonModule, FormsModule, SopHeaderMetadataComponent, SopCalibrationPointsComponent],
+  imports: [CommonModule, FormsModule, SopHeaderMetadataComponent, SopMasterDetailCompoundGridComponent, SopFormDonWorkspaceComponent],
   templateUrl: './sop-1767856825928-entry.component.html'
 })
 export class Sop1767856825928EntryComponent extends AbstractSopEntry implements OnChanges {

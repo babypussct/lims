@@ -48,4 +48,5 @@ test('sanitizes URLs inside report maps before persistence', () => {
   });
   assert.equal(result?.a.pdfUrl, `https://drive.google.com/file/d/${FILE_ID}/view`);
   assert.equal(result?.a.docsUrl, '');
+  assert.equal(Object.hasOwn(result.a, 'pdfViewUrl'), false);
 });

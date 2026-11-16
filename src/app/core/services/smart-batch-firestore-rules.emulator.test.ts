@@ -33,6 +33,7 @@ import type { Sop } from '../models/sop.model';
 import { persistDutyMonthImport } from '../../features/duty-stats/duty-tsv-import.persistence';
 import { DUTY_TSV_HEADER, parseDutyTsv } from '../../features/duty-stats/duty-tsv-import';
 import type { DutyScheduleEntry } from '../../features/duty-stats/duty-schedule.model';
+import { ResultService } from '../../features/results/services/result.service';
 import { StandardCodeRegistryService } from '../../features/standards/services/standard-code-registry.service';
 import { StandardCodeRecallService } from '../../features/standards/services/standard-code-recall.service';
 import { StandardInternalIdSyncService } from '../../features/standards/services/standard-internal-id-sync.service';
@@ -3384,4 +3385,378 @@ test('real normalization scan/apply issues and revokes certificates, and event q
   assert.equal(events.length, 100);
   assert.equal(events[0].createdAt.toMillis(), 1700000000104);
   assert.equal(events[99].createdAt.toMillis(), 1700000000005);
+});
+
+
+test('publication commits results and immutable history atomically and rolls back duplicate versions', async () => {
+  const db = dbFor(users.batchA);
+  const requestId = 'atomic-publication';
+  const requestRef = doc(db, `artifacts/${APP_ID}/requests/${requestId}`);
+  const detailRef = doc(db, `artifacts/${APP_ID}/results_details/${requestId}`);
+  const historyRef = doc(db, `artifacts/${APP_ID}/requests/${requestId}/history/v1`);
+  await env.withSecurityRulesDisabled(async context => {
+    await setDoc(doc(context.firestore(), requestRef.path), {
+      sopId: 'SOP-01', sopName: 'SOP-01', status: 'draft',
+      lastUpdated: Timestamp.now()
+    });
+  });
+  const service = Object.assign(Object.create(ResultService.prototype), {
+    fb: { db, APP_ID },
+    auth: {
+      isManager: () => false, canRunBatch: () => true, canApprove: () => false,
+      userPermissions: () => ['batch_run'], currentUser: () => users.batchA
+    },
+    toast: { show: () => undefined },
+    dailyChecklistMaterializer: { materializeEntryGroupsBestEffort: async () => undefined }
+  }) as ResultService;
+  const history = {
+    id: 'v1',
+    data: { version: 1, publishedAt: new Date().toISOString(),
+      publishedBy: users.batchA.displayName, status: 'published',
+      resultDataBackup: { M01: { value: '1' } } }
+  };
+  assert.equal(await service.saveDraft(requestId, {
+    status: 'completed', version: 1, resultData: { M01: { value: '1' } }
+  }, false, true, 'published', 'publish', history), true);
+  assert.equal((await getDoc(requestRef)).data()?.status, 'completed');
+  assert.deepEqual((await getDoc(detailRef)).data()?.resultData, history.data.resultDataBackup);
+  assert.deepEqual((await getDoc(historyRef)).data()?.resultDataBackup, history.data.resultDataBackup);
+
+  await updateDoc(requestRef, {
+    status: 'draft', resultStatusReason: 'manual_edit', lastUpdated: serverTimestamp()
+  });
+  const before = (await getDoc(requestRef)).data();
+  assert.equal(await service.saveDraft(requestId, {
+    status: 'completed', version: 2, resultData: { M01: { value: '999' } }
+  }, false, true, 'published', 'publish', history), false);
+  assert.deepEqual((await getDoc(requestRef)).data(), before);
+  assert.deepEqual((await getDoc(detailRef)).data()?.resultData, history.data.resultDataBackup);
+  assert.deepEqual((await getDoc(historyRef)).data()?.resultDataBackup, history.data.resultDataBackup);
+});
+
+test('results integrity: privilege separation blocks worksheet bypass, enforces lock/completed on results_details, and keeps history immutable', async () => {
+  const sopApproveOnly = {
+    uid: 'sop-approve-only',
+    email: 'sop-approve-only@example.test',
+    displayName: 'SOP Approver Only',
+    role: 'staff',
+    roleId: 'role_custom_sop_approve_only',
+    permissions: [],
+    customPermissions: ['sop_approve']
+  } as const;
+
+  const sopApproveDb = env.authenticatedContext(sopApproveOnly.uid, { email: sopApproveOnly.email }).firestore();
+  const batchADb = dbFor(users.batchA);
+  const batchBDb = dbFor(users.batchB);
+  const managerDb = dbFor(users.manager);
+  const approverDb = dbFor(users.approver);
+
+  const reqApprovedId = 'sec-req-approved';
+  const reqLockedId = 'sec-req-locked';
+  const reqExpiredLockId = 'sec-req-expired-lock';
+  const reqCompletedId = 'sec-req-completed';
+
+  await env.withSecurityRulesDisabled(async context => {
+    const db = context.firestore();
+    const now = Timestamp.now();
+    const expired = Timestamp.fromMillis(Date.now() - 5 * 60 * 1000);
+    await Promise.all([
+      setDoc(doc(db, `artifacts/${APP_ID}/roles_config/role_custom_sop_approve_only`), { permissions: [] }),
+      setDoc(doc(db, `artifacts/${APP_ID}/users/${sopApproveOnly.uid}`), {
+        email: sopApproveOnly.email,
+        displayName: sopApproveOnly.displayName,
+        role: sopApproveOnly.role,
+        roleId: sopApproveOnly.roleId,
+        permissions: [...sopApproveOnly.permissions],
+        customPermissions: [...sopApproveOnly.customPermissions]
+      }),
+      setDoc(doc(db, `artifacts/${APP_ID}/requests/${reqApprovedId}`), {
+        sopId: 'SOP-01',
+        sopName: 'SOP-01',
+        status: 'pending',
+        items: [],
+        inputs: { n_sample: 2 },
+        timestamp: now,
+        lastUpdated: now
+      }),
+      setDoc(doc(db, `artifacts/${APP_ID}/requests/${reqLockedId}`), {
+        sopId: 'SOP-01',
+        sopName: 'SOP-01',
+        status: 'draft',
+        items: [],
+        lockedBy: users.batchA.email,
+        lockedByName: users.batchA.displayName,
+        lockedAt: now,
+        lastActiveAt: now,
+        lastUpdated: now
+      }),
+      setDoc(doc(db, `artifacts/${APP_ID}/results_details/${reqLockedId}`), {
+        requestId: reqLockedId,
+        sopId: 'SOP-01',
+        resultData: { M01: { val: '1.2' } }
+      }),
+      setDoc(doc(db, `artifacts/${APP_ID}/requests/${reqExpiredLockId}`), {
+        sopId: 'SOP-01',
+        sopName: 'SOP-01',
+        status: 'draft',
+        items: [],
+        lockedBy: users.batchA.email,
+        lockedByName: users.batchA.displayName,
+        lockedAt: expired,
+        lastActiveAt: expired,
+        lastUpdated: expired
+      }),
+      setDoc(doc(db, `artifacts/${APP_ID}/requests/${reqCompletedId}`), {
+        sopId: 'SOP-01',
+        sopName: 'SOP-01',
+        status: 'completed',
+        items: [],
+        analysisResultSummary: { version: 1, pdfUrl: 'https://example.test/v1.pdf' },
+        lastUpdated: now
+      }),
+      setDoc(doc(db, `artifacts/${APP_ID}/results_details/${reqCompletedId}`), {
+        requestId: reqCompletedId,
+        sopId: 'SOP-01',
+        resultData: { M01: { val: '5.0' } }
+      }),
+      setDoc(doc(db, `artifacts/${APP_ID}/requests/${reqCompletedId}/history/v1`), {
+        version: 1,
+        pdfUrl: 'https://example.test/v1.pdf',
+        publishedAt: '2026-11-16T08:00:00.000Z',
+        publishedBy: users.batchA.displayName,
+        page1DataBackup: {},
+        resultDataBackup: { M01: { val: '5.0' } },
+        status: 'published'
+      }),
+    ]);
+  });
+
+  // 1. P1 Separation: sop_approve-only CAN approve & edit pre-entry worksheet parameters,
+  //    but CANNOT steal locks, alter results, or change completed status.
+  await assertSucceeds(updateDoc(doc(sopApproveDb, `artifacts/${APP_ID}/requests/${reqApprovedId}`), {
+    status: 'approved',
+    approvedAt: serverTimestamp(),
+    lastUpdated: serverTimestamp()
+  }));
+  await assertSucceeds(updateDoc(doc(sopApproveDb, `artifacts/${APP_ID}/requests/${reqApprovedId}`), {
+    inputs: { n_sample: 3 },
+    lastUpdated: serverTimestamp()
+  }));
+  await assertFails(setDoc(doc(sopApproveDb, `artifacts/${APP_ID}/results_details/${reqApprovedId}`), {
+    requestId: reqApprovedId, resultData: { M01: { val: '999' } }
+  }));
+  await assertFails(setDoc(doc(sopApproveDb, `artifacts/${APP_ID}/requests/${reqApprovedId}/history/forged`), {
+    version: 1, publishedAt: new Date().toISOString(),
+    publishedBy: sopApproveOnly.displayName, status: 'published'
+  }));
+  await assertFails(updateDoc(doc(sopApproveDb, `artifacts/${APP_ID}/requests/${reqApprovedId}`), {
+    lockedBy: sopApproveOnly.email,
+    lockedByName: sopApproveOnly.displayName,
+    lockedAt: serverTimestamp(),
+    lastActiveAt: serverTimestamp(),
+    lastUpdated: serverTimestamp()
+  }));
+  await assertFails(updateDoc(doc(sopApproveDb, `artifacts/${APP_ID}/requests/${reqCompletedId}`), {
+    status: 'pending',
+    lastUpdated: serverTimestamp()
+  }));
+  await assertFails(updateDoc(doc(managerDb, `artifacts/${APP_ID}/requests/${reqCompletedId}`), {
+    status: 'pending',
+    lastUpdated: serverTimestamp()
+  }));
+  await assertFails(updateDoc(doc(managerDb, `artifacts/${APP_ID}/requests/${reqCompletedId}`), {
+    analysisResultSummary: { version: 99, pdfUrl: 'https://example.test/tampered.pdf' },
+    lastUpdated: serverTimestamp()
+  }));
+
+  // 2. P1 Active Lock protection: batchB, approver, and manager CANNOT silently overwrite batchA's active lock
+  await assertFails(updateDoc(doc(batchBDb, `artifacts/${APP_ID}/requests/${reqLockedId}`), {
+    lockedBy: users.batchB.email,
+    lockedByName: users.batchB.displayName,
+    lockedAt: serverTimestamp(),
+    lastActiveAt: serverTimestamp(),
+    lastUpdated: serverTimestamp()
+  }));
+  await assertFails(updateDoc(doc(managerDb, `artifacts/${APP_ID}/requests/${reqLockedId}`), {
+    lockedBy: users.manager.email,
+    lockedByName: users.manager.displayName,
+    lockedAt: serverTimestamp(),
+    lastActiveAt: serverTimestamp(),
+    lastUpdated: serverTimestamp()
+  }));
+  await assertFails(updateDoc(doc(batchBDb, `artifacts/${APP_ID}/requests/${reqLockedId}`), {
+    lastActiveAt: serverTimestamp(),
+    lastUpdated: serverTimestamp()
+  }));
+  await assertFails(updateDoc(doc(batchBDb, `artifacts/${APP_ID}/requests/${reqLockedId}`), {
+    lockedBy: deleteField(),
+    lockedByName: deleteField(),
+    lockedAt: deleteField(),
+    lastActiveAt: deleteField(),
+    lastUpdated: serverTimestamp()
+  }));
+  // Stale (>3m) expired lock CAN be acquired normally by batchB
+  await assertSucceeds(updateDoc(doc(batchBDb, `artifacts/${APP_ID}/requests/${reqExpiredLockId}`), {
+    lockedBy: users.batchB.email,
+    lockedByName: users.batchB.displayName,
+    lockedAt: serverTimestamp(),
+    lastActiveAt: serverTimestamp(),
+    lastUpdated: serverTimestamp()
+  }));
+
+  // 3. P1 results_details protection: locked by other, completed without unlock, or standalone writes FAIL
+  await assertFails(setDoc(doc(batchBDb, `artifacts/${APP_ID}/results_details/${reqLockedId}`), {
+    requestId: reqLockedId,
+    sopId: 'SOP-01',
+    resultData: { M01: { val: '999' } }
+  }));
+  await assertFails(setDoc(doc(approverDb, `artifacts/${APP_ID}/results_details/${reqLockedId}`), {
+    requestId: reqLockedId,
+    sopId: 'SOP-01',
+    resultData: { M01: { val: '999' } }
+  }));
+  await assertFails(setDoc(doc(batchADb, `artifacts/${APP_ID}/results_details/${reqCompletedId}`), {
+    requestId: reqCompletedId,
+    sopId: 'SOP-01',
+    resultData: { M01: { val: '999' } }
+  }));
+  const bypassCompletedBatch = writeBatch(managerDb);
+  bypassCompletedBatch.update(doc(managerDb, `artifacts/${APP_ID}/requests/${reqCompletedId}`), {
+    analysisResultSummary: { version: 2, pdfUrl: 'https://example.test/v2.pdf' },
+    lastUpdated: serverTimestamp()
+  });
+  bypassCompletedBatch.set(doc(managerDb, `artifacts/${APP_ID}/results_details/${reqCompletedId}`), {
+    requestId: reqCompletedId,
+    sopId: 'SOP-01',
+    resultData: { M01: { val: '999' } }
+  });
+  await assertFails(bypassCompletedBatch.commit());
+
+  // Proper atomic unlock (completed -> draft) alongside results_details succeeds for authorized user
+  const unlockBatch = writeBatch(batchADb);
+  unlockBatch.update(doc(batchADb, `artifacts/${APP_ID}/requests/${reqCompletedId}`), {
+    status: 'draft',
+    resultStatusReason: 'manual_edit',
+    manualEditStartedAt: serverTimestamp(),
+    lastUpdated: serverTimestamp()
+  });
+  unlockBatch.set(doc(batchADb, `artifacts/${APP_ID}/results_details/${reqCompletedId}`), {
+    requestId: reqCompletedId,
+    sopId: 'SOP-01',
+    resultData: { M01: { val: '5.5' } }
+  });
+  await assertSucceeds(unlockBatch.commit());
+
+  // 4. P1 History append-only immutability & lock protection
+  await assertFails(setDoc(doc(batchBDb, `artifacts/${APP_ID}/requests/${reqLockedId}/history/v1`), {
+    version: 1,
+    pdfUrl: 'https://example.test/hijack.pdf',
+    publishedAt: '2026-11-16T08:10:00.000Z',
+    publishedBy: users.batchB.displayName,
+    status: 'published'
+  }));
+  await assertSucceeds(setDoc(doc(batchADb, `artifacts/${APP_ID}/requests/${reqCompletedId}/history/v2`), {
+    version: 2,
+    pdfUrl: 'https://example.test/v2.pdf',
+    publishedAt: '2026-11-16T08:15:00.000Z',
+    publishedBy: users.batchA.displayName,
+    page1DataBackup: {},
+    resultDataBackup: { M01: { val: '5.5' } },
+    status: 'published'
+  }));
+  await assertFails(updateDoc(doc(batchADb, `artifacts/${APP_ID}/requests/${reqCompletedId}/history/v1`), {
+    status: 'archived'
+  }));
+  await assertFails(updateDoc(doc(managerDb, `artifacts/${APP_ID}/requests/${reqCompletedId}/history/v1`), {
+    pdfUrl: 'https://example.test/forged.pdf'
+  }));
+  await assertFails(deleteDoc(doc(batchADb, `artifacts/${APP_ID}/requests/${reqCompletedId}/history/v1`)));
+  await assertFails(deleteDoc(doc(managerDb, `artifacts/${APP_ID}/requests/${reqCompletedId}/history/v1`)));
+
+  // 5. P1 ResultService real transaction acquire/takeover/heartbeat/release with two competing accounts
+  const makeResultService = (user: TestUser, db: any) => Object.assign(Object.create(ResultService.prototype), {
+    fb: { db, APP_ID },
+    auth: {
+      isManager: () => user.role === 'manager',
+      canRunBatch: () => user.role === 'manager' || ['role_lab_technician', 'role_qc_lead'].includes(user.roleId),
+      canApprove: () => user.role === 'manager' || user.roleId === 'role_qc_lead',
+      userPermissions: () => [...user.permissions, ...user.customPermissions],
+      currentUser: () => user
+    }
+  }) as ResultService;
+
+  const svcA = makeResultService(users.batchA, batchADb);
+  const svcB = makeResultService(users.batchB, batchBDb);
+  const raceId = 'sec-req-lock-race';
+  await env.withSecurityRulesDisabled(async context => {
+    await setDoc(doc(context.firestore(), `artifacts/${APP_ID}/requests/${raceId}`), {
+      sopId: 'SOP-01',
+      sopName: 'SOP-01',
+      status: 'draft',
+      items: [],
+      lastUpdated: Timestamp.now()
+    });
+  });
+
+  // Only one concurrent caller acquires the unlocked run; the other observes conflict/locked_by_others
+  const [raceA, raceB] = await Promise.all([
+    svcA.acquireLock(raceId, users.batchA.email, users.batchA.displayName, { mode: 'acquire' }),
+    svcB.acquireLock(raceId, users.batchB.email, users.batchB.displayName, { mode: 'acquire' })
+  ]);
+  const winners = [raceA, raceB].filter(r => r.acquired);
+  const losers = [raceA, raceB].filter(r => !r.acquired);
+  assert.equal(winners.length, 1);
+  assert.equal(losers.length, 1);
+
+  const raceSnap1 = (await getDoc(doc(batchADb, `artifacts/${APP_ID}/requests/${raceId}`))).data()!;
+  const winnerUser = raceSnap1['lockedBy'] === users.batchA.email ? users.batchA : users.batchB;
+  const loserUser = winnerUser === users.batchA ? users.batchB : users.batchA;
+  const winnerSvc = winnerUser === users.batchA ? svcA : svcB;
+  const loserSvc = winnerUser === users.batchA ? svcB : svcA;
+
+  // Non-owner heartbeat & release MUST return false without touching lock
+  assert.equal(await loserSvc.updateHeartbeat(raceId), false);
+  assert.equal(await loserSvc.releaseLock(raceId), false);
+  assert.equal((await getDoc(doc(batchADb, `artifacts/${APP_ID}/requests/${raceId}`))).data()?.['lockedBy'], winnerUser.email);
+
+  // Stale expectedLockerEmail takeover returns false without overwriting active lock
+  assert.deepEqual(
+    await loserSvc.acquireLock(raceId, loserUser.email, loserUser.displayName, {
+      mode: 'takeover',
+      expectedLockerEmail: 'wrong-user@example.test'
+    }),
+    { acquired: false, reason: 'conflict', lockedByName: winnerUser.displayName }
+  );
+
+  // Controlled takeover with matching expectedLockerEmail succeeds cleanly and records audit fields
+  assert.deepEqual(
+    await loserSvc.acquireLock(raceId, loserUser.email, loserUser.displayName, {
+      mode: 'takeover',
+      expectedLockerEmail: winnerUser.email
+    }),
+    { acquired: true }
+  );
+  const takenSnap = (await getDoc(doc(batchBDb, `artifacts/${APP_ID}/requests/${raceId}`))).data()!;
+  assert.equal(takenSnap['lockedBy'], loserUser.email);
+  assert.equal(takenSnap['lockTakeoverFrom'], winnerUser.email);
+  assert.equal(takenSnap['lockTakeoverByUid'], loserUser.uid);
+
+  // Previous owner heartbeat & release return false; current lock owner (loserSvc) succeeds
+  assert.equal(await winnerSvc.updateHeartbeat(raceId), false);
+  assert.equal(await loserSvc.updateHeartbeat(raceId), true);
+  assert.equal(await loserSvc.releaseLock(raceId), true);
+  assert.equal((await getDoc(doc(batchBDb, `artifacts/${APP_ID}/requests/${raceId}`))).data()?.['lockedBy'], undefined);
+
+  // Display names are not unique identities: two accounts sharing a name can
+  // still transfer ownership, while email/UID and server audit time change.
+  await env.withSecurityRulesDisabled(async context => {
+    await updateDoc(doc(context.firestore(), `artifacts/${APP_ID}/users/${users.batchB.uid}`), {
+      displayName: users.batchA.displayName
+    });
+  });
+  assert.equal((await svcA.acquireLock(raceId, users.batchA.email, users.batchA.displayName)).acquired, true);
+  assert.equal((await svcB.acquireLock(raceId, users.batchB.email, users.batchA.displayName, {
+    mode: 'takeover', expectedLockerEmail: users.batchA.email
+  })).acquired, true);
+  assert.equal(await svcB.releaseLock(raceId), true);
 });

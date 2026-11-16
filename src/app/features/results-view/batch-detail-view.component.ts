@@ -2,7 +2,6 @@ import { Component, inject, signal, computed, OnInit, OnDestroy, ElementRef, vie
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
 import { StateService } from '../../core/services/state.service';
 import { AuthService } from '../../core/services/auth.service';
@@ -11,10 +10,9 @@ import { PrintService } from '../../core/services/print.service';
 import { BatchWorksheetService } from '../../core/services/batch-worksheet.service';
 import { worksheetReference } from '../../shared/utils/batch-worksheet';
 import { ToastService } from '../../core/services/toast.service';
-import { GoogleDriveService } from '../../core/services/google-drive.service';
 import { AnalysisResultDraft } from '../../core/models/analysis-result.model';
 import { resolveConfigKey, ANGULAR_SOP_CONFIG } from '../results/config/sop-configs';
-import { getSafeGooglePreviewUrl, getSafeGoogleUrl, formatSampleList } from '../../shared/utils/utils';
+import { getSafeGooglePreviewUrl } from '../../shared/utils/utils';
 import { ensureQrious } from '../../shared/utils/external-script-loader';
 import { resolveCompoundDisplayName, isCompoundAssigned } from '../results/shared/compound-id-resolver';
 import { MasterTargetService } from '../targets/master-target.service';
@@ -22,11 +20,14 @@ import { timestampToDate } from '../../shared/utils/timestamp';
 import { ConfirmationService } from '../../core/services/confirmation.service';
 import { AppPageHeaderComponent } from '../../shared/components/ui/page-header/page-header.component';
 import { AppButtonComponent } from '../../shared/components/ui/button/button.component';
+import { AppModalShellComponent } from '../../shared/components/ui/modal-shell/modal-shell.component';
+import { ResultPdfReportPaneComponent, PdfPaneModalEvent } from '../results/components/result-pdf-report-pane.component';
+import { canUserEditResults, isRunActivelyLockedByOthers } from '../results/services/result-write-guard';
 
 @Component({
   selector: 'app-batch-detail-view',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, AppPageHeaderComponent, AppButtonComponent],
+  imports: [CommonModule, FormsModule, RouterModule, AppPageHeaderComponent, AppButtonComponent, AppModalShellComponent, ResultPdfReportPaneComponent],
   template: `
     <div class="h-full flex flex-col animate-fade-in p-4 lg:p-6 space-y-4 lg:space-y-5">
       
@@ -42,7 +43,7 @@ import { AppButtonComponent } from '../../shared/components/ui/button/button.com
           (click)="goBack()"
           aria-label="Quay lại danh sách kết quả"
           title="Quay lại danh sách kết quả"
-          class="group flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200/80 bg-white text-slate-600 shadow-soft-sm transition hover:bg-slate-50 hover:text-fuchsia-600 active:scale-95 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-fuchsia-400">
+          class="group flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200/80 bg-white text-slate-600 shadow-soft-sm transition hover:bg-slate-50 hover:text-indigo-600 active:scale-95 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-indigo-400">
           <i class="fa-solid fa-arrow-left text-xs transition-transform group-hover:-translate-x-0.5" aria-hidden="true"></i>
         </button>
 
@@ -53,22 +54,37 @@ import { AppButtonComponent } from '../../shared/components/ui/button/button.com
           <div pageHeaderActions class="flex items-center gap-2">
             <button
               type="button"
-              (click)="openQrModal()"
-              class="inline-flex h-9 items-center gap-2 rounded-xl border border-slate-200/80 bg-white px-3 text-xs font-bold text-slate-700 shadow-soft-sm transition hover:bg-slate-50 active:scale-95 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
-              <i class="fa-solid fa-qrcode text-fuchsia-500" aria-hidden="true"></i>
-              <span>Mã QR</span>
+              (click)="toggleFocusMode()"
+              [attr.aria-pressed]="isFocusMode()"
+              [class]="isFocusMode()
+                ? 'border-indigo-300 bg-indigo-50 text-indigo-700 dark:border-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-300'
+                : 'border-slate-200/80 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'"
+              class="hidden lg:inline-flex h-9 items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold shadow-soft-sm transition active:scale-95"
+              [title]="isFocusMode() ? 'Thoát chế độ tập trung' : 'Chế độ tập trung (ẩn thanh điều hướng)'">
+              <i class="fa-solid text-xs" [class.fa-compress]="isFocusMode()" [class.fa-expand]="!isFocusMode()" aria-hidden="true"></i>
+              <span>{{ isFocusMode() ? 'Thu gọn' : 'Mở rộng' }}</span>
             </button>
 
             <button
               type="button"
-              (click)="goToEditMode()"
-              [class]="lockedByOthers()
-                ? 'inline-flex h-9 items-center gap-2 rounded-xl bg-amber-600 px-4 text-xs font-bold text-white shadow-soft-md transition hover:bg-amber-700 active:scale-95'
-                : 'inline-flex h-9 items-center gap-2 rounded-xl bg-gradient-soft px-4 text-xs font-bold text-white shadow-soft-md transition active:scale-95'"
-              [title]="lockedByOthers() ? 'Mẻ này đang bị sửa bởi ' + run()?.lockedByName + '. Nhấp để xem chi tiết hoặc Giành quyền.' : 'Nhấp để chỉnh sửa số liệu'">
-              <i class="fa-solid" [class.fa-lock]="lockedByOthers()" [class.fa-pen-to-square]="!lockedByOthers()" aria-hidden="true"></i>
-              <span>{{ lockedByOthers() ? 'Mẻ đang khóa' : 'Chỉnh sửa số liệu' }}</span>
+              (click)="openQrModal()"
+              class="inline-flex h-9 items-center gap-2 rounded-xl border border-slate-200/80 bg-white px-3 text-xs font-bold text-slate-700 shadow-soft-sm transition hover:bg-slate-50 active:scale-95 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
+              <i class="fa-solid fa-qrcode text-indigo-500" aria-hidden="true"></i>
+              <span>Mã QR</span>
             </button>
+
+            @if (canEditResults()) {
+              <button
+                type="button"
+                (click)="goToEditMode()"
+                [class]="lockedByOthers()
+                  ? 'inline-flex h-9 items-center gap-2 rounded-xl bg-amber-600 px-4 text-xs font-bold text-white shadow-soft-md transition hover:bg-amber-700 active:scale-95'
+                  : 'inline-flex h-9 items-center gap-2 rounded-xl bg-indigo-600 px-4 text-xs font-bold text-white shadow-soft-md transition hover:bg-indigo-700 active:scale-95'"
+                [title]="lockedByOthers() ? 'Mẻ này đang bị sửa bởi ' + run()?.lockedByName + '. Nhấp để xem chi tiết hoặc Giành quyền.' : 'Nhấp để chỉnh sửa số liệu'">
+                <i class="fa-solid" [class.fa-lock]="lockedByOthers()" [class.fa-pen-to-square]="!lockedByOthers()" aria-hidden="true"></i>
+                <span>{{ lockedByOthers() ? 'Mẻ đang khóa' : 'Chỉnh sửa số liệu' }}</span>
+              </button>
+            }
           </div>
         }
 
@@ -77,7 +93,7 @@ import { AppButtonComponent } from '../../shared/components/ui/button/button.com
             <span [class]="getStatusClass()" class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-wide shadow-xs">
               <span class="h-1.5 w-1.5 rounded-full" [ngClass]="{
                 'bg-emerald-500': draft()?.status === 'completed',
-                'bg-fuchsia-500': draft()?.status === 'draft',
+                'bg-indigo-500': draft()?.status === 'draft',
                 'bg-amber-500': $any(draft()?.status) === 'pending' || !draft()?.status
               }"></span>
               {{ getStatusText() }}
@@ -105,7 +121,7 @@ import { AppButtonComponent } from '../../shared/components/ui/button/button.com
             </div>
 
             @if (run()?.parentMasterId) {
-              <a [routerLink]="['/results-view', run().parentMasterId]" class="inline-flex items-center gap-1 rounded-full bg-fuchsia-50 px-2.5 py-1 text-[9px] font-extrabold uppercase text-fuchsia-600 shadow-xs transition hover:bg-fuchsia-100 dark:bg-fuchsia-950/30 dark:text-fuchsia-400 dark:hover:bg-fuchsia-900/30" title="Mẻ chạy này đã được gộp số liệu. Nhấn để đi tới mẻ tổng hợp.">
+              <a [routerLink]="['/results-view', run().parentMasterId]" class="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2.5 py-1 text-[9px] font-extrabold uppercase text-indigo-600 shadow-xs transition hover:bg-indigo-100 dark:bg-indigo-950/30 dark:text-indigo-400 dark:hover:bg-indigo-900/30" title="Mẻ chạy này đã được gộp số liệu. Nhấn để đi tới mẻ tổng hợp.">
                 <i class="fa-solid fa-link text-[8px]" aria-hidden="true"></i>
                 Đã gộp mẻ tổng hợp
               </a>
@@ -118,30 +134,32 @@ import { AppButtonComponent } from '../../shared/components/ui/button/button.com
       @if (isLoading()) {
         <div class="flex-1 flex items-center justify-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-800/80 p-12">
           <div class="text-center space-y-4">
-            <i class="fa-solid fa-circle-notch fa-spin text-3xl text-fuchsia-600 dark:text-fuchsia-400"></i>
+            <i class="fa-solid fa-circle-notch fa-spin text-3xl text-indigo-600 dark:text-indigo-400"></i>
             <p class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Đang tải chi tiết mẻ chạy...</p>
           </div>
         </div>
       } @else if (run() && draft() && config()) {
         <!-- Locking warning banner for View-Only Details -->
         @if (lockedByOthers()) {
-          <div class="bg-amber-50/50 dark:bg-amber-955/20 border border-amber-200/40 dark:border-amber-900/30 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4 duration-300 shrink-0">
+          <div class="bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4 duration-300 shrink-0">
             <div class="flex items-start gap-3.5">
-              <div class="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 flex items-center justify-center border border-amber-200/20 shrink-0">
+              <div class="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 flex items-center justify-center border border-amber-200/40 shrink-0">
                 <i class="fa-solid fa-lock text-sm animate-pulse"></i>
               </div>
               <div>
                 <h4 class="text-xs font-black uppercase tracking-wider text-amber-800 dark:text-amber-400">Mẻ Chạy Đang Được Chỉnh Sửa</h4>
-                <p class="text-[11px] text-amber-650 dark:text-amber-300 font-semibold mt-0.5">
+                <p class="text-[11px] text-amber-700 dark:text-amber-300 font-semibold mt-0.5">
                   KTV <strong>{{ run()?.lockedByName }}</strong> đang chỉnh sửa mẻ này từ lúc <strong>{{ convertToDate(run()?.lockedAt) | date: 'HH:mm dd/MM/yyyy' }}</strong>. Số liệu hiển thị có thể thay đổi liên tục.
                 </p>
               </div>
             </div>
-            <button (click)="takeOverLock()"
-                    class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-black rounded-xl transition flex items-center gap-2 shrink-0 active:scale-95 shadow-md shadow-amber-500/10 cursor-pointer">
-              <i class="fa-solid fa-unlock-keyhole"></i>
-              <span>Giành Quyền Chỉnh Sửa</span>
-            </button>
+            @if (canEditResults()) {
+              <button (click)="takeOverLock()"
+                      class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-black rounded-xl transition flex items-center gap-2 shrink-0 active:scale-95 shadow-md shadow-amber-500/10 cursor-pointer">
+                <i class="fa-solid fa-unlock-keyhole"></i>
+                <span>Giành Quyền Chỉnh Sửa</span>
+              </button>
+            }
           </div>
         }
 
@@ -149,7 +167,7 @@ import { AppButtonComponent } from '../../shared/components/ui/button/button.com
         <div class="lg:hidden flex bg-slate-100 dark:bg-slate-950 p-1 rounded-2xl border border-slate-200/60 dark:border-slate-800/80 shrink-0 mb-1">
           <button (click)="mobileActiveTab.set('grid')"
                   [class]="mobileActiveTab() === 'grid'
-                    ? 'flex-1 py-2.5 text-xs font-black bg-white dark:bg-slate-800 text-fuchsia-650 dark:text-fuchsia-400 rounded-xl shadow-xs border border-slate-200/20 dark:border-slate-700/30'
+                    ? 'flex-1 py-2.5 text-xs font-black bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 rounded-xl shadow-xs border border-slate-200/40 dark:border-slate-700/40'
                     : 'flex-1 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'"
                   class="transition-all duration-200 flex items-center justify-center gap-2">
             <i class="fa-solid fa-table-cells text-sm"></i>
@@ -157,24 +175,24 @@ import { AppButtonComponent } from '../../shared/components/ui/button/button.com
           </button>
           <button (click)="mobileActiveTab.set('pdf')"
                   [class]="mobileActiveTab() === 'pdf'
-                    ? 'flex-1 py-2.5 text-xs font-black bg-white dark:bg-slate-800 text-fuchsia-650 dark:text-fuchsia-400 rounded-xl shadow-xs border border-slate-200/20 dark:border-slate-700/30'
+                    ? 'flex-1 py-2.5 text-xs font-black bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 rounded-xl shadow-xs border border-slate-200/40 dark:border-slate-700/40'
                     : 'flex-1 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'"
                   class="transition-all duration-200 flex items-center justify-center gap-2">
-            <i class="fa-solid fa-file-pdf text-sm text-red-500"></i>
-            <span>Xem Trước PDF</span>
+            <i class="fa-solid fa-file-pdf text-sm text-rose-500"></i>
+            <span>Báo Cáo &amp; PDF</span>
           </button>
         </div>
 
-        <div class="flex-1 min-h-0 flex flex-col lg:flex-row gap-5 overflow-hidden lg:h-[calc(100vh-220px)] lg:min-h-[600px]">
+        <div class="flex-1 min-h-0 flex flex-col lg:flex-row gap-5 overflow-hidden lg:h-[calc(100vh-220px)] lg:min-h-[580px]">
           
-          <!-- LEFT PANE: CHROMATOGRAPHY GRID (approx 55-60%) -->
-          <div [class.hidden]="mobileActiveTab() !== 'grid'" class="lg:!flex lg:flex-[6] flex flex-col min-h-0 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
+          <!-- LEFT PANE: CHROMATOGRAPHY GRID (58%) -->
+          <div [class.hidden]="mobileActiveTab() !== 'grid'" class="lg:!flex lg:flex-[58] flex flex-col min-h-0 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
             
             <!-- Header of Grid -->
-            <div class="px-5 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/30 shrink-0">
+            <div class="px-5 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 shrink-0">
               <div class="flex items-center gap-3 min-w-0">
                 <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center m-0 shrink-0">
-                  <i class="fa-solid fa-table-cells mr-2.5 text-fuchsia-500"></i> Bảng Kết Quả Chạy
+                  <i class="fa-solid fa-table-cells mr-2.5 text-indigo-500"></i> Bảng Kết Quả Chạy
                 </h4>
                 
                 <!-- Prefix filter tabs -->
@@ -182,7 +200,7 @@ import { AppButtonComponent } from '../../shared/components/ui/button/button.com
                   <div class="flex items-center bg-slate-100 dark:bg-slate-950 p-0.5 rounded-lg border border-slate-200/60 dark:border-slate-800/80 ml-2 overflow-x-auto max-w-[200px] sm:max-w-none custom-scrollbar shrink-0">
                     <button (click)="changeActiveFilter('ALL')"
                             [class]="activeFilter() === 'ALL'
-                              ? 'px-2 py-1 text-[9px] font-black bg-white dark:bg-slate-800 text-fuchsia-650 dark:text-fuchsia-400 rounded shadow-xs'
+                              ? 'px-2 py-1 text-[9px] font-black bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 rounded shadow-xs'
                               : 'px-2 py-1 text-[9px] font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'"
                             class="transition duration-150 shrink-0">
                       Tất Cả
@@ -190,7 +208,7 @@ import { AppButtonComponent } from '../../shared/components/ui/button/button.com
                     @for (prefix of detectedPrefixes(); track prefix) {
                       <button (click)="changeActiveFilter(prefix)"
                               [class]="activeFilter() === prefix
-                                ? 'px-2 py-1 text-[9px] font-black bg-white dark:bg-slate-800 text-fuchsia-650 dark:text-fuchsia-400 rounded shadow-xs'
+                                ? 'px-2 py-1 text-[9px] font-black bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 rounded shadow-xs'
                                 : 'px-2 py-1 text-[9px] font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'"
                               class="transition duration-150 shrink-0">
                         {{ prefix === '' ? 'Không' : prefix }}
@@ -206,7 +224,7 @@ import { AppButtonComponent } from '../../shared/components/ui/button/button.com
                   @for (sample of run()?.sampleList; track sample; let idx = $index) {
                     <button (click)="activeSampleCode.set(sample)"
                             [class]="activeSampleCode() === sample
-                              ? 'bg-fuchsia-600 text-white font-bold shadow-md shadow-fuchsia-500/20 border-transparent'
+                              ? 'bg-indigo-600 text-white font-bold shadow-md shadow-indigo-500/20 border-transparent'
                               : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'"
                             class="px-2.5 py-1.5 rounded-lg text-[11px] flex items-center gap-1.5 shrink-0 transition-all duration-200">
                       <span class="font-mono">{{ sample }}</span>
@@ -268,7 +286,7 @@ import { AppButtonComponent } from '../../shared/components/ui/button/button.com
                       <tr class="border-t-2 border-dashed border-slate-200 dark:border-slate-700">
                         <td [attr.colspan]="7" class="py-2.5 px-4 bg-slate-50/60 dark:bg-slate-900/40">
                           <button (click)="showAllTargets.set(!showAllTargets())"
-                                  class="w-full flex items-center justify-center gap-2 text-[11px] font-bold text-slate-500 dark:text-slate-400 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition-colors">
+                                  class="w-full flex items-center justify-center gap-2 text-[11px] font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
                             <i class="fa-solid text-[9px] transition-transform duration-200"
                                [class.fa-chevron-down]="!showAllTargets()"
                                [class.fa-chevron-up]="showAllTargets()"></i>
@@ -328,7 +346,7 @@ import { AppButtonComponent } from '../../shared/components/ui/button/button.com
                       @if (hiddenColumns().length > 0) {
                         <th class="py-3.5 px-3 text-center font-semibold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider w-24">
                           <button (click)="showAllTargets.set(!showAllTargets())"
-                                  class="inline-flex items-center justify-center gap-1 text-[9px] font-bold text-slate-400 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition whitespace-nowrap">
+                                  class="inline-flex items-center justify-center gap-1 text-[9px] font-bold text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition whitespace-nowrap">
                             <i class="fa-solid"
                                [class.fa-plus-circle]="!showAllTargets()"
                                [class.fa-minus-circle]="showAllTargets()"></i>
@@ -343,7 +361,7 @@ import { AppButtonComponent } from '../../shared/components/ui/button/button.com
                   <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80 font-medium">
                     @for (row of getType2DisplayRows(); track row.key) {
                       <tr [ngClass]="{
-                        'bg-fuchsia-50/30 dark:bg-fuchsia-900/10 font-semibold text-slate-900 dark:text-slate-100': row.isQC,
+                        'bg-indigo-50/40 dark:bg-indigo-900/15 font-semibold text-slate-900 dark:text-slate-100': row.isQC,
                         'bg-white dark:bg-slate-900': !row.isQC
                       }" class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors bg-white dark:bg-slate-900">
                         
@@ -353,7 +371,7 @@ import { AppButtonComponent } from '../../shared/components/ui/button/button.com
                         
                         <td class="py-3 px-5 sticky left-24 bg-inherit z-10 border-r border-slate-100 dark:border-slate-800/80 shadow-[4px_0_8px_-3px_rgba(0,0,0,0.08)] dark:shadow-[4px_0_8px_-3px_rgba(0,0,0,0.3)]">
                           @if (row.isQC) {
-                            <span class="inline-flex items-center gap-2 text-sm text-fuchsia-600 dark:text-fuchsia-400 font-bold uppercase tracking-wide">
+                            <span class="inline-flex items-center gap-2 text-sm text-indigo-600 dark:text-indigo-400 font-bold uppercase tracking-wide">
                               <i class="fa-solid fa-flask text-xs"></i> {{ row.label }}
                             </span>
                           } @else {
@@ -399,110 +417,28 @@ import { AppButtonComponent } from '../../shared/components/ui/button/button.com
             </div>
           </div>
 
-          <!-- RIGHT PANE: PDF PREVIEW (approx 40-45%) -->
-          <div [class.hidden]="mobileActiveTab() !== 'pdf'" class="lg:!flex lg:flex-[4] flex flex-col min-h-[300px] lg:min-h-[600px] bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden relative">
-            
-            <div class="px-5 py-4 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/30 shrink-0 relative z-10">
-              <div class="flex items-center gap-3">
-                <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center m-0">
-                  <i class="fa-solid fa-file-pdf mr-2.5 text-red-500"></i> XEM TRƯỚC PDF
-                </h4>
-                
-                @if (availableReports().length > 1) {
-                  <select [ngModel]="selectedPdfPrefix()" 
-                          (ngModelChange)="selectReport($event)"
-                          class="bg-white dark:bg-slate-850 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-750 rounded-lg px-2 py-1 text-[11px] font-bold outline-none focus:ring-1 focus:ring-fuchsia-500 shadow-sm">
-                    @for (report of availableReports(); track report.key) {
-                      <option [value]="report.key">{{ report.label }}</option>
-                    }
-                  </select>
-                }
-              </div>
-              
-              <div class="flex items-center gap-3">
-                @if (currentDocsUrl()) {
-                  <a [href]="currentDocsUrl()" target="_blank" rel="noopener noreferrer"
-                     class="px-2.5 py-1 text-[10px] font-bold text-slate-650 hover:text-fuchsia-600 dark:text-slate-300 dark:hover:text-fuchsia-400 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-750 rounded-lg border border-slate-200/60 dark:border-slate-700/80 transition flex items-center gap-1.5 no-underline shadow-xs cursor-pointer"
-                     title="Mở Google Docs gốc để xem/chỉnh sửa ở cửa sổ mới">
-                    <i class="fa-solid fa-file-word text-blue-500"></i>
-                    <span>Google Docs</span>
-                  </a>
-                }
-
-                @if (currentPdfUrl()) {
-                  <button (click)="openPdfInModal(currentPdfUrl()!)" 
-                          class="p-2 -mr-2 text-slate-400 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition active:scale-90" title="Mở PDF toàn màn hình (Modal hệ thống)">
-                    <i class="fa-solid fa-expand text-sm lg:text-base"></i>
-                  </button>
-                }
-              </div>
-            </div>
-
-            <div class="flex-1 bg-slate-100/50 dark:bg-slate-950/50 flex flex-col relative">
-              @if (currentPdfUrl()) {
-                @if (isInlinePdfLoading()) {
-                  <div class="flex-1 flex flex-col items-center justify-center gap-4 p-8 text-center">
-                    <div class="w-12 h-12 rounded-2xl bg-fuchsia-50 dark:bg-fuchsia-950/30 flex items-center justify-center border border-fuchsia-100 dark:border-fuchsia-900/40">
-                      <i class="fa-solid fa-circle-notch fa-spin text-xl text-fuchsia-500"></i>
-                    </div>
-                    <div>
-                      <p class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Đang tải PDF...</p>
-                      <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Tải dữ liệu từ Google Drive qua proxy</p>
-                    </div>
-                  </div>
-                } @else if (inlinePdfNeedsAuth()) {
-                  <div class="flex-1 flex flex-col items-center justify-center gap-4 p-8 text-center">
-                    <div class="w-14 h-14 rounded-2xl bg-amber-50 dark:bg-amber-950/20 flex items-center justify-center border border-amber-100 dark:border-amber-900/40">
-                      <i class="fa-solid fa-key text-2xl text-amber-500"></i>
-                    </div>
-                    <div>
-                      <p class="text-sm font-bold text-slate-700 dark:text-slate-200">Cần xác thực Google Drive</p>
-                      <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xs">Phiên xác thực đã hết hạn. Xác thực lại để xem PDF trực tiếp trong trang.</p>
-                    </div>
-                    <div class="flex items-center gap-2">
-                      <button (click)="beginInlinePdfAuth()"
-                              class="px-4 py-2 bg-fuchsia-600 hover:bg-fuchsia-700 text-white rounded-xl text-xs font-bold transition active:scale-95">
-                        <i class="fa-solid fa-rotate-right mr-1.5"></i>Xác thực & tải lại
-                      </button>
-                      <button (click)="openPdfInModal(currentPdfUrl()!)"
-                              class="px-4 py-2 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-700 transition active:scale-95">
-                        Mở modal
-                      </button>
-                    </div>
-                  </div>
-                } @else if (inlinePdfError()) {
-                  <div class="flex-1 flex flex-col items-center justify-center gap-4 p-8 text-center">
-                    <i class="fa-solid fa-triangle-exclamation text-3xl text-amber-500"></i>
-                    <div>
-                      <p class="text-sm font-bold text-slate-700 dark:text-slate-200">Không thể tải PDF trực tiếp</p>
-                      <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Bạn vẫn có thể mở bằng modal hệ thống.</p>
-                    </div>
-                    <button (click)="openPdfInModal(currentPdfUrl()!)"
-                            class="px-4 py-2 bg-fuchsia-600 hover:bg-fuchsia-700 text-white rounded-xl text-xs font-bold transition active:scale-95">
-                      <i class="fa-solid fa-expand mr-1.5"></i>Mở qua hệ thống
-                    </button>
-                  </div>
-                } @else if (inlinePdfSafeUrl()) {
-                  <iframe [src]="inlinePdfSafeUrl()!" class="w-full h-full border-none bg-white flex-1"></iframe>
-                } @else {
-                  <div class="flex-1 flex flex-col items-center justify-center gap-3 p-8 text-center">
-                    <i class="fa-solid fa-file-pdf text-4xl text-red-400 animate-pulse"></i>
-                    <p class="text-xs text-slate-400">Đang chuẩn bị PDF...</p>
-                  </div>
-                }
-              } @else {
-                <div class="flex-1 flex flex-col items-center justify-center text-slate-400 dark:text-slate-600 p-8 text-center space-y-3 relative z-10">
-                  <i class="fa-regular fa-file-pdf text-4xl"></i>
-                  <p class="text-sm font-medium">{{ pdfPreviewEmptyMessage() }}</p>
-                </div>
-              }
-            </div>
+          <!-- RIGHT PANE: REPORTS & PDF PREVIEW (42%) -->
+          <div [class.hidden]="mobileActiveTab() !== 'pdf'" class="lg:!flex lg:flex-[42] flex flex-col min-h-[360px] lg:min-h-[580px]">
+            <app-result-pdf-report-pane
+              class="flex-1 min-h-0 flex flex-col"
+              [run]="run()"
+              [draft]="draft()"
+              [historyList]="historyList()"
+              [activeFilter]="activeFilter()"
+              [selectedReportId]="selectedPdfPrefix()"
+              [canRestore]="false"
+              [isReadOnly]="true"
+              [initialTab]="'preview'"
+              [showCloseButton]="false"
+              (selectedReportIdChange)="selectedPdfPrefix.set($event)"
+              (filterSyncRequested)="changeActiveFilter($event)"
+              (openModalPreview)="openPdfFromPane($event)" />
           </div>
         </div>
       } @else if (run() && !draft()) {
         <!-- PENDING STATE: No results entered yet -->
         <div class="flex-1 flex flex-col items-center justify-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 border-dashed p-12 animate-fade-in shadow-sm">
-          <div class="w-20 h-20 bg-fuchsia-50 dark:bg-fuchsia-955/30 border border-fuchsia-100 dark:border-fuchsia-900/50 rounded-full flex items-center justify-center text-fuchsia-500 text-3xl mb-5 shadow-inner">
+          <div class="w-20 h-20 bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/50 rounded-full flex items-center justify-center text-indigo-500 text-3xl mb-5 shadow-inner">
             <i class="fa-solid fa-file-pen"></i>
           </div>
           <h4 class="text-xl font-black text-slate-800 dark:text-slate-100 mb-2 tracking-tight">Chưa Có Kết Quả Phân Tích</h4>
@@ -510,13 +446,15 @@ import { AppButtonComponent } from '../../shared/components/ui/button/button.com
             Mẻ chạy <span class="font-bold text-slate-700 dark:text-slate-300">[{{ run()?.inputs?.['batchCode'] || run()?.id || 'Chưa có mã mẻ' }}]</span> hiện chưa được nhập số liệu và đánh giá QC. Nhấn nút bên dưới để bắt đầu điền kết quả.
           </p>
           <div class="flex items-center gap-3">
-            <button (click)="goBack()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-600 dark:text-slate-300 rounded-xl text-sm font-bold transition active:scale-95 shadow-sm">
+            <button (click)="goBack()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-sm font-bold transition active:scale-95 shadow-sm">
               Quay Lại
             </button>
-            <button (click)="goToEditMode()" class="px-6 py-2.5 bg-fuchsia-600 hover:bg-fuchsia-700 text-white rounded-xl text-sm font-black transition shadow-md shadow-fuchsia-500/20 active:scale-95 flex items-center gap-2">
-              <i class="fa-solid fa-play text-xs"></i>
-              Mở Màn Hình Nhập Kết Quả
-            </button>
+            @if (canEditResults()) {
+              <button (click)="goToEditMode()" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-black transition shadow-md shadow-indigo-500/20 active:scale-95 flex items-center gap-2">
+                <i class="fa-solid fa-play text-xs"></i>
+                Mở Màn Hình Nhập Kết Quả
+              </button>
+            }
           </div>
         </div>
       } @else {
@@ -529,7 +467,7 @@ import { AppButtonComponent } from '../../shared/components/ui/button/button.com
           <p class="text-xs text-slate-400 dark:text-slate-500 mb-4 text-center max-w-sm">
             Không tìm thấy thông tin chi tiết hoặc cấu hình SOP tương ứng của mẻ chạy phân tích này.
           </p>
-          <button (click)="goBack()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition">
+          <button (click)="goBack()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition">
             Quay Lại Danh Sách
           </button>
         </div>
@@ -537,35 +475,30 @@ import { AppButtonComponent } from '../../shared/components/ui/button/button.com
 
       <!-- QR Interactive Modal -->
       @if (isQrModalOpen()) {
-        <div class="fixed inset-0 z-[100] flex items-center justify-center fade-in backdrop-blur-md bg-slate-900/60" (click)="isQrModalOpen.set(false)">
-          <div class="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-2xl shadow-2xl scale-in border border-slate-200 dark:border-slate-800 flex flex-col items-center gap-6 max-w-[calc(100vw-2rem)]" (click)="$event.stopPropagation()">
-            <div class="text-center space-y-2">
-              <h3 class="text-xl font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider">Xác Minh Mẻ Chạy</h3>
-              <p class="text-xs text-slate-500 dark:text-slate-400 max-w-[280px] mx-auto leading-relaxed">Sử dụng điện thoại để quét hoặc truy cập vào liên kết đối chiếu độc lập của hệ thống LIMS.</p>
-            </div>
-            
-            <div class="bg-white p-4 rounded-2xl shadow-inner border border-slate-200/60 max-w-full flex items-center justify-center">
+        <app-modal-shell
+          size="sm"
+          title="Xác minh mẻ chạy"
+          description="Sử dụng điện thoại để quét hoặc truy cập liên kết đối chiếu độc lập của hệ thống LIMS."
+          [showFooter]="false"
+          (closed)="isQrModalOpen.set(false)">
+          <div modalBody class="flex flex-col items-center gap-5">
+            <div class="bg-white p-4 rounded-2xl shadow-inner border border-slate-200/70 max-w-full flex items-center justify-center">
               <canvas #qrModalCanvas class="w-[240px] h-[240px] max-w-full aspect-square object-contain"></canvas>
             </div>
-            
-            <div class="flex items-center gap-3 w-full justify-center">
-              <button (click)="viewTraceability()" 
-                      class="px-5 py-2.5 bg-fuchsia-650 hover:bg-fuchsia-700 text-white rounded-xl text-xs font-black shadow-sm active:scale-95 transition flex items-center gap-2">
-                <i class="fa-solid fa-arrow-up-right-from-square"></i>
-                <span>Mở Trang</span>
-              </button>
-              <button (click)="copyTraceabilityLink()" 
-                      class="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-655 dark:text-slate-355 rounded-xl text-xs font-bold active:scale-95 transition border border-slate-200/50">
-                <i class="fa-solid fa-copy"></i>
-                <span>Sao Chép Liên Kết</span>
-              </button>
-            </div>
 
-            <button (click)="isQrModalOpen.set(false)" class="w-full px-8 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 text-slate-700 rounded-xl text-xs font-black active:scale-95 transition mt-2 border border-slate-200/60 dark:border-slate-700">
-              Đóng
-            </button>
+            <div class="flex flex-wrap items-center gap-2.5 w-full justify-center">
+              <button type="button" (click)="viewTraceability()"
+                      class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm active:scale-95 transition flex items-center gap-2">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                <span>Mở trang</span>
+              </button>
+              <app-button variant="secondary" size="sm" (click)="copyTraceabilityLink()">
+                <i class="fa-solid fa-copy"></i>
+                <span>Sao chép liên kết</span>
+              </app-button>
+            </div>
           </div>
-        </div>
+        </app-modal-shell>
       }
     </div>
 
@@ -584,15 +517,25 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
   private toast = inject(ToastService);
   private masterTargetService = inject(MasterTargetService);
   private auth = inject(AuthService);
-  private sanitizer = inject(DomSanitizer);
-  private googleDriveService = inject(GoogleDriveService);
 
   requestId = '';
   isLoading = signal(true);
+  isFocusMode = this.state.focusMode;
 
   qrCanvas = viewChild<ElementRef<HTMLCanvasElement>>('qrCanvas');
   qrModalCanvas = viewChild<ElementRef<HTMLCanvasElement>>('qrModalCanvas');
   isQrModalOpen = signal(false);
+
+  canEditResults = computed(() => canUserEditResults({
+    isManager: this.auth.isManager(),
+    canRunBatch: this.auth.canRunBatch(),
+    canApprove: this.auth.canApprove(),
+    permissions: this.auth.userPermissions()
+  }));
+
+  toggleFocusMode() {
+    this.state.toggleFocusMode();
+  }
 
   constructor() {
     effect(() => {
@@ -607,11 +550,6 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
       this.activeFilter();
       untracked(() => this.showAllTargets.set(false));
     });
-
-    effect(() => {
-      const pdfUrl = this.currentPdfUrl();
-      untracked(() => this.startInlinePdfLoad(pdfUrl));
-    });
   }
 
   // App models signals
@@ -619,6 +557,7 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
   draft = signal<AnalysisResultDraft | null>(null);
   config = signal<any | null>(null);
   configKey = signal<string | null>(null);
+  historyList = signal<any[]>([]);
 
   // Master analyte DB signals
   masterTargets = signal<any[]>([]);
@@ -632,14 +571,7 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
   mobileActiveTab = signal<'grid' | 'pdf'>('grid');
   showAllTargets = signal(false);
 
-  inlinePdfBlobUrl = signal<string | null>(null);
-  isInlinePdfLoading = signal(false);
-  inlinePdfError = signal(false);
-  inlinePdfNeedsAuth = signal(false);
-
   private unsubscribeFromDraft?: () => void;
-  private hasInitializedReportSelection = false;
-  private inlinePdfLoadSeq = 0;
 
   // Detected prefixes list
   detectedPrefixes = computed(() => {
@@ -656,19 +588,7 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
     return Array.from(prefixes).sort();
   });
 
-  lockedByOthers = computed(() => {
-    const r = this.run();
-    const user = this.auth.currentUser();
-    if (!r?.lockedBy || !user || r.lockedBy.toLowerCase() === user.email.toLowerCase()) return false;
-    
-    if (r.lastActiveAt) {
-      const lastActive = this.convertToDate(r.lastActiveAt);
-      if (lastActive && (new Date().getTime() - lastActive.getTime()) > 3 * 60 * 1000) {
-        return false;
-      }
-    }
-    return true;
-  });
+  lockedByOthers = computed(() => isRunActivelyLockedByOthers(this.run(), this.auth.currentUser()?.email));
 
   // Extract compounds columns
   activeColumns = computed<string[]>(() => {
@@ -710,11 +630,6 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
     return this.showAllTargets() ? this.activeColumns() : this.assignedColumns();
   });
 
-  inlinePdfSafeUrl = computed<SafeResourceUrl | null>(() => {
-    const url = this.inlinePdfBlobUrl();
-    return url ? this.sanitizer.bypassSecurityTrustResourceUrl(url) : null;
-  });
-
   // Dynamic checkbox checklist
   checkboxList = computed<{ key: string; label: string }[]>(() => {
     const conf = this.config();
@@ -737,6 +652,10 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
     if (initialPrefix !== null) {
       this.activeFilter.set(initialPrefix);
     }
+    const initialSample = this.route.snapshot.queryParamMap.get('sample');
+    if (initialSample) {
+      this.activeSampleCode.set(initialSample);
+    }
 
     // Load master Targets/Analytes
     try {
@@ -746,6 +665,7 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
       console.warn('Failed to load master analytes in Viewer', e);
     }
 
+    void this.loadHistory();
     this.isLoading.set(true);
 
     // Subscribe to Firebase real-time updates
@@ -755,9 +675,12 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
         if (runDoc) {
           this.run.set(runDoc);
 
-          // Auto-select first sample for 3B accordion
-          if (runDoc.sampleList && runDoc.sampleList.length > 0 && !this.activeSampleCode()) {
-            this.activeSampleCode.set(runDoc.sampleList[0]);
+          // Auto-select sample for 3B accordion (preserve requested sample if present)
+          if (runDoc.sampleList && runDoc.sampleList.length > 0) {
+            const current = this.activeSampleCode();
+            if (!current || !runDoc.sampleList.includes(current)) {
+              this.activeSampleCode.set(runDoc.sampleList[0]);
+            }
           }
 
           const sopObj = this.state.sops().find((s: any) => s.id === runDoc.sopId) || null;
@@ -768,8 +691,6 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
             this.config.set({ ...sopConf, id: resolvedKey });
             this.configKey.set(resolvedKey);
             this.draft.set(draftDoc);
-            
-            this.ensureSelectedReport();
 
             // Build custom columns labels map
             this.buildColumnDisplayNames();
@@ -780,11 +701,20 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
     );
   }
 
+  async loadHistory() {
+    try {
+      const hist = await this.resultService.getHistory(this.requestId);
+      this.historyList.set(hist);
+    } catch (e) {
+      console.warn('Failed to load batch report history', e);
+    }
+  }
+
   ngOnDestroy() {
+    this.state.focusMode.set(false);
     if (this.unsubscribeFromDraft) {
       this.unsubscribeFromDraft();
     }
-    this.cleanupInlinePdf();
   }
 
   buildColumnDisplayNames() {
@@ -893,258 +823,10 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
     return key.startsWith('qc');
   }
 
-  private collectReports(): Map<string, any> {
-    const d = this.draft();
-    const r = this.run();
-    const reportsMap = new Map<string, any>();
-
-    // Load reports from draft first
-    if (d?.reports) {
-      Object.entries(d.reports).forEach(([key, value]) => {
-        const reportId = (value as any)?.id || key;
-        reportsMap.set(reportId, { ...(value as any), id: reportId });
-      });
-    }
-
-    // Merge reports from run to get the latest published PDFs
-    if (r) {
-       const runReports = r.analysisResultSummary?.reports || r.analysisResult?.reports;
-       if (runReports) {
-           Object.entries(runReports).forEach(([key, value]) => {
-              const reportId = (value as any)?.id || key;
-              if (!reportsMap.has(reportId)) {
-                reportsMap.set(reportId, { ...(value as any), id: reportId });
-              } else {
-                const existing = reportsMap.get(reportId);
-                reportsMap.set(reportId, {
-                   ...existing, 
-                   id: existing.id || reportId,
-                   pdfViewUrl: existing.pdfViewUrl || (value as any).pdfViewUrl, 
-                   pdfUrl: existing.pdfUrl || (value as any).pdfUrl,
-                   docsUrl: existing.docsUrl || (value as any).docsUrl
-                });
-             }
-          });
-       }
-    }
-
-    return reportsMap;
-  }
-
-  availableReports = computed(() => {
-    const reportsMap = this.collectReports();
-
-    // Convert map to array for UI
-    return Array.from(reportsMap.entries()).map(([key, value]: [string, any]) => {
-      const prefixValue = value?.prefix || key;
-      const normalizedPrefix = prefixValue === '_NO_PREFIX_' ? '' : prefixValue;
-      return {
-        key: value?.id || key,
-        prefix: normalizedPrefix,
-        label: this.getReportSampleLabel(value, normalizedPrefix),
-        fileName: value.pdfFileName || value.fileName,
-        url: value.pdfViewUrl || value.pdfUrl || null,
-        docsUrl: value.docsUrl || null,
-        version: value.version || 0
-      };
-    }).sort((a, b) => {
-      if (a.prefix !== b.prefix) return a.prefix.localeCompare(b.prefix);
-      return (b.version || 0) - (a.version || 0);
-    });
-  });
-
-  private getReportSampleLabel(report: any, prefix: string): string {
-    const samples = this.getReportSamples(report, prefix);
-    return samples.length > 0 ? formatSampleList(samples) : 'Chưa rõ mẫu';
-  }
-
-  private getReportSamples(report: any, prefix: string): string[] {
-    if (Array.isArray(report?.includedSamples) && report.includedSamples.length > 0) {
-      return [...report.includedSamples].sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
-    }
-
-    if (report?.samples && typeof report.samples === 'object') {
-      const samples = Object.keys(report.samples).filter(sample => report.samples[sample]?.included !== false);
-      if (samples.length > 0) {
-        return samples.sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
-      }
-    }
-
-    const r = this.run();
-    const sampleList = r?.sampleList || [];
-    if (prefix === 'ALL') return [...sampleList];
-
-    return sampleList.filter((sample: string) => {
-      const startsWithLetter = /^[a-zA-Z]/.test(sample);
-      const samplePrefix = startsWithLetter ? sample.charAt(0).toUpperCase() : '';
-      return samplePrefix === prefix;
-    });
-  }
-
   changeActiveFilter(prefix: string) {
     this.activeFilter.set(prefix);
     this.showAllTargets.set(false);
-
-    if (prefix === 'ALL') {
-      const overallReport = this.findOverallReportMeta();
-      this.selectedPdfPrefix.set(overallReport?.key || '');
-      this.hasInitializedReportSelection = true;
-      return;
-    }
-
-    const matchingReport = this.findLatestReportMetaByPrefix(prefix);
-    this.selectedPdfPrefix.set(matchingReport?.key || '');
-    this.hasInitializedReportSelection = true;
   }
-
-  selectReport(reportId: string) {
-    this.selectedPdfPrefix.set(reportId);
-    this.hasInitializedReportSelection = true;
-
-    const selectedReport = this.findReportMetaById(reportId);
-    if (selectedReport && selectedReport.prefix !== this.activeFilter()) {
-      this.activeFilter.set(selectedReport.prefix);
-      this.showAllTargets.set(false);
-    }
-  }
-
-  private ensureSelectedReport() {
-    const available = this.availableReports();
-    if (available.length === 0) {
-      if (this.activeFilter() === 'ALL' && this.getRootPdfUrl()) {
-        this.selectedPdfPrefix.set('');
-        this.hasInitializedReportSelection = true;
-      }
-      return;
-    }
-
-    const selected = this.selectedPdfPrefix();
-    const activeFilter = this.activeFilter();
-    const selectedMeta = selected ? this.findReportMetaById(selected) : null;
-    const selectionMatchesFilter = selectedMeta
-      ? selectedMeta.prefix === activeFilter
-      : activeFilter === 'ALL' && !!this.getRootPdfUrl();
-
-    if (this.hasInitializedReportSelection && selectionMatchesFilter) return;
-
-    if (activeFilter !== 'ALL') {
-      const preferred = this.findLatestReportMetaByPrefix(activeFilter);
-      this.selectedPdfPrefix.set(preferred?.key || '');
-      this.hasInitializedReportSelection = true;
-      return;
-    }
-
-    const overallReport = this.findOverallReportMeta();
-    if (overallReport || this.getRootPdfUrl()) {
-      this.selectedPdfPrefix.set(overallReport?.key || '');
-      this.hasInitializedReportSelection = true;
-      return;
-    }
-
-    const firstPrefixReport = available.find(report => report.prefix !== 'ALL');
-    if (firstPrefixReport) {
-      this.activeFilter.set(firstPrefixReport.prefix);
-      this.selectedPdfPrefix.set(firstPrefixReport.key);
-      this.hasInitializedReportSelection = true;
-      return;
-    }
-
-    this.selectedPdfPrefix.set('');
-    this.hasInitializedReportSelection = true;
-  }
-
-  private findReportMetaById(reportId: string | null | undefined): any | null {
-    if (!reportId) return null;
-    return this.availableReports().find(report => report.key === reportId) || null;
-  }
-
-  private findReportById(reportId: string | null | undefined): any | null {
-    if (!reportId) return null;
-    return this.collectReports().get(reportId) || null;
-  }
-
-  private findLatestReportMetaByPrefix(prefix: string): any | null {
-    return this.availableReports()
-      .filter(report => report.prefix === prefix)
-      .sort((a, b) => (b.version || 0) - (a.version || 0))[0] || null;
-  }
-
-  private findLatestReportByPrefix(prefix: string): any | null {
-    const selected = this.findReportMetaById(this.selectedPdfPrefix());
-    const reportMeta = selected?.prefix === prefix ? selected : this.findLatestReportMetaByPrefix(prefix);
-    return reportMeta ? this.findReportById(reportMeta.key) : null;
-  }
-
-  private findOverallReportMeta(): any | null {
-    return this.findLatestReportMetaByPrefix('ALL');
-  }
-
-  private getRootPdfUrl(): string | null {
-    const d = this.draft();
-    const r = this.run();
-    if (!d) return null;
-
-    return d.pdfViewUrl || (d as any).pdfUrl
-      || r?.analysisResultSummary?.pdfViewUrl || r?.analysisResultSummary?.pdfUrl
-      || r?.analysisResult?.pdfViewUrl || r?.analysisResult?.pdfUrl
-      || null;
-  }
-
-  private getRootDocsUrl(): string | null {
-    const d = this.draft();
-    const r = this.run();
-    if (!d) return null;
-
-    return d.docsUrl
-      || r?.analysisResultSummary?.docsUrl
-      || r?.analysisResult?.docsUrl
-      || null;
-  }
-
-  currentPdfUrl = computed<string | null>(() => {
-    const activeFilter = this.activeFilter();
-    if (!this.draft()) return null;
-
-    if (activeFilter !== 'ALL') {
-      const report = this.findLatestReportByPrefix(activeFilter);
-      return report?.pdfViewUrl || report?.pdfUrl || null;
-    }
-
-    const selectedMeta = this.findReportMetaById(this.selectedPdfPrefix());
-    const selectedReport = this.findReportById(this.selectedPdfPrefix());
-    let url = selectedMeta?.prefix === 'ALL'
-      ? selectedReport?.pdfViewUrl || selectedReport?.pdfUrl || null
-      : null;
-    if (url) return url;
-
-    url = this.getRootPdfUrl();
-    if (url) return url;
-
-    return null;
-  });
-
-  currentDocsUrl = computed<string | null>(() => {
-    const activeFilter = this.activeFilter();
-    if (!this.draft()) return null;
-
-    if (activeFilter !== 'ALL') {
-      const report = this.findLatestReportByPrefix(activeFilter);
-      return report?.docsUrl ? getSafeGoogleUrl(report.docsUrl, 'doc') : null;
-    }
-
-    const selectedMeta = this.findReportMetaById(this.selectedPdfPrefix());
-    const selectedReport = this.findReportById(this.selectedPdfPrefix());
-    let url = selectedMeta?.prefix === 'ALL' ? selectedReport?.docsUrl || null : null;
-    if (!url) url = this.getRootDocsUrl();
-    return url ? getSafeGoogleUrl(url, 'doc') : null;
-  });
-
-  pdfPreviewEmptyMessage = computed(() => {
-    if (this.activeFilter() === 'ALL' && this.detectedPrefixes().length > 1) {
-      return 'Chưa có PDF toàn mẻ. Chọn một tiền tố để xem PDF tương ứng.';
-    }
-    return 'Chưa có bản xem trước PDF cho phạm vi đang chọn.';
-  });
 
   getType2DisplayRows(): any[] {
     const d = this.draft();
@@ -1332,104 +1014,22 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
     return list;
   }
 
-  getCurrentPdfUrl(): string | null {
-    return this.currentPdfUrl();
-  }
-
-
-  getCurrentDocsUrl(): string | null {
-    return this.currentDocsUrl();
-  }
-
-  private startInlinePdfLoad(pdfUrl: string | null) {
-    const seq = ++this.inlinePdfLoadSeq;
-    this.cleanupInlinePdf();
-    if (!pdfUrl) {
-      this.isInlinePdfLoading.set(false);
-      return;
-    }
-
-    void this.loadPdfBlob(pdfUrl, seq);
-  }
-
-  private async loadPdfBlob(pdfUrl: string, seq: number) {
-    const fileId = this.extractFileId(pdfUrl);
-    if (!fileId) {
-      if (seq === this.inlinePdfLoadSeq) {
-        this.inlinePdfBlobUrl.set(pdfUrl);
-      }
-      return;
-    }
-
-    this.isInlinePdfLoading.set(true);
-    this.inlinePdfError.set(false);
-    this.inlinePdfNeedsAuth.set(false);
-    try {
-      const rawBlob = await this.googleDriveService.downloadFile(fileId);
-      const blob = new Blob([rawBlob], { type: 'application/pdf' });
-      const blobUrl = URL.createObjectURL(blob);
-      if (seq === this.inlinePdfLoadSeq && this.currentPdfUrl() === pdfUrl) {
-        this.inlinePdfBlobUrl.set(blobUrl);
-      } else {
-        URL.revokeObjectURL(blobUrl);
-      }
-    } catch (err: any) {
-      if (seq !== this.inlinePdfLoadSeq) return;
-      if (err?.code === 'oauth_required') {
-        this.inlinePdfNeedsAuth.set(true);
-      } else {
-        console.error('[InlinePDF] Failed to load PDF blob:', err);
-        this.inlinePdfError.set(true);
-      }
-    } finally {
-      if (seq === this.inlinePdfLoadSeq) {
-        this.isInlinePdfLoading.set(false);
-      }
-    }
-  }
-
-  private extractFileId(url: string): string | null {
-    const fileDMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-    if (fileDMatch?.[1]) return fileDMatch[1];
-
-    const genericDMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
-    if (genericDMatch?.[1]) return genericDMatch[1];
-
-    try {
-      const urlObj = new URL(url);
-      return urlObj.searchParams.get('id');
-    } catch {
-      const idMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-      return idMatch?.[1] || null;
-    }
-  }
-
-  private cleanupInlinePdf() {
-    const current = this.inlinePdfBlobUrl();
-    if (current?.startsWith('blob:')) {
-      URL.revokeObjectURL(current);
-    }
-    this.inlinePdfBlobUrl.set(null);
-    this.inlinePdfError.set(false);
-    this.inlinePdfNeedsAuth.set(false);
-  }
-
-  beginInlinePdfAuth() {
-    this.googleDriveService.beginRedirectAuth();
-  }
-
-
-  openPdfInModal(url: string) {
-    const activeFilter = this.activeFilter();
+  openPdfFromPane(ev: PdfPaneModalEvent) {
+    const activeFilter = ev.prefix === 'ALL' || ev.prefix === undefined
+      ? this.activeFilter()
+      : (ev.prefix === '_NO_PREFIX_' ? '' : ev.prefix);
     const filterName = activeFilter === 'ALL' ? 'Tất cả mẫu' : (activeFilter === '' ? 'Không tiền tố' : `Nhóm ${activeFilter}`);
-    const previewUrl = this.getGoogleDrivePreviewUrl(url);
+    const previewUrl = this.getGoogleDrivePreviewUrl(ev.pdfUrl);
+    const docPreviewUrl = ev.docsUrl ? this.getGoogleDrivePreviewUrl(ev.docsUrl) : undefined;
 
     this.printService.openPdfPreview(
       previewUrl,
       `Báo cáo kết quả — ${this.run()?.sopName || ''} (${filterName})`,
-      this.draft()?.version || 1,
-      this.draft()?.updatedBy || 'Chưa rõ',
-      this.draft()?.updatedAt
+      ev.version ?? this.draft()?.version ?? 1,
+      ev.publishedBy ?? this.draft()?.updatedBy ?? 'Chưa rõ',
+      ev.publishedAt ?? this.draft()?.updatedAt,
+      'iframe',
+      docPreviewUrl
     );
   }
 
@@ -1446,9 +1046,9 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
       return 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 border-emerald-200/40 dark:border-emerald-900/30';
     }
     if (status === 'draft') {
-      return 'bg-fuchsia-50 dark:bg-fuchsia-955/20 text-fuchsia-700 dark:text-fuchsia-400 border-fuchsia-200/40 dark:border-fuchsia-900/30';
+      return 'bg-indigo-50 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-400 border-indigo-200/50 dark:border-indigo-900/40';
     }
-    return 'bg-amber-50 dark:bg-amber-955/20 text-amber-700 dark:text-amber-400 border-amber-200/40 dark:border-amber-900/30';
+    return 'bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 border-amber-200/40 dark:border-amber-900/30';
   }
 
   convertToDate(timestamp: any): Date | null {
@@ -1456,6 +1056,7 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
   }
 
   async takeOverLock() {
+    if (!this.canEditResults()) return;
     const user = this.auth.currentUser();
     const run = this.run();
     if (!user || !run) return;
@@ -1467,19 +1068,42 @@ export class BatchDetailViewComponent implements OnInit, OnDestroy {
     });
     if (confirmed) {
       this.isLoading.set(true);
-      await this.resultService.acquireLock(this.requestId, user.email, user.displayName);
-      this.isLoading.set(false);
-      this.toast.show('Bạn đã giành quyền chỉnh sửa mẻ này thành công!', 'success');
-      this.goToEditMode();
+      try {
+        const result = await this.resultService.acquireLock(
+          this.requestId,
+          user.email,
+          user.displayName,
+          { mode: 'takeover', expectedLockerEmail: run.lockedBy }
+        );
+        if (result.acquired) {
+          this.toast.show('Bạn đã giành quyền chỉnh sửa mẻ này thành công!', 'success');
+          this.goToEditMode();
+        } else if (result.reason === 'completed') {
+          this.toast.show('Mẻ đã hoàn thành, hãy mở khóa chỉnh sửa khi vào biểu mẫu.', 'warning');
+        } else if (result.reason === 'conflict' || result.reason === 'locked_by_others') {
+          this.toast.show(
+            `Trạng thái khóa đã thay đổi (${result.lockedByName || 'người dùng khác'}). Vui lòng thử lại.`,
+            'warning'
+          );
+        } else {
+          this.toast.show('Không thể giành quyền chỉnh sửa mẻ này. Vui lòng thử lại.', 'error');
+        }
+      } finally {
+        this.isLoading.set(false);
+      }
     }
   }
 
   goToEditMode() {
-    this.router.navigate(['/results', this.requestId], {
-      queryParams: this.activeFilter() !== 'ALL'
-        ? { prefix: this.activeFilter(), edit: '1' }
-        : { edit: '1' }
-    });
+    if (!this.canEditResults()) return;
+    const queryParams: Record<string, string> = { edit: '1' };
+    if (this.activeFilter() !== 'ALL') {
+      queryParams['prefix'] = this.activeFilter();
+    }
+    if (this.activeSampleCode()) {
+      queryParams['sample'] = this.activeSampleCode();
+    }
+    this.router.navigate(['/results', this.requestId], { queryParams });
   }
 
   goBack() {

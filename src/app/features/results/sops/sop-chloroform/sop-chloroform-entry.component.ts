@@ -2,16 +2,33 @@ import { Component, Input, Output, EventEmitter, OnInit, signal, inject } from '
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AnalysisResultDraft } from '../../../../core/models/analysis-result.model';
+import { AuthService } from '../../../../core/services/auth.service';
+import { ConfirmationService } from '../../../../core/services/confirmation.service';
+import { ToastService } from '../../../../core/services/toast.service';
 import { MasterTargetService } from '../../../targets/master-target.service';
 import { resolveCompoundDisplayName } from '../../shared/compound-id-resolver';
 import { SopHeaderMetadataComponent } from '../shared/sop-header-metadata.component';
 import { SopCalibrationPointsComponent } from '../shared/sop-calibration-points.component';
+import { SopSpreadsheetToolbarComponent } from '../shared/sop-spreadsheet-toolbar.component';
+import { SopRecoverySectionComponent, RecoveryCheckEntry } from '../shared/sop-recovery-section.component';
 import { bulkFillND, bulkClearAll, copyRowToAll, navigateGrid } from '../shared/sop-grid-helper';
+import {
+  GridPasteController,
+  GridPasteGridSpec,
+  WriteGuardContext,
+} from '../shared/sop-paste-undo';
 
 @Component({
   selector: 'app-sop-chloroform-entry',
   standalone: true,
-  imports: [CommonModule, FormsModule, SopHeaderMetadataComponent, SopCalibrationPointsComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    SopHeaderMetadataComponent,
+    SopCalibrationPointsComponent,
+    SopSpreadsheetToolbarComponent,
+    SopRecoverySectionComponent,
+  ],
   templateUrl: './sop-chloroform-entry.component.html'
 })
 export class SopChloroformEntryComponent implements OnInit {
@@ -23,10 +40,15 @@ export class SopChloroformEntryComponent implements OnInit {
   @Input() activeFilter = 'ALL';
   @Output() draftChanged = new EventEmitter<AnalysisResultDraft>();
 
+  private auth = inject(AuthService);
+  private confirmation = inject(ConfirmationService);
+  private toast = inject(ToastService);
   private masterTargetService = inject(MasterTargetService);
   masterTargets = signal<any[]>([]);
   columnDisplayNames = signal<Record<string, string>>({});
   activeColumns: string[] = [];
+  mobileViewMode = signal<'table' | 'cards'>('table');
+  pasteCtrl = new GridPasteController();
 
   bulkVialStart = 1;
   bulkVialEnd = 1;
@@ -160,11 +182,11 @@ export class SopChloroformEntryComponent implements OnInit {
       }
     }
 
-    if (this.draft.page1Data['hasFinal'] && !this.draft.resultData['QC_FINAL']) {
+    if (!this.isReadOnly && this.draft.page1Data['hasFinal'] && !this.draft.resultData['QC_FINAL']) {
       this.onFinalToggled();
     }
 
-    if (hasChanges) {
+    if (!this.isReadOnly && hasChanges) {
       this.onDataChanged();
     }
 
@@ -177,9 +199,11 @@ export class SopChloroformEntryComponent implements OnInit {
 
     this.onBulkVialStartChange();
     this.onBulkCalibVialStartChange();
-    this.syncSpreadsheetVialsFromCalibration();
-    this.updateChloroformRecovery('QC_SPIKE');
-    this.updateChloroformRecovery('QC_FINAL');
+    if (!this.isReadOnly) {
+      this.syncSpreadsheetVialsFromCalibration();
+      this.updateChloroformRecovery('QC_SPIKE');
+      this.updateChloroformRecovery('QC_FINAL');
+    }
   }
 
   private async loadMasterTargets() {
@@ -207,6 +231,7 @@ export class SopChloroformEntryComponent implements OnInit {
   }
 
   applyCalibVials() {
+    if (this.isReadOnly) return;
     const start = parseInt(String(this.bulkCalibVialStart), 10);
     if (isNaN(start)) return;
     const calibPoints = this.draft.page1Data['calibPoints'];
@@ -252,6 +277,7 @@ export class SopChloroformEntryComponent implements OnInit {
   }
 
   onCalibrationPointsChanged() {
+    if (this.isReadOnly) return;
     this.syncSpreadsheetVialsFromCalibration();
     this.onDataChanged();
   }
@@ -281,6 +307,7 @@ export class SopChloroformEntryComponent implements OnInit {
   }
 
   toggleSelectAll(event: any) {
+    if (this.isReadOnly) return;
     const checked = event.target.checked;
     const visible = this.getVisibleRegularSamples();
     visible.forEach((s: string) => {
@@ -293,6 +320,7 @@ export class SopChloroformEntryComponent implements OnInit {
   }
 
   applyBulkVials() {
+    if (this.isReadOnly) return;
     const start = parseInt(String(this.bulkVialStart), 10);
     if (isNaN(start)) return;
     const visible = this.getVisibleRegularSamples();
@@ -313,6 +341,7 @@ export class SopChloroformEntryComponent implements OnInit {
   }
 
   applyBulkKhoiLuongF() {
+    if (this.isReadOnly) return;
     const visible = this.getVisibleRegularSamples();
     visible.forEach((sample: string) => {
       if (!this.draft.resultData[sample]) {
@@ -357,6 +386,7 @@ export class SopChloroformEntryComponent implements OnInit {
   }
 
   onCellChanged(key: string) {
+    if (this.isReadOnly) return;
     if (key === 'QC_SPIKE' || key === 'QC_FINAL') {
       this.updateChloroformRecovery(key);
     }
@@ -364,6 +394,7 @@ export class SopChloroformEntryComponent implements OnInit {
   }
 
   onFinalToggled() {
+    if (this.isReadOnly) return;
     if (this.draft.page1Data['hasFinal']) {
       const spike = this.draft.resultData['QC_SPIKE'];
       this.draft.resultData['QC_FINAL'] = {
@@ -426,6 +457,7 @@ export class SopChloroformEntryComponent implements OnInit {
   }
 
   bulkFillND() {
+    if (this.isReadOnly) return;
     const displayRows = this.getDisplayRows();
     displayRows.forEach((row: any) => {
       const rowData = this.draft.resultData[row.key];
@@ -439,6 +471,7 @@ export class SopChloroformEntryComponent implements OnInit {
   }
 
   bulkClearAll() {
+    if (this.isReadOnly) return;
     const displayRows = this.getDisplayRows();
     displayRows.forEach((row: any) => {
       const rowData = this.draft.resultData[row.key];
@@ -453,13 +486,164 @@ export class SopChloroformEntryComponent implements OnInit {
   }
 
   copyRowToAll(sourceKey: string) {
+    if (this.isReadOnly) return;
     copyRowToAll(this.draft.resultData, this.run.sampleList, this.activeColumns, sourceKey);
     this.onDataChanged();
   }
 
-  handleGridNavigation(event: KeyboardEvent, rowIdx: number, colName: string, colIdx: number) {
-    const columnsList = ['selected', 'loSo', ...this.activeColumns, 'ghiChu'];
+  handleGridNavigation(event: KeyboardEvent, rowIdx: number, _colName: string, colIdx: number) {
+    const columnsList = ['loSo', ...this.activeColumns, 'ghiChu'];
     const rows = this.getDisplayRows();
-    navigateGrid(event, rowIdx, colIdx, columnsList, rows.length, 1);
+    navigateGrid(event, rowIdx, colIdx, columnsList, rows.length, 0);
+  }
+
+  recoveryEntries(): RecoveryCheckEntry[] {
+    const loaiMau = this.draft?.page1Data?.['loai_mau'] || this.run?.inputs?.['loai_mau'] || 'Thực phẩm';
+    const spikeTheoretical = loaiMau === 'Nước sạch' ? 10.0 : 5.0;
+    const spikeRow = this.draft?.resultData?.['QC_SPIKE'] || {};
+    const entries: RecoveryCheckEntry[] = [{
+      id: 'QC_SPIKE',
+      label: `${this.draft?.page1Data?.['spikeName'] || 'Spike'} — Chloroform`,
+      spikeConc: spikeRow['kqChloroform'],
+      addedConc: spikeTheoretical,
+      unit: 'ppb',
+    }];
+    if (this.draft?.page1Data?.['hasFinal'] && this.draft?.resultData?.['QC_FINAL']) {
+      entries.push({
+        id: 'QC_FINAL',
+        label: 'FINAL — Chloroform',
+        spikeConc: this.draft.resultData['QC_FINAL']['kqChloroform'],
+        addedConc: spikeTheoretical,
+        unit: 'ppb',
+      });
+    }
+    return entries;
+  }
+
+  private getWriteGuard(): WriteGuardContext {
+    return {
+      canEdit: this.auth.isManager() || this.auth.canRunBatch() || this.auth.canApprove(),
+      isReadOnly: this.isReadOnly,
+      isLockedByOthers: false,
+      isCompleted: this.draft?.status === 'completed',
+    };
+  }
+
+  private buildPasteGridSpec(startRowIndex: number, startColIndex: number): GridPasteGridSpec {
+    const rows = this.getDisplayRows().map(r => ({ rowKey: r.key, rowLabel: r.label }));
+    const columns = [
+      { colKey: 'loSo', colLabel: 'Lọ số' },
+      ...this.activeColumns.map(c => ({ colKey: c, colLabel: this.columnDisplayNames()[c] || this.getColumnLabel(c) })),
+      { colKey: 'ghiChu', colLabel: 'Ghi chú' },
+    ];
+    return {
+      rows,
+      columns,
+      startRowIndex,
+      startColIndex,
+      minNumericValue: 0,
+      allowTextNotesForCol: colKey => colKey === 'loSo' || colKey === 'ghiChu',
+      getCellSpec: (rowKey, colKey) => {
+        const lockedFinal = rowKey === 'QC_FINAL' && (colKey === 'loSo' || (colKey !== 'kqChloroform' && colKey !== 'ghiChu'));
+        return {
+          rowKey,
+          rowLabel: rowKey,
+          colKey,
+          colLabel: columns.find(c => c.colKey === colKey)?.colLabel || colKey,
+          editable: !this.isReadOnly && !lockedFinal,
+          assigned: true,
+        };
+      },
+      readCell: (rowKey, colKey) => ({ value: String(this.draft?.resultData?.[rowKey]?.[colKey] ?? '') }),
+    };
+  }
+
+  private makePasteWriter(touchedRows: Set<string>) {
+    return (rowKey: string, colKey: string, value: string) => {
+      if (!this.draft.resultData[rowKey]) this.draft.resultData[rowKey] = { selected: true };
+      this.draft.resultData[rowKey][colKey] = value;
+      touchedRows.add(rowKey);
+    };
+  }
+
+  async openClipboardPaste() {
+    if (this.isReadOnly) return;
+    try {
+      const text = await navigator.clipboard?.readText?.();
+      if (!text) {
+        this.toast.show('Clipboard trống.', 'warning');
+        return;
+      }
+      const firstLine = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n')[0] || '';
+      const colCount = firstLine.split('\t').length;
+      const kqIndex = this.activeColumns.indexOf('kqChloroform');
+      const startCol = colCount === 1 && kqIndex >= 0 ? kqIndex + 1 : 1;
+      const touched = new Set<string>();
+      const res = this.pasteCtrl.planOrApply(text, this.buildPasteGridSpec(0, startCol), this.getWriteGuard(), this.makePasteWriter(touched));
+      if (res.error) this.toast.show(res.error, 'error');
+      else if (res.applied) {
+        this.onDataChanged();
+        this.toast.show(`Đã dán ${res.count} ô dữ liệu.`, 'success');
+      }
+    } catch {
+      this.toast.show('Hãy chọn một ô và nhấn Ctrl+V để dán từ Excel.', 'info');
+    }
+  }
+
+  onCellPaste(event: ClipboardEvent, rowIdx: number, colIdx: number) {
+    if (this.isReadOnly) {
+      event.preventDefault();
+      return;
+    }
+    const text = event.clipboardData?.getData('text/plain') || '';
+    if (!text.includes('\t') && !text.includes('\n')) return;
+    event.preventDefault();
+    const touched = new Set<string>();
+    const res = this.pasteCtrl.planOrApply(text, this.buildPasteGridSpec(rowIdx, colIdx), this.getWriteGuard(), this.makePasteWriter(touched));
+    if (res.error) this.toast.show(res.error, 'error');
+    else if (res.applied) {
+      this.onDataChanged();
+      this.toast.show(`Đã dán ${res.count} ô dữ liệu.`, 'success');
+    }
+  }
+
+  confirmPendingPaste() {
+    const res = this.pasteCtrl.confirmPending(this.getWriteGuard());
+    if (res.applied) {
+      this.onDataChanged();
+      this.toast.show(`Đã dán ${res.count} ô dữ liệu.`, 'success');
+    } else if (res.error) {
+      this.toast.show(res.error, 'error');
+    }
+  }
+
+  undoLastPaste() {
+    if (this.isReadOnly) return;
+    const touched = new Set<string>();
+    const res = this.pasteCtrl.undoLast(
+      this.getWriteGuard(),
+      (rowKey, colKey) => ({ value: String(this.draft?.resultData?.[rowKey]?.[colKey] ?? '') }),
+      this.makePasteWriter(touched)
+    );
+    if (res.undone) {
+      this.onDataChanged();
+      this.toast.show(`Đã hoàn tác ${res.restoredCount} ô vừa dán.`, 'success');
+    } else if (res.reason) {
+      this.toast.show(res.reason, 'warning');
+    }
+  }
+
+  async confirmClearAll() {
+    if (this.isReadOnly) return;
+    const ok = await this.confirmation.confirm({
+      message: 'Xóa toàn bộ kết quả đã nhập trên bảng SOP Chloroform?',
+      confirmText: 'Xóa bảng',
+      isDangerous: true,
+    });
+    if (ok) {
+      this.pasteCtrl.bumpRevision();
+      this.pasteCtrl.reset();
+      this.bulkClearAll();
+    }
   }
 }

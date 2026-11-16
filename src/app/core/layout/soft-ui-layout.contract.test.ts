@@ -221,7 +221,7 @@ describe('Soft UI application layout contract', () => {
     assert.match(tailwind, /sans: \['"Open Sans"'/);
     assert.match(tailwind, /linear-gradient\(310deg, #7928ca 0%, #ff0080 100%\)/);
     assert.match(login, /fuchsia-/);
-    assert.match(results, /fuchsia-/);
+    assert.match(results, /indigo-/);
     assert.match(inventory, /fuchsia-/);
     assert.doesNotMatch(login, /animate-blob|animate-laser/);
   });

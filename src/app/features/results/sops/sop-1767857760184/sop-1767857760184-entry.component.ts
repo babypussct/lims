@@ -1,22 +1,44 @@
-import { Component, Input, OnInit, signal } from '@angular/core';
+import { Component, Input, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { AuthService } from '../../../../core/services/auth.service';
+import { ConfirmationService } from '../../../../core/services/confirmation.service';
+import { ToastService } from '../../../../core/services/toast.service';
 import { AbstractSopEntry } from '../shared/abstract-sop-entry';
 import { SopHeaderMetadataComponent } from '../shared/sop-header-metadata.component';
 import { SopCalibrationPointsComponent } from '../shared/sop-calibration-points.component';
+import { SopSpreadsheetToolbarComponent } from '../shared/sop-spreadsheet-toolbar.component';
+import { SopRecoverySectionComponent, RecoveryCheckEntry } from '../shared/sop-recovery-section.component';
 import { copyRowToAll, navigateGrid } from '../shared/sop-grid-helper';
+import {
+  GridPasteController,
+  GridPasteGridSpec,
+  WriteGuardContext,
+} from '../shared/sop-paste-undo';
 
 @Component({
   selector: 'app-sop-1767857760184-entry',
   standalone: true,
-  imports: [CommonModule, FormsModule, SopHeaderMetadataComponent, SopCalibrationPointsComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    SopHeaderMetadataComponent,
+    SopCalibrationPointsComponent,
+    SopSpreadsheetToolbarComponent,
+    SopRecoverySectionComponent,
+  ],
   templateUrl: './sop-1767857760184-entry.component.html'
 })
 export class Sop1767857760184EntryComponent extends AbstractSopEntry implements OnInit {
   @Input() activeFilter = 'ALL';
 
+  private authSvc = inject(AuthService);
+  private confirmSvc = inject(ConfirmationService);
+  private toastSvc = inject(ToastService);
   columnDisplayNames = signal<Record<string, string>>({});
   activeColumns: string[] = [];
+  mobileViewMode = signal<'table' | 'cards'>('table');
+  pasteCtrl = new GridPasteController();
 
   getStats() {
     const regularSamples = this.getVisibleRegularSamples();
@@ -206,6 +228,7 @@ export class Sop1767857760184EntryComponent extends AbstractSopEntry implements 
   }
 
   setMethod(method: 'GC/MS' | 'GC/MSMS') {
+    if (this.isReadOnly) return;
     if (this.draft.page1Data['dichlorvosMethod'] === method) return;
     this.draft.page1Data['dichlorvosMethod'] = method;
     
@@ -249,6 +272,7 @@ export class Sop1767857760184EntryComponent extends AbstractSopEntry implements 
   }
 
   override onFinalToggled() {
+    if (this.isReadOnly) return;
     if (this.draft.page1Data['hasFinal']) {
       const spikeVial = this.draft.resultData['QC_SPIKE']?.['loSo'] || (this.draft.page1Data['dichlorvosMethod'] === 'GC/MSMS' ? '8' : '58');
       this.draft.resultData['QC_FINAL'] = {
@@ -298,6 +322,7 @@ export class Sop1767857760184EntryComponent extends AbstractSopEntry implements 
   }
 
   onCellChanged(key: string) {
+    if (this.isReadOnly) return;
     if (key === 'QC_SPIKE' || key === 'QC_FINAL') {
       this.updateDichlorvosRecovery(key);
     }
@@ -305,6 +330,7 @@ export class Sop1767857760184EntryComponent extends AbstractSopEntry implements 
   }
 
   override onDataChanged() {
+    if (this.isReadOnly) return;
     // Sync FINAL vial, weight and dilution from SPIKE
     if (this.draft.resultData['QC_SPIKE'] && this.draft.resultData['QC_FINAL']) {
       this.draft.resultData['QC_FINAL']['loSo'] = this.draft.resultData['QC_SPIKE']['loSo'] || '';
@@ -414,6 +440,7 @@ export class Sop1767857760184EntryComponent extends AbstractSopEntry implements 
   }
 
   bulkFillND() {
+    if (this.isReadOnly) return;
     const displayRows = this.getDisplayRows();
     displayRows.forEach((row: any) => {
       const rowData = this.draft.resultData[row.key];
@@ -427,6 +454,7 @@ export class Sop1767857760184EntryComponent extends AbstractSopEntry implements 
   }
 
   bulkClearAll() {
+    if (this.isReadOnly) return;
     const displayRows = this.getDisplayRows();
     displayRows.forEach((row: any) => {
       const rowData = this.draft.resultData[row.key];
@@ -441,13 +469,166 @@ export class Sop1767857760184EntryComponent extends AbstractSopEntry implements 
   }
 
   copyRowToAll(sourceKey: string) {
+    if (this.isReadOnly) return;
     copyRowToAll(this.draft.resultData, this.run.sampleList, this.activeColumns, sourceKey);
     this.onDataChanged();
   }
 
-  handleGridNavigation(event: KeyboardEvent, rowIdx: number, colName: string, colIdx: number) {
-    const columnsList = ['selected', 'loSo', ...this.activeColumns, 'ghiChu'];
+  handleGridNavigation(event: KeyboardEvent, rowIdx: number, _colName: string, colIdx: number) {
+    const columnsList = ['loSo', ...this.activeColumns, 'ghiChu'];
     const rows = this.getDisplayRows();
-    navigateGrid(event, rowIdx, colIdx, columnsList, rows.length, 1);
+    navigateGrid(event, rowIdx, colIdx, columnsList, rows.length, 0);
+  }
+
+  recoveryEntries(): RecoveryCheckEntry[] {
+    const spikeRow = this.draft?.resultData?.['QC_SPIKE'] || {};
+    const entries: RecoveryCheckEntry[] = [{
+      id: 'QC_SPIKE',
+      label: `${this.draft?.page1Data?.['spikeName'] || 'Spike'} — Dichlorvos`,
+      spikeConc: spikeRow['kqDichlorvos'],
+      addedConc: 10,
+      unit: 'ng/g',
+      minPercent: 70,
+      maxPercent: 120,
+    }];
+    if (this.draft?.page1Data?.['hasFinal'] && this.draft?.resultData?.['QC_FINAL']) {
+      entries.push({
+        id: 'QC_FINAL',
+        label: 'FINAL — Dichlorvos',
+        spikeConc: this.draft.resultData['QC_FINAL']['kqDichlorvos'],
+        addedConc: 10,
+        unit: 'ng/g',
+        minPercent: 70,
+        maxPercent: 120,
+      });
+    }
+    return entries;
+  }
+
+  private getWriteGuard(): WriteGuardContext {
+    return {
+      canEdit: this.authSvc.isManager() || this.authSvc.canRunBatch() || this.authSvc.canApprove(),
+      isReadOnly: this.isReadOnly,
+      isLockedByOthers: false,
+      isCompleted: this.draft?.status === 'completed',
+    };
+  }
+
+  private buildPasteGridSpec(startRowIndex: number, startColIndex: number): GridPasteGridSpec {
+    const rows = this.getDisplayRows().map(r => ({ rowKey: r.key, rowLabel: r.label }));
+    const columns = [
+      { colKey: 'loSo', colLabel: 'Lọ số' },
+      ...this.activeColumns.map(c => ({ colKey: c, colLabel: this.columnDisplayNames()[c] || this.getColumnLabel(c) })),
+      { colKey: 'ghiChu', colLabel: 'Ghi chú' },
+    ];
+    return {
+      rows,
+      columns,
+      startRowIndex,
+      startColIndex,
+      minNumericValue: 0,
+      allowTextNotesForCol: colKey => colKey === 'loSo' || colKey === 'ghiChu',
+      getCellSpec: (rowKey, colKey) => {
+        const lockedFinal = rowKey === 'QC_FINAL' && (colKey === 'loSo' || (colKey !== 'kqDichlorvos' && colKey !== 'ghiChu'));
+        return {
+          rowKey,
+          rowLabel: rowKey,
+          colKey,
+          colLabel: columns.find(c => c.colKey === colKey)?.colLabel || colKey,
+          editable: !this.isReadOnly && !lockedFinal,
+          assigned: true,
+        };
+      },
+      readCell: (rowKey, colKey) => ({ value: String(this.draft?.resultData?.[rowKey]?.[colKey] ?? '') }),
+    };
+  }
+
+  private makePasteWriter(touchedRows: Set<string>) {
+    return (rowKey: string, colKey: string, value: string) => {
+      if (!this.draft.resultData[rowKey]) this.draft.resultData[rowKey] = { selected: true };
+      this.draft.resultData[rowKey][colKey] = value;
+      touchedRows.add(rowKey);
+    };
+  }
+
+  async openClipboardPaste() {
+    if (this.isReadOnly) return;
+    try {
+      const text = await navigator.clipboard?.readText?.();
+      if (!text) {
+        this.toastSvc.show('Clipboard trống.', 'warning');
+        return;
+      }
+      const firstLine = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n')[0] || '';
+      const colCount = firstLine.split('\t').length;
+      const kqIndex = this.activeColumns.indexOf('kqDichlorvos');
+      const startCol = colCount === 1 && kqIndex >= 0 ? kqIndex + 1 : 1;
+      const touched = new Set<string>();
+      const res = this.pasteCtrl.planOrApply(text, this.buildPasteGridSpec(0, startCol), this.getWriteGuard(), this.makePasteWriter(touched));
+      if (res.error) this.toastSvc.show(res.error, 'error');
+      else if (res.applied) {
+        this.onDataChanged();
+        this.toastSvc.show(`Đã dán ${res.count} ô dữ liệu.`, 'success');
+      }
+    } catch {
+      this.toastSvc.show('Hãy chọn một ô và nhấn Ctrl+V để dán từ Excel.', 'info');
+    }
+  }
+
+  onCellPaste(event: ClipboardEvent, rowIdx: number, colIdx: number) {
+    if (this.isReadOnly) {
+      event.preventDefault();
+      return;
+    }
+    const text = event.clipboardData?.getData('text/plain') || '';
+    if (!text.includes('\t') && !text.includes('\n')) return;
+    event.preventDefault();
+    const touched = new Set<string>();
+    const res = this.pasteCtrl.planOrApply(text, this.buildPasteGridSpec(rowIdx, colIdx), this.getWriteGuard(), this.makePasteWriter(touched));
+    if (res.error) this.toastSvc.show(res.error, 'error');
+    else if (res.applied) {
+      this.onDataChanged();
+      this.toastSvc.show(`Đã dán ${res.count} ô dữ liệu.`, 'success');
+    }
+  }
+
+  confirmPendingPaste() {
+    const res = this.pasteCtrl.confirmPending(this.getWriteGuard());
+    if (res.applied) {
+      this.onDataChanged();
+      this.toastSvc.show(`Đã dán ${res.count} ô dữ liệu.`, 'success');
+    } else if (res.error) {
+      this.toastSvc.show(res.error, 'error');
+    }
+  }
+
+  undoLastPaste() {
+    if (this.isReadOnly) return;
+    const touched = new Set<string>();
+    const res = this.pasteCtrl.undoLast(
+      this.getWriteGuard(),
+      (rowKey, colKey) => ({ value: String(this.draft?.resultData?.[rowKey]?.[colKey] ?? '') }),
+      this.makePasteWriter(touched)
+    );
+    if (res.undone) {
+      this.onDataChanged();
+      this.toastSvc.show(`Đã hoàn tác ${res.restoredCount} ô vừa dán.`, 'success');
+    } else if (res.reason) {
+      this.toastSvc.show(res.reason, 'warning');
+    }
+  }
+
+  async confirmClearAll() {
+    if (this.isReadOnly) return;
+    const ok = await this.confirmSvc.confirm({
+      message: 'Xóa toàn bộ kết quả đã nhập trên bảng SOP Dichlorvos?',
+      confirmText: 'Xóa bảng',
+      isDangerous: true,
+    });
+    if (ok) {
+      this.pasteCtrl.bumpRevision();
+      this.pasteCtrl.reset();
+      this.bulkClearAll();
+    }
   }
 }

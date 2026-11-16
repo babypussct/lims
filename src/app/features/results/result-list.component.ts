@@ -1,6 +1,7 @@
-import { ChangeDetectionStrategy, Component, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, computed, OnInit, OnDestroy, ElementRef, HostListener, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { StateService } from '../../core/services/state.service';
+import { AuthService } from '../../core/services/auth.service';
 import { Router, RouterModule } from '@angular/router';
 import { formatSampleList, getSafeGooglePreviewUrl, getSafeGoogleUrl } from '../../shared/utils/utils';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
@@ -11,7 +12,7 @@ import { FirestoreReadMonitor } from '../../core/services/firestore-read-monitor
 import { ToastService } from '../../core/services/toast.service';
 import {
   collection, doc, documentId, getDocs, query, serverTimestamp,
-  setDoc, where, writeBatch
+  where, writeBatch
 } from 'firebase/firestore';
 import { PrintService } from '../../core/services/print.service';
 import { RequestHistoryLoaderComponent } from '../../shared/components/request-history-loader/request-history-loader.component';
@@ -22,6 +23,9 @@ import { AppButtonComponent, AppEmptyStateComponent, AppPageHeaderComponent, App
 
 import { ReportHubModalComponent } from './components/report-hub-modal.component';
 import { MergeRunsModalComponent } from './components/merge-runs-modal.component';
+import { canUserEditResults, isRunActivelyLockedByOthers, ResultEditCapability } from './services/result-write-guard';
+import { BatchReportsProjection, buildBatchReportsProjection } from './services/result-reports-projection';
+import { isRunCandidateCompatibleForMerge, MergeRunsValidation, validateMergeRuns } from './services/merge-runs-compatibility';
 
 @Component({
   selector: 'app-result-list',
@@ -40,7 +44,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
     RequestHistoryLoaderComponent,
   ],
   template: `
-    <div class="h-full flex flex-col fade-in relative p-4 md:p-6">
+    <div class="min-h-full flex flex-col fade-in relative p-4 md:p-6">
 
       <!-- ══════════════════════════════════════════════════════
            HEADER: Title + Status Tabs
@@ -80,7 +84,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
                     [attr.aria-pressed]="filterStatus() === 'draft'">
               Đang nháp
               @if(filteredCount('draft') > 0) {
-                <span class="bg-fuchsia-100 dark:bg-fuchsia-955/40 text-fuchsia-700 dark:text-fuchsia-400 px-1.5 py-0.5 rounded-md text-[10px] font-black tabular-nums">{{filteredCount('draft')}}</span>
+                <span class="bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 px-1.5 py-0.5 rounded-md text-[10px] font-black tabular-nums">{{filteredCount('draft')}}</span>
               }
             </button>
             <button type="button"
@@ -90,81 +94,81 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
                     [attr.aria-pressed]="filterStatus() === 'completed'">
               Hoàn thành
               @if(filteredCount('completed') > 0) {
-                <span class="bg-emerald-100 dark:bg-emerald-955/40 text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded-md text-[10px] font-black tabular-nums">{{filteredCount('completed')}}</span>
+                <span class="bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded-md text-[10px] font-black tabular-nums">{{filteredCount('completed')}}</span>
               }
             </button>
           </div>
         </app-page-header>
 
         <!-- ══════════════════════════════════════════════════════
-             KPI STRIP: 3 số liệu gọn + SOP distribution
+             COMPACT SUMMARY & QUICK-FILTER STRIP
         ══════════════════════════════════════════════════════ -->
-        <div class="flex flex-wrap items-stretch gap-3 mb-5">
-          <!-- KPI: Tổng mẻ hoạt động -->
-          <button (click)="showAllRuns()"
-               class="group flex items-center gap-3 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl px-4 py-3 shadow-sm hover:shadow-md hover:border-blue-300 dark:hover:border-blue-800 transition-all duration-200 active:scale-[0.98] min-w-[130px]"
-               [class.ring-2]="filterStatus() === 'all' && selectedSopId() === 'all'"
-               [class.ring-blue-500]="filterStatus() === 'all' && selectedSopId() === 'all'"
-               [class.border-blue-300]="filterStatus() === 'all' && selectedSopId() === 'all'">
-            <div class="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 group-hover:bg-blue-100 dark:group-hover:bg-blue-950/50 transition-colors">
-              <i class="fa-solid fa-flask text-sm"></i>
-            </div>
-            <div class="text-left">
-              <div class="text-xl font-black text-slate-800 dark:text-slate-100 leading-none tabular-nums">{{ allApprovedRuns().length }}</div>
-              <div class="text-[11px] font-bold text-slate-400 dark:text-slate-500 mt-0.5 whitespace-nowrap">Mẻ đã tải</div>
-            </div>
-          </button>
-
-          <!-- KPI: Chờ nhập -->
-          <button (click)="setStatusFilter('pending')"
-               class="group flex items-center gap-3 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl px-4 py-3 shadow-sm hover:shadow-md hover:border-amber-300 dark:hover:border-amber-800 transition-all duration-200 active:scale-[0.98] min-w-[130px]"
-               [class.ring-2]="filterStatus() === 'pending'"
-               [class.ring-amber-500]="filterStatus() === 'pending'"
-               [class.border-amber-300]="filterStatus() === 'pending'">
-            <div class="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 group-hover:bg-amber-100 dark:group-hover:bg-amber-950/50 transition-colors">
-              <i class="fa-solid fa-clock-rotate-left text-sm"></i>
-            </div>
-            <div class="text-left">
-              <div class="text-xl font-black leading-none tabular-nums" [class.text-amber-500]="pendingCount() > 0" [class.text-slate-800]="pendingCount() === 0" [class.dark:text-slate-100]="pendingCount() === 0">{{ pendingCount() }}</div>
-              <div class="text-[11px] font-bold text-slate-400 dark:text-slate-500 mt-0.5 whitespace-nowrap">Chờ nhập · đã tải</div>
-            </div>
-          </button>
-
-          <!-- KPI: Hiệu suất -->
-          <button (click)="setStatusFilter('completed')"
-               class="group flex items-center gap-3 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl px-4 py-3 shadow-sm hover:shadow-md hover:border-emerald-300 dark:hover:border-emerald-800 transition-all duration-200 active:scale-[0.98] min-w-[160px]"
-               [class.ring-2]="filterStatus() === 'completed'"
-               [class.ring-emerald-500]="filterStatus() === 'completed'"
-               [class.border-emerald-300]="filterStatus() === 'completed'">
-            <div class="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 group-hover:bg-emerald-100 dark:group-hover:bg-emerald-950/50 transition-colors">
-              <i class="fa-solid fa-chart-line text-sm"></i>
-            </div>
-            <div class="text-left flex-1">
-              <div class="flex items-baseline gap-1.5">
-                <span class="text-xl font-black text-slate-800 dark:text-slate-100 leading-none tabular-nums">{{ averageCompletion() }}%</span>
-                <span class="text-[10px] font-bold text-emerald-500">Hoàn thành</span>
-              </div>
-              <div class="w-full bg-slate-100 dark:bg-slate-800 h-1 rounded-full mt-1.5 overflow-hidden">
-                <div class="bg-emerald-500 h-full rounded-full transition-all duration-500" [style.width.%]="averageCompletion()"></div>
+        <div class="mb-4 flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl px-4 py-2.5 shadow-sm">
+          <!-- Compact Stats -->
+          <div class="flex flex-wrap items-center gap-3 text-xs shrink-0">
+            <button type="button" (click)="showAllRuns()"
+                    class="inline-flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 transition cursor-pointer">
+              <i class="fa-solid fa-flask text-indigo-500 text-xs" aria-hidden="true"></i>
+              <span><strong class="tabular-nums">{{ allApprovedRuns().length }}</strong> mẻ</span>
+            </button>
+            <span class="text-slate-300 dark:text-slate-700">·</span>
+            <button type="button" (click)="setStatusFilter('pending')"
+                    class="inline-flex items-center gap-1.5 font-bold transition cursor-pointer"
+                    [class]="pendingCount() > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-500 dark:text-slate-400'">
+              <span><strong class="tabular-nums">{{ pendingCount() }}</strong> chờ nhập</span>
+            </button>
+            <span class="text-slate-300 dark:text-slate-700">·</span>
+            <div class="inline-flex items-center gap-2">
+              <span class="font-bold text-slate-600 dark:text-slate-300 tabular-nums">{{ completedCount() }}/{{ allApprovedRuns().length }} hoàn thành ({{ averageCompletion() }}%)</span>
+              <div class="hidden sm:block w-16 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                <div class="h-full bg-emerald-500 rounded-full transition-all duration-300" [style.width.%]="averageCompletion()"></div>
               </div>
             </div>
-          </button>
+          </div>
 
-          <!-- SOP Distribution chips -->
-          <div class="flex-1 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl px-4 py-3 shadow-sm min-w-[200px]">
-            <div class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Phân bổ phương pháp SOP</div>
-            <div class="flex items-center gap-1.5 flex-wrap">
-              @for (item of sopDistribution(); track item.id) {
-                <button class="min-h-9 text-[11px] font-bold px-2.5 py-1 rounded-lg border transition-all duration-150 hover:scale-105 active:scale-95 {{ item.textClass }} {{ item.bgClass }}"
-                        (click)="toggleSopFilter(item.id)"
-                        [class.ring-2]="selectedSopId() === item.id"
-                        [class.ring-fuchsia-500]="selectedSopId() === item.id">
-                  {{ item.name }}: <span class="font-black">{{ item.count }}</span>
-                </button>
-              } @empty {
-                <span class="text-[11px] text-slate-400 dark:text-slate-500 font-medium">Chưa có mẻ chạy</span>
-              }
-            </div>
+          <!-- Horizontal Quick Filters (SOP pills + Operational Alerts) -->
+          <div class="flex items-center gap-1.5 overflow-x-auto custom-scrollbar py-0.5 min-w-0">
+            @if (staleRunsCount() > 0) {
+              <button type="button" (click)="toggleQuickFilter('stale')"
+                      [class]="quickFilter() === 'stale'
+                        ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
+                        : 'bg-amber-50/80 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 border-amber-200/80 dark:border-amber-900/40 hover:bg-amber-100/70'"
+                      class="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-bold transition cursor-pointer">
+                <i class="fa-solid fa-rotate text-[10px]" aria-hidden="true"></i>
+                <span>Cần xuất lại PDF ({{ staleRunsCount() }})</span>
+              </button>
+            }
+            @if (lockedRunsCount() > 0) {
+              <button type="button" (click)="toggleQuickFilter('locked')"
+                      [class]="quickFilter() === 'locked'
+                        ? 'bg-rose-600 text-white border-rose-600 shadow-xs'
+                        : 'bg-rose-50/80 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300 border-rose-200/80 dark:border-rose-900/40 hover:bg-rose-100/70'"
+                      class="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-bold transition cursor-pointer">
+                <i class="fa-solid fa-lock text-[10px]" aria-hidden="true"></i>
+                <span>Đang bị khóa ({{ lockedRunsCount() }})</span>
+              </button>
+            }
+            @if (mergedRunsCount() > 0) {
+              <button type="button" (click)="toggleQuickFilter('merged')"
+                      [class]="quickFilter() === 'merged'
+                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                        : 'bg-indigo-50/80 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300 border-indigo-200/80 dark:border-indigo-900/40 hover:bg-indigo-100/70'"
+                      class="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-bold transition cursor-pointer">
+                <i class="fa-solid fa-code-merge text-[10px]" aria-hidden="true"></i>
+                <span>Mẻ tổng hợp ({{ mergedRunsCount() }})</span>
+              </button>
+            }
+            @for (item of sopDistribution(); track item.id) {
+              <button type="button"
+                      (click)="toggleSopFilter(item.id)"
+                      [class]="selectedSopId() === item.id
+                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                        : 'bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border-slate-200/80 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'"
+                      class="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-[11px] font-bold transition cursor-pointer whitespace-nowrap">
+                <span>{{ item.name }}</span>
+                <span class="opacity-80 tabular-nums">{{ item.count }}</span>
+              </button>
+            }
           </div>
         </div>
 
@@ -177,62 +181,67 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
             <!-- Search -->
             <div toolbarSearch class="relative">
               <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 pointer-events-none">
-                <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                <i class="fa-solid fa-magnifying-glass text-xs" aria-hidden="true"></i>
               </span>
-              <input type="text"
+              <input #searchInput
+                     type="text"
                      [value]="searchText()"
                      (input)="onSearchInput($event)"
-                     placeholder="Tìm theo Mã mẻ, SOP, Mã số mẫu, Analyst..."
-                     class="w-full h-10 pl-8 pr-10 py-2 text-xs bg-slate-50 dark:bg-slate-950/40 border border-slate-200/60 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-fuchsia-500/15 focus:border-fuchsia-400 dark:text-slate-200 font-semibold transition placeholder:text-slate-350 dark:placeholder:text-slate-600">
+                     placeholder="Tìm theo Mã mẻ, SOP, Mã số mẫu, Kiểm nghiệm viên..."
+                     class="w-full h-10 pl-8 pr-16 py-2 text-xs bg-slate-50 dark:bg-slate-950/40 border border-slate-200/70 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:text-slate-100 font-semibold transition placeholder:text-slate-400 dark:placeholder:text-slate-500">
               @if (searchText()) {
                 <button type="button" (click)="clearSearch()" aria-label="Xóa tìm kiếm kết quả" class="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition">
                   <i class="fa-solid fa-circle-xmark text-xs" aria-hidden="true"></i>
                 </button>
+              } @else {
+                <kbd class="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono font-bold text-slate-400 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">/</kbd>
               }
             </div>
 
             <div toolbarFilters class="flex flex-wrap items-center gap-2">
               <!-- View Mode Toggle -->
               <div class="flex bg-slate-100 dark:bg-slate-800/80 p-0.5 rounded-xl shrink-0">
-                <button (click)="viewMode.set('grid')"
-                        [class]="viewMode() === 'grid' ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm font-extrabold' : 'text-slate-450 dark:text-slate-500 hover:text-slate-600'"
+                <button type="button" (click)="viewMode.set('grid')"
+                        [class]="viewMode() === 'grid' ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm font-extrabold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'"
                         class="min-h-10 px-3 py-1.5 rounded-lg text-[11px] font-bold transition flex items-center gap-1 duration-150 sm:min-h-9">
-                  <i class="fa-solid fa-table-cells"></i> Lưới
+                  <i class="fa-solid fa-table-cells" aria-hidden="true"></i> Lưới
                 </button>
-                <button (click)="viewMode.set('table')"
-                        [class]="viewMode() === 'table' ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm font-extrabold' : 'text-slate-450 dark:text-slate-500 hover:text-slate-600'"
+                <button type="button" (click)="viewMode.set('table')"
+                        [class]="viewMode() === 'table' ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm font-extrabold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'"
                         class="min-h-10 px-3 py-1.5 rounded-lg text-[11px] font-bold transition flex items-center gap-1 duration-150 sm:min-h-9">
-                  <i class="fa-solid fa-list"></i> Bảng
+                  <i class="fa-solid fa-list" aria-hidden="true"></i> Bảng
                 </button>
               </div>
 
               <!-- Merge Mode Toggle -->
-              <button (click)="toggleMergeMode()"
-                      [class]="isMergeModeActive() ? 'bg-fuchsia-50 dark:bg-fuchsia-950/20 text-fuchsia-700 dark:text-fuchsia-400 border-fuchsia-200/60 dark:border-fuchsia-800/40' : 'text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-300'"
-                      class="min-h-10 px-3 py-2 border rounded-xl text-xs font-black transition flex items-center gap-1.5 active:scale-95 duration-150 shadow-sm shrink-0 bg-white dark:bg-slate-900 sm:min-h-9">
-                <i class="fa-solid fa-code-merge text-[10px]" [class.rotate-90]="isMergeModeActive()"></i>
-                Gộp mẻ
-                @if (isMergeModeActive() && selectedRunsCount() > 0) {
-                  <span class="w-4 h-4 bg-fuchsia-600 text-white text-[9px] font-black rounded-full flex items-center justify-center">{{ selectedRunsCount() }}</span>
-                }
-              </button>
+              @if (canEditResults()) {
+                <button type="button" (click)="toggleMergeMode()"
+                        [class]="isMergeModeActive() ? 'bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800' : 'text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-300'"
+                        class="min-h-10 px-3 py-2 border rounded-xl text-xs font-bold transition flex items-center gap-1.5 active:scale-95 duration-150 shadow-sm shrink-0 bg-white dark:bg-slate-900 sm:min-h-9">
+                  <i class="fa-solid fa-code-merge text-[10px]" [class.rotate-90]="isMergeModeActive()" aria-hidden="true"></i>
+                  Gộp mẻ
+                  @if (isMergeModeActive() && selectedRunsCount() > 0) {
+                    <span class="w-4 h-4 bg-indigo-600 text-white text-[9px] font-black rounded-full flex items-center justify-center">{{ selectedRunsCount() }}</span>
+                  }
+                </button>
+              }
 
               <!-- Advanced Filters toggle -->
-              <button (click)="showAdvancedFilters.set(!showAdvancedFilters())"
-                      [class]="showAdvancedFilters() ? 'bg-blue-50 dark:bg-blue-950/20 text-blue-700 dark:text-blue-400 border-blue-200/60 dark:border-blue-800/40' : 'text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-300'"
-                      class="min-h-10 px-3 py-2 border rounded-xl text-xs font-black transition flex items-center gap-1.5 active:scale-95 duration-150 relative shrink-0 bg-white dark:bg-slate-900 sm:min-h-9">
-                <i class="fa-solid fa-sliders text-[10px]"></i> Lọc nâng cao
+              <button type="button" (click)="showAdvancedFilters.set(!showAdvancedFilters())"
+                      [class]="showAdvancedFilters() ? 'bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800' : 'text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-300'"
+                      class="min-h-10 px-3 py-2 border rounded-xl text-xs font-bold transition flex items-center gap-1.5 active:scale-95 duration-150 relative shrink-0 bg-white dark:bg-slate-900 sm:min-h-9">
+                <i class="fa-solid fa-sliders text-[10px]" aria-hidden="true"></i> Lọc nâng cao
                 @if (activeFiltersCount() > 0) {
-                  <span class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-blue-600 text-white text-[8px] font-black rounded-full flex items-center justify-center shadow-sm">{{ activeFiltersCount() }}</span>
+                  <span class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-indigo-600 text-white text-[8px] font-black rounded-full flex items-center justify-center shadow-sm">{{ activeFiltersCount() }}</span>
                 }
-                <i class="fa-solid fa-chevron-down text-[9px] transition-transform duration-200" [class.rotate-180]="showAdvancedFilters()"></i>
+                <i class="fa-solid fa-chevron-down text-[9px] transition-transform duration-200" [class.rotate-180]="showAdvancedFilters()" aria-hidden="true"></i>
               </button>
             </div>
 
             <div toolbarActions class="contents">
               @if (hasActiveFilters()) {
                 <app-button variant="ghost" size="sm" (click)="resetAllFilters()">
-                  <i class="fa-solid fa-rotate-left text-[10px]"></i> Xóa lọc
+                  <i class="fa-solid fa-rotate-left text-[10px]" aria-hidden="true"></i> Xóa lọc
                 </app-button>
               }
             </div>
@@ -240,46 +249,46 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
 
           <!-- Row 2: Advanced Filter Panel (collapsible) -->
           @if (showAdvancedFilters()) {
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 p-3 bg-slate-50/50 dark:bg-slate-950/20 animate-fade-in">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 p-3 bg-slate-50/50 dark:bg-slate-950/20 border-t border-slate-100 dark:border-slate-800 animate-fade-in">
               <!-- SOP Filter -->
               <div class="flex flex-col gap-1">
-                <label class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Phương pháp (SOP)</label>
+                <label class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Phương pháp (SOP)</label>
                 <div class="relative">
                   <span class="absolute left-3 inset-y-0 flex items-center text-slate-400 pointer-events-none">
-                    <i class="fa-solid fa-flask text-[10px]"></i>
+                    <i class="fa-solid fa-flask text-[10px]" aria-hidden="true"></i>
                   </span>
                   <select [value]="selectedSopId()" (change)="onSopChange($event)"
-                          class="w-full h-10 appearance-none pl-8 pr-7 py-2 bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-xl text-xs font-extrabold text-slate-700 dark:text-slate-250 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition cursor-pointer">
+                          class="w-full h-10 appearance-none pl-8 pr-7 py-2 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition cursor-pointer">
                     <option value="all">Tất cả phương pháp</option>
                     @for (sop of availableSops(); track sop.id) {
                       <option [value]="sop.id">{{ sop.name }}</option>
                     }
                   </select>
-                  <i class="fa-solid fa-chevron-down text-[9px] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400"></i>
+                  <i class="fa-solid fa-chevron-down text-[9px] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" aria-hidden="true"></i>
                 </div>
               </div>
 
               <!-- Analyst Filter -->
               <div class="flex flex-col gap-1">
-                <label class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Analyst</label>
+                <label class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Kiểm nghiệm viên</label>
                 <div class="relative">
                   <span class="absolute left-3 inset-y-0 flex items-center text-slate-400 pointer-events-none">
-                    <i class="fa-solid fa-user text-[10px]"></i>
+                    <i class="fa-solid fa-user text-[10px]" aria-hidden="true"></i>
                   </span>
                   <select [value]="selectedAnalyst()" (change)="onAnalystChange($event)"
-                          class="w-full h-10 appearance-none pl-8 pr-7 py-2 bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-xl text-xs font-extrabold text-slate-700 dark:text-slate-250 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition cursor-pointer">
+                          class="w-full h-10 appearance-none pl-8 pr-7 py-2 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition cursor-pointer">
                     <option value="all">Tất cả nhân viên</option>
                     @for (analyst of availableAnalysts(); track analyst) {
                       <option [value]="analyst">{{ analyst }}</option>
                     }
                   </select>
-                  <i class="fa-solid fa-chevron-down text-[9px] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400"></i>
+                  <i class="fa-solid fa-chevron-down text-[9px] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" aria-hidden="true"></i>
                 </div>
               </div>
 
               <!-- Date Range -->
               <div class="flex flex-col gap-1 sm:col-span-2">
-                <label class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Khoảng thời gian (Ngày duyệt)</label>
+                <label class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Khoảng thời gian (Ngày duyệt)</label>
                 @defer (when showAdvancedFilters()) {
                   <app-date-range-filter
                       [initStart]="startDate()"
@@ -291,7 +300,7 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
                   <div class="h-9 rounded-xl bg-slate-100/70 dark:bg-slate-900/60"></div>
                 }
                 @if (!startDate() && !endDate()) {
-                  <span class="text-[10px] font-semibold text-slate-400 dark:text-slate-500">
+                  <span class="text-[10px] font-medium text-slate-400 dark:text-slate-500">
                     Đang hiển thị 300 mẻ gần nhất; chọn khoảng ngày để nạp đầy đủ lịch sử.
                   </span>
                 }
@@ -302,11 +311,11 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
       </div>
 
       <!-- ══════════════════════════════════════════════════════
-           MAIN CONTENT: Cards / Table
+           MAIN CONTENT: Cards / Table (scroll owned by .app-content-scroll)
       ══════════════════════════════════════════════════════ -->
-      <app-request-history-loader class="shrink-0 px-6" [startDate]="startDate()" [endDate]="endDate()"
+      <app-request-history-loader class="shrink-0" [startDate]="startDate()" [endDate]="endDate()"
         dateBasis="approvedAt" [enabled]="!!startDate() || !!endDate()" />
-      <div class="flex-1 overflow-y-auto px-6 pb-6 custom-scrollbar">
+      <div class="flex-1 pb-6">
 
         @if (isLoading()) {
           <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-5 animate-pulse">
@@ -321,102 +330,174 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
           </div>
         } @else {
 
-          <!-- ─── GRID VIEW ─── -->
+          <!-- ─── GRID VIEW (3-Tier Batch Card) ─── -->
           @if (viewMode() === 'grid') {
-            <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
+            <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-5">
               @for (run of paginatedRuns(); track run.id) {
-                <div class="group bg-white dark:bg-slate-900 rounded-2xl border border-slate-150/80 dark:border-slate-800/80 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-250 flex flex-col overflow-hidden relative cursor-pointer"
+                @let projection = reportsProjectionMap()[run.id];
+                @let status = runStatusMap()[run.id] || 'pending';
+                @let isLocked = isRunLocked(run);
+                @let lockedByOther = isRunLockedByOther(run);
+                @let mergeCheck = mergeCandidateState(run);
+                @let isEditableRun = canEditResults() && !lockedByOther && status !== 'completed';
+                <div class="group bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-indigo-200 dark:hover:border-indigo-800/70 transition-all duration-200 flex flex-col overflow-hidden relative cursor-pointer"
                      (click)="enterResults(run.id)"
-                     [class.ring-2]="lastSelectedRequestId() === run.id"
-                     [class.ring-fuchsia-500]="lastSelectedRequestId() === run.id"
-                     [ngClass]="{'ring-1 ring-fuchsia-500/20': run.isVirtualMaster && lastSelectedRequestId() !== run.id}">
+                     [class.opacity-45]="isMergeModeActive() && !mergeCheck.compatible"
+                     [class.ring-2]="lastSelectedRequestId() === run.id || selectedRunsMap()[run.id]"
+                     [class.ring-indigo-500]="lastSelectedRequestId() === run.id || selectedRunsMap()[run.id]"
+                     [ngClass]="{'ring-1 ring-indigo-500/25': run.isVirtualMaster && lastSelectedRequestId() !== run.id && !selectedRunsMap()[run.id]}">
 
-                  <!-- SOP Color Ribbon -->
-                  <div class="h-1 bg-gradient-to-r {{ getSopGradientClass(run.sopId) }} shrink-0"></div>
+                  <!-- Semantic Status Top Strip -->
+                  <div class="h-1 shrink-0" [ngClass]="{
+                    'bg-emerald-500': status === 'completed',
+                    'bg-indigo-500': status === 'draft',
+                    'bg-amber-400': status === 'pending'
+                  }"></div>
 
                   <!-- Card Body -->
-                  <div class="flex flex-col flex-1 p-5">
-                    <!-- Top Row: Status + Date + Merge checkbox -->
-                    <div class="flex items-center justify-between mb-3">
-                      <div class="flex items-center gap-2">
+                  <div class="flex flex-col flex-1 p-4 md:p-5 gap-3">
+                    <!-- Tier 1: Identity & Status Strip -->
+                    <div class="flex items-start justify-between gap-2">
+                      <div class="flex flex-wrap items-center gap-1.5 min-w-0">
                         @if (isMergeModeActive()) {
-                          <label class="inline-flex items-center cursor-pointer" (click)="$event.stopPropagation()">
+                          <label class="inline-flex items-center cursor-pointer mr-0.5" (click)="$event.stopPropagation()">
                             <input type="checkbox"
                                    [checked]="selectedRunsMap()[run.id]"
+                                   [disabled]="!mergeCheck.compatible && !selectedRunsMap()[run.id]"
                                    (change)="toggleRunSelection(run)"
-                                   class="w-4 h-4 text-fuchsia-600 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 rounded focus:ring-fuchsia-500">
+                                   [title]="mergeCheck.reason || 'Chọn để gộp mẻ'"
+                                   class="w-4 h-4 text-indigo-600 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 rounded focus:ring-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed">
                           </label>
                         }
-                        <span [class]="getStatusClass(run.id)" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wide border">
+                        <!-- Batch Code + Copy -->
+                        <button type="button"
+                                (click)="copyBatchCode(run.inputs?.['batchCode'] || run.id, $event)"
+                                title="Sao chép mã mẻ"
+                                class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-indigo-50 dark:bg-slate-800 dark:hover:bg-indigo-950/40 text-slate-700 dark:text-slate-200 hover:text-indigo-700 dark:hover:text-indigo-300 font-mono text-[11px] font-bold transition cursor-pointer">
+                          <span class="truncate max-w-[140px]">{{ run.inputs?.['batchCode'] || run.id }}</span>
+                          <i class="fa-regular fa-copy text-[9px] opacity-60" aria-hidden="true"></i>
+                        </button>
+                        <span [class]="getStatusClass(run.id)" class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold border">
                           <span class="w-1.5 h-1.5 rounded-full" [ngClass]="{
-                            'bg-emerald-500': runStatusMap()[run.id] === 'completed',
-                            'bg-fuchsia-500': runStatusMap()[run.id] === 'draft',
-                            'bg-amber-500': runStatusMap()[run.id] === 'pending' || !runStatusMap()[run.id]
+                            'bg-emerald-500': status === 'completed',
+                            'bg-indigo-500': status === 'draft',
+                            'bg-amber-500': status === 'pending'
                           }"></span>
                           {{ getStatusText(run.id) }}
                         </span>
+                        @if (projection?.hasStaleReport) {
+                          <span class="px-2 py-0.5 rounded-full bg-amber-100/90 dark:bg-amber-950/40 border border-amber-300/70 dark:border-amber-800/50 text-amber-800 dark:text-amber-300 text-[10px] font-bold inline-flex items-center gap-1">
+                            <i class="fa-solid fa-rotate text-[9px]" aria-hidden="true"></i> Cần xuất lại
+                          </span>
+                        }
                         @if (run.isVirtualMaster) {
-                          <span class="px-1.5 py-0.5 rounded bg-fuchsia-50 dark:bg-fuchsia-950/20 border border-fuchsia-100 dark:border-fuchsia-900/30 text-fuchsia-600 dark:text-fuchsia-400 text-[8px] font-black uppercase">Mẻ tổng hợp</span>
+                          <span class="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-900/40 text-indigo-700 dark:text-indigo-300 text-[10px] font-bold">Mẻ gộp</span>
                         }
                         @if (run.parentMasterId) {
-                          <a [routerLink]="['/results', run.parentMasterId]" (click)="$event.stopPropagation()" class="px-1.5 py-0.5 rounded bg-fuchsia-50 dark:bg-fuchsia-950/20 border border-fuchsia-200 dark:border-fuchsia-900/40 text-fuchsia-600 dark:text-fuchsia-400 text-[8px] font-black uppercase hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/30 transition-colors flex items-center gap-0.5" title="Mẻ này đã được gộp vào Master {{run.parentMasterId}}">
-                            <i class="fa-solid fa-link text-[7px]"></i> Đã gộp
+                          <a [routerLink]="['/results', run.parentMasterId]" (click)="$event.stopPropagation()" class="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-900/40 text-indigo-600 dark:text-indigo-300 text-[10px] font-bold hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors inline-flex items-center gap-1" title="Mẻ này đã được gộp vào Master {{run.parentMasterId}}">
+                            <i class="fa-solid fa-link text-[9px]" aria-hidden="true"></i> Đã gộp
                           </a>
                         }
-                        @if (isRunLocked(run)) {
-                          <span class="px-1.5 py-0.5 rounded bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/30 text-red-655 dark:text-red-400 text-[8px] font-black uppercase flex items-center gap-1 shadow-xs" title="Đang được mở chỉnh sửa bởi {{ run.lockedByName || run.lockedBy }}">
-                            <i class="fa-solid fa-lock text-[7px]"></i> Đang sửa bởi {{ run.lockedByName || 'KTV khác' }}
+                        @if (isLocked) {
+                          <span class="px-2 py-0.5 rounded-full bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/40 text-red-600 dark:text-red-400 text-[10px] font-bold inline-flex items-center gap-1" title="Đang được mở chỉnh sửa bởi {{ run.lockedByName || run.lockedBy }}">
+                            <i class="fa-solid fa-lock text-[9px]" aria-hidden="true"></i> {{ run.lockedByName || 'Đang sửa' }}
+                          </span>
+                        }
+                        @if (isMergeModeActive() && !mergeCheck.compatible && mergeCheck.reason) {
+                          <span class="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] font-semibold">
+                            {{ mergeCheck.reason }}
                           </span>
                         }
                       </div>
-                      <span class="text-[10px] text-slate-400 dark:text-slate-500 font-semibold flex items-center gap-1">
-                        <i class="fa-regular fa-calendar text-[9px]"></i>
+                      <span class="text-[11px] text-slate-400 dark:text-slate-500 font-semibold flex items-center gap-1 shrink-0 whitespace-nowrap">
+                        <i class="fa-regular fa-calendar text-[10px]" aria-hidden="true"></i>
                         {{ getRunDate(run) ? formatAnalysisDate(getRunDate(run)) : '—' }}
                       </span>
                     </div>
 
-                    <!-- SOP Name -->
-                    <h3 class="font-black text-slate-800 dark:text-slate-100 text-[15px] leading-snug mb-1 group-hover:text-fuchsia-600 dark:group-hover:text-fuchsia-400 transition-colors">
-                      {{ run.sopName }}
-                    </h3>
+                    <!-- Tier 2: SOP Name & Operational Summary -->
+                    <div>
+                      <h3 class="font-bold text-slate-800 dark:text-slate-100 text-[15px] leading-snug group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                        {{ run.sopName }}
+                      </h3>
 
-                    @if (run.isVirtualMaster && run.childRequestIds) {
-                      <div class="text-[9px] text-fuchsia-500 dark:text-fuchsia-400 font-bold mb-2 flex items-center gap-1 bg-fuchsia-50/40 dark:bg-fuchsia-950/10 px-2 py-1 rounded-lg border border-fuchsia-100/30 dark:border-fuchsia-900/20 select-none w-fit">
-                        <i class="fa-solid fa-link text-[8px]"></i> Gộp từ: {{ run.childRequestIds.join(', ') }}
-                      </div>
-                    }
+                      @if (run.isVirtualMaster && run.childRequestIds) {
+                        <div class="text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold mt-1 flex items-center gap-1 bg-indigo-50/50 dark:bg-indigo-950/20 px-2 py-0.5 rounded-lg border border-indigo-100 dark:border-indigo-900/30 select-none w-fit">
+                          <i class="fa-solid fa-link text-[9px]" aria-hidden="true"></i> Gộp từ: {{ run.childRequestIds.join(', ') }}
+                        </div>
+                      }
 
-                    <!-- Analyst -->
-                    <div class="flex items-center gap-2 mb-3">
-                      <div [class]="getAnalystAvatarClass(run.user)" class="w-6 h-6 rounded-full border flex items-center justify-center text-[9px] font-black uppercase shadow-sm shrink-0">
-                        {{ getAnalystInitials(run.user) }}
+                      <div class="flex flex-wrap items-center gap-2 mt-2 text-xs text-slate-500 dark:text-slate-400">
+                        <div class="flex items-center gap-1.5 min-w-0">
+                          <div [class]="getAnalystAvatarClass(run.user)" class="w-5 h-5 rounded-full border flex items-center justify-center text-[9px] font-bold uppercase shrink-0">
+                            {{ getAnalystInitials(run.user) }}
+                          </div>
+                          <span class="font-semibold truncate max-w-[130px]">{{ run.user || 'Unknown' }}</span>
+                        </div>
+                        @if (run.inputs?.['device']) {
+                          <span class="text-slate-300 dark:text-slate-700">·</span>
+                          <span class="text-[11px] font-medium truncate max-w-[130px]" [title]="run.inputs?.['device']">{{ run.inputs?.['device'] }}</span>
+                        }
                       </div>
-                      <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 truncate">{{ run.user || 'Unknown' }}</span>
                     </div>
 
-                    <!-- Sample Codes -->
-                    @if (run.sampleList && run.sampleList.length > 0) {
-                      <div class="text-[10px] text-slate-500 dark:text-slate-450 bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/60 rounded-xl p-2.5 flex items-start gap-1.5 max-h-16 overflow-y-auto custom-scrollbar mb-3 flex-1">
-                        <i class="fa-solid fa-vials text-slate-350 dark:text-slate-600 mt-0.5 shrink-0 text-[9px]"></i>
-                        <span class="break-all font-mono font-semibold leading-relaxed">{{ formatSampleList(run.sampleList) }}</span>
+                    <!-- Sample Summary + Real PDF Coverage -->
+                    <div class="mt-auto space-y-2.5 pt-1">
+                      @if (run.sampleList && run.sampleList.length > 0) {
+                        <div class="text-[11px] text-slate-600 dark:text-slate-300 bg-slate-50/80 dark:bg-slate-950/40 border border-slate-200/60 dark:border-slate-800 rounded-xl px-3 py-2 flex items-start gap-2">
+                          <i class="fa-solid fa-vials text-slate-400 dark:text-slate-500 mt-0.5 shrink-0 text-[10px]" aria-hidden="true"></i>
+                          <div class="min-w-0 flex-1">
+                            <span class="font-mono font-semibold break-words">{{ formatSampleRange(projection?.reportableSamples || run.sampleList, 3) || formatSampleList(run.sampleList) }}</span>
+                            <span class="ml-1.5 text-[10px] text-slate-400 font-semibold">({{ projection?.coverage?.total ?? run.sampleList.length }} mẫu)</span>
+                          </div>
+                        </div>
+                      }
+
+                      <div class="space-y-1">
+                        <div class="flex items-center justify-between text-[11px]">
+                          <span class="font-semibold text-slate-500 dark:text-slate-400">Phủ báo cáo PDF</span>
+                          <span class="font-bold tabular-nums" [class]="projection && projection.coverage.percent === 100 && !projection.hasStaleReport ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-300'">
+                            {{ projection?.coverage?.published ?? 0 }}/{{ projection?.coverage?.total ?? 0 }} mẫu ({{ projection?.coverage?.percent ?? 0 }}%)
+                          </span>
+                        </div>
+                        <div class="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                          <div class="h-full rounded-full transition-all duration-300"
+                               [class]="projection?.hasStaleReport ? 'bg-amber-500' : (projection && projection.coverage.percent === 100 ? 'bg-emerald-500' : 'bg-indigo-500')"
+                               [style.width.%]="projection?.coverage?.percent ?? 0"></div>
+                        </div>
                       </div>
-                    } @else {
-                      <div class="flex-1"></div>
-                    }
+                    </div>
                   </div>
 
-                  <!-- Card Footer: Action Buttons -->
-                  <div class="border-t border-slate-100 dark:border-slate-800/80 px-4 py-3 flex items-center gap-2.5 bg-slate-50/30 dark:bg-slate-950/10 shrink-0">
-                    @if (run.analysisResultSummary?.reports || run.analysisResultSummary?.pdfUrl || run.analysisResultSummary?.pdfViewUrl || run.analysisResult?.reports || run.analysisResult?.pdfUrl) {
+                  <!-- Tier 3: Contextual Footer CTAs -->
+                  <div class="border-t border-slate-100 dark:border-slate-800/80 px-4 py-3 flex items-center gap-2 bg-slate-50/40 dark:bg-slate-950/20 shrink-0">
+                    @if (projection?.hasAnyReport) {
                       <app-button variant="secondary" size="sm" (click)="openReportHub(run); $event.stopPropagation()">
-                        <i class="fa-solid fa-file-pdf text-red-500 text-[11px]"></i>
-                        <span>Báo cáo PDF</span>
+                        <i class="fa-solid fa-file-pdf text-rose-500 text-[11px]" aria-hidden="true"></i>
+                        <span>Báo cáo ({{ projection?.cards?.length ?? 0 }})</span>
                       </app-button>
                     }
-                    <app-button class="min-w-0 flex-1" variant="secondary" size="sm" [fullWidth]="true" (click)="enterResults(run.id, undefined, false); $event.stopPropagation()">
-                      <i class="fa-solid text-[11px] fa-eye"></i>
-                      Chi tiết mẻ chạy
-                    </app-button>
+                    @if (isEditableRun) {
+                      <button type="button"
+                              (click)="enterResults(run.id, undefined, true); $event.stopPropagation()"
+                              class="min-w-0 flex-1 inline-flex h-9 items-center justify-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-3 text-xs font-bold text-white shadow-sm transition active:scale-[0.98]">
+                        <i class="fa-solid fa-pen-to-square text-[11px]" aria-hidden="true"></i>
+                        <span>Nhập kết quả</span>
+                      </button>
+                      <button type="button"
+                              (click)="enterResults(run.id, undefined, false); $event.stopPropagation()"
+                              title="Chi tiết mẻ chạy"
+                              aria-label="Chi tiết mẻ chạy"
+                              class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition">
+                        <i class="fa-solid fa-eye text-xs" aria-hidden="true"></i>
+                      </button>
+                    } @else {
+                      <app-button class="min-w-0 flex-1" variant="secondary" size="sm" [fullWidth]="true" (click)="enterResults(run.id, undefined, false); $event.stopPropagation()">
+                        <i class="fa-solid text-[11px] fa-eye" aria-hidden="true"></i>
+                        <span>Xem & Đối chiếu</span>
+                        <span class="sr-only">Chi tiết mẻ chạy</span>
+                      </app-button>
+                    }
                   </div>
                 </div>
               } @empty {
@@ -435,105 +516,137 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
 
           <!-- ─── TABLE VIEW ─── -->
           } @else if (viewMode() === 'table') {
-            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-150/80 dark:border-slate-800/80 shadow-sm overflow-hidden">
+            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
               <div class="overflow-x-auto">
                 <table class="w-full text-xs text-left border-collapse">
                   <thead>
-                    <tr class="bg-slate-50 dark:bg-slate-950 border-b border-slate-150 dark:border-slate-800 text-[10px] font-black text-slate-400 dark:text-slate-550 uppercase tracking-widest">
+                    <tr class="bg-slate-50 dark:bg-slate-950 border-b border-slate-200/80 dark:border-slate-800 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                       @if (isMergeModeActive()) {
-                        <th class="p-4 w-10 text-center"><i class="fa-solid fa-check-double"></i></th>
+                        <th class="p-3.5 w-10 text-center"><i class="fa-solid fa-check-double" aria-hidden="true"></i></th>
                       }
-                      <th class="p-4">Phương pháp / Mã mẻ</th>
-                      <th class="p-4">Phân tích viên</th>
-                      <th class="p-4">Ngày chạy</th>
-                      <th class="p-4">Mẫu kiểm nghiệm</th>
-                      <th class="p-4 text-center">Trạng thái</th>
-                      <th class="p-4 text-right">Hành động</th>
+                      <th class="p-3.5">Phương pháp / Mã mẻ</th>
+                      <th class="p-3.5">Kiểm nghiệm viên</th>
+                      <th class="p-3.5">Ngày chạy</th>
+                      <th class="p-3.5">Mẫu & PDF</th>
+                      <th class="p-3.5 text-center">Trạng thái</th>
+                      <th class="p-3.5 text-right">Hành động</th>
                     </tr>
                   </thead>
-                  <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60">
+                  <tbody class="divide-y divide-slate-100 dark:divide-slate-800/70">
                     @for (run of paginatedRuns(); track run.id) {
-                      <tr [ngClass]="{'bg-fuchsia-50/20 dark:bg-fuchsia-950/10 border-l-2 border-l-fuchsia-500': lastSelectedRequestId() === run.id}"
-                          class="hover:bg-slate-50/60 dark:hover:bg-slate-950/20 transition-colors text-slate-700 dark:text-slate-300 cursor-pointer"
+                      @let projection = reportsProjectionMap()[run.id];
+                      @let status = runStatusMap()[run.id] || 'pending';
+                      @let isLocked = isRunLocked(run);
+                      @let lockedByOther = isRunLockedByOther(run);
+                      @let mergeCheck = mergeCandidateState(run);
+                      @let isEditableRun = canEditResults() && !lockedByOther && status !== 'completed';
+                      <tr [ngClass]="{'bg-indigo-50/30 dark:bg-indigo-950/15 border-l-2 border-l-indigo-500': lastSelectedRequestId() === run.id || selectedRunsMap()[run.id], 'opacity-45': isMergeModeActive() && !mergeCheck.compatible}"
+                          class="hover:bg-slate-50/70 dark:hover:bg-slate-800/30 transition-colors text-slate-700 dark:text-slate-300 cursor-pointer"
                           (click)="enterResults(run.id)">
 
                         @if (isMergeModeActive()) {
-                          <td class="p-4 text-center">
+                          <td class="p-3.5 text-center">
                             <label class="inline-flex items-center cursor-pointer" (click)="$event.stopPropagation()">
                               <input type="checkbox"
                                      [checked]="selectedRunsMap()[run.id]"
+                                     [disabled]="!mergeCheck.compatible && !selectedRunsMap()[run.id]"
                                      (change)="toggleRunSelection(run)"
-                                     class="w-4 h-4 text-fuchsia-600 bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 rounded focus:ring-fuchsia-500">
+                                     [title]="mergeCheck.reason || 'Chọn để gộp mẻ'"
+                                     class="w-4 h-4 text-indigo-600 bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 rounded focus:ring-indigo-500 disabled:opacity-40">
                             </label>
                           </td>
                         }
 
-                        <td class="p-4">
-                          <div class="flex items-center gap-2 mb-0.5">
-                            <span class="w-2 h-2 rounded-full bg-gradient-to-r {{ getSopGradientClass(run.sopId) }} shrink-0"></span>
-                            <span class="font-extrabold text-slate-800 dark:text-slate-150 text-xs">{{ run.sopName }}</span>
+                        <td class="p-3.5">
+                          <div class="flex items-center flex-wrap gap-2 mb-0.5">
+                            <span class="w-2 h-2 rounded-full shrink-0" [ngClass]="{
+                              'bg-emerald-500': status === 'completed',
+                              'bg-indigo-500': status === 'draft',
+                              'bg-amber-400': status === 'pending'
+                            }"></span>
+                            <span class="font-bold text-slate-800 dark:text-slate-100 text-xs">{{ run.sopName }}</span>
                             @if (run.isVirtualMaster) {
-                              <span class="px-1.5 py-0.5 rounded bg-fuchsia-50 dark:bg-fuchsia-950/20 border border-fuchsia-100 dark:border-fuchsia-900/30 text-fuchsia-600 dark:text-fuchsia-400 text-[8px] font-black uppercase">Mẻ tổng hợp</span>
+                              <span class="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-900/40 text-indigo-700 dark:text-indigo-300 text-[10px] font-bold">Mẻ gộp</span>
                             }
-                            @if (isRunLocked(run)) {
-                              <span class="px-1.5 py-0.5 rounded bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/30 text-red-655 dark:text-red-400 text-[8px] font-black uppercase flex items-center gap-1 shadow-xs" title="Đang được mở chỉnh sửa bởi {{ run.lockedByName || run.lockedBy }}">
-                                <i class="fa-solid fa-lock text-[7px]"></i> Đang sửa bởi {{ run.lockedByName || 'KTV khác' }}
+                            @if (projection?.hasStaleReport) {
+                              <span class="px-2 py-0.5 rounded-full bg-amber-100/90 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 text-[10px] font-bold">Cần xuất lại</span>
+                            }
+                            @if (isLocked) {
+                              <span class="px-2 py-0.5 rounded-full bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/40 text-red-600 dark:text-red-400 text-[10px] font-bold inline-flex items-center gap-1" title="Đang được mở chỉnh sửa bởi {{ run.lockedByName || run.lockedBy }}">
+                                <i class="fa-solid fa-lock text-[9px]" aria-hidden="true"></i> {{ run.lockedByName || 'Đang sửa' }}
                               </span>
                             }
+                            @if (isMergeModeActive() && !mergeCheck.compatible && mergeCheck.reason) {
+                              <span class="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 text-[10px] font-semibold">{{ mergeCheck.reason }}</span>
+                            }
                           </div>
-                          <div class="text-[10px] text-slate-400 font-mono font-semibold ml-4">{{ run.inputs?.['batchCode'] || run.id || 'Chưa có mã mẻ' }}</div>
+                          <div class="text-[11px] text-slate-500 dark:text-slate-400 font-mono font-semibold ml-4">{{ run.inputs?.['batchCode'] || run.id || 'Chưa có mã mẻ' }}</div>
                           @if (run.isVirtualMaster && run.childRequestIds) {
-                            <div class="text-[9px] text-fuchsia-500 font-bold flex items-center gap-0.5 ml-4 mt-0.5">
-                              <i class="fa-solid fa-link text-[7px]"></i> Gộp từ: {{ run.childRequestIds.join(', ') }}
+                            <div class="text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold flex items-center gap-1 ml-4 mt-0.5">
+                              <i class="fa-solid fa-link text-[9px]" aria-hidden="true"></i> Gộp từ: {{ run.childRequestIds.join(', ') }}
                             </div>
                           }
                         </td>
 
-                        <td class="p-4">
+                        <td class="p-3.5">
                           <div class="flex items-center gap-2">
-                            <div [class]="getAnalystAvatarClass(run.user)" class="w-6 h-6 rounded-full border flex items-center justify-center text-[9px] font-black uppercase shadow-sm shrink-0">
+                            <div [class]="getAnalystAvatarClass(run.user)" class="w-6 h-6 rounded-full border flex items-center justify-center text-[9px] font-bold uppercase shrink-0">
                               {{ getAnalystInitials(run.user) }}
                             </div>
-                            <span class="text-xs font-semibold truncate max-w-[100px]">{{ run.user || 'Unknown' }}</span>
+                            <span class="text-xs font-semibold truncate max-w-[120px]">{{ run.user || 'Unknown' }}</span>
                           </div>
                         </td>
 
-                        <td class="p-4 text-[11px] text-slate-500 dark:text-slate-400 font-semibold whitespace-nowrap">
-                          <i class="fa-regular fa-calendar mr-1 text-[9px]"></i>
+                        <td class="p-3.5 text-[11px] text-slate-500 dark:text-slate-400 font-semibold whitespace-nowrap">
+                          <i class="fa-regular fa-calendar mr-1 text-[10px]" aria-hidden="true"></i>
                           {{ getRunDate(run) ? formatAnalysisDate(getRunDate(run)) : '—' }}
                         </td>
 
-                        <td class="p-4 max-w-[180px]">
-                          <div class="text-[10px] font-semibold text-slate-500">
-                            <span class="font-extrabold text-slate-700 dark:text-slate-300">{{ run.sampleList?.length || 0 }}</span> mẫu
+                        <td class="p-3.5 min-w-[160px] max-w-[220px]">
+                          <div class="flex items-center justify-between text-[11px] mb-1">
+                            <span class="font-bold text-slate-700 dark:text-slate-200">{{ projection?.coverage?.published ?? 0 }}/{{ projection?.coverage?.total ?? 0 }} PDF</span>
+                            <span class="text-slate-400 font-semibold tabular-nums">{{ projection?.coverage?.percent ?? 0 }}%</span>
                           </div>
-                          <div class="truncate text-[9px] font-mono text-slate-400 dark:text-slate-600" [title]="run.sampleList ? formatSampleList(run.sampleList) : ''">
+                          <div class="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden mb-1">
+                            <div class="h-full rounded-full"
+                                 [class]="projection?.hasStaleReport ? 'bg-amber-500' : (projection && projection.coverage.percent === 100 ? 'bg-emerald-500' : 'bg-indigo-500')"
+                                 [style.width.%]="projection?.coverage?.percent ?? 0"></div>
+                          </div>
+                          <div class="truncate text-[10px] font-mono text-slate-400 dark:text-slate-500" [title]="run.sampleList ? formatSampleList(run.sampleList) : ''">
                             {{ run.sampleList ? formatSampleList(run.sampleList) : 'Trống' }}
                           </div>
                         </td>
 
-                        <td class="p-4 text-center">
-                          <span [class]="getStatusClass(run.id)" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wide border">
+                        <td class="p-3.5 text-center">
+                          <span [class]="getStatusClass(run.id)" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border">
                             <span class="w-1.5 h-1.5 rounded-full" [ngClass]="{
-                              'bg-emerald-500': runStatusMap()[run.id] === 'completed',
-                              'bg-fuchsia-500': runStatusMap()[run.id] === 'draft',
-                              'bg-amber-500': runStatusMap()[run.id] === 'pending' || !runStatusMap()[run.id]
+                              'bg-emerald-500': status === 'completed',
+                              'bg-indigo-500': status === 'draft',
+                              'bg-amber-500': status === 'pending'
                             }"></span>
                             {{ getStatusText(run.id) }}
                           </span>
                         </td>
 
-                        <td class="p-4">
-                          <div class="flex items-center justify-end gap-2">
-                            @if (run.analysisResultSummary?.reports || run.analysisResultSummary?.pdfUrl || run.analysisResultSummary?.pdfViewUrl || run.analysisResult?.reports || run.analysisResult?.pdfUrl) {
+                        <td class="p-3.5">
+                          <div class="flex items-center justify-end gap-1.5">
+                            @if (projection?.hasAnyReport) {
                               <app-button variant="secondary" size="sm" (click)="openReportHub(run); $event.stopPropagation()">
-                                <i class="fa-solid fa-file-pdf text-red-500 text-[11px]"></i>
-                                <span>Báo cáo PDF</span>
+                                <i class="fa-solid fa-file-pdf text-rose-500 text-[11px]" aria-hidden="true"></i>
+                                <span>PDF ({{ projection?.cards?.length ?? 0 }})</span>
                               </app-button>
                             }
+                            @if (isEditableRun) {
+                              <button type="button"
+                                      (click)="enterResults(run.id, undefined, true); $event.stopPropagation()"
+                                      class="inline-flex h-9 items-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-3 text-xs font-bold text-white shadow-sm transition">
+                                <i class="fa-solid fa-pen-to-square text-[10px]" aria-hidden="true"></i>
+                                <span>Nhập kết quả</span>
+                              </button>
+                            }
                             <app-button variant="secondary" size="sm" (click)="enterResults(run.id, undefined, false); $event.stopPropagation()">
-                              <i class="fa-solid fa-eye text-[10px]"></i>
-                              Chi tiết
+                              <i class="fa-solid fa-eye text-[10px]" aria-hidden="true"></i>
+                              <span>Xem & Đối chiếu</span>
                             </app-button>
                           </div>
                         </td>
@@ -566,44 +679,60 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
               <div class="flex max-w-full items-center gap-1.5 overflow-x-auto custom-scrollbar">
                 <button type="button" (click)="previousPage()" aria-label="Trang trước"
                         [disabled]="activePage() === 1"
-                        class="w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:border-fuchsia-300 dark:hover:border-fuchsia-800 transition sm:w-9 sm:h-9">
-                  <i class="fa-solid fa-chevron-left text-[10px]"></i>
+                        class="w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:border-indigo-400 dark:hover:border-indigo-700 transition sm:w-9 sm:h-9">
+                  <i class="fa-solid fa-chevron-left text-[10px]" aria-hidden="true"></i>
                 </button>
                 @for (page of visiblePageNumbers(); track page) {
-                  <button (click)="setPage(page)"
+                  <button type="button" (click)="setPage(page)"
                           class="min-w-10 h-10 px-2 rounded-xl border text-[11px] font-black transition sm:min-w-8 sm:h-8"
                           [class]="activePage() === page
-                            ? 'bg-fuchsia-600 text-white border-fuchsia-600 shadow-sm'
-                            : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-fuchsia-300 dark:hover:border-fuchsia-800'">
+                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                            : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-indigo-400 dark:hover:border-indigo-700'">
                     {{ page }}
                   </button>
                 }
                 <button type="button" (click)="nextPage()" aria-label="Trang sau"
                         [disabled]="activePage() === totalPages()"
-                        class="w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:border-fuchsia-300 dark:hover:border-fuchsia-800 transition sm:w-9 sm:h-9">
-                  <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                        class="w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:border-indigo-400 dark:hover:border-indigo-700 transition sm:w-9 sm:h-9">
+                  <i class="fa-solid fa-chevron-right text-[10px]" aria-hidden="true"></i>
                 </button>
               </div>
             </div>
           }
         }
 
-      </div><!-- end scrollable area -->
+      </div><!-- end content area -->
 
       <!-- ══════════════════════════════════════════════════════
            FLOATING MERGE ACTION BAR
       ══════════════════════════════════════════════════════ -->
-      @if (selectedRunsCount() >= 2) {
-        <div class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900/95 dark:bg-slate-950/98 text-white px-6 py-3.5 rounded-2xl shadow-2xl flex items-center gap-5 border border-slate-700/60 backdrop-blur-md animate-fade-in z-50">
-          <div class="flex flex-col">
-            <span class="text-xs font-black text-slate-100">Đã chọn <span class="text-fuchsia-400">{{ selectedRunsCount() }}</span> mẻ để gộp</span>
-            <span class="text-[9px] font-bold text-slate-400 mt-0.5">{{ getSelectedSopName() }}</span>
+      @if (selectedRunsCount() >= 2 || (isMergeModeActive() && selectedRunsCount() >= 1)) {
+        @let liveValidation = mergeValidation();
+        <div class="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 bg-slate-900/95 dark:bg-slate-950/95 text-white px-4 sm:px-5 py-3 rounded-2xl shadow-2xl flex flex-wrap items-center gap-3 sm:gap-5 border border-slate-700/70 backdrop-blur-md animate-fade-in z-40 max-w-[calc(100vw-2rem)]">
+          <div class="flex flex-col min-w-0">
+            <span class="text-xs font-bold text-slate-100">
+              Đã chọn <span class="text-indigo-400 font-black">{{ selectedRunsCount() }}</span> mẻ · <span class="text-slate-300 font-semibold">{{ getSelectedSopName() }}</span>
+            </span>
+            <div class="flex flex-wrap items-center gap-1 mt-1 max-w-md">
+              @for (sel of getSelectedRuns(); track sel.id) {
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-[10px] font-mono">
+                  {{ sel.inputs?.['batchCode'] || sel.id }}
+                  <button type="button" (click)="toggleRunSelection(sel)" aria-label="Bỏ chọn mẻ" class="text-slate-400 hover:text-white ml-0.5">
+                    <i class="fa-solid fa-xmark text-[9px]" aria-hidden="true"></i>
+                  </button>
+                </span>
+              }
+            </div>
           </div>
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2 ml-auto">
             <app-button variant="ghost" size="sm" (click)="cancelSelection()">Hủy</app-button>
-            <app-button size="sm" (click)="openMergeModal()">
-              <i class="fa-solid fa-code-merge rotate-90 text-[10px]"></i> Gộp mẻ chạy
-            </app-button>
+            <button type="button"
+                    (click)="openMergeModal()"
+                    [disabled]="selectedRunsCount() < 2 || !liveValidation.canOpenModal"
+                    class="inline-flex h-9 items-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-3.5 text-xs font-bold text-white shadow-sm transition active:scale-95 disabled:opacity-45 disabled:cursor-not-allowed">
+              <i class="fa-solid fa-code-merge rotate-90 text-[10px]" aria-hidden="true"></i>
+              <span>Gộp mẻ chạy ({{ selectedRunsCount() }})</span>
+            </button>
           </div>
         </div>
       }
@@ -619,10 +748,16 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
             [masterCurveRunId]="masterCurveRunId()"
             [unifiedDateString]="unifiedDateString()"
             [customMasterId]="customMasterId()"
+            [validation]="mergeValidation()"
+            [capability]="editCapability()"
+            [userEmail]="currentUserEmail()"
+            [sops]="state.sops() || []"
+            [duplicateSampleSources]="duplicateSampleSources()"
             (close)="closeMergeModal()"
             (masterCurveRunIdChange)="masterCurveRunId.set($event)"
             (unifiedDateStringChange)="unifiedDateString.set($event)"
             (customMasterIdChange)="customMasterId.set($event)"
+            (duplicateSampleSourcesChange)="duplicateSampleSources.set($event)"
             (merge)="executeMerge()">
           </app-merge-runs-modal>
         }
@@ -650,7 +785,8 @@ import { MergeRunsModalComponent } from './components/merge-runs-modal.component
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ResultListComponent implements OnInit, OnDestroy {
-  private state = inject(StateService);
+  protected state = inject(StateService);
+  private auth = inject(AuthService);
   private router = inject(Router);
   private resultService = inject(ResultService);
   private fb = inject(FirebaseService);
@@ -659,11 +795,38 @@ export class ResultListComponent implements OnInit, OnDestroy {
   private printService = inject(PrintService);
   private activityEvents = inject(ActivityEventService);
 
+  @ViewChild('searchInput') searchInputRef?: ElementRef<HTMLInputElement>;
+
+  @HostListener('window:keydown', ['$event'])
+  onWindowKeydown(event: KeyboardEvent) {
+    if (event.key !== '/' || event.ctrlKey || event.metaKey || event.altKey) return;
+    const target = event.target as HTMLElement | null;
+    const tag = target?.tagName?.toLowerCase();
+    if (tag === 'input' || tag === 'textarea' || tag === 'select' || target?.isContentEditable) {
+      return;
+    }
+    if (this.searchInputRef?.nativeElement) {
+      event.preventDefault();
+      this.searchInputRef.nativeElement.focus();
+      this.searchInputRef.nativeElement.select();
+    }
+  }
+
   formatSampleList = formatSampleList;
   getSafeGoogleUrl = getSafeGoogleUrl;
 
+  editCapability = computed<ResultEditCapability>(() => ({
+    isManager: this.auth.isManager(),
+    canRunBatch: this.auth.canRunBatch(),
+    canApprove: this.auth.canApprove(),
+    permissions: this.auth.userPermissions()
+  }));
+  canEditResults = computed(() => canUserEditResults(this.editCapability()));
+  currentUserEmail = computed(() => this.state.currentUser()?.email || this.auth.currentUser()?.email || null);
+
   isLoading = signal(true);
   filterStatus = signal<'all' | 'pending' | 'draft' | 'completed'>('all');
+  quickFilter = signal<'none' | 'stale' | 'locked' | 'merged'>('none');
   readonly pageSize = 24;
   currentPage = signal<number>(1);
 
@@ -690,6 +853,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
   masterCurveRunId = signal<string>('');
   unifiedDateString = signal<string>('');
   customMasterId = signal<string>('');
+  duplicateSampleSources = signal<Record<string, string>>({});
 
   // Premium Dashboard & View Mode States
   viewMode = signal<'grid' | 'table'>('grid');
@@ -839,6 +1003,32 @@ export class ResultListComponent implements OnInit, OnDestroy {
     return Math.round(total / runs.length);
   });
 
+  completedCount = computed(() => {
+    const statusMap = this.runStatusMap();
+    return this.allApprovedRuns().filter((run: any) => (statusMap[run.id] || 'pending') === 'completed').length;
+  });
+
+  reportsProjectionMap = computed<Record<string, BatchReportsProjection>>(() => {
+    const map: Record<string, BatchReportsProjection> = {};
+    for (const run of this.allApprovedRuns()) {
+      map[run.id] = buildBatchReportsProjection(run);
+    }
+    return map;
+  });
+
+  staleRunsCount = computed(() => {
+    const proj = this.reportsProjectionMap();
+    return this.allApprovedRuns().filter((run: any) => proj[run.id]?.hasStaleReport).length;
+  });
+
+  lockedRunsCount = computed(() => {
+    return this.allApprovedRuns().filter((run: any) => this.isRunLocked(run)).length;
+  });
+
+  mergedRunsCount = computed(() => {
+    return this.allApprovedRuns().filter((run: any) => Boolean(run.isVirtualMaster || run.parentMasterId)).length;
+  });
+
   pendingCount = computed(() => {
     return this.filteredCount('pending');
   });
@@ -846,15 +1036,13 @@ export class ResultListComponent implements OnInit, OnDestroy {
   sopDistribution = computed(() => {
     const runs = this.allApprovedRuns();
     const distribution: Record<string, { count: number; name: string }> = {};
-    
-    // Aesthetic dynamic color palette
+
     const colorPalette = [
-      { bg: 'bg-violet-50/70 dark:bg-violet-950/20', text: 'text-violet-650 dark:text-violet-400 border-violet-200/40 dark:border-violet-900/30', bar: 'bg-violet-500' },
-      { bg: 'bg-fuchsia-50/70 dark:bg-fuchsia-950/20', text: 'text-fuchsia-650 dark:text-fuchsia-400 border-fuchsia-200/40 dark:border-fuchsia-900/30', bar: 'bg-fuchsia-500' },
-      { bg: 'bg-pink-50/70 dark:bg-pink-950/20', text: 'text-pink-600 dark:text-pink-400 border-pink-200/40 dark:border-pink-900/30', bar: 'bg-pink-500' },
-      { bg: 'bg-cyan-50/70 dark:bg-cyan-950/20', text: 'text-cyan-650 dark:text-cyan-400 border-cyan-200/40 dark:border-cyan-900/30', bar: 'bg-cyan-500' },
-      { bg: 'bg-amber-50/70 dark:bg-amber-950/20', text: 'text-amber-650 dark:text-amber-400 border-amber-200/40 dark:border-amber-900/30', bar: 'bg-amber-500' },
-      { bg: 'bg-emerald-50/70 dark:bg-emerald-950/20', text: 'text-emerald-650 dark:text-emerald-450 border-emerald-200/40 dark:border-emerald-900/30', bar: 'bg-emerald-500' },
+      { bg: 'bg-indigo-50/70 dark:bg-indigo-950/20', text: 'text-indigo-700 dark:text-indigo-300 border-indigo-200/60 dark:border-indigo-900/40', bar: 'bg-indigo-500' },
+      { bg: 'bg-blue-50/70 dark:bg-blue-950/20', text: 'text-blue-700 dark:text-blue-300 border-blue-200/60 dark:border-blue-900/40', bar: 'bg-blue-500' },
+      { bg: 'bg-slate-50/80 dark:bg-slate-800/40', text: 'text-slate-700 dark:text-slate-300 border-slate-200/70 dark:border-slate-700/60', bar: 'bg-slate-500' },
+      { bg: 'bg-amber-50/70 dark:bg-amber-950/20', text: 'text-amber-700 dark:text-amber-300 border-amber-200/60 dark:border-amber-900/40', bar: 'bg-amber-500' },
+      { bg: 'bg-emerald-50/70 dark:bg-emerald-950/20', text: 'text-emerald-700 dark:text-emerald-300 border-emerald-200/60 dark:border-emerald-900/40', bar: 'bg-emerald-500' },
     ];
 
     runs.forEach((run: any) => {
@@ -901,12 +1089,12 @@ export class ResultListComponent implements OnInit, OnDestroy {
   getSopGradientClass(sopId: string | undefined): string {
     if (!sopId) return 'from-slate-400 to-slate-500';
     if (sopId === 'trifluralin-gcms') {
-      return 'from-fuchsia-500 to-pink-500';
+      return 'from-indigo-500 to-blue-500';
     }
     if (sopId === 'fipronil-chlorpyrifos') {
-      return 'from-fuchsia-500 to-sky-500';
+      return 'from-indigo-500 to-sky-500';
     }
-    return 'from-violet-500 to-fuchsia-500';
+    return 'from-indigo-500 to-slate-500';
   }
 
   getAnalystInitials(user: string | undefined): string {
@@ -919,12 +1107,12 @@ export class ResultListComponent implements OnInit, OnDestroy {
   getAnalystAvatarClass(user: string | undefined): string {
     if (!user) return 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border-slate-200 dark:border-slate-700';
     const colors = [
-      'bg-fuchsia-50 text-fuchsia-600 border-fuchsia-100 dark:bg-fuchsia-950/40 dark:text-fuchsia-400 dark:border-fuchsia-900/30',
-      'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-450 dark:border-emerald-900/30',
-      'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-950/40 dark:text-amber-450 dark:border-amber-900/30',
-      'bg-rose-50 text-rose-600 border-rose-100 dark:bg-rose-950/40 dark:text-rose-450 dark:border-rose-900/30',
-      'bg-sky-50 text-sky-600 border-sky-100 dark:bg-sky-950/40 dark:text-sky-400 dark:border-sky-900/30',
-      'bg-fuchsia-50 text-fuchsia-600 border-fuchsia-100 dark:bg-fuchsia-950/40 dark:text-fuchsia-400 dark:border-fuchsia-900/30'
+      'bg-indigo-50 text-indigo-600 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-900/40',
+      'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900/40',
+      'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900/40',
+      'bg-rose-50 text-rose-600 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-900/40',
+      'bg-sky-50 text-sky-600 border-sky-200 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-900/40',
+      'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
     ];
     let sum = 0;
     for (let i = 0; i < user.length; i++) {
@@ -975,12 +1163,13 @@ export class ResultListComponent implements OnInit, OnDestroy {
 
   saveState() {
     try {
-      const scrollContainer = document.querySelector('main .overflow-y-auto');
+      const scrollContainer = document.querySelector('.app-content-scroll') || document.querySelector('main .overflow-y-auto');
       const scrollTop = scrollContainer ? scrollContainer.scrollTop : 0;
 
       const stateToSave = {
         viewMode: this.viewMode(),
         filterStatus: this.filterStatus(),
+        quickFilter: this.quickFilter(),
         currentPage: this.activePage(),
         searchText: this.searchText(),
         selectedSopId: this.selectedSopId(),
@@ -1006,6 +1195,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
         const state = JSON.parse(saved);
         if (state.viewMode) this.viewMode.set(state.viewMode);
         if (state.filterStatus) this.filterStatus.set(state.filterStatus);
+        if (state.quickFilter) this.quickFilter.set(state.quickFilter);
         if (state.currentPage) this.currentPage.set(state.currentPage);
         if (state.searchText !== undefined) this.searchText.set(state.searchText);
         if (state.selectedSopId) this.selectedSopId.set(state.selectedSopId);
@@ -1040,7 +1230,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
       if (saved) {
         const state = JSON.parse(saved);
         if (state.scrollTop) {
-          const scrollContainer = document.querySelector('main .overflow-y-auto');
+          const scrollContainer = document.querySelector('.app-content-scroll') || document.querySelector('main .overflow-y-auto');
           if (scrollContainer) {
             scrollContainer.scrollTop = state.scrollTop;
           }
@@ -1135,7 +1325,10 @@ export class ResultListComponent implements OnInit, OnDestroy {
       });
     }
 
-    // 5. Filter by Status Tab
+    // 5. Quick Operational Filter
+    list = this.applyQuickFilter(list);
+
+    // 6. Filter by Status Tab
     const statusFilter = this.filterStatus();
     const statusMap = this.runStatusMap();
     if (statusFilter !== 'all') {
@@ -1144,6 +1337,22 @@ export class ResultListComponent implements OnInit, OnDestroy {
 
     return list;
   });
+
+  private applyQuickFilter(list: any[]): any[] {
+    const q = this.quickFilter();
+    if (q === 'none') return list;
+    const proj = this.reportsProjectionMap();
+    if (q === 'stale') {
+      return list.filter((run: any) => proj[run.id]?.hasStaleReport);
+    }
+    if (q === 'locked') {
+      return list.filter((run: any) => this.isRunLocked(run));
+    }
+    if (q === 'merged') {
+      return list.filter((run: any) => Boolean(run.isVirtualMaster || run.parentMasterId));
+    }
+    return list;
+  }
 
   totalPages = computed(() => Math.max(1, Math.ceil(this.displayedRuns().length / this.pageSize)));
 
@@ -1189,7 +1398,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
 
   private scrollResultsToTop() {
     setTimeout(() => {
-      const scrollContainer = document.querySelector('main .overflow-y-auto');
+      const scrollContainer = document.querySelector('.app-content-scroll') || document.querySelector('main .overflow-y-auto');
       if (scrollContainer) scrollContainer.scrollTop = 0;
     }, 0);
   }
@@ -1231,6 +1440,8 @@ export class ResultListComponent implements OnInit, OnDestroy {
       });
     }
 
+    list = this.applyQuickFilter(list);
+
     const statusMap = this.runStatusMap();
     if (status === 'all') return list.length;
     return list.filter((run: any) => (statusMap[run.id] || 'pending') === status).length;
@@ -1248,12 +1459,12 @@ export class ResultListComponent implements OnInit, OnDestroy {
   getStatusClass(requestId: string): string {
     const status = this.runStatusMap()[requestId] || 'pending';
     switch (status) {
-      case 'completed': 
-        return 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/30';
-      case 'draft': 
-        return 'bg-fuchsia-50 dark:bg-fuchsia-950/20 text-fuchsia-600 dark:text-fuchsia-400 border-fuchsia-100 dark:border-fuchsia-900/30';
-      default: 
-        return 'bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-900/30';
+      case 'completed':
+        return 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border-emerald-200/70 dark:border-emerald-900/40';
+      case 'draft':
+        return 'bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300 border-indigo-200/70 dark:border-indigo-900/40';
+      default:
+        return 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 border-amber-200/70 dark:border-amber-900/40';
     }
   }
 
@@ -1273,6 +1484,25 @@ export class ResultListComponent implements OnInit, OnDestroy {
       }
     }
     return true;
+  }
+
+  isRunLockedByOther(run: any): boolean {
+    return isRunActivelyLockedByOthers(run, this.currentUserEmail());
+  }
+
+  copyBatchCode(code: string, event: Event) {
+    event.stopPropagation();
+    if (!code) return;
+    navigator.clipboard.writeText(code).then(() => {
+      this.toast.show(`Đã sao chép mã mẻ: ${code}`, 'success');
+    }).catch(() => {
+      this.toast.show('Không thể sao chép mã mẻ', 'error');
+    });
+  }
+
+  toggleQuickFilter(filter: 'stale' | 'locked' | 'merged') {
+    this.quickFilter.set(this.quickFilter() === filter ? 'none' : filter);
+    this.resetPaging();
   }
 
   getRunApprovalDate(run: any): string {
@@ -1353,6 +1583,10 @@ export class ResultListComponent implements OnInit, OnDestroy {
   }
 
   toggleMergeMode() {
+    if (!this.isMergeModeActive() && !this.canEditResults()) {
+      this.toast.show('Bạn không có quyền gộp mẻ phân tích.', 'error');
+      return;
+    }
     const nextVal = !this.isMergeModeActive();
     this.isMergeModeActive.set(nextVal);
     if (!nextVal) {
@@ -1361,11 +1595,12 @@ export class ResultListComponent implements OnInit, OnDestroy {
   }
 
   hasActiveFilters(): boolean {
-    return this.searchText() !== '' || 
-           this.selectedSopId() !== 'all' || 
-           this.selectedAnalyst() !== 'all' || 
-           this.startDate() !== '' || 
-           this.endDate() !== '';
+    return this.searchText() !== '' ||
+           this.selectedSopId() !== 'all' ||
+           this.selectedAnalyst() !== 'all' ||
+           this.startDate() !== '' ||
+           this.endDate() !== '' ||
+           this.quickFilter() !== 'none';
   }
 
   resetAllFilters() {
@@ -1374,19 +1609,41 @@ export class ResultListComponent implements OnInit, OnDestroy {
     this.selectedAnalyst.set('all');
     this.startDate.set('');
     this.endDate.set('');
+    this.quickFilter.set('none');
     this.resetPaging();
   }
+
+  mergeCandidateState(run: any): { compatible: boolean; reason?: string } {
+    if (!this.isMergeModeActive()) return { compatible: true };
+    if (run.isVirtualMaster) return { compatible: false, reason: 'Mẻ gộp' };
+    if (run.parentMasterId) return { compatible: false, reason: 'Đã gộp' };
+    if (this.isRunLockedByOther(run)) {
+      return { compatible: false, reason: `Khóa (${run.lockedByName || 'KTV'})` };
+    }
+    const selected = this.getSelectedRuns();
+    if (selected.length === 0) return { compatible: true };
+    return isRunCandidateCompatibleForMerge(selected[0], run, this.state.sops() || []);
+  }
+
+  mergeValidation = computed<MergeRunsValidation>(() => {
+    return validateMergeRuns({
+      selectedRuns: this.getSelectedRuns(),
+      capability: this.editCapability(),
+      userEmail: this.currentUserEmail(),
+      sops: this.state.sops() || [],
+      duplicateSampleSources: this.duplicateSampleSources()
+    });
+  });
 
   // Option C selection and merging handlers
   toggleRunSelection(run: any) {
     const current = { ...this.selectedRunsMap() };
     const checked = !current[run.id];
-    
+
     if (checked) {
-      // Validate: Must be same SOP as existing selections (if any)
-      const selected = this.getSelectedRuns();
-      if (selected.length > 0 && selected[0].sopId !== run.sopId) {
-        this.toast.show('Chỉ cho phép gộp các mẻ chạy có cùng Phương pháp (SOP)!', 'info');
+      const check = this.mergeCandidateState(run);
+      if (!check.compatible) {
+        this.toast.show(`Không thể chọn mẻ này: ${check.reason || 'Không tương thích SOP/đơn vị'}.`, 'info');
         return;
       }
       current[run.id] = true;
@@ -1394,6 +1651,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
       delete current[run.id];
     }
     this.selectedRunsMap.set(current);
+    this.duplicateSampleSources.set({});
   }
 
   getSelectedRuns(): any[] {
@@ -1408,9 +1666,16 @@ export class ResultListComponent implements OnInit, OnDestroy {
 
   cancelSelection() {
     this.selectedRunsMap.set({});
+    this.duplicateSampleSources.set({});
   }
 
   openMergeModal() {
+    this.duplicateSampleSources.set({});
+    const validation = this.mergeValidation();
+    if (!validation.canOpenModal) {
+      this.toast.show(validation.blockers[0] || 'Không thể gộp các mẻ đã chọn.', 'error');
+      return;
+    }
     const runs = this.getSelectedRuns();
     if (runs.length < 2) return;
     
@@ -1440,6 +1705,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
 
   closeMergeModal() {
     this.showMergeModal.set(false);
+    this.duplicateSampleSources.set({});
   }
 
   onUnifiedDateChange(event: Event) {
@@ -1451,21 +1717,40 @@ export class ResultListComponent implements OnInit, OnDestroy {
   }
 
   async executeMerge() {
+    const selectedSources = this.duplicateSampleSources();
+    const validation = validateMergeRuns({
+      selectedRuns: this.getSelectedRuns(),
+      capability: this.editCapability(),
+      userEmail: this.currentUserEmail(),
+      sops: this.state.sops() || [],
+      duplicateSampleSources: selectedSources
+    });
+    if (!validation.canMerge) {
+      this.toast.show(validation.blockers[0] || 'Không thể gộp mẻ chạy.', 'error');
+      return;
+    }
     const sops = this.getSelectedRuns();
     if (sops.length < 2) return;
     const masterId = this.customMasterId().trim().toUpperCase() || `GOP-${Date.now()}`;
     const masterCurveId = this.masterCurveRunId();
     const curveRun = sops.find(r => r.id === masterCurveId) || sops[0];
-    
-    // Combine sample lists and target mappings uniquely
+    const runById = new Map<string, any>(sops.map(r => [r.id, r]));
+
+    // Combine sample lists and resolve exact source run per sample (never silent overwrite on duplicates)
     const allSamples = new Set<string>();
     const allTargetIds = new Set<string>();
     const combinedSampleTargetMap: Record<string, string[]> = {};
     const combinedTargetNames: Record<string, string> = {};
+    const sampleSourceRunIds: Record<string, string> = {};
 
     sops.forEach(r => {
       if (r.sampleList) {
-        r.sampleList.forEach((s: string) => allSamples.add(s));
+        r.sampleList.forEach((s: string) => {
+          allSamples.add(s);
+          if (!sampleSourceRunIds[s]) {
+            sampleSourceRunIds[s] = r.id;
+          }
+        });
       }
       if (r.targetIds) {
         r.targetIds.forEach((t: string) => allTargetIds.add(t));
@@ -1478,19 +1763,25 @@ export class ResultListComponent implements OnInit, OnDestroy {
           }
         });
       }
-      const rMap = r.sampleTargetMap || r.inputs?.sampleTargetMap;
-      if (rMap) {
-        Object.keys(rMap).forEach(sampleId => {
-          if (!combinedSampleTargetMap[sampleId]) {
-            combinedSampleTargetMap[sampleId] = [];
-          }
-          const existingTargets = new Set(combinedSampleTargetMap[sampleId]);
-          rMap[sampleId].forEach((t: string) => existingTargets.add(t));
-          combinedSampleTargetMap[sampleId] = Array.from(existingTargets);
-        });
-      }
     });
+
+    for (const dupSample of validation.duplicateSamples) {
+      const explicitRunId = selectedSources[dupSample];
+      if (!explicitRunId || !runById.has(explicitRunId)) {
+        this.toast.show(`Thiếu mẻ nguồn cho mẫu trùng ${dupSample}.`, 'error');
+        return;
+      }
+      sampleSourceRunIds[dupSample] = explicitRunId;
+    }
+
     const sampleList = Array.from(allSamples).sort();
+    for (const sampleId of sampleList) {
+      const ownerRun = runById.get(sampleSourceRunIds[sampleId]);
+      const rMap = ownerRun?.sampleTargetMap || ownerRun?.inputs?.sampleTargetMap;
+      if (rMap?.[sampleId]) {
+        combinedSampleTargetMap[sampleId] = Array.from(new Set(rMap[sampleId]));
+      }
+    }
     const targetIds = Array.from(allTargetIds);
 
     try {
@@ -1514,19 +1805,12 @@ export class ResultListComponent implements OnInit, OnDestroy {
         }
       });
 
-      // Copy sample rows from their respective source runs
-      sops.forEach(r => {
-        const sourceDetail = detailMap.get(r.id) || {};
+      // Copy each sample row strictly from its resolved source run
+      sampleList.forEach((sampleId: string) => {
+        const sourceRunId = sampleSourceRunIds[sampleId];
+        const sourceDetail = detailMap.get(sourceRunId) || {};
         const sourceResultData = sourceDetail.resultData || {};
-        if (r.sampleList) {
-          r.sampleList.forEach((s: string) => {
-            if (sourceResultData[s]) {
-              resultData[s] = { ...sourceResultData[s] };
-            } else {
-              resultData[s] = {}; // Fallback empty row
-            }
-          });
-        }
+        resultData[sampleId] = sourceResultData[sampleId] ? { ...sourceResultData[sampleId] } : {};
       });
 
       // 3. Prepare the Virtual Master payload (requests metadata)
@@ -1536,6 +1820,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
         items: curveRun.items || [],
         isVirtualMaster: true,
         childRequestIds: sops.map(r => r.id),
+        mergedSampleSources: sampleSourceRunIds,
         timestamp: serverTimestamp(),
         lastUpdated: serverTimestamp(),
         approvedAt: serverTimestamp(),
@@ -1594,7 +1879,7 @@ export class ResultListComponent implements OnInit, OnDestroy {
         targetName: curveRun.sopName,
         requestId: masterId,
         publicTraceable: true,
-        metadata: { sopId: curveRun.sopId, count: sops.length },
+        metadata: { sopId: curveRun.sopId, count: sops.length, mergedSampleSources: sampleSourceRunIds },
         legacyFields: {
           sopBasicInfo: {
             name: curveRun.sopName,

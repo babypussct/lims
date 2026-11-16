@@ -1,97 +1,144 @@
-<fieldset [disabled]="isReadOnly" class="space-y-6 animate-fade-in">
-  
+<div class="space-y-5 animate-fade-in">
   <!-- 1. Metadata Form & Checkboxes -->
   <app-sop-header-metadata
-    title="Thông tin chung & Đánh giá (Tiêu chuẩn)"
+    title="Thông tin chung &amp; Đánh giá (Tiêu chuẩn)"
     [draft]="draft"
     [checkboxList]="checkboxList"
+    [isReadOnly]="isReadOnly"
     (draftChanged)="onDataChanged()">
   </app-sop-header-metadata>
-  
+
   <!-- 2. Grid Sample Spreadsheet & Bulk Actions -->
-  <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800/80 p-5 space-y-4 animate-fade-in">
-    <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-3.5">
-      <h4 class="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
-        <i class="fa-solid fa-table-cells mr-1 text-fuchsia-500 text-sm"></i> Lưới nhập kết quả sắc ký
-      </h4>
+  <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/80 dark:border-slate-800 p-5 space-y-4">
+    <app-sop-spreadsheet-toolbar
+      title="Lưới nhập kết quả sắc ký"
+      [isReadOnly]="isReadOnly"
+      [canUndo]="pasteCtrl.undoStack.size > 0"
+      [undoSummary]="pasteCtrl.undoStack.peek()?.summary || ''"
+      [pendingPlan]="pasteCtrl.pendingPlan"
+      [showClearAll]="true"
+      [showMobileCardToggle]="true"
+      [mobileViewMode]="mobileViewMode()"
+      (mobileViewModeChange)="mobileViewMode.set($event)"
+      (pasteRequested)="openClipboardPaste()"
+      (undoRequested)="undoLastPaste()"
+      (confirmPaste)="confirmPendingPaste()"
+      (cancelPaste)="pasteCtrl.cancelPending()"
+      (fillNdRequested)="pasteCtrl.bumpRevision(); bulkFillND()"
+      (clearAllRequested)="confirmClearAll()" />
 
-      <div class="flex flex-wrap items-center gap-2.5">
-        <span class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mr-1">Thao tác nhanh:</span>
-        
-        <button (click)="bulkFillND()" 
-                class="px-3 py-2 bg-slate-50 dark:bg-slate-850 hover:bg-amber-50 dark:hover:bg-amber-955/20 text-slate-700 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 border border-slate-200 dark:border-slate-800 hover:border-amber-200 dark:hover:border-amber-900/30 rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 active:scale-95 shadow-2xs">
-          <i class="fa-solid fa-pen-clip text-amber-500"></i>
-          <span>Điền ND Ô Trống</span>
-        </button>
-
-        <button (click)="bulkClearAll()" 
-                class="px-3 py-2 bg-slate-50 dark:bg-slate-850 hover:bg-rose-50 dark:hover:bg-rose-955/20 text-slate-755 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-450 border border-slate-200 dark:border-slate-800 hover:border-rose-200 dark:hover:border-rose-900/30 rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 active:scale-95 shadow-2xs">
-          <i class="fa-solid fa-trash-can text-rose-500"></i>
-          <span>Xóa Hết Bảng</span>
-        </button>
+    <!-- Mobile Cards View (< md) -->
+    @if (mobileViewMode() === 'cards') {
+      <div class="md:hidden space-y-3">
+        @for (row of getDisplayRows(); track row.key) {
+          @if (draft.resultData[row.key]) {
+            <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3.5 space-y-3">
+              <div class="flex items-center justify-between gap-2">
+                <span class="font-mono font-bold text-xs text-slate-800 dark:text-slate-100">{{ row.label }}</span>
+                <div class="flex items-center gap-1.5">
+                  <span class="text-[10px] font-bold text-slate-400">Lọ:</span>
+                  <input type="text"
+                         [readOnly]="isReadOnly"
+                         [(ngModel)]="draft.resultData[row.key]['loSo']"
+                         (ngModelChange)="pasteCtrl.bumpRevision(); onDataChanged()"
+                         class="w-16 h-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-center text-xs font-bold" />
+                </div>
+              </div>
+              <div class="grid grid-cols-1 gap-2.5 text-xs">
+                @for (col of activeColumns; track col) {
+                  <label class="block">
+                    <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400 block mb-1">{{ columnDisplayNames()[col] || col }}</span>
+                    <input type="text"
+                           [readOnly]="isReadOnly"
+                           [(ngModel)]="draft.resultData[row.key][col]"
+                           (ngModelChange)="pasteCtrl.bumpRevision(); onDataChanged()"
+                           placeholder="..."
+                           class="h-9 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-2.5 text-center font-bold outline-none focus:border-indigo-500" />
+                  </label>
+                }
+                <label class="block">
+                  <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400 block mb-1">Ghi chú</span>
+                  <input type="text"
+                         [readOnly]="isReadOnly"
+                         [(ngModel)]="draft.resultData[row.key]['ghiChu']"
+                         (ngModelChange)="pasteCtrl.bumpRevision(); onDataChanged()"
+                         placeholder="Ghi chú..."
+                         class="h-9 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2.5 outline-none focus:border-indigo-500" />
+                </label>
+              </div>
+            </div>
+          }
+        }
       </div>
-    </div>
+    }
 
     <!-- Spreadsheet Table Grid -->
-    <div class="overflow-x-auto custom-scrollbar border border-slate-200/80 dark:border-slate-800 rounded-2xl max-h-[550px] overflow-y-auto">
+    <div [class.hidden]="mobileViewMode() === 'cards'" class="md:!block overflow-x-auto custom-scrollbar border border-slate-200/80 dark:border-slate-800 rounded-2xl max-h-[550px] overflow-y-auto">
       <table class="w-full text-sm border-collapse">
         <thead>
-          <tr class="bg-slate-50 dark:bg-slate-955 border-b border-slate-255/80 dark:border-slate-800 sticky top-0 z-20 shadow-2xs">
-            <th class="py-3 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest w-28">Lọ số</th>
-            <th class="py-3 px-4 text-left font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest min-w-[150px]">Mẫu thử</th>
-            
+          <tr class="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-20 shadow-xs">
+            <th class="py-3 px-3 text-center font-bold text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider w-24 min-w-[96px] sticky left-0 z-30 bg-slate-50 dark:bg-slate-950 border-r border-slate-200/70 dark:border-slate-800">Lọ số</th>
+            <th class="py-3 px-3 text-left font-bold text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider min-w-[140px] sticky left-24 z-30 bg-slate-50 dark:bg-slate-950 border-r border-slate-200/70 dark:border-slate-800">Mẫu thử</th>
             @for (col of activeColumns; track col) {
-              <th class="py-3 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest min-w-[120px]">
+              <th class="py-3 px-3 text-center font-bold text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider min-w-[120px]">
                 {{ columnDisplayNames()[col] || col }}
               </th>
             }
-            
-            <th class="py-3 px-4 text-left font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest min-w-[150px]">Ghi chú</th>
-            <th class="py-3 px-4 text-center font-black text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest w-24">Hàng</th>
+            <th class="py-3 px-3 text-left font-bold text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider min-w-[150px]">Ghi chú</th>
+            <th class="py-3 px-3 text-center font-bold text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider w-20">Hàng</th>
           </tr>
         </thead>
-        
+
         <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80">
           @for (row of getDisplayRows(); track row.key; let rowIdx = $index) {
             @if (draft.resultData[row.key]) {
-              <tr class="hover:bg-slate-50/40 dark:hover:bg-slate-800/20 transition-all focus-within:bg-fuchsia-50/10 dark:focus-within:bg-fuchsia-500/5 border-l-4 border-l-transparent focus-within:border-l-fuchsia-500 duration-150">
-                <td class="py-1.5 px-2 w-28">
+              <tr class="bg-white dark:bg-slate-900 hover:bg-slate-50/70 dark:hover:bg-slate-800/30 transition-colors focus-within:bg-indigo-50/20 dark:focus-within:bg-indigo-950/20 border-l-4 border-l-transparent focus-within:border-l-indigo-500">
+                <td class="py-1.5 px-2 w-24 min-w-[96px] sticky left-0 z-10 bg-inherit border-r border-slate-100 dark:border-slate-800">
                   <input type="text"
+                         [readOnly]="isReadOnly"
                          [(ngModel)]="draft.resultData[row.key]['loSo']"
-                         (ngModelChange)="onDataChanged()"
+                         (ngModelChange)="pasteCtrl.bumpRevision(); onDataChanged()"
                          [id]="'cell-' + rowIdx + '-loSo'"
                          (keydown)="handleGridNavigation($event, rowIdx, 'loSo', 0)"
+                         (paste)="onCellPaste($event, rowIdx, 0)"
                          placeholder="..."
-                         class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-extrabold focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 outline-none text-center shadow-inner">
+                         class="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-2 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-center" />
                 </td>
-                <td class="py-2.5 px-4 font-mono font-bold text-xs text-slate-700 dark:text-slate-200 break-all">{{ row.label }}</td>
-                
+                <td class="py-2.5 px-3 font-mono font-bold text-xs text-slate-700 dark:text-slate-200 break-all sticky left-24 z-10 bg-inherit border-r border-slate-100 dark:border-slate-800">{{ row.label }}</td>
+
                 @for (col of activeColumns; track col; let colIdx = $index) {
                   <td class="py-1.5 px-2">
                     <input type="text"
+                           [readOnly]="isReadOnly"
                            [(ngModel)]="draft.resultData[row.key][col]"
-                           (ngModelChange)="onDataChanged()"
+                           (ngModelChange)="pasteCtrl.bumpRevision(); onDataChanged()"
                            [id]="'cell-' + rowIdx + '-' + col"
                            (keydown)="handleGridNavigation($event, rowIdx, col, colIdx + 1)"
+                           (paste)="onCellPaste($event, rowIdx, colIdx + 1)"
                            placeholder="..."
-                           class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-extrabold focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 outline-none text-center shadow-inner">
+                           class="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-center" />
                   </td>
                 }
-                
+
                 <td class="py-1.5 px-2">
                   <input type="text"
+                         [readOnly]="isReadOnly"
                          [(ngModel)]="draft.resultData[row.key]['ghiChu']"
-                         (ngModelChange)="onDataChanged()"
+                         (ngModelChange)="pasteCtrl.bumpRevision(); onDataChanged()"
                          [id]="'cell-' + rowIdx + '-ghiChu'"
                          (keydown)="handleGridNavigation($event, rowIdx, 'ghiChu', activeColumns.length + 1)"
+                         (paste)="onCellPaste($event, rowIdx, activeColumns.length + 1)"
                          placeholder="Ghi chú..."
-                         class="w-full bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 outline-none shadow-inner">
+                         class="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none" />
                 </td>
-                <td class="py-1.5 px-4 text-center">
-                  <button (click)="copyRowToAll(row.key)" 
-                          class="w-7 h-7 flex items-center justify-center bg-fuchsia-50 dark:bg-fuchsia-950/20 hover:bg-fuchsia-650 hover:text-white dark:hover:bg-fuchsia-600 dark:hover:text-white text-fuchsia-600 dark:text-fuchsia-400 border border-fuchsia-100/60 dark:border-fuchsia-900/30 rounded-xl text-xs font-black transition shadow-2xs mx-auto active:scale-90"
+                <td class="py-1.5 px-3 text-center">
+                  <button type="button"
+                          [disabled]="isReadOnly"
+                          (click)="pasteCtrl.bumpRevision(); copyRowToAll(row.key)"
+                          aria-label="Sao chép kết quả dòng {{ row.label }} sang tất cả mẫu"
+                          class="w-7 h-7 flex items-center justify-center bg-indigo-50 dark:bg-indigo-950/30 hover:bg-indigo-600 hover:text-white text-indigo-600 dark:text-indigo-400 border border-indigo-200/70 dark:border-indigo-900/40 rounded-xl text-xs font-bold transition mx-auto active:scale-90 disabled:opacity-40"
                           title="Sao chép kết quả dòng này cho tất cả các dòng mẫu khác trong bảng">
-                    <i class="fa-solid fa-copy"></i>
+                    <i class="fa-solid fa-copy" aria-hidden="true"></i>
                   </button>
                 </td>
               </tr>
@@ -101,4 +148,4 @@
       </table>
     </div>
   </div>
-</fieldset>
+</div>

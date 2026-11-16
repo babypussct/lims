@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { FirebaseService as CoreFirebaseService } from '../../../core/services/firebase.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { doc, getDoc, updateDoc, collection, query, orderBy, getDocs, setDoc, deleteDoc, deleteField, onSnapshot, serverTimestamp, writeBatch } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, query, orderBy, getDocs, setDoc, deleteDoc, deleteField, onSnapshot, serverTimestamp, writeBatch, runTransaction } from 'firebase/firestore';
 import { AnalysisResultDraft } from '../../../core/models/analysis-result.model';
 import { ReportService, GenerateReportPayload } from '../../../core/services/report.service';
 import { ToastService } from '../../../core/services/toast.service';
@@ -20,6 +20,19 @@ import {
   invalidatePublishedReports,
   isBatchReportComplete
 } from '../report-completion.utils';
+import {
+  canUserEditResults,
+  evaluateResultWriteGuard,
+  isRunActivelyLockedByOthers,
+  ResultEditCapability,
+  ResultWriteOperation
+} from './result-write-guard';
+
+export interface AcquireLockResult {
+  acquired: boolean;
+  reason?: 'no_permission' | 'not_found' | 'completed' | 'locked_by_others' | 'conflict' | 'error';
+  lockedByName?: string;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -38,6 +51,34 @@ export class ResultService {
     return doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', requestId);
   }
 
+  private getEditCapability(): ResultEditCapability {
+    return {
+      isManager: this.auth.isManager(),
+      canRunBatch: this.auth.canRunBatch(),
+      canApprove: this.auth.canApprove(),
+      permissions: this.auth.userPermissions()
+    };
+  }
+
+  private assertWriteAllowed(
+    run: any,
+    operation: ResultWriteOperation,
+    draftStatus?: string | null,
+    showToast = true
+  ): boolean {
+    const guard = evaluateResultWriteGuard({
+      capability: this.getEditCapability(),
+      userEmail: this.auth.currentUser()?.email,
+      run,
+      draftStatus,
+      operation
+    });
+    if (!guard.allowed && showToast && guard.reason) {
+      this.toast.show(guard.reason, 'error');
+    }
+    return guard.allowed;
+  }
+
   async deleteVirtualMaster(masterId: string): Promise<boolean> {
     try {
       const metaRef = this.getDocRef(masterId);
@@ -48,8 +89,8 @@ export class ResultService {
         throw new Error('Mẻ gộp không tồn tại');
       }
       const data = metaSnap.data();
-      if (!data['isVirtualMaster']) {
-        throw new Error('Chỉ được xóa mẻ tổng hợp');
+      if (!this.assertWriteAllowed({ id: masterId, ...data }, 'delete_master', data['status'])) {
+        return false;
       }
 
       const childIds: string[] = data['childRequestIds'] || [];
@@ -350,7 +391,9 @@ export class ResultService {
     draft: Partial<AnalysisResultDraft>,
     isManualSave = false,
     updateStatus = true,
-    statusReason?: string
+    statusReason?: string,
+    operation: ResultWriteOperation = isManualSave ? 'manual_save' : 'autosave',
+    publicationHistory?: { id: string; data: Record<string, unknown> }
   ): Promise<boolean> {
     try {
       const metaRef = this.getDocRef(requestId);
@@ -362,6 +405,9 @@ export class ResultService {
       }
       
       const metaData = metaSnap.data();
+      if (!this.assertWriteAllowed({ id: requestId, ...metaData }, operation, metaData['status'], operation !== 'autosave')) {
+        return false;
+      }
       const userName = this.auth.currentUser()?.displayName || 'Unknown';
       const timestampStr = new Date().toISOString();
       
@@ -457,7 +503,9 @@ export class ResultService {
       // Mở khóa chỉ tạo một phiên chỉnh sửa. Báo cáo cũ vẫn còn hiệu lực cho tới
       // khi có thay đổi dữ liệu thật sự được lưu.
       if (manualEditChanged) {
-        summaryPayload.reports = invalidatePublishedReports(summaryPayload.reports);
+        if (summaryPayload.reports !== undefined) {
+          summaryPayload.reports = invalidatePublishedReports(summaryPayload.reports);
+        }
         summaryPayload.includedSamples = [];
         if (summaryPayload.pdfUrl) {
           summaryPayload.allReportStatus = 'stale';
@@ -514,6 +562,13 @@ export class ResultService {
       };
       
       batch.set(detailRef, detailPayload);
+
+      // Publication metadata, result contents and the immutable snapshot must
+      // succeed together. A duplicate history ID rejects the entire batch.
+      if (publicationHistory) {
+        batch.set(doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', requestId,
+          'history', publicationHistory.id), publicationHistory.data);
+      }
       
       // 3. Tự động đồng bộ Dữ liệu từ Master -> Child (nếu mẻ chạy này là Master Ảo)
       if (metaData['isVirtualMaster'] && Array.isArray(metaData['childRequestIds']) && metaData['childRequestIds'].length > 0) {
@@ -547,6 +602,8 @@ export class ResultService {
             
             if (childUpdated) {
               batch.set(childDetailRef, {
+                requestId: childId,
+                sopId: childMeta['sopId'],
                 resultData: childResultData,
                 updatedAt: timestampStr,
                 updatedBy: userName + ' (đồng bộ từ mẻ tổng hợp)'
@@ -571,7 +628,7 @@ export class ResultService {
                 childMetaUpdatePayload.manualEditStartedAt = deleteField();
                 childMetaUpdatePayload.manualEditChangedAt = deleteField();
               }
-            } else if (manualEditChanged) {
+            } else if (manualEditChanged || (childUpdated && childMeta['status'] === 'completed')) {
               childMetaUpdatePayload.status = 'draft';
               childMetaUpdatePayload.resultStatusReason = 'manual_edit_changed';
               childMetaUpdatePayload.manualEditChangedAt = serverTimestamp();
@@ -624,6 +681,16 @@ export class ResultService {
    */
   async restoreFromBackup(requestId: string): Promise<AnalysisResultDraft | null> {
     try {
+      const metaSnap = await getDoc(this.getDocRef(requestId));
+      if (!metaSnap.exists()) {
+        this.toast.show('Không tìm thấy dữ liệu mẻ chạy!', 'error');
+        return null;
+      }
+      const metaData = metaSnap.data();
+      if (!this.assertWriteAllowed({ id: requestId, ...metaData }, 'restore', metaData['status'])) {
+        return null;
+      }
+
       const draft = await this.getDraft(requestId);
       if (!draft) {
         this.toast.show('Không tìm thấy dữ liệu mẻ chạy!', 'error');
@@ -637,7 +704,8 @@ export class ResultService {
           resultData: draft.publishedBackup.resultData,
           status: 'draft'
         };
-        await this.saveDraft(requestId, restoredData);
+        const saved = await this.saveDraft(requestId, restoredData, false, true, 'restore', 'restore');
+        if (!saved) return null;
         this.toast.show('Đã khôi phục dữ liệu từ bản xuất bản gần nhất!', 'success');
 
         await this.logActivity(
@@ -661,7 +729,8 @@ export class ResultService {
           resultData: latestHistory.resultDataBackup,
           status: 'draft'
         };
-        await this.saveDraft(requestId, restoredData);
+        const saved = await this.saveDraft(requestId, restoredData, false, true, 'restore', 'restore');
+        if (!saved) return null;
         this.toast.show(`Đã khôi phục dữ liệu từ bản v${latestHistory.version}!`, 'success');
 
         await this.logActivity(
@@ -736,6 +805,13 @@ export class ResultService {
    */
   async restoreFromVersion(requestId: string, versionNumber: number, prefix?: string, reportId?: string): Promise<AnalysisResultDraft | null> {
     try {
+      const metaSnap = await getDoc(this.getDocRef(requestId));
+      if (!metaSnap.exists()) return null;
+      const metaData = metaSnap.data();
+      if (!this.assertWriteAllowed({ id: requestId, ...metaData }, 'restore', metaData['status'])) {
+        return null;
+      }
+
       const draft = await this.getDraft(requestId);
       if (!draft) return null;
 
@@ -771,7 +847,8 @@ export class ResultService {
           resultData: resultDataBackup,
           status: 'draft'
         };
-        await this.saveDraft(requestId, restoredData);
+        const saved = await this.saveDraft(requestId, restoredData, false, true, 'restore', 'restore');
+        if (!saved) return null;
         const displayName = prefix && prefix !== 'ALL' ? (prefix === '_NO_PREFIX_' ? ' (Không tiền tố)' : ` (${prefix})`) : '';
         this.toast.show(`Đã khôi phục dữ liệu từ bản v${versionNumber}${displayName}!`, 'success');
 
@@ -830,6 +907,17 @@ export class ResultService {
       if (!docSnap.exists()) {
         throw new Error('Mẻ chạy không tồn tại!');
       }
+      const metaData = docSnap.data();
+      const publishGuard = evaluateResultWriteGuard({
+        capability: this.getEditCapability(),
+        userEmail: this.auth.currentUser()?.email,
+        run: { id: requestId, ...metaData },
+        draftStatus: metaData['status'],
+        operation: 'publish'
+      });
+      if (!publishGuard.allowed) {
+        throw new Error(publishGuard.reason || 'Không đủ điều kiện xuất bản báo cáo.');
+      }
 
       const currentDraft = await this.getDraft(requestId);
       if (!currentDraft) {
@@ -842,6 +930,16 @@ export class ResultService {
       const effectiveAllReportStatus = currentDraft.allReportStatus;
       const effectiveAllIncludedSamples = currentDraft.includedSamples || [];
       const currentVersion = currentDraft.version || 0;
+
+      // Xác định version cao nhất đã ghi nhận trong lịch sử append-only (tránh trùng ID sau reset)
+      const existingHistorySnap = await getDocs(collection(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', requestId, 'history'));
+      let maxHistoryVersion = 0;
+      const existingHistoryIds = new Set<string>();
+      existingHistorySnap.forEach(d => {
+        existingHistoryIds.add(d.id);
+        const v = Number(d.data()?.['version'] || 0);
+        if (Number.isFinite(v) && v > maxHistoryVersion) maxHistoryVersion = v;
+      });
 
       // Xác định xem đây là báo cáo theo nhóm tiền tố hay báo cáo chung (Tất cả mẫu)
       const isPrefixReport = prefix !== undefined && prefix !== null && prefix !== 'ALL';
@@ -873,8 +971,11 @@ export class ResultService {
           targetReportId = `${prefixKey}_${Date.now()}`;
           nextVersion = 1;
         }
+        while (existingHistoryIds.has(`v${nextVersion}_${targetReportId}`)) {
+          nextVersion++;
+        }
       } else {
-        nextVersion = currentVersion + 1;
+        nextVersion = Math.max(currentVersion + 1, maxHistoryVersion + 1);
       }
 
       // Gán version vào payload gửi sang Google Apps Script
@@ -902,42 +1003,48 @@ export class ResultService {
       }
       onProgress?.('received');
 
-      // 3. Đóng gói và lưu phiên bản cũ vào Sub-collection history nếu bản in cũ đã tồn tại
+      // 3. Đóng gói và chỉ tạo bản ghi lịch sử nếu bản cũ chưa có trong history (append-only, không ghi đè bản đã xuất bản)
       if (isPrefixReport) {
         const prefixKey = prefix === '' ? '_NO_PREFIX_' : prefix!;
         const existingReport = targetReportId ? reports[targetReportId] : null;
         if (existingReport && existingReport.pdfUrl) {
-          const historyDocRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', requestId, 'history', `v${existingReport.version}_${targetReportId}`);
+          const legacyHistoryId = `v${existingReport.version}_${targetReportId}`;
+          const historyDocRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', requestId, 'history', legacyHistoryId);
+          if (!existingHistoryIds.has(legacyHistoryId) && !(await getDoc(historyDocRef)).exists()) {
+            await setDoc(historyDocRef, {
+              version: existingReport.version || 1,
+              prefix: prefixKey,
+              reportId: targetReportId,
+              pdfUrl: existingReport.pdfUrl,
+              pdfViewUrl: existingReport.pdfViewUrl || '',
+              docsUrl: existingReport.docsUrl || '',
+              pdfFileName: existingReport.pdfFileName || `KQ_Nhóm_${prefix === '' ? 'Không_tiền_tố' : prefix}_Bản_v${existingReport.version}`,
+              publishedAt: existingReport.pdfCreatedAt || currentDraft.updatedAt || new Date().toISOString(),
+              publishedBy: currentDraft.updatedBy || 'Unknown',
+              includedSamples: existingReport.includedSamples || [],
+              page1DataBackup: existingReport.publishedBackup?.page1Data || {},
+              resultDataBackup: existingReport.publishedBackup?.resultData || {},
+              status: 'published'
+            });
+          }
+        }
+      } else if (currentDraft.pdfUrl) {
+        const legacyHistoryId = `v${currentVersion}`;
+        const historyDocRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', requestId, 'history', legacyHistoryId);
+        if (!existingHistoryIds.has(legacyHistoryId) && !(await getDoc(historyDocRef)).exists()) {
           await setDoc(historyDocRef, {
-            version: existingReport.version || 1,
-            prefix: prefixKey,
-            reportId: targetReportId,
-            pdfUrl: existingReport.pdfUrl,
-            pdfViewUrl: existingReport.pdfViewUrl || '',
-            docsUrl: existingReport.docsUrl || '',
-            pdfFileName: existingReport.pdfFileName || `KQ_Nhóm_${prefix === '' ? 'Không_tiền_tố' : prefix}_Bản_v${existingReport.version}`,
-            publishedAt: existingReport.pdfCreatedAt || currentDraft.updatedAt || new Date().toISOString(),
+            version: currentVersion || 1,
+            pdfUrl: currentDraft.pdfUrl,
+            pdfViewUrl: currentDraft.pdfViewUrl || '',
+            docsUrl: currentDraft.docsUrl || '',
+            pdfFileName: currentDraft.pdfFileName || `KQ_Bản_v${currentVersion}`,
+            publishedAt: currentDraft.pdfCreatedAt || currentDraft.updatedAt || new Date().toISOString(),
             publishedBy: currentDraft.updatedBy || 'Unknown',
-            includedSamples: existingReport.includedSamples || [],
-            page1DataBackup: existingReport.publishedBackup?.page1Data || {},
-            resultDataBackup: existingReport.publishedBackup?.resultData || {},
+            page1DataBackup: currentDraft.publishedBackup?.page1Data || currentDraft.page1Data || {},
+            resultDataBackup: currentDraft.publishedBackup?.resultData || currentDraft.resultData || {},
             status: 'published'
           });
         }
-      } else if (currentDraft.pdfUrl) {
-        const historyDocRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', requestId, 'history', `v${currentVersion}`);
-        await setDoc(historyDocRef, {
-          version: currentVersion || 1,
-          pdfUrl: currentDraft.pdfUrl,
-          pdfViewUrl: currentDraft.pdfViewUrl || '',
-          docsUrl: currentDraft.docsUrl || '',
-          pdfFileName: currentDraft.pdfFileName || `KQ_Bản_v${currentVersion}`,
-          publishedAt: currentDraft.pdfCreatedAt || currentDraft.updatedAt || new Date().toISOString(),
-          publishedBy: currentDraft.updatedBy || 'Unknown',
-          page1DataBackup: currentDraft.publishedBackup?.page1Data || currentDraft.page1Data || {},
-          resultDataBackup: currentDraft.publishedBackup?.resultData || currentDraft.resultData || {},
-          status: 'published'
-        });
       }
 
       // 4. Lưu trạng thái completed + phiên bản mới nhất và dữ liệu backup chi tiết
@@ -1035,20 +1142,8 @@ export class ResultService {
         };
       }
 
-      const saved = await this.saveDraft(
-        requestId,
-        updatePayload,
-        false,
-        true,
-        newStatus === 'completed' ? 'published' : 'publish_partial'
-      );
-      if (!saved) {
-        throw new Error('Không thể cập nhật thông tin xuất bản mới vào cơ sở dữ liệu!');
-      }
-
       const historyDocId = isPrefixReport ? `v${nextVersion}_${targetReportId}` : `v${nextVersion}`;
-      const historyDocRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', requestId, 'history', historyDocId);
-      await setDoc(historyDocRef, {
+      const historyData = {
         version: nextVersion,
         prefix: isPrefixReport ? (prefix === '' ? '_NO_PREFIX_' : prefix) : 'ALL',
         reportId: isPrefixReport ? targetReportId : 'ALL',
@@ -1062,7 +1157,19 @@ export class ResultService {
         page1DataBackup: JSON.parse(JSON.stringify(backup.page1Data || {})),
         resultDataBackup: JSON.parse(JSON.stringify(backup.resultData || {})),
         status: 'published'
-      });
+      };
+      const saved = await this.saveDraft(
+        requestId,
+        updatePayload,
+        false,
+        true,
+        newStatus === 'completed' ? 'published' : 'publish_partial',
+        'publish',
+        { id: historyDocId, data: historyData }
+      );
+      if (!saved) {
+        throw new Error('Không thể lưu đồng thời kết quả xuất bản và lịch sử báo cáo!');
+      }
 
       const displayName = prefix !== undefined && prefix !== null && prefix !== 'ALL'
         ? (prefix === '' ? ' (Không tiền tố)' : ` (nhóm ${prefix})`)
@@ -1248,6 +1355,15 @@ export class ResultService {
    */
   async unlockToEdit(requestId: string): Promise<AnalysisResultDraft | null> {
     try {
+      const metaSnap = await getDoc(this.getDocRef(requestId));
+      if (!metaSnap.exists()) {
+        throw new Error('Mẻ chạy không tồn tại!');
+      }
+      const metaData = metaSnap.data();
+      if (!this.assertWriteAllowed({ id: requestId, ...metaData }, 'unlock', metaData['status'])) {
+        return null;
+      }
+
       const currentDraft = await this.getDraft(requestId);
       if (!currentDraft) {
         throw new Error('Mẻ chạy không tồn tại!');
@@ -1262,7 +1378,7 @@ export class ResultService {
         status: 'draft'
       };
 
-      const saved = await this.saveDraft(requestId, updatedResult, false, true, 'manual_edit');
+      const saved = await this.saveDraft(requestId, updatedResult, false, true, 'manual_edit', 'unlock');
       if (!saved) {
         throw new Error('Không thể cập nhật trạng thái nháp của mẻ chạy!');
       }
@@ -1299,8 +1415,10 @@ export class ResultService {
       if (!docSnap.exists()) {
         throw new Error('Mẻ chạy không tồn tại!');
       }
-
       const reqData = docSnap.data();
+      if (!this.assertWriteAllowed({ id: requestId, ...reqData }, 'reset', reqData['status'])) {
+        return null;
+      }
       const currentDraft = await this.getDraft(requestId);
       if (!currentDraft) {
         throw new Error('Không thể nạp dữ liệu nháp của mẻ chạy!');
@@ -1333,24 +1451,42 @@ export class ResultService {
         await this.reportService.archiveReports(filesToArchive, requestId);
       }
 
-      // 3. Lưu bản báo cáo hiện tại vào lịch sử kể cả khi mẻ đang draft.
-      // Mẻ có thể đã in một phần/prefix nhưng chưa đủ điều kiện completed.
+      // 3. Lưu bản sao lưu lưu trữ (append-only): không ghi đè bản đã xuất bản trước đó
       if (currentDraft.pdfUrl || currentDraft.docsUrl || Object.keys(currentDraft.reports || {}).length > 0) {
+        const archivedAt = new Date().toISOString();
+        const writeArchivalHistory = async (baseId: string, payload: Record<string, any>) => {
+          const baseRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', requestId, 'history', baseId);
+          const existingSnap = await getDoc(baseRef);
+          if (!existingSnap.exists()) {
+            await setDoc(baseRef, payload);
+            return;
+          }
+          const archiveRef = doc(
+            this.fb.db,
+            'artifacts',
+            this.fb.APP_ID,
+            'requests',
+            requestId,
+            'history',
+            `${baseId}_archived_${Date.now()}`
+          );
+          await setDoc(archiveRef, { ...payload, archivedAt });
+        };
+
         const currentReports2 = currentDraft.reports || {};
         if (Object.keys(currentReports2).length > 0) {
           for (const reportId of Object.keys(currentReports2)) {
             const rep = currentReports2[reportId];
             const repPrefix = rep.prefix || reportId; // backward compatibility
-            const historyRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', requestId, 'history', `v${rep.version}_${reportId}`);
-            await setDoc(historyRef, {
-              version: rep.version,
+            await writeArchivalHistory(`v${rep.version}_${reportId}`, {
+              version: rep.version || 1,
               prefix: repPrefix,
               reportId: reportId,
               pdfUrl: rep.pdfUrl || '',
               pdfViewUrl: rep.pdfViewUrl || '',
               docsUrl: rep.docsUrl || '',
               pdfFileName: rep.pdfFileName || `[HUY]_KQ_Nhóm_${repPrefix}_Bản_v${rep.version}`,
-              publishedAt: rep.pdfCreatedAt || currentDraft.updatedAt || new Date().toISOString(),
+              publishedAt: rep.pdfCreatedAt || currentDraft.updatedAt || archivedAt,
               publishedBy: currentDraft.updatedBy || 'Unknown',
               page1DataBackup: rep.publishedBackup?.page1Data || currentDraft.page1Data || {},
               resultDataBackup: rep.publishedBackup?.resultData || currentDraft.resultData || {},
@@ -1359,14 +1495,13 @@ export class ResultService {
           }
         } else {
           const currentVersion = currentDraft.version || 1;
-          const historyRef = doc(this.fb.db, 'artifacts', this.fb.APP_ID, 'requests', requestId, 'history', `v${currentVersion}`);
-          await setDoc(historyRef, {
+          await writeArchivalHistory(`v${currentVersion}`, {
             version: currentVersion,
             pdfUrl: currentDraft.pdfUrl || '',
             pdfViewUrl: currentDraft.pdfViewUrl || '',
             docsUrl: currentDraft.docsUrl || '',
             pdfFileName: currentDraft.pdfFileName || `[HUY]_KQ_Bản_v${currentVersion}`,
-            publishedAt: currentDraft.pdfCreatedAt || currentDraft.updatedAt || new Date().toISOString(),
+            publishedAt: currentDraft.pdfCreatedAt || currentDraft.updatedAt || archivedAt,
             publishedBy: currentDraft.updatedBy || 'Unknown',
             page1DataBackup: currentDraft.publishedBackup?.page1Data || currentDraft.page1Data || {},
             resultDataBackup: currentDraft.publishedBackup?.resultData || currentDraft.resultData || {},
@@ -1447,53 +1582,152 @@ export class ResultService {
   }
 
   /**
-   * Giành/Thiết lập khóa chỉnh sửa mẻ chạy
+   * Giành/Thiết lập khóa chỉnh sửa mẻ chạy theo giao thức transaction nguyên tử
    */
-  async acquireLock(requestId: string, email: string, displayName: string): Promise<void> {
+  async acquireLock(
+    requestId: string,
+    email: string,
+    displayName: string,
+    options: { mode?: 'acquire' | 'takeover'; expectedLockerEmail?: string } = {}
+  ): Promise<AcquireLockResult> {
+    if (!canUserEditResults(this.getEditCapability())) {
+      return { acquired: false, reason: 'no_permission' };
+    }
+    const mode = options.mode ?? 'acquire';
     try {
       const ref = this.getDocRef(requestId);
-      await updateDoc(ref, {
-        lockedBy: email,
-        lockedByName: displayName,
-        lockedAt: serverTimestamp(),
-        lastActiveAt: serverTimestamp(),
-        lastUpdated: serverTimestamp() // Kích hoạt DeltaSync cho các client khác
+      const outcome = await runTransaction(this.fb.db, async (transaction): Promise<AcquireLockResult> => {
+        const snap = await transaction.get(ref);
+        if (!snap.exists()) {
+          return { acquired: false, reason: 'not_found' };
+        }
+        const data = snap.data();
+        if (data['status'] === 'completed') {
+          return { acquired: false, reason: 'completed' };
+        }
+        const currentLocker = typeof data['lockedBy'] === 'string' ? data['lockedBy'].trim() : '';
+        const normalizedCurrent = currentLocker.toLowerCase();
+        const normalizedCaller = email.trim().toLowerCase();
+        const activeLockedByOthers = isRunActivelyLockedByOthers({ id: requestId, ...data }, email);
+
+        if (mode !== 'takeover') {
+          if (activeLockedByOthers) {
+            return {
+              acquired: false,
+              reason: 'locked_by_others',
+              lockedByName: data['lockedByName'] || currentLocker
+            };
+          }
+          transaction.update(ref, {
+            lockedBy: email,
+            lockedByName: displayName,
+            lockedAt: normalizedCurrent === normalizedCaller && data['lockedAt'] ? data['lockedAt'] : serverTimestamp(),
+            lastActiveAt: serverTimestamp(),
+            lastUpdated: serverTimestamp()
+          });
+          return { acquired: true };
+        }
+
+        // Takeover có kiểm soát
+        if (!currentLocker || normalizedCurrent === normalizedCaller || !activeLockedByOthers) {
+          transaction.update(ref, {
+            lockedBy: email,
+            lockedByName: displayName,
+            lockedAt: normalizedCurrent === normalizedCaller && data['lockedAt'] ? data['lockedAt'] : serverTimestamp(),
+            lastActiveAt: serverTimestamp(),
+            lastUpdated: serverTimestamp()
+          });
+          return { acquired: true };
+        }
+
+        if (options.expectedLockerEmail && normalizedCurrent !== options.expectedLockerEmail.trim().toLowerCase()) {
+          return {
+            acquired: false,
+            reason: 'conflict',
+            lockedByName: data['lockedByName'] || currentLocker
+          };
+        }
+
+        transaction.update(ref, {
+          lockedBy: email,
+          lockedByName: displayName,
+          lockedAt: serverTimestamp(),
+          lastActiveAt: serverTimestamp(),
+          lastUpdated: serverTimestamp(),
+          lockTakeoverFrom: currentLocker,
+          lockTakeoverByUid: this.auth.currentUser()?.uid || '',
+          lockTakeoverAt: serverTimestamp()
+        });
+        return { acquired: true };
       });
+      return outcome;
     } catch (e: any) {
-      console.warn('[ResultService] Failed to acquire lock:', e.message);
+      console.warn('[ResultService] Failed to acquire lock:', e?.message || e);
+      return { acquired: false, reason: 'error' };
     }
   }
 
   /**
-   * Cập nhật thời điểm hoạt động cuối cùng của người đang giữ khóa (Heartbeat)
+   * Cập nhật thời điểm hoạt động cuối cùng chỉ khi caller hiện đang giữ khóa (Heartbeat)
    */
-  async updateHeartbeat(requestId: string): Promise<void> {
+  async updateHeartbeat(requestId: string): Promise<boolean> {
+    if (!canUserEditResults(this.getEditCapability())) return false;
+    const callerEmail = (this.auth.currentUser()?.email || '').trim().toLowerCase();
+    if (!callerEmail) return false;
     try {
       const ref = this.getDocRef(requestId);
-      await updateDoc(ref, {
-        lastActiveAt: serverTimestamp(),
-        lastUpdated: serverTimestamp() // Kích hoạt DeltaSync cho các client khác
+      return await runTransaction(this.fb.db, async (transaction) => {
+        const snap = await transaction.get(ref);
+        if (!snap.exists()) return false;
+        const data = snap.data();
+        const locker = typeof data['lockedBy'] === 'string' ? data['lockedBy'].trim().toLowerCase() : '';
+        if (!locker || locker !== callerEmail || data['status'] === 'completed') {
+          return false;
+        }
+        transaction.update(ref, {
+          lastActiveAt: serverTimestamp(),
+          lastUpdated: serverTimestamp()
+        });
+        return true;
       });
     } catch (e: any) {
-      console.warn('[ResultService] Failed to update heartbeat:', e.message);
+      console.warn('[ResultService] Failed to update heartbeat:', e?.message || e);
+      return false;
     }
   }
 
   /**
-   * Giải phóng khóa chỉnh sửa mẻ chạy
+   * Giải phóng khóa chỉnh sửa chỉ khi caller hiện đang giữ khóa
    */
-  async releaseLock(requestId: string): Promise<void> {
+  async releaseLock(requestId: string): Promise<boolean> {
+    if (!canUserEditResults(this.getEditCapability())) return false;
+    const callerEmail = (this.auth.currentUser()?.email || '').trim().toLowerCase();
+    if (!callerEmail) return false;
     try {
       const ref = this.getDocRef(requestId);
-      await updateDoc(ref, {
-        lockedBy: deleteField(),
-        lockedByName: deleteField(),
-        lockedAt: deleteField(),
-        lastActiveAt: deleteField(),
-        lastUpdated: serverTimestamp() // Kích hoạt DeltaSync cho các client khác
+      return await runTransaction(this.fb.db, async (transaction) => {
+        const snap = await transaction.get(ref);
+        if (!snap.exists()) return false;
+        const data = snap.data();
+        const locker = typeof data['lockedBy'] === 'string' ? data['lockedBy'].trim().toLowerCase() : '';
+        if (!locker || locker !== callerEmail) {
+          return false;
+        }
+        transaction.update(ref, {
+          lockedBy: deleteField(),
+          lockedByName: deleteField(),
+          lockedAt: deleteField(),
+          lastActiveAt: deleteField(),
+          lockTakeoverFrom: deleteField(),
+          lockTakeoverByUid: deleteField(),
+          lockTakeoverAt: deleteField(),
+          lastUpdated: serverTimestamp()
+        });
+        return true;
       });
     } catch (e: any) {
-      console.warn('[ResultService] Failed to release lock:', e.message);
+      console.warn('[ResultService] Failed to release lock:', e?.message || e);
+      return false;
     }
   }
 }

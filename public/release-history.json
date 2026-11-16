@@ -1,5 +1,26 @@
 [
   {
+    "version": "v26.11.16-b01",
+    "date": "16/11/2026",
+    "title": "Nâng cấp Kết quả phân tích và bảo vệ toàn vẹn dữ liệu",
+    "highlights": [
+      "Nâng cấp không gian nhập kết quả, kiểm tra trước xuất bản và tra cứu báo cáo PDF."
+    ],
+    "features": [
+      "Chọn mẻ nguồn cho từng mã mẫu trùng khi gộp mẻ và lưu nguồn kết quả để truy xuất."
+    ],
+    "improvements": [
+      "Thống nhất bảng nhập SOP, thao tác dán và hoàn tác, trạng thái báo cáo và bố cục màn hình kết quả."
+    ],
+    "fixes": [
+      "Siết quyền ghi Firestore theo nghiệp vụ, trạng thái mẻ và chủ sở hữu khóa; tách quyền duyệt SOP khỏi quyền nhập kết quả.",
+      "Nhận, gia hạn, tiếp quản và giải phóng khóa bằng giao dịch nguyên tử, xử lý xung đột giữa các tài khoản.",
+      "Bảo vệ lịch sử báo cáo đã xuất bản chỉ được thêm mới; lưu kết quả và lịch sử xuất bản trong cùng một lần ghi nguyên tử.",
+      "Yêu cầu mở lại mẻ đã hoàn thành trước khi sửa hoặc xuất bản phiên bản mới."
+    ],
+    "releaseOrder": 26111600001
+  },
+  {
     "version": "v26.11.10-b03",
     "date": "10/11/2026",
     "title": "Sửa lỗi nút đối soát mã chất chuẩn bị khóa",

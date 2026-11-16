@@ -9,6 +9,7 @@ import { FirestoreReadMonitor } from '../../core/services/firestore-read-monitor
 import { ToastService } from '../../core/services/toast.service';
 import { PrintService } from '../../core/services/print.service';
 import { ActivityEventService } from '../../core/services/activity-event.service';
+import { AuthService } from '../../core/services/auth.service';
 import { ResultService } from './services/result.service';
 import { ResultListComponent } from './result-list.component';
 
@@ -21,6 +22,7 @@ function fixture() {
   ]);
   const injector = Injector.create({ providers: [
     { provide: StateService, useValue: { approvedRequests: rows } },
+    { provide: AuthService, useValue: { isManager: () => false, canRunBatch: () => true, canApprove: () => false, userPermissions: () => [], currentUser: () => null } },
     ...[Router, ResultService, FirebaseService, FirestoreReadMonitor, ToastService, PrintService, ActivityEventService]
       .map(provide => ({ provide, useValue: {} })),
   ] });
