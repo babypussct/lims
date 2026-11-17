@@ -22,11 +22,11 @@ function getCurrentWeekStart(todayIso: string): string {
   imports: [CommonModule, AppDatePickerComponent],
   template: `
     <div [class]="'flex w-full sm:w-auto min-w-0 flex-col sm:flex-row gap-2 items-start sm:items-center rounded-xl relative group/filter ' + containerClass()">
-        
+
         <!-- Preset Dropdown -->
-        <div class="relative">
-            <button (click)="toggleDropdown($event)" 
-                    class="flex items-center gap-2 px-3 py-2 bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition border border-slate-200 dark:border-slate-700 min-w-[140px] justify-between active:scale-95">
+        <div class="relative w-full sm:w-auto">
+            <button type="button" (click)="toggleDropdown($event)"
+                    class="flex w-full sm:w-auto min-h-[44px] sm:min-h-0 items-center gap-2 px-3 py-2 bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition border border-slate-200 dark:border-slate-700 min-w-[140px] justify-between active:scale-95">
                 <span class="flex items-center gap-2">
                     <i class="fa-solid fa-calendar-day text-fuchsia-500"></i>
                     {{ currentLabel() }}
@@ -36,64 +36,64 @@ function getCurrentWeekStart(todayIso: string): string {
 
             <!-- Dropdown Menu -->
             @if (isOpen()) {
-                <div class="absolute top-full left-0 mt-1 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 py-1 z-50 animate-fade-in overflow-hidden">
+                <div class="absolute top-full left-0 mt-1 w-full sm:w-52 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 py-1 z-50 animate-fade-in overflow-hidden max-h-[60dvh] overflow-y-auto">
                     <div class="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50 dark:bg-slate-900/50 border-b border-slate-50 dark:border-slate-700">Chọn nhanh</div>
-                    
-                    <button (click)="selectPreset('all')" class="w-full text-left px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-900/30 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition flex justify-between items-center group">
+
+                    <button type="button" (click)="selectPreset('all')" class="w-full min-h-[40px] sm:min-h-0 text-left px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-900/30 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition flex justify-between items-center group">
                         <span>Tất Cả Thời Gian</span>
                         @if(activePreset() === 'all') { <i class="fa-solid fa-check text-fuchsia-600 dark:text-fuchsia-400"></i> }
                     </button>
-                    
+
                     <div class="h-px bg-slate-100 dark:bg-slate-700 my-1 mx-2"></div>
-                    
-                    <button (click)="selectPreset('today')" class="w-full text-left px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-900/30 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition flex justify-between items-center group">
+
+                    <button type="button" (click)="selectPreset('today')" class="w-full min-h-[40px] sm:min-h-0 text-left px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-900/30 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition flex justify-between items-center group">
                         <span>Hôm Nay</span>
                         @if(activePreset() === 'today') { <i class="fa-solid fa-check text-fuchsia-600 dark:text-fuchsia-400"></i> }
                     </button>
-                    <button (click)="selectPreset('yesterday')" class="w-full text-left px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-900/30 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition flex justify-between items-center">
+                    <button type="button" (click)="selectPreset('yesterday')" class="w-full min-h-[40px] sm:min-h-0 text-left px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-900/30 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition flex justify-between items-center">
                         <span>Hôm qua</span>
                         @if(activePreset() === 'yesterday') { <i class="fa-solid fa-check text-fuchsia-600 dark:text-fuchsia-400"></i> }
                     </button>
-                    
+
                     <div class="h-px bg-slate-100 dark:bg-slate-700 my-1 mx-2"></div>
-                    
-                    <button (click)="selectPreset('this_week')" class="w-full text-left px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-900/30 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition flex justify-between items-center">
+
+                    <button type="button" (click)="selectPreset('this_week')" class="w-full min-h-[40px] sm:min-h-0 text-left px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-900/30 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition flex justify-between items-center">
                         <span>Tuần Này</span>
                         @if(activePreset() === 'this_week') { <i class="fa-solid fa-check text-fuchsia-600 dark:text-fuchsia-400"></i> }
                     </button>
-                    <button (click)="selectPreset('last_week')" class="w-full text-left px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-900/30 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition flex justify-between items-center">
+                    <button type="button" (click)="selectPreset('last_week')" class="w-full min-h-[40px] sm:min-h-0 text-left px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-900/30 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition flex justify-between items-center">
                         <span>Tuần Trước</span>
                         @if(activePreset() === 'last_week') { <i class="fa-solid fa-check text-fuchsia-600 dark:text-fuchsia-400"></i> }
                     </button>
-                    
+
                     <div class="h-px bg-slate-100 dark:bg-slate-700 my-1 mx-2"></div>
- 
-                    <button (click)="selectPreset('this_month')" class="w-full text-left px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-900/30 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition flex justify-between items-center">
+
+                    <button type="button" (click)="selectPreset('this_month')" class="w-full min-h-[40px] sm:min-h-0 text-left px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-900/30 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition flex justify-between items-center">
                         <span>Tháng Này</span>
                         @if(activePreset() === 'this_month') { <i class="fa-solid fa-check text-fuchsia-600 dark:text-fuchsia-400"></i> }
                     </button>
-                    <button (click)="selectPreset('last_month')" class="w-full text-left px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-900/30 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition flex justify-between items-center">
+                    <button type="button" (click)="selectPreset('last_month')" class="w-full min-h-[40px] sm:min-h-0 text-left px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-900/30 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition flex justify-between items-center">
                         <span>Tháng Trước</span>
                         @if(activePreset() === 'last_month') { <i class="fa-solid fa-check text-fuchsia-600 dark:text-fuchsia-400"></i> }
                     </button>
-                    
+
                     <div class="h-px bg-slate-100 dark:bg-slate-700 my-1 mx-2"></div>
- 
-                    <button (click)="selectPreset('this_quarter')" class="w-full text-left px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-900/30 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition flex justify-between items-center">
+
+                    <button type="button" (click)="selectPreset('this_quarter')" class="w-full min-h-[40px] sm:min-h-0 text-left px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-900/30 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition flex justify-between items-center">
                         <span>Quý Này</span>
                         @if(activePreset() === 'this_quarter') { <i class="fa-solid fa-check text-fuchsia-600 dark:text-fuchsia-400"></i> }
                     </button>
-                    <button (click)="selectPreset('this_year')" class="w-full text-left px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-900/30 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition flex justify-between items-center">
+                    <button type="button" (click)="selectPreset('this_year')" class="w-full min-h-[40px] sm:min-h-0 text-left px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-900/30 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition flex justify-between items-center">
                         <span>Năm Nay</span>
                         @if(activePreset() === 'this_year') { <i class="fa-solid fa-check text-fuchsia-600 dark:text-fuchsia-400"></i> }
                     </button>
                 </div>
-                
+
                 <!-- Overlay to close dropdown -->
                 <div class="fixed inset-0 z-40 bg-transparent" (click)="isOpen.set(false)"></div>
             }
         </div>
- 
+
         <!-- Date Inputs using AppDatePickerComponent -->
         <div class="flex w-full sm:w-auto min-w-0 flex-col sm:flex-row items-stretch sm:items-center gap-1.5 bg-slate-50 dark:bg-slate-900/50 rounded-xl p-1 border border-slate-200 dark:border-slate-700">
             <div class="w-full min-w-0 sm:min-w-[136px] sm:flex-1 sm:flex-none sm:w-36">
@@ -106,7 +106,7 @@ function getCurrentWeekStart(todayIso: string): string {
                     (valueChange)="onManualDateChange('start', $event)"
                 />
             </div>
-            <div class="shrink-0 self-center py-0.5 text-slate-300 dark:text-slate-600 rotate-90 sm:rotate-0"><i class="fa-solid fa-arrow-right text-[10px]"></i></div>
+            <div class="hidden sm:block shrink-0 self-center py-0.5 text-slate-300 dark:text-slate-600"><i class="fa-solid fa-arrow-right text-[10px]"></i></div>
             <div class="w-full min-w-0 sm:min-w-[136px] sm:flex-1 sm:flex-none sm:w-36">
                 <app-date-picker
                     size="sm"
@@ -123,7 +123,7 @@ function getCurrentWeekStart(todayIso: string): string {
 })
 export class DateRangeFilterComponent {
   // Inputs/Outputs
-  initStart = input<string>(''); 
+  initStart = input<string>('');
   initEnd = input<string>('');
   containerClass = input<string>('bg-white dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700 shadow-sm');
   dateChange = output<{ start: string, end: string, label: string }>();
@@ -203,7 +203,7 @@ export class DateRangeFilterComponent {
       );
       this.startDate.set(normalized.start);
       this.endDate.set(normalized.end);
-      
+
       this.activePreset.set('custom');
       this.currentLabel.set('Tùy chỉnh');
       this.emitChange();
@@ -212,7 +212,7 @@ export class DateRangeFilterComponent {
   selectPreset(preset: DateRangePreset) {
       this.activePreset.set(preset);
       this.isOpen.set(false);
-      
+
       if (preset === 'all') {
           this.currentLabel.set('Tất cả thời gian');
           this.startDate.set('');
@@ -220,7 +220,7 @@ export class DateRangeFilterComponent {
           this.emitChange();
           return;
       }
-      
+
       const todayStr = getTodayIso();
       const todayParts = parseIsoDateParts(todayStr)!;
       let start = todayStr;
@@ -233,7 +233,7 @@ export class DateRangeFilterComponent {
               start = todayStr;
               end = todayStr;
               break;
-          
+
           case 'yesterday':
               label = 'Hôm qua';
               start = addCalendarDate(todayStr, -1, 'day');
@@ -269,7 +269,7 @@ export class DateRangeFilterComponent {
               end = `${prevMonthParts.year}-${String(prevMonthParts.month).padStart(2, '0')}-${String(getDaysInMonth(prevMonthParts.year, prevMonthParts.month)).padStart(2, '0')}`;
               break;
           }
-          
+
           case 'this_quarter': {
               label = 'Quý này';
               const q = Math.floor((todayParts.month + 2) / 3);

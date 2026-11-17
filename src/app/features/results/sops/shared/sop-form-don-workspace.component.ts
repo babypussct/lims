@@ -8,6 +8,7 @@ import { SopCalibrationPointsComponent } from './sop-calibration-points.componen
 import { SopSpreadsheetToolbarComponent } from './sop-spreadsheet-toolbar.component';
 import { ChromatographyRow } from './abstract-sop-entry';
 import { isCompoundAssigned } from '../../shared/compound-id-resolver';
+import { isMobileViewport } from '../../../../core/utils/viewport.utils';
 import {
   applyPasteTransaction,
   parseSpreadsheetPasteText,
@@ -37,7 +38,7 @@ import {
           </h4>
 
           <!-- Quick Vial input for Calibration -->
-          <div class="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-xl px-2.5 py-1 text-xs">
+          <div class="flex flex-wrap items-center gap-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs">
             <span class="font-bold text-slate-500 dark:text-slate-400">Lọ chuẩn:</span>
             <input type="number"
                    [disabled]="isReadOnly"
@@ -45,17 +46,17 @@ import {
                    (ngModelChange)="bulkCalibVialStartChange.emit($event)"
                    placeholder="Bắt đầu"
                    aria-label="Số lọ chuẩn bắt đầu"
-                   class="w-14 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-1.5 py-0.5 text-center text-slate-800 dark:text-slate-200 font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:opacity-50" />
+                   class="w-14 min-h-[36px] sm:min-h-0 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-1.5 py-0.5 text-center text-sm sm:text-xs text-slate-800 dark:text-slate-200 font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:opacity-50" />
             <span class="text-slate-400">-</span>
             <input type="number"
                    [ngModel]="bulkCalibVialEnd"
                    readonly
                    aria-label="Số lọ chuẩn kết thúc"
-                   class="w-14 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-1.5 py-0.5 text-center text-slate-500 font-bold outline-none cursor-not-allowed" />
+                   class="w-14 min-h-[36px] sm:min-h-0 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-1.5 py-0.5 text-center text-sm sm:text-xs text-slate-500 font-bold outline-none cursor-not-allowed" />
             <button type="button"
                     [disabled]="isReadOnly"
                     (click)="applyCalibVials.emit()"
-                    class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold transition flex items-center gap-1 active:scale-95 shadow-xs disabled:opacity-50">
+                    class="min-h-[36px] sm:min-h-0 px-3 sm:px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold transition flex items-center gap-1 active:scale-95 shadow-xs disabled:opacity-50">
               <i class="fa-solid fa-check text-[10px]" aria-hidden="true"></i>
               <span>Áp dụng</span>
             </button>
@@ -230,30 +231,30 @@ import {
               <div class="rounded-2xl border p-3.5 space-y-3"
                    [class]="row.type === 'QC'
                      ? 'border-indigo-200 dark:border-indigo-900/50 bg-indigo-50/40 dark:bg-indigo-950/20'
-                     : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900'">
-                <div class="flex items-center justify-between gap-2">
-                  <label class="flex items-center gap-2 font-mono text-xs font-bold text-slate-800 dark:text-slate-100">
+                     : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 ' + (rowData['selected'] === false ? 'opacity-65' : '')">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <label class="flex min-h-[36px] items-center gap-2.5 font-mono text-xs font-bold text-slate-800 dark:text-slate-100 cursor-pointer">
                     <input type="checkbox"
                            [disabled]="isReadOnly"
                            [(ngModel)]="rowData['selected']"
                            (ngModelChange)="emitDataChanged()"
                            class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
-                    <span>{{ row.label }}</span>
+                    <span class="break-all">{{ row.label }}</span>
                     @if (row.type === 'QC') {
                       <span class="rounded-full bg-indigo-100 dark:bg-indigo-950/60 px-2 py-0.5 text-[10px] text-indigo-700 dark:text-indigo-300">QC</span>
                     }
                   </label>
-                  <span class="font-mono text-[11px] text-slate-400">Lọ {{ rowData['loSo'] || '—' }}</span>
+                  <span class="font-mono text-xs font-bold text-slate-500 dark:text-slate-400">Lọ {{ rowData['loSo'] || '—' }}</span>
                 </div>
 
-                <div class="grid grid-cols-2 gap-2.5 text-xs">
+                <div class="grid grid-cols-1 min-[360px]:grid-cols-2 gap-2.5 text-xs">
                   <label class="block">
                     <span class="text-[10px] font-bold text-slate-400 uppercase block mb-1">{{ massColumnLabel }}</span>
                     <input type="text"
                            [readOnly]="isReadOnly || row.key === 'QC_FINAL'"
                            [(ngModel)]="rowData['khoiLuong']"
                            (ngModelChange)="emitDataChanged()"
-                           class="h-9 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2.5 text-center font-bold outline-none focus:border-indigo-500" />
+                           class="min-h-[42px] w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2.5 text-center text-base font-bold outline-none focus:border-indigo-500" />
                   </label>
                   <label class="block">
                     <span class="text-[10px] font-bold text-slate-400 uppercase block mb-1">HS pha loãng F</span>
@@ -261,9 +262,9 @@ import {
                            [readOnly]="isReadOnly || row.key === 'QC_FINAL'"
                            [(ngModel)]="rowData['heSoPhaLoang']"
                            (ngModelChange)="syncDilution.emit(row.key)"
-                           class="h-9 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2.5 text-center font-bold outline-none focus:border-indigo-500" />
+                           class="min-h-[42px] w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2.5 text-center text-base font-bold outline-none focus:border-indigo-500" />
                   </label>
-                  <label class="block col-span-2">
+                  <label class="block min-[360px]:col-span-2">
                     <span class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Kết quả ({{ resultUnit }})</span>
                     <input type="text"
                            [disabled]="!assigned"
@@ -271,16 +272,16 @@ import {
                            [(ngModel)]="rowData[activeComp]"
                            (ngModelChange)="chromResultChanged.emit(row.key)"
                            placeholder="ND / Kết quả"
-                           class="h-10 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 text-center font-bold outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 disabled:opacity-50" />
+                           class="min-h-[44px] w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 text-center text-base font-bold outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 disabled:opacity-50" />
                   </label>
-                  <label class="block col-span-2">
+                  <label class="block min-[360px]:col-span-2">
                     <span class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Ghi chú</span>
                     <input type="text"
                            [readOnly]="isReadOnly"
                            [(ngModel)]="rowData[activeComp + '_ghiChu']"
                            (ngModelChange)="emitDataChanged()"
                            placeholder="Ghi chú..."
-                           class="h-9 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2.5 outline-none focus:border-indigo-500" />
+                           class="min-h-[42px] w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2.5 text-sm outline-none focus:border-indigo-500" />
                   </label>
                 </div>
               </div>
@@ -294,7 +295,7 @@ import {
             <thead>
               <tr class="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800">
                 <th class="py-2.5 px-2.5 text-center font-bold text-slate-500 dark:text-slate-400 w-10">STT</th>
-                <th class="py-2.5 px-3 text-left font-bold text-slate-500 dark:text-slate-400 min-w-[140px] sticky left-0 z-10 bg-slate-50 dark:bg-slate-950 border-r border-slate-200/70 dark:border-slate-800">Mã số mẫu</th>
+                <th class="py-2.5 px-3 text-left font-bold text-slate-500 dark:text-slate-400 min-w-[115px] md:min-w-[140px] sticky left-0 z-10 bg-slate-50 dark:bg-slate-950 border-r border-slate-200/70 dark:border-slate-800">Mã số mẫu</th>
                 <th class="py-2.5 px-2.5 text-center font-bold text-slate-500 dark:text-slate-400 w-28">{{ massColumnLabel }}</th>
                 <th class="py-2.5 px-2.5 text-center font-bold text-slate-500 dark:text-slate-400 w-28">HS pha loãng F</th>
                 <th class="py-2.5 px-2.5 text-center font-bold text-slate-500 dark:text-slate-400 w-24">Số lọ</th>
@@ -410,7 +411,7 @@ export class SopFormDonWorkspaceComponent {
   @Output() chromResultChanged = new EventEmitter<string>();
   @Output() dataChanged = new EventEmitter<void>();
 
-  mobileViewMode = signal<'table' | 'cards'>('table');
+  mobileViewMode = signal<'table' | 'cards'>(isMobileViewport() ? 'cards' : 'table');
   pendingPastePlan = signal<PasteTransactionPlan | null>(null);
   undoStack = new PasteUndoStack();
   private mutationRevision = 0;

@@ -12,27 +12,27 @@ import { formatNum, formatSmartUnit } from '../../utils/utils';
   imports: [CommonModule],
   template: `
     @if (qrService.scannedGs1Data()) {
-      <div class="fixed inset-0 z-[160] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
-        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-slide-up border border-slate-200 dark:border-slate-700">
-          
+      <div class="fixed inset-0 z-[160] flex justify-center overflow-y-auto overscroll-contain p-2 sm:p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
+        <div class="my-auto bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md max-h-[calc(100dvh-1rem)] flex flex-col overflow-hidden animate-slide-up border border-slate-200 dark:border-slate-700">
+
           <!-- Header -->
-          <div class="px-6 py-5 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
-            <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-lg">
+          <div class="shrink-0 px-4 py-4 sm:px-6 sm:py-5 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="w-10 h-10 shrink-0 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-lg">
                 <i class="fa-solid fa-barcode"></i>
               </div>
-              <div>
-                <h3 class="font-bold text-slate-800 dark:text-white text-lg leading-tight">Thông Tin GS1</h3>
+              <div class="min-w-0">
+                <h3 class="font-bold text-slate-800 dark:text-white text-base sm:text-lg leading-tight">Thông Tin GS1</h3>
                 <p class="text-xs text-slate-500 dark:text-slate-400">Quét từ Data Matrix</p>
               </div>
             </div>
-            <button (click)="close()" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 transition">
+            <button type="button" (click)="close()" aria-label="Đóng thông tin GS1" class="w-11 h-11 sm:w-9 sm:h-9 shrink-0 flex items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 transition">
               <i class="fa-solid fa-xmark"></i>
             </button>
           </div>
 
           <!-- Content -->
-          <div class="p-6">
+          <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6">
             @if (isLoading()) {
               <div class="flex flex-col items-center justify-center py-8">
                 <i class="fa-solid fa-spinner fa-spin text-3xl text-blue-500 mb-4"></i>
@@ -40,15 +40,15 @@ import { formatNum, formatSmartUnit } from '../../utils/utils';
               </div>
             } @else {
               <!-- Product Info -->
-              <div class="mb-6">
+              <div class="mb-5">
                 @if (qrService.scannedGs1Data()?.error) {
                   <div class="flex items-start gap-3 mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800/30 rounded-2xl">
                     <div class="w-10 h-10 rounded-full bg-red-100 dark:bg-red-800/50 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0">
                       <i class="fa-solid fa-triangle-exclamation"></i>
                     </div>
-                    <div>
+                    <div class="min-w-0">
                       <div class="text-xs font-bold text-red-600 dark:text-red-400 uppercase tracking-wider mb-1">Lỗi phân tích mã vạch</div>
-                      <div class="font-medium text-slate-700 dark:text-slate-300 text-sm">{{ qrService.scannedGs1Data()?.error }}</div>
+                      <div class="font-medium text-slate-700 dark:text-slate-300 text-sm break-words">{{ qrService.scannedGs1Data()?.error }}</div>
                     </div>
                   </div>
                 } @else if (!qrService.scannedGs1Data()?.gtin) {
@@ -56,7 +56,7 @@ import { formatNum, formatSmartUnit } from '../../utils/utils';
                     <div class="w-10 h-10 rounded-full bg-red-100 dark:bg-red-800/50 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0">
                       <i class="fa-solid fa-barcode"></i>
                     </div>
-                    <div>
+                    <div class="min-w-0">
                       <div class="text-xs font-bold text-red-600 dark:text-red-400 uppercase tracking-wider mb-1">Thiếu thông tin GTIN</div>
                       <div class="font-medium text-slate-700 dark:text-slate-300 text-sm">Mã vạch này không chứa mã sản phẩm (GTIN). Không thể tra cứu.</div>
                     </div>
@@ -66,11 +66,11 @@ import { formatNum, formatSmartUnit } from '../../utils/utils';
                     <div class="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-800/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
                       <i class="fa-solid fa-check"></i>
                     </div>
-                    <div>
+                    <div class="min-w-0">
                       <div class="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-1">Đã có trong hệ thống</div>
-                      <div class="font-bold text-slate-800 dark:text-white text-lg">{{ matchedItem()?.name }}</div>
+                      <div class="font-bold text-slate-800 dark:text-white text-base sm:text-lg break-words">{{ matchedItem()?.name }}</div>
                       <div class="text-sm text-slate-500 mt-1">
-                        Tồn kho hiện tại: 
+                        Tồn kho hiện tại:
                         <span class="font-bold text-slate-700 dark:text-slate-300" [innerHTML]="formatSmartUnit(matchedItem()?.stock || 0, matchedItem()?.unit || '')"></span>
                       </div>
                     </div>
@@ -80,7 +80,7 @@ import { formatNum, formatSmartUnit } from '../../utils/utils';
                     <div class="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-800/50 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
                       <i class="fa-solid fa-box-open"></i>
                     </div>
-                    <div>
+                    <div class="min-w-0">
                       <div class="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-1">Chưa có trong hệ thống</div>
                       <div class="font-medium text-slate-700 dark:text-slate-300 text-sm">Hóa chất này chưa được khai báo hoặc không tìm thấy GTIN.</div>
                     </div>
@@ -89,25 +89,25 @@ import { formatNum, formatSmartUnit } from '../../utils/utils';
               </div>
 
               <!-- GS1 Data Grid -->
-              <div class="grid grid-cols-2 gap-3 mb-6">
-                <div class="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
+                <div class="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700 min-w-0">
                   <div class="text-[10px] uppercase font-bold text-slate-400 mb-1">GTIN</div>
-                  <div class="font-mono text-sm font-bold text-slate-700 dark:text-slate-200">{{ qrService.scannedGs1Data()?.gtin || 'N/A' }}</div>
+                  <div class="font-mono text-sm font-bold text-slate-700 dark:text-slate-200 break-all">{{ qrService.scannedGs1Data()?.gtin || 'N/A' }}</div>
                 </div>
-                <div class="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700">
+                <div class="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700 min-w-0">
                   <div class="text-[10px] uppercase font-bold text-slate-400 mb-1">Số lô</div>
-                  <div class="font-mono text-sm font-bold text-slate-700 dark:text-slate-200">{{ qrService.scannedGs1Data()?.lotNumber || 'N/A' }}</div>
+                  <div class="font-mono text-sm font-bold text-slate-700 dark:text-slate-200 break-all">{{ qrService.scannedGs1Data()?.lotNumber || 'N/A' }}</div>
                 </div>
               </div>
 
               <!-- Actions -->
-              <div class="flex gap-3">
-                <button (click)="close()" class="flex-1 py-3 px-4 rounded-xl font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 transition">
+              <div class="flex gap-2.5 sm:gap-3">
+                <button type="button" (click)="close()" class="flex-1 min-h-[44px] py-3 px-4 rounded-xl font-bold text-sm text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 transition">
                   Đóng
                 </button>
-                <button (click)="goToInventory()" 
+                <button type="button" (click)="goToInventory()"
                         [disabled]="qrService.scannedGs1Data()?.error || !qrService.scannedGs1Data()?.gtin"
-                        class="flex-1 py-3 px-4 rounded-xl font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-600/20 transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600">
+                        class="flex-1 min-h-[44px] py-3 px-4 rounded-xl font-bold text-sm text-white bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-600/20 transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600">
                   <i class="fa-solid fa-boxes-stacked"></i>
                   {{ matchedItem() ? 'Cập nhật kho' : 'Thêm vào kho' }}
                 </button>
@@ -166,13 +166,13 @@ export class Gs1InfoModalComponent {
   goToInventory() {
     const data = this.qrService.scannedGs1Data();
     if (data) {
-      this.router.navigate(['/inventory'], { 
-        queryParams: { 
+      this.router.navigate(['/inventory'], {
+        queryParams: {
             action: 'scan_gs1',
             gtin: data.gtin,
             lot: data.lotNumber,
             raw: data.raw
-        } 
+        }
       });
       this.close();
     }

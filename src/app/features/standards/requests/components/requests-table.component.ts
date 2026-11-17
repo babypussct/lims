@@ -9,7 +9,90 @@ import { formatNum } from '../../../../shared/utils/utils';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="flex-1 min-h-0 overflow-auto custom-scrollbar">
+    <!-- Mobile Cards View (< md) -->
+    <div class="md:hidden p-3 space-y-3">
+        @if (isLoading) {
+            @for(i of [1,2,3]; track i) {
+                <div class="h-28 rounded-2xl bg-slate-100 dark:bg-slate-800/50 animate-pulse"></div>
+            }
+        } @else {
+            @for (req of visibleRequests(); track req.id) {
+                <div class="rounded-2xl border border-slate-200/80 dark:border-slate-700 bg-white dark:bg-slate-900/60 p-3.5 space-y-3 shadow-xs">
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="min-w-0">
+                            <div class="flex flex-wrap items-center gap-1.5 mb-1">
+                                @if (req.standardDetails?.internal_id) {
+                                    <span class="px-2 py-0.5 bg-fuchsia-100 dark:bg-fuchsia-900/40 text-fuchsia-700 dark:text-fuchsia-300 text-xs font-black rounded-md border border-fuchsia-200 dark:border-fuchsia-700/50 uppercase">
+                                        {{req.standardDetails?.internal_id}}
+                                    </span>
+                                }
+                                @if (req.isBackfill) {
+                                    <span class="px-2 py-0.5 rounded-md bg-fuchsia-100 dark:bg-fuchsia-900/30 text-fuchsia-700 dark:text-fuchsia-300 text-[10px] font-black uppercase">Nhập bù</span>
+                                }
+                            </div>
+                            <button type="button" class="text-left font-black text-slate-800 dark:text-slate-100 text-sm leading-snug hover:text-fuchsia-600 dark:hover:text-fuchsia-400" (click)="navigateToStandard.emit(req.standardId)">
+                                {{req.standardName}}
+                            </button>
+                        </div>
+                        <span class="inline-flex shrink-0 items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase border" [ngClass]="getStatusClass(req.status)">
+                            <i [class]="getStatusIcon(req.status)"></i>
+                            {{getStatusLabel(req.status)}}
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div class="px-2.5 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase block">Người mượn</span>
+                            <span class="font-bold text-slate-700 dark:text-slate-200 truncate block">{{req.requestedByName}}</span>
+                        </div>
+                        <div class="px-2.5 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase block">Số lô · Tồn</span>
+                            <span class="font-bold text-slate-700 dark:text-slate-200 truncate block">{{req.lotNumber || 'N/A'}} · {{formatNum(req.standardDetails?.current_amount ?? 0)}}{{req.standardDetails?.unit}}</span>
+                        </div>
+                    </div>
+
+                    @if (req.purpose) {
+                        <p class="text-xs italic text-slate-500 dark:text-slate-400 line-clamp-2">{{req.purpose}}</p>
+                    }
+
+                    <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                        <span class="text-[11px] font-semibold text-slate-400">{{req.requestDate | date:'dd/MM/yyyy HH:mm'}}</span>
+                        <div class="flex flex-wrap items-center gap-1.5 ml-auto">
+                            @if(req.status === 'PENDING_APPROVAL' && canApproveRequest(req)) {
+                                <button type="button" (click)="actionApprove.emit(req)" class="min-h-[40px] px-3 bg-emerald-600 text-white rounded-xl text-xs font-bold flex items-center gap-1.5" title="Duyệt & Giao"><i class="fa-solid fa-check"></i> Duyệt</button>
+                                <button type="button" (click)="actionReject.emit(req)" class="w-10 h-10 bg-rose-100 text-rose-600 rounded-xl flex items-center justify-center" aria-label="Từ chối" title="Từ chối"><i class="fa-solid fa-xmark"></i></button>
+                            }
+                            @if(req.status === 'IN_PROGRESS') {
+                                @if(isCurrentUser(req.requestedBy)) {
+                                    <button type="button" (click)="actionLogUsage.emit(req)" class="min-h-[40px] px-3 bg-teal-600 text-white rounded-xl text-xs font-bold flex items-center gap-1.5" title="Ghi nhận dùng"><i class="fa-solid fa-pen-nib"></i> Dùng</button>
+                                    <button type="button" (click)="actionReturn.emit({req, isForce: false})" class="min-h-[40px] px-3 bg-amber-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5" title="Báo cáo trả"><i class="fa-solid fa-reply"></i> Trả</button>
+                                }
+                                @if(canApproveAndNotRequestedBySelf(req)) {
+                                    <button type="button" (click)="actionReturn.emit({req, isForce: true})" class="w-10 h-10 bg-slate-100 text-slate-600 rounded-xl flex items-center justify-center" aria-label="Thu hồi trực tiếp" title="Thu hồi trực tiếp"><i class="fa-solid fa-hand-holding-hand"></i></button>
+                                }
+                            }
+                            @if(req.status === 'PENDING_RETURN') {
+                                @if(isCurrentUser(req.requestedBy)) {
+                                    <button type="button" (click)="actionUndoReturn.emit(req)" class="w-10 h-10 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center" aria-label="Hủy báo cáo trả" title="Hủy báo cáo trả và nhập lại"><i class="fa-solid fa-rotate-left"></i></button>
+                                }
+                                @if(canApproveRequest(req)) {
+                                    <button type="button" (click)="actionAdminReceive.emit(req)" class="min-h-[40px] px-3 bg-fuchsia-600 text-white rounded-xl text-xs font-black flex items-center gap-1" title="Tiếp nhận trả"><i class="fa-solid fa-check-to-slot"></i> NHẬN TRẢ</button>
+                                }
+                            }
+                            @if(canDeleteRequest(req)) {
+                                <button type="button" (click)="actionDelete.emit(req)" class="w-10 h-10 text-rose-500 bg-rose-50 dark:bg-rose-900/20 rounded-xl flex items-center justify-center" aria-label="Xóa yêu cầu" title="Xóa yêu cầu & Hoàn tác tồn kho"><i class="fa-solid fa-trash-can"></i></button>
+                            }
+                        </div>
+                    </div>
+                </div>
+            } @empty {
+                <div class="py-16 text-center text-slate-400 font-bold text-xs uppercase tracking-widest">Không tìm thấy yêu cầu nào</div>
+            }
+        }
+    </div>
+
+    <!-- Desktop Table View (md+) -->
+    <div class="hidden md:block flex-1 min-h-0 overflow-auto custom-scrollbar">
         <table class="w-full text-left border-separate border-spacing-0">
             <thead class="bg-white dark:bg-slate-800 sticky top-0 z-30">
                 <tr>

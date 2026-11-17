@@ -8,7 +8,7 @@ import { Component, input } from '@angular/core';
   },
   template: `
     <div
-      class="soft-ui-toolbar mx-0 mb-4 bg-white px-4 py-3 dark:bg-slate-900 sm:px-5"
+      class="soft-ui-toolbar mx-0 mb-3 sm:mb-4 bg-white px-3 py-2.5 dark:bg-slate-900 sm:px-5 sm:py-3"
       [class.sticky]="sticky()"
       [class.top-0]="sticky()"
       [class.z-20]="sticky()"

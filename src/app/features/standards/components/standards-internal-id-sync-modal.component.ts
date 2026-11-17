@@ -52,7 +52,7 @@ export type { CorrectionValidationResult };
         [closeDisabled]="isBusy()"
         (closed)="close.emit()"
       >
-        <div modalBody class="-mx-6 -my-5 flex h-full min-h-0 flex-col relative overflow-hidden">
+        <div modalBody class="-mx-4 -my-3 sm:-mx-6 sm:-my-5 flex h-full min-h-0 flex-col relative overflow-hidden">
 
           <div class="px-5 sm:px-6 py-2.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-wrap items-center justify-between gap-3 shrink-0">
             <div class="flex items-center gap-1 bg-slate-200/70 dark:bg-slate-800 p-1 rounded-xl text-xs font-bold" role="group" aria-label="Góc nhìn làm việc">

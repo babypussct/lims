@@ -20,9 +20,9 @@ import { openInNewTab } from '../../utils/browser-navigation';
       <app-modal-shell title="Xem trước phiếu A4" size="xl"
         [description]="printService.previewJobs().length + ' phiếu · ' + layoutStatus().pageCount + ' trang A4'"
         [closeDisabled]="busy()" (closed)="close()">
-        <div modalBody class="print-workspace flex min-h-0 flex-col gap-4 lg:flex-row" style="height:min(65vh,760px)">
-          <details class="shrink-0 rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800 lg:w-56" open>
-            <summary class="cursor-pointer text-sm font-bold text-slate-700 dark:text-slate-200">Tùy chọn bản in</summary>
+        <div modalBody class="print-workspace flex min-h-0 flex-col gap-3 sm:gap-4 lg:flex-row h-[min(68dvh,760px)] lg:h-[min(65vh,760px)]">
+          <details class="shrink-0 rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800 lg:w-56" [attr.open]="showOptionsByDefault ? '' : null">
+            <summary class="cursor-pointer min-h-[36px] flex items-center text-sm font-bold text-slate-700 dark:text-slate-200">Tùy chọn bản in</summary>
             <div class="mt-3 grid grid-cols-2 gap-3 text-sm text-slate-700 dark:text-slate-200 lg:grid-cols-1">
               @for (option of optionLabels; track option.key) {
                 <label class="flex items-center gap-2">
@@ -145,6 +145,7 @@ export class PrintPreviewModalComponent implements OnDestroy {
     { key: 'showSignature', label: 'Người duyệt' }, { key: 'showCutLine', label: 'Đường cắt' },
   ];
   isCopying = signal(false);
+  readonly showOptionsByDefault = typeof window === 'undefined' || window.innerWidth >= 1024;
   busy = computed(() => this.isGeneratingPdf() || this.printService.isPrinting());
   private printController?: AbortController;
   pdfModalSafeUrl = computed(() => {

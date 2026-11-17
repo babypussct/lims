@@ -2,14 +2,14 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.11.16-b01",
-    "title": "Nâng cấp Kết quả phân tích và bảo vệ toàn vẹn dữ liệu",
+    "version": "v26.11.17-b01",
+    "title": "Tối ưu giao diện LIMS trên thiết bị di động",
     "features": [
-      "Nâng cấp không gian nhập kết quả, kiểm tra trước xuất bản và tra cứu báo cáo PDF.",
-      "Chọn mẻ nguồn cho từng mã mẫu trùng khi gộp mẻ và lưu nguồn kết quả để truy xuất.",
-      "Thống nhất bảng nhập SOP, thao tác dán và hoàn tác, trạng thái báo cáo và bố cục màn hình kết quả.",
-      "Siết quyền ghi Firestore theo nghiệp vụ, trạng thái mẻ và chủ sở hữu khóa; tách quyền duyệt SOP khỏi quyền nhập kết quả.",
-      "Nhận, gia hạn, tiếp quản và giải phóng khóa bằng giao dịch nguyên tử, xử lý xung đột giữa các tài khoản."
+      "Nâng cấp giao diện responsive trên điện thoại và máy tính bảng cho các phân hệ LIMS.",
+      "Chuẩn hóa modal, drawer và giao diện dùng chung để hỗ trợ vùng an toàn, bàn phím ảo và cuộn trên màn hình nhỏ.",
+      "Tối ưu nhập kết quả SOP, quản lý kho, chất chuẩn, yêu cầu và truy xuất với bố cục thẻ trên mobile.",
+      "Cải thiện Dashboard, lịch trực, thống kê, máy tính, tài liệu, cấu hình và in nhãn trên nhiều kích thước màn hình.",
+      "Tăng vùng chạm, tối ưu biểu mẫu và thanh công cụ ở các màn hình đăng nhập, công thức, checklist và kế hoạch mẻ."
     ]
   },
   "assetGroups": [

@@ -11,15 +11,15 @@ import { StateService } from '../../../core/services/state.service';
   imports: [CommonModule, FormsModule],
   template: `
     @if (changelogService.isOpen()) {
-      <div (click)="onBackdropClick($event)" 
-           class="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm animate-fade-in no-print cursor-pointer">
-        
+      <div (click)="onBackdropClick($event)"
+           class="fixed inset-0 z-[9999] flex justify-center overflow-y-auto overscroll-contain p-2 sm:p-6 bg-slate-900/60 backdrop-blur-sm animate-fade-in no-print cursor-pointer">
+
         <!-- Modal Card Container -->
-        <div class="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-2xl overflow-hidden flex flex-col max-h-[90dvh] sm:max-h-[85vh] animate-bounce-in cursor-default"
+        <div class="my-auto bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-2xl overflow-hidden flex flex-col max-h-[calc(100dvh-1rem)] sm:max-h-[85vh] animate-bounce-in cursor-default"
              (click)="$event.stopPropagation()">
-          
+
           <!-- Modal Header -->
-          <div class="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-start sm:items-center gap-3 bg-fuchsia-50/60 dark:bg-slate-900">
+          <div class="px-4 sm:px-6 py-3.5 sm:py-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-start sm:items-center gap-3 bg-fuchsia-50/60 dark:bg-slate-900 shrink-0">
             <div class="flex items-start sm:items-center gap-3 min-w-0">
               <div class="w-10 h-10 rounded-2xl bg-blue-600 text-white flex items-center justify-center font-black shadow-md shadow-blue-500/20 shrink-0">
                 <i class="fa-solid fa-scroll text-lg"></i>
@@ -34,28 +34,29 @@ import { StateService } from '../../../core/services/state.service';
                 <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1">Lịch sử nâng cấp & cải tiến hệ thống LIMS Cloud</p>
               </div>
             </div>
-            
-            <button (click)="changelogService.close()" 
+
+            <button type="button" (click)="changelogService.close()"
                     title="Đóng (Esc)"
-                    class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition active:scale-95">
+                    aria-label="Đóng nhật ký cập nhật"
+                    class="w-11 h-11 sm:w-9 sm:h-9 shrink-0 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition active:scale-95">
               <i class="fa-solid fa-xmark text-base"></i>
             </button>
           </div>
 
           <!-- Search / Filter Bar -->
-          <div class="px-4 sm:px-6 py-3 bg-slate-50/80 dark:bg-slate-900/60 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-2">
-            <div class="flex items-center gap-2 flex-1">
+          <div class="px-4 sm:px-6 py-2.5 sm:py-3 bg-slate-50/80 dark:bg-slate-900/60 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-2 shrink-0">
+            <div class="flex items-center gap-2 flex-1 min-w-0">
               <i class="fa-solid fa-magnifying-glass text-slate-400 text-xs pl-1"></i>
-              <input type="text" [(ngModel)]="searchQuery" 
-                     placeholder="Tìm kiếm tính năng, phiên bản (ví dụ: b02, SmartBatch...)..."
-                     class="w-full bg-transparent text-xs font-semibold text-slate-700 dark:text-slate-200 placeholder-slate-400 outline-none">
+              <input type="text" [(ngModel)]="searchQuery"
+                     placeholder="Tìm kiếm tính năng, phiên bản..."
+                     class="w-full min-h-[36px] bg-transparent text-base sm:text-xs font-semibold text-slate-700 dark:text-slate-200 placeholder-slate-400 outline-none">
               @if (searchQuery()) {
-                <button (click)="searchQuery.set('')" class="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+                <button type="button" (click)="searchQuery.set('')" aria-label="Xóa từ khóa tìm kiếm" class="w-9 h-9 shrink-0 flex items-center justify-center text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
                   <i class="fa-solid fa-circle-xmark"></i>
                 </button>
               }
             </div>
-            
+
             @if (!searchQuery()) {
               <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 shrink-0 bg-slate-200/60 dark:bg-slate-800 px-2 py-0.5 rounded-md">
                 3 bản mới nhất
@@ -64,7 +65,7 @@ import { StateService } from '../../../core/services/state.service';
           </div>
 
           <!-- Modal Body (Timeline List) -->
-          <div class="px-4 sm:px-6 py-5 sm:py-6 overflow-y-auto custom-scrollbar flex-1 min-h-0">
+          <div class="px-4 sm:px-6 py-4 sm:py-6 overflow-y-auto overscroll-contain custom-scrollbar flex-1 min-h-0">
             @if (changelogService.loading()) {
               <div class="relative ml-2 border-l-2 border-blue-200 dark:border-blue-900/60 pl-5 space-y-6 animate-pulse" aria-live="polite" aria-busy="true">
                 @for (placeholder of [1, 2, 3]; track placeholder) {
@@ -156,14 +157,14 @@ import { StateService } from '../../../core/services/state.service';
           </div>
 
           <!-- Modal Footer -->
-          <div class="px-4 sm:px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/80 flex items-center justify-between gap-4">
-            <button (click)="navigateToFullChangelog()" 
-                    class="text-xs font-extrabold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-1.5 transition">
+          <div class="px-4 sm:px-6 py-3 sm:py-4 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] sm:pb-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/80 flex flex-wrap items-center justify-between gap-3 sm:gap-4 shrink-0">
+            <button type="button" (click)="navigateToFullChangelog()"
+                    class="min-h-[44px] sm:min-h-0 px-2 -ml-2 sm:ml-0 sm:px-0 text-xs font-extrabold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-1.5 transition rounded-lg">
               <i class="fa-solid fa-arrow-up-right-from-square"></i> Xem Toàn Bộ Lịch Sử
             </button>
 
-            <button (click)="changelogService.close()" 
-                    class="px-5 py-2 bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 dark:hover:bg-slate-600 text-white rounded-xl text-xs font-bold transition active:scale-95 shadow-sm">
+            <button type="button" (click)="changelogService.close()"
+                    class="min-h-[44px] sm:min-h-0 px-5 py-2.5 sm:py-2 bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 dark:hover:bg-slate-600 text-white rounded-xl text-xs font-bold transition active:scale-95 shadow-sm">
               Đóng
             </button>
           </div>

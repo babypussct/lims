@@ -1,4 +1,4 @@
-    <div class="flex flex-col space-y-4 md:space-y-6 fade-in h-full relative p-4 md:p-6">
+    <div class="flex flex-col space-y-4 md:space-y-6 fade-in min-h-full md:h-full relative p-4 md:p-6">
 
       @if (!isAuditMode()) {
         <!-- Header -->
@@ -24,7 +24,7 @@
       }
 
       <!-- Main Content -->
-      <div class="flex-1 min-h-0 overflow-hidden bg-white dark:bg-slate-800 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none border border-slate-100 dark:border-slate-700 flex flex-col relative">
+      <div class="flex-1 md:min-h-0 md:overflow-hidden bg-white dark:bg-slate-800 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none border border-slate-100 dark:border-slate-700 flex flex-col relative">
           
           <app-standards-filter
               [isAuditMode]="isAuditMode()"
@@ -90,8 +90,8 @@
           }
 
           <!-- Content Body -->
-           <div class="flex-1 min-h-0 overflow-auto custom-scrollbar relative bg-slate-50/30 dark:bg-slate-900/50">
-              <div class="md:hidden sticky top-0 z-20 px-4 py-2 text-[11px] font-bold text-slate-500 dark:text-slate-400 bg-amber-50/95 dark:bg-amber-950/40 border-b border-amber-100 dark:border-amber-900/40">
+           <div class="flex-1 md:min-h-0 overflow-x-auto md:overflow-auto custom-scrollbar relative bg-slate-50/30 dark:bg-slate-900/50">
+              <div class="md:hidden sticky left-0 top-0 z-20 px-4 py-2 text-[11px] font-bold text-slate-500 dark:text-slate-400 bg-amber-50/95 dark:bg-amber-950/40 border-b border-amber-100 dark:border-amber-900/40" [class.hidden]="viewMode() === 'grid'">
                 <i class="fa-solid fa-arrows-left-right mr-1" aria-hidden="true"></i> Vuốt ngang để xem đầy đủ bảng chuẩn.
               </div>
              
@@ -153,7 +153,7 @@
 
              @if ((isAuditMode() ? auditHasMore() : hasMore()) && !isLoading()) {
                 <div class="text-center p-4">
-                    <button (click)="loadMoreForMode()" class="text-xs font-bold text-gray-500 dark:text-gray-400 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition active:scale-95 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 px-4 py-2 rounded-full shadow-sm dark:shadow-none">
+                    <button (click)="loadMoreForMode()" class="min-h-[44px] md:min-h-0 text-xs font-bold text-gray-500 dark:text-gray-400 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition active:scale-95 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 px-5 py-2.5 md:px-4 md:py-2 rounded-full shadow-sm dark:shadow-none">
                         Xem Thêm...
                     </button>
                 </div>

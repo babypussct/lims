@@ -20,7 +20,43 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
          [closeOnBackdrop]="false"
          (closed)="closeModal.emit()"
        >
-          <div modalBody class="-mx-6 -my-5 grid min-h-0 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+          <div modalBody class="-mx-4 -my-3 sm:-mx-6 sm:-my-5 grid min-h-0 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+              <!-- Mobile Standard Summary & FEFO Warning (shown on < md) -->
+              <div class="md:hidden bg-slate-50 dark:bg-slate-800/60 p-4 border-b border-slate-200/80 dark:border-slate-700/80 space-y-3">
+                  <div class="grid grid-cols-2 gap-2.5 text-xs">
+                      <div class="rounded-xl bg-white dark:bg-slate-900/70 px-3 py-2 border border-slate-200/70 dark:border-slate-700/70">
+                          <span class="block text-[10px] font-bold text-slate-400 uppercase">Số lô</span>
+                          <span class="font-bold text-slate-700 dark:text-slate-200 break-words">{{std()?.lot_number || 'N/A'}}</span>
+                      </div>
+                      <div class="rounded-xl bg-white dark:bg-slate-900/70 px-3 py-2 border border-slate-200/70 dark:border-slate-700/70">
+                          <span class="block text-[10px] font-bold text-slate-400 uppercase">Hạn dùng</span>
+                          <span class="font-bold" [class]="getExpiryClass(std()?.expiry_date)">{{std()?.expiry_date || 'N/A'}}</span>
+                      </div>
+                      <div class="rounded-xl bg-white dark:bg-slate-900/70 px-3 py-2 border border-slate-200/70 dark:border-slate-700/70">
+                          <span class="block text-[10px] font-bold text-slate-400 uppercase">Lượng tồn kho</span>
+                          <span class="font-bold text-emerald-600 dark:text-emerald-400">{{formatNum(std()?.current_amount ?? 0)}} {{std()?.unit}}</span>
+                      </div>
+                      @if(std()?.internal_id) {
+                          <div class="rounded-xl bg-white dark:bg-slate-900/70 px-3 py-2 border border-slate-200/70 dark:border-slate-700/70">
+                              <span class="block text-[10px] font-bold text-slate-400 uppercase">Mã quản lý</span>
+                              <span class="font-bold text-slate-600 dark:text-slate-300 break-words">{{std()?.internal_id}}</span>
+                          </div>
+                      }
+                  </div>
+                  @if(fefoTopSibling(); as top) {
+                      <div role="alert" class="p-3 bg-amber-50 dark:bg-amber-900/25 rounded-xl border border-amber-200 dark:border-amber-700/60">
+                          <div class="flex items-center gap-1.5 mb-1">
+                              <i class="fa-solid fa-triangle-exclamation text-amber-500 text-xs" aria-hidden="true"></i>
+                              <span class="text-[11px] font-black text-amber-800 dark:text-amber-300 uppercase tracking-wide">Cảnh báo ưu tiên FEFO</span>
+                          </div>
+                          <p class="text-xs text-amber-800 dark:text-amber-200 leading-relaxed">
+                              Lọ <strong>{{top.internal_id || top.lot_number}}</strong>
+                              (hạn: {{top.expiry_date || 'N/A'}}) gần hết hạn hơn — nên được cấp trước.
+                          </p>
+                      </div>
+                  }
+              </div>
+
               <!-- Left: Standard Info Summary -->
               <div class="hidden md:flex bg-slate-50 dark:bg-slate-800/50 p-8 flex-col border-r border-slate-100 dark:border-slate-800">
                   <div class="w-14 h-14 rounded-2xl bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-2xl shadow-sm border border-slate-100 dark:border-slate-700 mb-6">
@@ -76,12 +112,12 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
               </div>
 
               <!-- Right: Borrow Form -->
-              <div class="min-w-0 p-8 bg-white dark:bg-slate-900">
-                  <div class="space-y-5">
+              <div class="min-w-0 p-4 sm:p-6 md:p-8 bg-white dark:bg-slate-900">
+                  <div class="space-y-4 sm:space-y-5">
                       @if(isAssignMode()) {
                           <div>
                               <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Nhân viên tiếp nhận <span class="text-red-500">*</span></label>
-                              <select [ngModel]="assignUserId()" (ngModelChange)="onAssignUserChange($event)" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-500/10 transition-all outline-none appearance-none">
+                              <select [ngModel]="assignUserId()" (ngModelChange)="onAssignUserChange($event)" class="w-full min-h-[44px] px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-base sm:text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-500/10 transition-all outline-none appearance-none">
                                   <option value="">-- Chọn nhân viên --</option>
                                   @for (user of userList(); track user.uid) {
                                       <option [value]="user.uid">{{user.displayName}} ({{user.email}})</option>
@@ -93,29 +129,29 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
                       <div class="grid grid-cols-1 gap-4">
                           <div>
                               <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Lượng dự kiến dùng ({{std()?.unit}})</label>
-                              <input type="number" [ngModel]="assignExpectedAmount()" (ngModelChange)="assignExpectedAmount.set($event)" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-fuchsia-500 outline-none" placeholder="VD: 5">
+                              <input type="number" inputmode="decimal" step="any" [ngModel]="assignExpectedAmount()" (ngModelChange)="assignExpectedAmount.set($event)" class="w-full min-h-[44px] px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-base sm:text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-fuchsia-500 outline-none" placeholder="VD: 5">
                           </div>
                       </div>
 
                       <div>
                           <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Mục đích sử dụng <span class="text-red-500">*</span></label>
-                          <textarea [ngModel]="assignPurpose()" (ngModelChange)="assignPurpose.set($event)" rows="3" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-500/10 transition-all outline-none resize-none placeholder-slate-300" placeholder="Nhập mục đích sử dụng..."></textarea>
+                          <textarea [ngModel]="assignPurpose()" (ngModelChange)="assignPurpose.set($event)" rows="3" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-base sm:text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-500/10 transition-all outline-none resize-none placeholder-slate-300" placeholder="Nhập mục đích sử dụng..."></textarea>
                           
                           <div class="flex flex-wrap gap-2 mt-2">
-                              <button (click)="assignPurpose.set('Pha chuẩn mới')" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/40 text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-fuchsia-600 rounded-lg transition border border-transparent hover:border-fuchsia-200"># Pha Chuẩn Mới</button>
-                              <button (click)="assignPurpose.set('Kiểm tra định kỳ')" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/40 text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-fuchsia-600 rounded-lg transition border border-transparent hover:border-fuchsia-200"># Kiểm Tra Định Kỳ</button>
-                              <button (click)="assignPurpose.set('Ngoại kiểm')" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/40 text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-fuchsia-600 rounded-lg transition border border-transparent hover:border-fuchsia-200"># Ngoại Kiểm</button>
-                              <button (click)="assignPurpose.set('Nghiên cứu phát triển')" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/40 text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-fuchsia-600 rounded-lg transition border border-transparent hover:border-fuchsia-200"># Nghiên Cứu Phát Triển</button>
-                              <button (click)="assignPurpose.set('Kiểm nghiệm mẫu')" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/40 text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-fuchsia-600 rounded-lg transition border border-transparent hover:border-fuchsia-200"># Kiểm Nghiệm Mẫu</button>
+                              <button type="button" (click)="assignPurpose.set('Pha chuẩn mới')" class="min-h-[40px] sm:min-h-0 px-3 py-2 sm:py-1 bg-slate-100 dark:bg-slate-800 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/40 text-xs sm:text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:text-fuchsia-600 rounded-lg transition border border-transparent hover:border-fuchsia-200"># Pha Chuẩn Mới</button>
+                              <button type="button" (click)="assignPurpose.set('Kiểm tra định kỳ')" class="min-h-[40px] sm:min-h-0 px-3 py-2 sm:py-1 bg-slate-100 dark:bg-slate-800 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/40 text-xs sm:text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:text-fuchsia-600 rounded-lg transition border border-transparent hover:border-fuchsia-200"># Kiểm Tra Định Kỳ</button>
+                              <button type="button" (click)="assignPurpose.set('Ngoại kiểm')" class="min-h-[40px] sm:min-h-0 px-3 py-2 sm:py-1 bg-slate-100 dark:bg-slate-800 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/40 text-xs sm:text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:text-fuchsia-600 rounded-lg transition border border-transparent hover:border-fuchsia-200"># Ngoại Kiểm</button>
+                              <button type="button" (click)="assignPurpose.set('Nghiên cứu phát triển')" class="min-h-[40px] sm:min-h-0 px-3 py-2 sm:py-1 bg-slate-100 dark:bg-slate-800 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/40 text-xs sm:text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:text-fuchsia-600 rounded-lg transition border border-transparent hover:border-fuchsia-200"># Nghiên Cứu Phát Triển</button>
+                              <button type="button" (click)="assignPurpose.set('Kiểm nghiệm mẫu')" class="min-h-[40px] sm:min-h-0 px-3 py-2 sm:py-1 bg-slate-100 dark:bg-slate-800 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/40 text-xs sm:text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:text-fuchsia-600 rounded-lg transition border border-transparent hover:border-fuchsia-200"># Kiểm Nghiệm Mẫu</button>
                           </div>
                       </div>
                   </div>
               </div>
           </div>
 
-          <div modalFooter class="flex flex-wrap justify-end gap-3">
-              <button (click)="closeModal.emit()" class="px-6 py-3 text-slate-500 dark:text-slate-400 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition">Hủy bỏ</button>
-              <button (click)="onConfirm()" [disabled]="!assignUserId() || !assignPurpose() || isProcessing()" class="px-8 py-3 bg-fuchsia-600 dark:bg-fuchsia-500 text-white font-bold text-sm rounded-xl hover:bg-fuchsia-700 dark:hover:bg-fuchsia-600 shadow-sm transition disabled:opacity-50 flex items-center gap-2">
+          <div modalFooter class="flex w-full sm:w-auto flex-wrap justify-end gap-2 sm:gap-3">
+              <button type="button" (click)="closeModal.emit()" class="flex-1 sm:flex-none min-h-[44px] px-5 py-2.5 text-slate-500 dark:text-slate-400 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition">Hủy bỏ</button>
+              <button type="button" (click)="onConfirm()" [disabled]="!assignUserId() || !assignPurpose() || isProcessing()" class="flex-1 sm:flex-none min-h-[44px] px-6 sm:px-8 py-2.5 bg-fuchsia-600 dark:bg-fuchsia-500 text-white font-bold text-sm rounded-xl hover:bg-fuchsia-700 dark:hover:bg-fuchsia-600 shadow-sm transition disabled:opacity-50 flex items-center justify-center gap-2">
                   @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> } @else { <i class="fa-solid fa-paper-plane text-xs"></i> Xác nhận mượn }
               </button>
           </div>

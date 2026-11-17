@@ -66,7 +66,7 @@ export interface TraceabilitySampleRow {
           }
 
           @if (id) {
-            <div pageHeaderActions class="contents">
+            <div pageHeaderActions class="flex flex-wrap items-center gap-2">
               <app-button variant="secondary" size="sm" (click)="startQrScan()" [disabled]="isLoading() || isVerifying()">
                 <i class="fa-solid fa-qrcode" aria-hidden="true"></i>
                 Quét QR
@@ -172,11 +172,12 @@ export interface TraceabilitySampleRow {
                   <button
                     type="button"
                     (click)="clearLookupInput()"
-                    class="absolute right-2.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full
+                    class="absolute right-1.5 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full
                            text-slate-400 hover:text-slate-700 hover:bg-slate-200
                            dark:hover:text-slate-200 dark:hover:bg-slate-700 transition"
+                    aria-label="Xóa mã"
                     title="Xóa mã">
-                    <i class="fa-solid fa-xmark text-[10px]"></i>
+                    <i class="fa-solid fa-xmark text-xs"></i>
                   </button>
                 }
               </label>
@@ -511,12 +512,13 @@ export interface TraceabilitySampleRow {
                                         [ngModel]="sampleFilterQuery()"
                                         (ngModelChange)="sampleFilterQuery.set($event)"
                                         placeholder="Tìm mã hoặc tên mẫu..."
-                                        class="w-full h-9 pl-8 pr-8 rounded-xl border border-slate-200/80 bg-slate-50 text-xs font-medium text-slate-700 placeholder:text-slate-400 focus:bg-white focus:border-fuchsia-500 focus:ring-1 focus:ring-fuchsia-500 outline-none transition dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:focus:bg-slate-900">
+                                        class="w-full h-11 sm:h-9 pl-9 pr-10 rounded-xl border border-slate-200/80 bg-slate-50 text-base sm:text-xs font-medium text-slate-700 placeholder:text-slate-400 focus:bg-white focus:border-fuchsia-500 focus:ring-1 focus:ring-fuchsia-500 outline-none transition dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:focus:bg-slate-900">
                                     @if (sampleFilterQuery()) {
                                         <button
                                             type="button"
                                             (click)="sampleFilterQuery.set('')"
-                                            class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition cursor-pointer"
+                                            class="absolute right-1.5 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-200/70 dark:hover:text-slate-200 dark:hover:bg-slate-700 transition cursor-pointer"
+                                            aria-label="Xóa tìm kiếm mẫu"
                                             title="Xóa tìm kiếm">
                                             <i class="fa-solid fa-xmark text-xs"></i>
                                         </button>
@@ -524,8 +526,60 @@ export interface TraceabilitySampleRow {
                                 </div>
                             }
 
-                            <!-- Scrollable Table with Sticky Header (max-h 480px) -->
-                            <div class="max-h-[480px] overflow-y-auto custom-scrollbar rounded-xl border border-slate-100 dark:border-slate-800">
+                            <!-- Mobile Sample Cards (< md) -->
+                            <div class="md:hidden space-y-2.5 max-h-[480px] overflow-y-auto custom-scrollbar pr-0.5">
+                                @for (row of filteredSampleRows(); track row.sampleId) {
+                                    <div class="rounded-xl border border-slate-200/80 dark:border-slate-700/80 bg-slate-50/50 dark:bg-slate-800/40 p-3 space-y-2">
+                                        <div class="flex flex-wrap items-center justify-between gap-2">
+                                            <span class="font-mono font-bold text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 px-2.5 py-1 rounded-lg text-xs">
+                                                {{ row.sampleId }}
+                                            </span>
+                                            @if (row.description) {
+                                                <span class="text-xs font-semibold text-slate-600 dark:text-slate-300 leading-snug">{{ row.description }}</span>
+                                            }
+                                        </div>
+                                        @if (row.targetScope.compact) {
+                                            <div class="flex items-center gap-2 flex-wrap">
+                                                <span class="inline-flex items-center gap-1 bg-fuchsia-50 dark:bg-fuchsia-950/40 border border-fuchsia-100/70 dark:border-fuchsia-900/30 text-fuchsia-700 dark:text-fuchsia-300 px-2.5 py-1 rounded-lg text-[11px] font-bold">
+                                                    <i class="fa-solid fa-list-check text-[9px]"></i>
+                                                    {{ row.targetScope.headline }}
+                                                </span>
+                                                @if (row.targetNames.length > 0) {
+                                                    <button
+                                                        type="button"
+                                                        (click)="toggleSampleTargetExpand(row.sampleId)"
+                                                        class="min-h-[36px] px-2 text-xs font-bold text-fuchsia-600 hover:text-fuchsia-700 dark:text-fuchsia-400 underline underline-offset-2 cursor-pointer">
+                                                        {{ isSampleExpanded(row.sampleId) ? 'Thu gọn' : 'Xem chi tiết' }}
+                                                    </button>
+                                                }
+                                            </div>
+                                            @if (isSampleExpanded(row.sampleId)) {
+                                                <div class="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-700/60 flex flex-wrap gap-1">
+                                                    @for (tName of row.targetNames; track tName) {
+                                                        <span class="bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200/60 dark:border-slate-700 px-2 py-0.5 rounded text-[11px] font-medium">{{ tName }}</span>
+                                                    }
+                                                </div>
+                                            }
+                                        } @else {
+                                            <div class="flex flex-wrap gap-1">
+                                                @for (tName of row.targetNames; track tName) {
+                                                    <span class="bg-fuchsia-50 dark:bg-fuchsia-950/40 border border-fuchsia-100/70 dark:border-fuchsia-900/30 text-fuchsia-700 dark:text-fuchsia-300 px-2 py-0.5 rounded-md text-[11px] font-medium">{{ tName }}</span>
+                                                } @empty {
+                                                    <span class="text-slate-400 italic text-[11px]">Chưa chỉ định chỉ tiêu</span>
+                                                }
+                                            </div>
+                                        }
+                                    </div>
+                                } @empty {
+                                    <div class="py-8 text-center text-slate-400 text-xs">
+                                        <i class="fa-solid fa-magnifying-glass mb-1 text-sm block"></i>
+                                        Không tìm thấy mẫu phù hợp từ khóa "{{ sampleFilterQuery() }}"
+                                    </div>
+                                }
+                            </div>
+
+                            <!-- Scrollable Table with Sticky Header (md+, max-h 480px) -->
+                            <div class="hidden md:block max-h-[480px] overflow-y-auto custom-scrollbar rounded-xl border border-slate-100 dark:border-slate-800">
                                 <table class="w-full text-left text-xs border-collapse">
                                     <thead class="sticky top-0 bg-slate-50 dark:bg-slate-800/95 backdrop-blur z-10 border-b border-slate-200/80 dark:border-slate-700">
                                         <tr>

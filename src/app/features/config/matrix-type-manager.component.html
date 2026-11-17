@@ -4,7 +4,7 @@
     subtitle="Quản lý danh sách các nền mẫu áp dụng cho SOP và khai báo mẻ."
     icon="fa-flask"
   >
-    <div pageHeaderActions class="flex items-center gap-2">
+    <div pageHeaderActions class="flex items-center gap-2 flex-wrap">
       <app-button variant="ghost" size="sm" routerLink="/settings/data/master">
         <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
         Quay lại cấu hình
@@ -24,26 +24,26 @@
   } @else {
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       @for (item of matrices(); track item.id) {
-        <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm hover:shadow-md transition-shadow relative group">
+        <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow relative group">
           
-          <div class="absolute top-4 right-4 opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 transition-opacity flex items-center gap-1">
-            <button (click)="setDefault(item)" [attr.aria-label]="item.isDefault ? 'Nền mẫu đang là mặc định' : 'Đặt nền mẫu làm mặc định'" class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-amber-500 dark:hover:text-amber-400 bg-slate-50 dark:bg-slate-700 rounded-lg transition-colors" [title]="item.isDefault ? 'Đang là mặc định' : 'Đặt làm mặc định'">
+          <div class="absolute top-3 right-3 sm:top-4 sm:right-4 opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 transition-opacity flex items-center gap-1">
+            <button (click)="setDefault(item)" [attr.aria-label]="item.isDefault ? 'Nền mẫu đang là mặc định' : 'Đặt nền mẫu làm mặc định'" class="w-10 h-10 sm:w-9 sm:h-9 flex items-center justify-center text-slate-400 hover:text-amber-500 dark:hover:text-amber-400 bg-slate-50 dark:bg-slate-700 rounded-lg transition-colors" [title]="item.isDefault ? 'Đang là mặc định' : 'Đặt làm mặc định'">
               <i class="fa-solid fa-star" [class.text-amber-500]="item.isDefault"></i>
             </button>
-            <button (click)="openEditModal(item)" aria-label="Sửa nền mẫu" class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 bg-slate-50 dark:bg-slate-700 rounded-lg transition-colors" title="Sửa">
+            <button (click)="openEditModal(item)" aria-label="Sửa nền mẫu" class="w-10 h-10 sm:w-9 sm:h-9 flex items-center justify-center text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 bg-slate-50 dark:bg-slate-700 rounded-lg transition-colors" title="Sửa">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
             </button>
-            <button (click)="deleteItem(item)" aria-label="Xóa nền mẫu" class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-red-600 dark:hover:text-red-400 bg-slate-50 dark:bg-slate-700 rounded-lg transition-colors" title="Xóa">
+            <button (click)="deleteItem(item)" aria-label="Xóa nền mẫu" class="w-10 h-10 sm:w-9 sm:h-9 flex items-center justify-center text-slate-400 hover:text-red-600 dark:hover:text-red-400 bg-slate-50 dark:bg-slate-700 rounded-lg transition-colors" title="Xóa">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
             </button>
           </div>
 
-          <div class="flex items-start gap-3">
+          <div class="flex items-start gap-3 pr-32 md:pr-0">
             <div class="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" [style.background-color]="(item.color || '#94a3b8') + '20'">
                <div class="w-4 h-4 rounded-full" [style.background-color]="item.color || '#94a3b8'"></div>
             </div>
-            <div>
-              <h3 class="font-bold text-slate-800 dark:text-white flex items-center gap-2">
+            <div class="min-w-0">
+              <h3 class="font-bold text-slate-800 dark:text-white flex flex-wrap items-center gap-2 break-words">
                 {{ item.name }}
                 @if (item.isDefault) {
                   <span class="text-[10px] bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-1.5 py-0.5 rounded-full font-bold uppercase border border-amber-200 dark:border-amber-800">Mặc Định</span>
@@ -82,20 +82,20 @@
       <div modalBody class="space-y-4">
         <div>
           <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tên nền mẫu *</label>
-          <input type="text" [(ngModel)]="formData.name" (ngModelChange)="onNameChange()" class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="VD: Nước, Thực Phẩm...">
+          <input type="text" [(ngModel)]="formData.name" (ngModelChange)="onNameChange()" class="w-full min-h-[44px] px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-base sm:text-sm text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="VD: Nước, Thực Phẩm...">
         </div>
         
         <div>
           <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Màu sắc</label>
           <div class="flex items-center gap-3">
-            <input type="color" [(ngModel)]="formData.color" class="w-10 h-10 rounded cursor-pointer border-0 p-0 bg-transparent">
-            <input type="text" [(ngModel)]="formData.color" class="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-mono text-sm">
+            <input type="color" [(ngModel)]="formData.color" class="w-11 h-11 sm:w-10 sm:h-10 rounded cursor-pointer border-0 p-0 bg-transparent">
+            <input type="text" [(ngModel)]="formData.color" class="flex-1 min-h-[44px] px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-mono text-base sm:text-sm">
           </div>
         </div>
         
         <div>
           <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Mô tả</label>
-          <textarea [(ngModel)]="formData.description" rows="3" class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ghi chú thêm..."></textarea>
+          <textarea [(ngModel)]="formData.description" rows="3" class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-base sm:text-sm text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ghi chú thêm..."></textarea>
         </div>
       </div>
 

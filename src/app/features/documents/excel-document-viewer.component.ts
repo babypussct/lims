@@ -1433,6 +1433,11 @@ interface ExcelPreviewFilterSummary {
         padding-inline: .5rem;
       }
 
+      .excel-view-tool {
+        min-height: 2.25rem;
+        padding: .35rem .65rem;
+      }
+
       .excel-loading-layer {
         inset: 2.75rem 0 0;
       }

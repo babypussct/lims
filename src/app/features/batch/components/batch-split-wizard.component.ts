@@ -37,7 +37,7 @@ export interface SplitWizardState {
         [description]="'Nguồn: ' + state().sourceBatchName"
         size="lg"
         (closed)="close.emit()">
-        <div modalBody class="flex min-h-[60vh] flex-col">
+        <div modalBody class="flex min-h-[50dvh] lg:min-h-[60dvh] flex-col">
             <!-- Steps Indicator -->
             <div class="shrink-0 border-b border-slate-100 bg-white px-4 pb-3 dark:border-slate-700 dark:bg-slate-800">
                 <div class="flex">
@@ -49,23 +49,23 @@ export interface SplitWizardState {
             </div>
 
             <!-- Wizard Content -->
-            <div class="flex-1 overflow-hidden bg-slate-50 dark:bg-slate-900/50 relative p-4 md:p-6">
+            <div class="flex-1 overflow-y-auto lg:overflow-hidden bg-slate-50 dark:bg-slate-900/50 relative p-3 sm:p-4 md:p-6">
                 
                 <!-- STEP 1: SELECT SAMPLES -->
                 @if (state().step === 1) {
                     <div class="h-full flex flex-col gap-3 animate-fade-in">
-                        <div class="flex justify-between items-center mb-2">
+                        <div class="flex flex-wrap justify-between items-center gap-2 mb-2">
                             <h4 class="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase">Chọn Mẫu Cần Chuyển Đi</h4>
-                            <div class="text-xs space-x-2">
-                                <button (click)="selectAllSamples()" class="text-blue-600 dark:text-blue-400 hover:underline font-bold">Chọn Hết</button>
-                                <button (click)="deselectAllSamples()" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300">Bỏ Chọn</button>
+                            <div class="text-xs flex items-center gap-2">
+                                <button (click)="selectAllSamples()" class="min-h-[36px] px-2 text-blue-600 dark:text-blue-400 hover:underline font-bold">Chọn Hết</button>
+                                <button (click)="deselectAllSamples()" class="min-h-[36px] px-2 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300">Bỏ Chọn</button>
                             </div>
                         </div>
                         <div class="flex-1 overflow-y-auto custom-scrollbar bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
                             <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3">
                                 @for(sample of state().availableSamples; track sample) {
                                     <button type="button" (click)="toggleSample(sample)" [attr.aria-pressed]="state().selectedSamples.has(sample)"
-                                         class="p-3 md:p-2 rounded-lg border cursor-pointer text-center transition select-none"
+                                         class="min-h-[44px] p-3 md:p-2 rounded-lg border cursor-pointer text-center transition select-none"
                                          [class]="state().selectedSamples.has(sample) ? 'bg-blue-600 border-blue-600 text-white shadow-md transform scale-105' : 'bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-blue-50 dark:hover:bg-blue-900/20'">
                                         <span class="text-sm md:text-xs font-mono font-bold">{{sample}}</span>
                                     </button>
@@ -78,11 +78,11 @@ export interface SplitWizardState {
                 <!-- STEP 2: SELECT TARGETS -->
                 @if (state().step === 2) {
                     <div class="h-full flex flex-col gap-3 animate-fade-in">
-                        <div class="flex justify-between items-center mb-2">
+                        <div class="flex flex-wrap justify-between items-center gap-2 mb-2">
                             <h4 class="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase">Chọn Chỉ Tiêu Cần Thực Hiện</h4>
-                            <div class="text-xs space-x-2">
-                                <button (click)="selectAllTargets()" class="text-blue-600 dark:text-blue-400 hover:underline font-bold">Chọn Hết</button>
-                                <button (click)="deselectAllTargets()" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300">Bỏ Chọn</button>
+                            <div class="text-xs flex items-center gap-2">
+                                <button (click)="selectAllTargets()" class="min-h-[36px] px-2 text-blue-600 dark:text-blue-400 hover:underline font-bold">Chọn Hết</button>
+                                <button (click)="deselectAllTargets()" class="min-h-[36px] px-2 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300">Bỏ Chọn</button>
                             </div>
                         </div>
                         <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-lg p-3 text-xs text-blue-800 dark:text-blue-300 mb-2">

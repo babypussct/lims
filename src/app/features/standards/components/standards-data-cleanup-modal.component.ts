@@ -74,7 +74,7 @@ interface CasIssueRecord {
         [closeDisabled]="isProcessing() || undoingBatchId() !== null"
         (closed)="onClose()"
       >
-        <div modalBody class="-mx-6 -my-5 relative flex min-h-[65vh] flex-col overflow-hidden md:h-[calc(100vh-12rem)] md:min-h-0">
+        <div modalBody class="-mx-4 -my-3 sm:-mx-6 sm:-my-5 relative flex min-h-[65dvh] flex-col overflow-hidden md:h-[calc(100vh-12rem)] md:min-h-0">
 
           <section class="px-5 sm:px-6 py-2.5 bg-fuchsia-50/60 dark:bg-fuchsia-950/30 border-b border-fuchsia-100/60 dark:border-fuchsia-900/30 flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] font-bold shrink-0">
             <span class="text-slate-700 dark:text-slate-200"><i class="fa-solid fa-boxes-stacked text-fuchsia-500 mr-1"></i>{{totalStandardsCount()}} hồ sơ</span>

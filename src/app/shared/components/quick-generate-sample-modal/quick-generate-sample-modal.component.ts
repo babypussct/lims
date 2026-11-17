@@ -2,89 +2,90 @@ import { Component, EventEmitter, Input, Output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SampleDescriptionMaster } from '../../../core/models/sample-description.model';
+import { AppModalShellComponent } from '../ui/modal-shell/modal-shell.component';
+import { AppButtonComponent } from '../ui/button/button.component';
 
 @Component({
   selector: 'app-quick-generate-sample-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AppModalShellComponent, AppButtonComponent],
   template: `
-    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 animate-bounce-in relative overflow-hidden">
-            <div class="absolute top-0 left-0 w-full h-2 bg-fuchsia-500"></div>
-            
-            <div class="flex justify-between items-start mb-6">
-                <div>
-                    <h3 class="font-black text-xl text-slate-800 mb-1">Tạo Nhanh Mã Mẫu</h3>
-                    <p class="text-sm text-slate-500">Tự động sinh danh sách mã mẫu theo quy tắc.</p>
-                </div>
-                <button (click)="close.emit()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700 transition flex items-center justify-center">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-
-            <div class="space-y-4">
-                <div>
-                    <label class="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Tiền tố</label>
-                    <input type="text" [ngModel]="prefix()" (ngModelChange)="prefix.set($event)" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:border-fuchsia-500 focus:ring-1 focus:ring-fuchsia-200 outline-none transition" placeholder="VD: U">
-                </div>
-                
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Từ số (Bắt đầu)</label>
-                        <input type="text" [ngModel]="fromStr()" (ngModelChange)="fromStr.set($event)" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:border-fuchsia-500 focus:ring-1 focus:ring-fuchsia-200 outline-none transition" placeholder="VD: 01">
-                        <p class="text-[9px] text-slate-400 mt-1 italic">Sẽ giữ nguyên số 0 ở đầu</p>
-                    </div>
-                    <div>
-                        <label class="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Đến số (Kết thúc)</label>
-                        <input type="text" [ngModel]="toStr()" (ngModelChange)="toStr.set($event)" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:border-fuchsia-500 focus:ring-1 focus:ring-fuchsia-200 outline-none transition" placeholder="VD: 03">
-                    </div>
-                </div>
-
-                <div>
-                    <div class="flex items-center justify-between mb-1">
-                        <label class="text-[10px] font-bold text-slate-400 uppercase">Hậu tố</label>
-                        <label class="flex items-center gap-1.5 cursor-pointer group">
-                            <input type="checkbox" [ngModel]="autoSuffix()" (ngModelChange)="autoSuffix.set($event)" class="w-3.5 h-3.5 text-fuchsia-600 rounded border-slate-300 focus:ring-fuchsia-500 transition cursor-pointer">
-                            <span class="text-[10px] font-bold text-slate-500 group-hover:text-fuchsia-600 transition">Tự động lấy ngày (dd-1)</span>
-                        </label>
-                    </div>
-                    <input type="text" [ngModel]="autoSuffix() ? currentDaySuffix : suffix()" (ngModelChange)="!autoSuffix() && suffix.set($event)" [disabled]="autoSuffix()" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:border-fuchsia-500 focus:ring-1 focus:ring-fuchsia-200 outline-none transition disabled:bg-slate-50 disabled:text-slate-500 disabled:border-slate-100" placeholder="VD: 24">
-                </div>
-
-                @if (includeDescription) {
-                    <div>
-                        <label class="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Mô tả mẫu</label>
-                        <input type="text"
-                               [attr.list]="descriptionListId"
-                               [ngModel]="description()"
-                               (ngModelChange)="description.set($event)"
-                               class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:border-fuchsia-500 focus:ring-1 focus:ring-fuchsia-200 outline-none transition"
-                               placeholder="VD: Cá tra nguyên con">
-                        <p class="text-[9px] text-slate-400 mt-1">Áp dụng cho toàn bộ mã được tạo; có thể sửa riêng từng mẫu sau khi chèn.</p>
-                        <datalist [id]="descriptionListId">
-                            @for (item of availableSampleDescriptions; track item.id) {
-                                <option [value]="item.name">{{item.description || item.aliases?.join(', ') || ''}}</option>
-                            }
-                        </datalist>
-                    </div>
-                }
-                
-                <div class="bg-fuchsia-50 p-4 rounded-xl border border-fuchsia-100 mt-4">
-                    <div class="text-[10px] font-bold text-fuchsia-400 uppercase mb-2">Xem trước kết quả</div>
-                    <div class="text-sm font-mono text-fuchsia-700 break-words max-h-24 overflow-y-auto custom-scrollbar">
-                        {{ previewResult() || 'Chưa có dữ liệu' }}
-                    </div>
-                </div>
-            </div>
-
-            <div class="flex gap-3 mt-8">
-                <button (click)="close.emit()" class="flex-1 py-3 text-slate-600 hover:bg-slate-100 rounded-xl font-bold text-sm transition">Hủy</button>
-                <button (click)="generate()" [disabled]="!canGenerate()" class="flex-1 py-3 bg-fuchsia-600 hover:bg-fuchsia-700 text-white rounded-xl font-bold text-sm shadow-md shadow-fuchsia-200 transition disabled:opacity-50 flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-wand-magic-sparkles"></i> Chèn vào Danh Sách
-                </button>
-            </div>
+    <app-modal-shell
+      title="Tạo nhanh mã mẫu"
+      description="Tự động sinh danh sách mã mẫu theo quy tắc."
+      size="sm"
+      (closed)="close.emit()">
+      <div modalBody class="space-y-4">
+        <div>
+          <label for="quick-gen-prefix" class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1 block">Tiền tố</label>
+          <input id="quick-gen-prefix" type="text" [ngModel]="prefix()" (ngModelChange)="prefix.set($event)"
+                 class="w-full min-h-[44px] px-3.5 py-2.5 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-xl text-base sm:text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition"
+                 placeholder="VD: U">
         </div>
-    </div>
+
+        <div class="grid grid-cols-2 gap-3 sm:gap-4">
+          <div>
+            <label for="quick-gen-from" class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1 block">Từ số (Bắt đầu)</label>
+            <input id="quick-gen-from" type="text" inputmode="numeric" [ngModel]="fromStr()" (ngModelChange)="fromStr.set($event)"
+                   class="w-full min-h-[44px] px-3.5 py-2.5 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-xl text-base sm:text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition"
+                   placeholder="VD: 01">
+            <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-1 italic">Sẽ giữ nguyên số 0 ở đầu</p>
+          </div>
+          <div>
+            <label for="quick-gen-to" class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1 block">Đến số (Kết thúc)</label>
+            <input id="quick-gen-to" type="text" inputmode="numeric" [ngModel]="toStr()" (ngModelChange)="toStr.set($event)"
+                   class="w-full min-h-[44px] px-3.5 py-2.5 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-xl text-base sm:text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition"
+                   placeholder="VD: 03">
+          </div>
+        </div>
+
+        <div>
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+            <label for="quick-gen-suffix" class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">Hậu tố</label>
+            <label class="flex items-center gap-2 min-h-[36px] cursor-pointer group">
+              <input type="checkbox" [ngModel]="autoSuffix()" (ngModelChange)="autoSuffix.set($event)"
+                     class="w-5 h-5 sm:w-4 sm:h-4 text-indigo-600 rounded border-slate-300 dark:border-slate-600 focus:ring-indigo-500 transition cursor-pointer">
+              <span class="text-xs sm:text-[11px] font-bold text-slate-600 dark:text-slate-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">Tự động lấy ngày (dd-1)</span>
+            </label>
+          </div>
+          <input id="quick-gen-suffix" type="text" [ngModel]="autoSuffix() ? currentDaySuffix : suffix()" (ngModelChange)="!autoSuffix() && suffix.set($event)" [disabled]="autoSuffix()"
+                 class="w-full min-h-[44px] px-3.5 py-2.5 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-xl text-base sm:text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition disabled:bg-slate-50 dark:disabled:bg-slate-800/50 disabled:text-slate-500 dark:disabled:text-slate-400 disabled:border-slate-100 dark:disabled:border-slate-800"
+                 placeholder="VD: 24">
+        </div>
+
+        @if (includeDescription) {
+          <div>
+            <label for="quick-gen-desc" class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1 block">Mô tả mẫu</label>
+            <input id="quick-gen-desc" type="text"
+                   [attr.list]="descriptionListId"
+                   [ngModel]="description()"
+                   (ngModelChange)="description.set($event)"
+                   class="w-full min-h-[44px] px-3.5 py-2.5 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-xl text-base sm:text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition"
+                   placeholder="VD: Cá tra nguyên con">
+            <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Áp dụng cho toàn bộ mã được tạo; có thể sửa riêng từng mẫu sau khi chèn.</p>
+            <datalist [id]="descriptionListId">
+              @for (item of availableSampleDescriptions; track item.id) {
+                <option [value]="item.name">{{item.description || item.aliases?.join(', ') || ''}}</option>
+              }
+            </datalist>
+          </div>
+        }
+
+        <div class="bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-700">
+          <div class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1.5">Xem trước kết quả</div>
+          <div class="text-sm font-mono text-indigo-700 dark:text-indigo-300 break-words max-h-24 overflow-y-auto custom-scrollbar">
+            {{ previewResult() || 'Chưa có dữ liệu' }}
+          </div>
+        </div>
+      </div>
+
+      <div modalFooter class="flex w-full gap-2 sm:gap-3">
+        <app-button variant="secondary" [fullWidth]="true" class="flex-1" (click)="close.emit()">Hủy</app-button>
+        <app-button [fullWidth]="true" class="flex-1" [disabled]="!canGenerate()" (click)="generate()">
+          <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Chèn vào danh sách
+        </app-button>
+      </div>
+    </app-modal-shell>
   `
 })
 export class QuickGenerateSampleModalComponent {

@@ -11,8 +11,8 @@ let nextQrReaderId = 0;
   template: `
     <div class="flex flex-col h-full bg-black relative rounded-2xl overflow-hidden">
         <!-- Viewfinder Overlay -->
-        <div class="absolute inset-0 z-10 pointer-events-none flex flex-col items-center justify-center">
-            <div class="w-64 h-64 border-2 border-white/50 rounded-2xl relative shadow-[0_0_0_1000px_rgba(0,0,0,0.5)]">
+        <div class="absolute inset-0 z-10 pointer-events-none flex flex-col items-center justify-center p-4">
+            <div class="w-[min(16rem,62vw,40dvh)] aspect-square border-2 border-white/50 rounded-2xl relative shadow-[0_0_0_1000px_rgba(0,0,0,0.5)]">
                 <!-- Corners -->
                 <div class="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-blue-500 rounded-tl-xl -mt-1 -ml-1"></div>
                 <div class="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-blue-500 rounded-tr-xl -mt-1 -mr-1"></div>
@@ -22,7 +22,7 @@ let nextQrReaderId = 0;
                 <!-- Scanning Line Animation -->
                 <div class="absolute inset-x-0 h-0.5 bg-red-500/80 shadow-[0_0_10px_rgba(239,68,68,0.8)] animate-scan top-1/2"></div>
             </div>
-            <p class="text-white/80 text-xs font-bold mt-6 bg-black/50 px-3 py-1 rounded-full">Đặt mã QR vào khung</p>
+            <p class="text-white/80 text-xs font-bold mt-3 sm:mt-6 bg-black/50 px-3 py-1 rounded-full">Đặt mã QR vào khung</p>
         </div>
 
         <!-- Camera Feed Container -->

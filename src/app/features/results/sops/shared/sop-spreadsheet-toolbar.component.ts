@@ -24,7 +24,7 @@ import { PasteTransactionPlan } from './sop-paste-undo';
                       [class]="mobileViewMode === 'cards'
                         ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-300 shadow-xs font-bold'
                         : 'text-slate-500 dark:text-slate-400 font-semibold'"
-                      class="h-8 px-2.5 rounded-lg text-[11px] transition inline-flex items-center gap-1">
+                      class="h-9 md:h-8 px-3 md:px-2.5 rounded-lg text-xs md:text-[11px] transition inline-flex items-center gap-1">
                 <i class="fa-solid fa-id-card text-[10px]" aria-hidden="true"></i>
                 <span>Theo mẫu</span>
               </button>
@@ -33,7 +33,7 @@ import { PasteTransactionPlan } from './sop-paste-undo';
                       [class]="mobileViewMode === 'table'
                         ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-300 shadow-xs font-bold'
                         : 'text-slate-500 dark:text-slate-400 font-semibold'"
-                      class="h-8 px-2.5 rounded-lg text-[11px] transition inline-flex items-center gap-1">
+                      class="h-9 md:h-8 px-3 md:px-2.5 rounded-lg text-xs md:text-[11px] transition inline-flex items-center gap-1">
                 <i class="fa-solid fa-table-cells text-[10px]" aria-hidden="true"></i>
                 <span>Bảng</span>
               </button>
@@ -44,7 +44,7 @@ import { PasteTransactionPlan } from './sop-paste-undo';
             <button type="button"
                     (click)="pasteRequested.emit()"
                     title="Dán vùng dữ liệu nhiều ô từ Excel (Ctrl+V vào ô đang chọn hoặc nhấn nút này)"
-                    class="inline-flex h-8 items-center gap-1.5 rounded-xl border border-indigo-200/80 dark:border-indigo-900/40 bg-indigo-50/70 dark:bg-indigo-950/30 px-2.5 text-[11px] font-bold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition active:scale-95">
+                    class="inline-flex min-h-[40px] sm:min-h-0 sm:h-8 items-center gap-1.5 rounded-xl border border-indigo-200/80 dark:border-indigo-900/40 bg-indigo-50/70 dark:bg-indigo-950/30 px-3 sm:px-2.5 text-xs sm:text-[11px] font-bold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition active:scale-95">
               <i class="fa-solid fa-paste text-[10px]" aria-hidden="true"></i>
               <span>Dán Excel</span>
             </button>
@@ -55,7 +55,7 @@ import { PasteTransactionPlan } from './sop-paste-undo';
                     (click)="undoRequested.emit()"
                     [attr.aria-label]="'Hoàn tác: ' + (undoSummary || 'thao tác dán gần nhất')"
                     [title]="'Hoàn tác: ' + (undoSummary || 'thao tác dán gần nhất')"
-                    class="inline-flex h-8 items-center gap-1.5 rounded-xl border border-amber-200/80 dark:border-amber-900/40 bg-amber-50 dark:bg-amber-950/30 px-2.5 text-[11px] font-bold text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition active:scale-95">
+                    class="inline-flex min-h-[40px] sm:min-h-0 sm:h-8 items-center gap-1.5 rounded-xl border border-amber-200/80 dark:border-amber-900/40 bg-amber-50 dark:bg-amber-950/30 px-3 sm:px-2.5 text-xs sm:text-[11px] font-bold text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition active:scale-95">
               <i class="fa-solid fa-rotate-left text-[10px]" aria-hidden="true"></i>
               <span>Hoàn tác</span>
             </button>
@@ -65,7 +65,7 @@ import { PasteTransactionPlan } from './sop-paste-undo';
             <button type="button"
                     (click)="fillNdRequested.emit()"
                     title="Đặt toàn bộ các ô trống chưa điền là ND"
-                    class="inline-flex h-8 items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 text-[11px] font-bold text-slate-700 dark:text-slate-200 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200 dark:hover:bg-amber-950/30 transition active:scale-95">
+                    class="inline-flex min-h-[40px] sm:min-h-0 sm:h-8 items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 sm:px-2.5 text-xs sm:text-[11px] font-bold text-slate-700 dark:text-slate-200 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200 dark:hover:bg-amber-950/30 transition active:scale-95">
               <i class="fa-solid fa-pen-clip text-[10px] text-amber-500" aria-hidden="true"></i>
               <span>Điền ND</span>
             </button>
@@ -75,7 +75,7 @@ import { PasteTransactionPlan } from './sop-paste-undo';
             <button type="button"
                     (click)="clearAllRequested.emit()"
                     title="Xóa dữ liệu đã nhập trên bảng"
-                    class="inline-flex h-8 items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 text-[11px] font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 hover:border-rose-200 dark:hover:bg-rose-950/30 transition active:scale-95">
+                    class="inline-flex min-h-[40px] sm:min-h-0 sm:h-8 items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 sm:px-2.5 text-xs sm:text-[11px] font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 hover:border-rose-200 dark:hover:bg-rose-950/30 transition active:scale-95">
               <i class="fa-solid fa-eraser text-[10px]" aria-hidden="true"></i>
               <span>Xóa bảng</span>
             </button>
@@ -84,7 +84,7 @@ import { PasteTransactionPlan } from './sop-paste-undo';
       </div>
 
       @if (!isReadOnly && showPasteButton) {
-        <div class="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+        <div class="hidden md:flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
           <i class="fa-regular fa-lightbulb text-indigo-500 text-[11px]" aria-hidden="true"></i>
           <span>Mẹo: Chọn một ô kết quả rồi nhấn <kbd class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono text-[10px]">Ctrl+V</kbd> để dán nhiều dòng/cột từ Excel (ô chưa chỉ định tự bỏ qua).</span>
         </div>

@@ -32,7 +32,7 @@ import {
         [closeDisabled]="isBusy()"
         (closed)="close.emit()"
       >
-        <div modalBody class="-mx-6 -my-5 flex h-full min-h-0 flex-col">
+        <div modalBody class="-mx-4 -my-3 sm:-mx-6 sm:-my-5 flex h-full min-h-0 flex-col">
           <div class="px-5 sm:px-6 py-3 border-b border-slate-100 dark:border-slate-800 bg-amber-50/60 dark:bg-amber-950/20 shrink-0">
             <div class="flex flex-wrap items-start justify-between gap-3">
               <div class="text-xs text-amber-900 dark:text-amber-100 max-w-3xl">

@@ -34,14 +34,15 @@
           @if (draft.resultData[row.key]) {
             <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3.5 space-y-3">
               <div class="flex items-center justify-between gap-2">
-                <span class="font-mono font-bold text-xs text-slate-800 dark:text-slate-100">{{ row.label }}</span>
-                <div class="flex items-center gap-1.5">
+                <span class="font-mono font-bold text-xs text-slate-800 dark:text-slate-100 break-all">{{ row.label }}</span>
+                <div class="flex items-center gap-1.5 shrink-0">
                   <span class="text-[10px] font-bold text-slate-400">Lọ:</span>
                   <input type="text"
                          [readOnly]="isReadOnly"
                          [(ngModel)]="draft.resultData[row.key]['loSo']"
                          (ngModelChange)="pasteCtrl.bumpRevision(); onDataChanged()"
-                         class="w-16 h-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-center text-xs font-bold" />
+                         [attr.aria-label]="'Số lọ mẫu ' + row.label"
+                         class="w-16 h-10 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-center font-mono text-sm font-bold outline-none focus:border-indigo-500" />
                 </div>
               </div>
               <div class="grid grid-cols-1 gap-2.5 text-xs">
@@ -53,7 +54,7 @@
                            [(ngModel)]="draft.resultData[row.key][col]"
                            (ngModelChange)="pasteCtrl.bumpRevision(); onDataChanged()"
                            placeholder="..."
-                           class="h-9 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-2.5 text-center font-bold outline-none focus:border-indigo-500" />
+                           class="min-h-[44px] w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-2.5 text-center text-base font-bold outline-none focus:border-indigo-500" />
                   </label>
                 }
                 <label class="block">
@@ -63,9 +64,19 @@
                          [(ngModel)]="draft.resultData[row.key]['ghiChu']"
                          (ngModelChange)="pasteCtrl.bumpRevision(); onDataChanged()"
                          placeholder="Ghi chú..."
-                         class="h-9 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2.5 outline-none focus:border-indigo-500" />
+                         class="min-h-[42px] w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2.5 text-sm outline-none focus:border-indigo-500" />
                 </label>
               </div>
+              @if (!isReadOnly) {
+                <div class="flex items-center justify-end pt-1 border-t border-slate-100 dark:border-slate-800/80">
+                  <button type="button"
+                          (click)="pasteCtrl.bumpRevision(); copyRowToAll(row.key)"
+                          class="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 text-xs font-bold text-slate-600 dark:text-slate-200 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition active:scale-95">
+                    <i class="fa-solid fa-copy text-[11px]" aria-hidden="true"></i>
+                    <span>Sao chép cho tất cả mẫu</span>
+                  </button>
+                </div>
+              }
             </div>
           }
         }
@@ -73,12 +84,12 @@
     }
 
     <!-- Spreadsheet Table Grid -->
-    <div [class.hidden]="mobileViewMode() === 'cards'" class="md:!block overflow-x-auto custom-scrollbar border border-slate-200/80 dark:border-slate-800 rounded-2xl max-h-[550px] overflow-y-auto">
+    <div [class.hidden]="mobileViewMode() === 'cards'" class="md:!block overflow-x-auto custom-scrollbar border border-slate-200/80 dark:border-slate-800 rounded-2xl md:max-h-[550px] md:overflow-y-auto">
       <table class="w-full text-sm border-collapse">
         <thead>
           <tr class="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-20 shadow-xs">
-            <th class="py-3 px-3 text-center font-bold text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider w-24 min-w-[96px] sticky left-0 z-30 bg-slate-50 dark:bg-slate-950 border-r border-slate-200/70 dark:border-slate-800">Lọ số</th>
-            <th class="py-3 px-3 text-left font-bold text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider min-w-[140px] sticky left-24 z-30 bg-slate-50 dark:bg-slate-950 border-r border-slate-200/70 dark:border-slate-800">Mẫu thử</th>
+            <th class="py-3 px-2.5 sm:px-3 text-center font-bold text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider w-20 sm:w-24 md:min-w-[96px] md:sticky md:left-0 md:z-30 bg-slate-50 dark:bg-slate-950 border-r border-slate-200/70 dark:border-slate-800">Lọ số</th>
+            <th class="py-3 px-2.5 sm:px-3 text-left font-bold text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider min-w-[115px] md:min-w-[140px] sticky left-0 md:left-24 z-30 bg-slate-50 dark:bg-slate-950 border-r border-slate-200/70 dark:border-slate-800">Mẫu thử</th>
             @for (col of activeColumns; track col) {
               <th class="py-3 px-3 text-center font-bold text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider min-w-[120px]">
                 {{ columnDisplayNames()[col] || col }}
@@ -93,7 +104,7 @@
           @for (row of getDisplayRows(); track row.key; let rowIdx = $index) {
             @if (draft.resultData[row.key]) {
               <tr class="bg-white dark:bg-slate-900 hover:bg-slate-50/70 dark:hover:bg-slate-800/30 transition-colors focus-within:bg-indigo-50/20 dark:focus-within:bg-indigo-950/20 border-l-4 border-l-transparent focus-within:border-l-indigo-500">
-                <td class="py-1.5 px-2 w-24 min-w-[96px] sticky left-0 z-10 bg-inherit border-r border-slate-100 dark:border-slate-800">
+                <td class="py-1.5 px-2 w-20 sm:w-24 md:min-w-[96px] md:sticky md:left-0 md:z-10 bg-inherit border-r border-slate-100 dark:border-slate-800">
                   <input type="text"
                          [readOnly]="isReadOnly"
                          [(ngModel)]="draft.resultData[row.key]['loSo']"
@@ -102,9 +113,9 @@
                          (keydown)="handleGridNavigation($event, rowIdx, 'loSo', 0)"
                          (paste)="onCellPaste($event, rowIdx, 0)"
                          placeholder="..."
-                         class="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-2 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-center" />
+                         class="w-full min-h-[38px] md:min-h-0 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-2 py-1.5 text-sm md:text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-center" />
                 </td>
-                <td class="py-2.5 px-3 font-mono font-bold text-xs text-slate-700 dark:text-slate-200 break-all sticky left-24 z-10 bg-inherit border-r border-slate-100 dark:border-slate-800">{{ row.label }}</td>
+                <td class="py-2.5 px-2.5 sm:px-3 font-mono font-bold text-xs text-slate-700 dark:text-slate-200 break-all sticky left-0 md:left-24 z-10 bg-inherit border-r border-slate-100 dark:border-slate-800">{{ row.label }}</td>
 
                 @for (col of activeColumns; track col; let colIdx = $index) {
                   <td class="py-1.5 px-2">

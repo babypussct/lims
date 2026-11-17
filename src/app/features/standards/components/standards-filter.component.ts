@@ -12,9 +12,9 @@ import { formatMethodOptionLabel, formatMethodOptionLabelCompact, formatStockSum
     <div class="p-2 border-b border-slate-50 dark:border-slate-700 flex flex-col gap-2 bg-slate-50/30 dark:bg-slate-800/50">
        <div class="flex flex-col gap-2 lg:flex-row">
            <div class="relative min-w-0 flex-1 group">
-              <i class="fa-solid fa-search absolute left-2.5 top-2 text-slate-400 dark:text-slate-500 text-xs group-focus-within:text-fuchsia-500 dark:group-focus-within:text-fuchsia-400 transition-colors"></i>
+              <i class="fa-solid fa-search absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 text-xs group-focus-within:text-fuchsia-500 dark:group-focus-within:text-fuchsia-400 transition-colors"></i>
               <input type="text" [ngModel]="searchTerm()" (ngModelChange)="onSearchInput($event)" 
-                     class="h-10 w-full pl-7 pr-2 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium text-slate-800 dark:text-slate-200 outline-none focus:border-fuchsia-500 dark:focus:border-fuchsia-500 focus:ring-2 focus:ring-fuchsia-500/10 dark:focus:ring-fuchsia-500/20 transition shadow-sm dark:shadow-none placeholder-slate-400 dark:placeholder-slate-500 md:h-auto"
+                     class="h-10 w-full pl-8 pr-2 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-base md:text-xs font-medium text-slate-800 dark:text-slate-200 outline-none focus:border-fuchsia-500 dark:focus:border-fuchsia-500 focus:ring-2 focus:ring-fuchsia-500/10 dark:focus:ring-fuchsia-500/20 transition shadow-sm dark:shadow-none placeholder-slate-400 dark:placeholder-slate-500 md:h-auto"
                      placeholder="Tìm kiếm chuẩn, mã số, số lô...">
            </div>
            
@@ -139,7 +139,7 @@ import { formatMethodOptionLabel, formatMethodOptionLabelCompact, formatStockSum
                                    type="text"
                                    [ngModel]="methodSearch()"
                                    (ngModelChange)="methodSearch.set($event)"
-                                   class="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 py-2 pl-8 pr-3 text-xs font-medium text-slate-700 dark:text-slate-200 outline-none focus:border-fuchsia-400 focus:ring-2 focus:ring-fuchsia-500/20"
+                                   class="w-full min-h-[42px] md:min-h-0 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 py-2 pl-8 pr-3 text-base md:text-xs font-medium text-slate-700 dark:text-slate-200 outline-none focus:border-fuchsia-400 focus:ring-2 focus:ring-fuchsia-500/20"
                                    placeholder="Tìm mã, tên phương pháp hoặc kỹ thuật..."
                                >
                            </div>
@@ -151,7 +151,7 @@ import { formatMethodOptionLabel, formatMethodOptionLabelCompact, formatStockSum
                                    type="button"
                                    (click)="selectMethod(option.key)"
                                    [ngClass]="methodTagFilter() === option.key ? 'bg-fuchsia-50 dark:bg-fuchsia-900/25' : ''"
-                                   class="flex w-full min-w-0 items-start gap-2.5 rounded-lg px-2.5 py-2 text-left transition hover:bg-slate-50 dark:hover:bg-slate-800/70"
+                                   class="flex min-h-[44px] md:min-h-0 w-full min-w-0 items-start gap-2.5 rounded-lg px-2.5 py-2 text-left transition hover:bg-slate-50 dark:hover:bg-slate-800/70"
                                >
                                    <span class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-slate-200 dark:border-slate-700 text-[9px] text-slate-400">
                                        @if (methodTagFilter() === option.key) { <i class="fa-solid fa-check text-fuchsia-500"></i> }

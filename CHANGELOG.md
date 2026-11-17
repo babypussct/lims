@@ -2,7 +2,29 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.11.16-b01
+## Phiên bản hiện tại: v26.11.17-b01
+
+### v26.11.17-b01
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Nâng cấp giao diện responsive trên điện thoại và máy tính bảng cho các phân hệ LIMS.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Chuẩn hóa modal, drawer và giao diện dùng chung để hỗ trợ vùng an toàn, bàn phím ảo và cuộn trên màn hình nhỏ.
+- Tối ưu nhập kết quả SOP, quản lý kho, chất chuẩn, yêu cầu và truy xuất với bố cục thẻ trên mobile.
+- Cải thiện Dashboard, lịch trực, thống kê, máy tính, tài liệu, cấu hình và in nhãn trên nhiều kích thước màn hình.
+- Tăng vùng chạm, tối ưu biểu mẫu và thanh công cụ ở các màn hình đăng nhập, công thức, checklist và kế hoạch mẻ.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Khắc phục tràn ngang và tình trạng modal bị che khuất khi thu nhỏ viewport, zoom hoặc mở bàn phím ảo.
+- Khắc phục khóa cuộn, nút thao tác khó chạm và hiện tượng chồng lấn nội dung trên thiết bị di động.
 
 ### v26.11.16-b01
 

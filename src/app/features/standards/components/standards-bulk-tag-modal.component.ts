@@ -20,7 +20,7 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
           <div modalBody class="space-y-5">
             <div>
               <label class="block text-xs font-black text-slate-500 uppercase mb-2">Chế độ</label>
-              <select [ngModel]="mode()" (ngModelChange)="mode.set($event)" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-sm font-bold">
+              <select [ngModel]="mode()" (ngModelChange)="mode.set($event)" class="w-full min-h-[44px] sm:min-h-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-base sm:text-sm font-bold">
                 <option value="ADD">Thêm · Giữ nhãn hiện có</option>
                 <option value="REMOVE">Gỡ · Xóa các nhãn đã chọn</option>
                 <option value="REPLACE">Thay thế · Ghi lại toàn bộ nhãn</option>
@@ -29,24 +29,24 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
             @if (mode() === 'REPLACE') { <div class="rounded-xl border border-red-200 bg-red-50 dark:bg-red-900/20 px-3 py-2 text-xs font-bold text-red-700 dark:text-red-300"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Chế độ thay thế sẽ xóa các nhãn cũ khỏi từng lọ. Hãy xác nhận kỹ.</div> }
             <div>
               <label class="block text-xs font-black text-slate-500 uppercase mb-2">Nhãn trong danh mục</label>
-              <div class="flex gap-2">
-                <select [ngModel]="tagToAdd()" (ngModelChange)="tagToAdd.set($event)" class="min-w-0 flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-sm font-bold">
+              <div class="flex flex-wrap sm:flex-nowrap gap-2">
+                <select [ngModel]="tagToAdd()" (ngModelChange)="tagToAdd.set($event)" class="min-w-0 flex-1 min-h-[44px] sm:min-h-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-base sm:text-sm font-bold">
                   <option value="">Chọn nhãn...</option>
                   @for (option of tagOptions(); track option.key) { <option [value]="option.key">{{formatTagLabel(option)}}</option> }
                 </select>
-                <button (click)="addTag()" [disabled]="!tagToAdd()" class="rounded-xl bg-fuchsia-600 px-4 py-2 text-white font-bold disabled:opacity-40">Thêm</button>
+                <button (click)="addTag()" [disabled]="!tagToAdd()" class="min-h-[44px] sm:min-h-0 rounded-xl bg-fuchsia-600 px-4 py-2 text-white font-bold disabled:opacity-40">Thêm</button>
               </div>
             </div>
             <div class="min-h-10 flex flex-wrap gap-2">
               @for (key of tags(); track key) {
-                <span class="inline-flex items-center gap-1 rounded-full bg-fuchsia-50 dark:bg-fuchsia-900/30 text-fuchsia-700 dark:text-fuchsia-300 border border-fuchsia-100 dark:border-fuchsia-800 px-3 py-1 text-xs font-bold" [title]="resolveLabel(key)">{{resolveLabel(key)}}<button (click)="removeTag(key)" class="text-fuchsia-400 hover:text-red-500">×</button></span>
+                <span class="inline-flex items-center gap-1 rounded-full bg-fuchsia-50 dark:bg-fuchsia-900/30 text-fuchsia-700 dark:text-fuchsia-300 border border-fuchsia-100 dark:border-fuchsia-800 pl-3 pr-1.5 py-1 text-xs font-bold" [title]="resolveLabel(key)">{{resolveLabel(key)}}<button type="button" (click)="removeTag(key)" aria-label="Bỏ nhãn" class="inline-flex w-6 h-6 items-center justify-center rounded-full text-fuchsia-400 hover:bg-red-50 hover:text-red-500">×</button></span>
               }
               @if (tags().length === 0) { <span class="text-xs text-slate-400 italic">Chưa chọn nhãn (thay thế bằng danh sách rỗng sẽ xóa toàn bộ nhãn).</span> }
             </div>
           </div>
-          <div modalFooter class="flex gap-2">
-            <button (click)="cancel.emit()" class="px-4 py-2 rounded-xl text-sm font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">Hủy</button>
-            <button (click)="confirmSelection()" [disabled]="isProcessing()" class="px-5 py-2 rounded-xl bg-fuchsia-600 text-white text-sm font-black disabled:opacity-50">{{isProcessing() ? 'Đang lưu...' : 'Xác nhận'}}</button>
+          <div modalFooter class="flex flex-wrap justify-end gap-2">
+            <button (click)="cancel.emit()" class="min-h-[44px] sm:min-h-0 px-4 py-2 rounded-xl text-sm font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">Hủy</button>
+            <button (click)="confirmSelection()" [disabled]="isProcessing()" class="min-h-[44px] sm:min-h-0 px-5 py-2 rounded-xl bg-fuchsia-600 text-white text-sm font-black disabled:opacity-50">{{isProcessing() ? 'Đang lưu...' : 'Xác nhận'}}</button>
           </div>
       </app-modal-shell>
     }

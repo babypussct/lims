@@ -54,30 +54,30 @@
           </div>
           <div>
             <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">3. Loại mẫu</label>
-            <div class="flex items-center gap-1.5 overflow-x-auto py-0.5 max-w-full custom-scrollbar">
+            <div class="flex flex-wrap items-center gap-1.5">
               <button type="button"
                       (click)="draft.page1Data['loaiMau'] = 'Nông sản tươi'; onDataChanged()"
                       [class]="draft.page1Data['loaiMau'] === 'Nông sản tươi'
-                        ? 'px-2.5 py-2 text-xs font-bold rounded-xl bg-indigo-600 text-white shadow-xs border border-indigo-600 transition shrink-0 active:scale-95'
-                        : 'px-2.5 py-2 text-xs font-semibold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition shrink-0 active:scale-95'"
+                        ? 'min-h-[38px] sm:min-h-0 px-2.5 py-2 text-xs font-bold rounded-xl bg-indigo-600 text-white shadow-xs border border-indigo-600 transition shrink-0 active:scale-95'
+                        : 'min-h-[38px] sm:min-h-0 px-2.5 py-2 text-xs font-semibold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition shrink-0 active:scale-95'"
                       title="Chọn Nông sản tươi">Tươi</button>
               <button type="button"
                       (click)="draft.page1Data['loaiMau'] = 'Nông sản khô'; onDataChanged()"
                       [class]="draft.page1Data['loaiMau'] === 'Nông sản khô'
-                        ? 'px-2.5 py-2 text-xs font-bold rounded-xl bg-indigo-600 text-white shadow-xs border border-indigo-600 transition shrink-0 active:scale-95'
-                        : 'px-2.5 py-2 text-xs font-semibold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition shrink-0 active:scale-95'"
+                        ? 'min-h-[38px] sm:min-h-0 px-2.5 py-2 text-xs font-bold rounded-xl bg-indigo-600 text-white shadow-xs border border-indigo-600 transition shrink-0 active:scale-95'
+                        : 'min-h-[38px] sm:min-h-0 px-2.5 py-2 text-xs font-semibold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition shrink-0 active:scale-95'"
                       title="Chọn Nông sản khô">Khô</button>
               <button type="button"
                       (click)="draft.page1Data['loaiMau'] = 'Thủy sản'; onDataChanged()"
                       [class]="draft.page1Data['loaiMau'] === 'Thủy sản' || draft.page1Data['loaiMau'] === 'Thuỷ sản'
-                        ? 'px-2.5 py-2 text-xs font-bold rounded-xl bg-indigo-600 text-white shadow-xs border border-indigo-600 transition shrink-0 active:scale-95'
-                        : 'px-2.5 py-2 text-xs font-semibold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition shrink-0 active:scale-95'"
+                        ? 'min-h-[38px] sm:min-h-0 px-2.5 py-2 text-xs font-bold rounded-xl bg-indigo-600 text-white shadow-xs border border-indigo-600 transition shrink-0 active:scale-95'
+                        : 'min-h-[38px] sm:min-h-0 px-2.5 py-2 text-xs font-semibold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition shrink-0 active:scale-95'"
                       title="Chọn Thủy sản">Thủy Sản</button>
               <input type="text"
                      [ngModel]="['Nông sản tươi', 'Nông sản khô', 'Thủy sản', 'Thuỷ sản'].includes(draft.page1Data['loaiMau']) ? '' : draft.page1Data['loaiMau']"
                      (ngModelChange)="draft.page1Data['loaiMau'] = $event; onDataChanged()"
                      placeholder="Khác..."
-                     class="w-full min-w-[70px] bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition outline-none" />
+                     class="min-w-[110px] flex-1 min-h-[38px] sm:min-h-0 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-base sm:text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition outline-none" />
             </div>
           </div>
           <div>

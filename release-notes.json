@@ -1,18 +1,17 @@
 {
-  "title": "Nâng cấp Kết quả phân tích và bảo vệ toàn vẹn dữ liệu",
+  "title": "Tối ưu giao diện LIMS trên thiết bị di động",
   "highlights": [
-    "Nâng cấp không gian nhập kết quả, kiểm tra trước xuất bản và tra cứu báo cáo PDF."
+    "Nâng cấp giao diện responsive trên điện thoại và máy tính bảng cho các phân hệ LIMS."
   ],
-  "features": [
-    "Chọn mẻ nguồn cho từng mã mẫu trùng khi gộp mẻ và lưu nguồn kết quả để truy xuất."
-  ],
+  "features": [],
   "improvements": [
-    "Thống nhất bảng nhập SOP, thao tác dán và hoàn tác, trạng thái báo cáo và bố cục màn hình kết quả."
+    "Chuẩn hóa modal, drawer và giao diện dùng chung để hỗ trợ vùng an toàn, bàn phím ảo và cuộn trên màn hình nhỏ.",
+    "Tối ưu nhập kết quả SOP, quản lý kho, chất chuẩn, yêu cầu và truy xuất với bố cục thẻ trên mobile.",
+    "Cải thiện Dashboard, lịch trực, thống kê, máy tính, tài liệu, cấu hình và in nhãn trên nhiều kích thước màn hình.",
+    "Tăng vùng chạm, tối ưu biểu mẫu và thanh công cụ ở các màn hình đăng nhập, công thức, checklist và kế hoạch mẻ."
   ],
   "fixes": [
-    "Siết quyền ghi Firestore theo nghiệp vụ, trạng thái mẻ và chủ sở hữu khóa; tách quyền duyệt SOP khỏi quyền nhập kết quả.",
-    "Nhận, gia hạn, tiếp quản và giải phóng khóa bằng giao dịch nguyên tử, xử lý xung đột giữa các tài khoản.",
-    "Bảo vệ lịch sử báo cáo đã xuất bản chỉ được thêm mới; lưu kết quả và lịch sử xuất bản trong cùng một lần ghi nguyên tử.",
-    "Yêu cầu mở lại mẻ đã hoàn thành trước khi sửa hoặc xuất bản phiên bản mới."
+    "Khắc phục tràn ngang và tình trạng modal bị che khuất khi thu nhỏ viewport, zoom hoặc mở bàn phím ảo.",
+    "Khắc phục khóa cuộn, nút thao tác khó chạm và hiện tượng chồng lấn nội dung trên thiết bị di động."
   ]
 }

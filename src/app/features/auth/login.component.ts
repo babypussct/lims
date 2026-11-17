@@ -33,8 +33,8 @@ import { AppModalShellComponent } from '../../shared/components/ui/modal-shell/m
             
             <div class="w-full min-w-0 max-w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl rounded-2xl p-5 sm:p-8 relative overflow-hidden">
 
-                <div class="text-center mb-8 relative z-10">
-                    <div class="inline-flex items-center justify-center w-24 h-24 mb-6">
+                <div class="text-center mb-5 sm:mb-8 relative z-10">
+                    <div class="inline-flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 mb-4 sm:mb-6">
                         <app-logo size="96px"></app-logo>
                     </div>
                     <h1 class="text-2xl font-black text-gray-700 dark:text-slate-200 tracking-tight">LIMS <span class="font-light text-gray-500">NAFIQPM6</span></h1>
@@ -201,7 +201,7 @@ import { AppModalShellComponent } from '../../shared/components/ui/modal-shell/m
                                         aria-controls="session-help"
                                         [attr.aria-expanded]="showSessionHelp()"
                                         (click)="showSessionHelp.set(true)"
-                                        class="w-6 h-6 rounded-full bg-white/40 dark:bg-slate-800/40 hover:bg-white/60 dark:hover:bg-slate-700/60 text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 flex items-center justify-center text-xs transition-colors cursor-pointer border border-slate-200/50 dark:border-slate-700/50 shadow-sm focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none">
+                                        class="w-9 h-9 -m-1.5 sm:m-0 sm:w-7 sm:h-7 rounded-full bg-white/40 dark:bg-slate-800/40 hover:bg-white/60 dark:hover:bg-slate-700/60 text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 flex items-center justify-center text-xs transition-colors cursor-pointer border border-slate-200/50 dark:border-slate-700/50 shadow-sm focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none">
                                     <i class="fa-regular fa-circle-question text-[12px]" aria-hidden="true"></i>
                                 </button>
                             </div>
@@ -268,7 +268,7 @@ import { AppModalShellComponent } from '../../shared/components/ui/modal-shell/m
                                     </div>
                                     <input id="login-email" name="email" type="text" [(ngModel)]="email" (keyup.enter)="login()"
                                            autocomplete="username"
-                                           class="w-full pl-11 pr-24 py-3.5 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-white/40 dark:border-slate-700/40 rounded-2xl text-sm font-semibold text-gray-700 dark:text-slate-200 outline-none focus:bg-white focus:border-fuchsia-400 dark:focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-400/10 transition-all shadow-sm placeholder:font-normal placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                                           class="w-full pl-11 pr-24 py-3.5 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-white/40 dark:border-slate-700/40 rounded-2xl text-base sm:text-sm font-semibold text-gray-700 dark:text-slate-200 outline-none focus:bg-white focus:border-fuchsia-400 dark:focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-400/10 transition-all shadow-sm placeholder:font-normal placeholder:text-gray-400 dark:placeholder:text-gray-500"
                                            [class.border-red-400]="errorMsg()"
                                            [class.bg-red-50]="errorMsg()"
                                            placeholder="Nhập Gmail hoặc username..."
@@ -292,13 +292,13 @@ import { AppModalShellComponent } from '../../shared/components/ui/modal-shell/m
                                     </div>
                                     <input id="login-password" name="password" [type]="showPassword() ? 'text' : 'password'" [(ngModel)]="password" (keyup.enter)="login()"
                                            autocomplete="current-password"
-                                           class="w-full pl-11 pr-12 py-3.5 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-white/40 dark:border-slate-700/40 rounded-2xl text-sm font-semibold text-gray-700 dark:text-slate-200 outline-none focus:bg-white focus:border-fuchsia-400 dark:focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-400/10 transition-all shadow-sm placeholder:font-normal placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                                           class="w-full pl-11 pr-12 py-3.5 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-white/40 dark:border-slate-700/40 rounded-2xl text-base sm:text-sm font-semibold text-gray-700 dark:text-slate-200 outline-none focus:bg-white focus:border-fuchsia-400 dark:focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-400/10 transition-all shadow-sm placeholder:font-normal placeholder:text-gray-400 dark:placeholder:text-gray-500"
                                            [class.border-red-400]="errorMsg()"
                                            [class.bg-red-50]="errorMsg()"
                                            placeholder="••••••••"
                                            [disabled]="isLoading()">
                                     <button type="button" (click)="showPassword.set(!showPassword())" tabindex="-1" aria-label="Hiện hoặc ẩn mật khẩu"
-                                            class="absolute inset-y-0 right-0 px-4 flex items-center text-gray-400 hover:text-fuchsia-600 transition-colors">
+                                            class="absolute inset-y-0 right-0 min-w-[44px] px-4 flex items-center justify-center text-gray-400 hover:text-fuchsia-600 transition-colors">
                                         <i class="fa-solid" [class.fa-eye]="!showPassword()" [class.fa-eye-slash]="showPassword()"></i>
                                     </button>
                                 </div>
@@ -312,7 +312,7 @@ import { AppModalShellComponent } from '../../shared/components/ui/modal-shell/m
 
                             <div class="text-right -mt-1">
                                 <button type="button" (click)="auth.openForgotPassword()"
-                                        class="text-[11px] font-bold text-fuchsia-600 dark:text-fuchsia-400 hover:underline">
+                                        class="inline-flex items-center min-h-[36px] px-1 text-xs sm:text-[11px] font-bold text-fuchsia-600 dark:text-fuchsia-400 hover:underline">
                                     Quên mật khẩu?
                                 </button>
                             </div>
@@ -387,12 +387,12 @@ import { AppModalShellComponent } from '../../shared/components/ui/modal-shell/m
             
             <!-- Footer -->
             <div class="text-center mt-4 sm:mt-6 text-[11px] font-medium text-gray-400 mb-4 sm:mb-8 px-2 leading-relaxed select-none">
-                <div class="mb-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 no-print text-center">
-                    <a routerLink="/privacy-policy" class="hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition-colors cursor-pointer font-bold">Chính sách bảo mật</a>
+                <div class="mb-2 flex flex-wrap items-center justify-center gap-x-2 sm:gap-x-3 gap-y-1 no-print text-center">
+                    <a routerLink="/privacy-policy" class="inline-flex items-center min-h-[36px] px-1.5 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition-colors cursor-pointer font-bold">Chính sách bảo mật</a>
                     <span class="text-gray-300 dark:text-slate-700">&bull;</span>
-                    <a routerLink="/terms-of-service" class="hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition-colors cursor-pointer font-bold">Điều khoản sử dụng</a>
+                    <a routerLink="/terms-of-service" class="inline-flex items-center min-h-[36px] px-1.5 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition-colors cursor-pointer font-bold">Điều khoản sử dụng</a>
                     <span class="text-gray-300 dark:text-slate-700">&bull;</span>
-                    <button type="button" (click)="changelogService.open()" class="hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition-colors cursor-pointer font-bold flex items-center gap-1 inline-flex">
+                    <button type="button" (click)="changelogService.open()" class="inline-flex items-center min-h-[36px] px-1.5 hover:text-fuchsia-600 dark:hover:text-fuchsia-400 transition-colors cursor-pointer font-bold gap-1">
                         <i class="fa-solid fa-scroll text-blue-500"></i> Nhật ký cập nhật
                     </button>
                 </div>

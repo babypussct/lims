@@ -73,7 +73,7 @@ function readStoredOption<T extends string>(key: string, allowed: readonly T[], 
     '[class.document-preview-active]': 'previewItem() !== null'
   },
   template: `
-    <div class="documents-page-enter h-full min-h-0 w-full flex flex-col p-4 md:p-6 relative overflow-hidden">
+    <div class="documents-page-enter min-h-full md:h-full md:min-h-0 w-full flex flex-col p-4 md:p-6 relative md:overflow-hidden">
       
       <app-page-header
         class="mb-4 block shrink-0"
@@ -145,7 +145,7 @@ function readStoredOption<T extends string>(key: string, allowed: readonly T[], 
       </nav>
 
       <!-- Content Area -->
-      <div class="flex-1 min-h-0 bg-white dark:bg-slate-800 rounded-xl shadow-soft-xl border border-slate-200 dark:border-slate-700 flex flex-col relative overflow-hidden">
+      <div class="flex-1 md:min-h-0 bg-white dark:bg-slate-800 rounded-xl shadow-soft-xl border border-slate-200 dark:border-slate-700 flex flex-col relative md:overflow-hidden">
         @if (loading() && files().length > 0) {
           <div class="absolute top-0 inset-x-0 h-0.5 bg-fuchsia-100 dark:bg-fuchsia-950 z-30 overflow-hidden">
             <div class="h-full w-1/3 bg-fuchsia-500 animate-[loading-bar_1.2s_ease-in-out_infinite]"></div>
@@ -162,12 +162,12 @@ function readStoredOption<T extends string>(key: string, allowed: readonly T[], 
                      [ngModel]="searchInputValue()" 
                      (ngModelChange)="onSearchChange($event)"
                      [placeholder]="isMobile() ? 'Tìm tài liệu...' : 'Tìm tài liệu trong thư mục hiện tại...'" 
-                     class="w-full h-9 pl-9 pr-9 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-fuchsia-500/40 dark:text-white transition-shadow">
+                     class="w-full h-10 sm:h-9 pl-9 pr-10 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-base sm:text-sm focus:ring-2 focus:ring-fuchsia-500/40 dark:text-white transition-shadow">
               @if (searchInputValue()) {
                 <button type="button"
                         aria-label="Xóa tìm kiếm"
                         (click)="clearSearch()"
-                        class="absolute right-3 top-1/2 -translate-y-1/2 z-10 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                        class="absolute right-1.5 top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
                   <i class="fa-solid fa-xmark"></i>
                 </button>
               }
@@ -246,7 +246,7 @@ function readStoredOption<T extends string>(key: string, allowed: readonly T[], 
             <div class="flex-1 min-h-0">
               
               <!-- Mobile List View (visible on <640px screens) -->
-              <div #fileScroller class="block sm:hidden h-full overflow-y-auto custom-scrollbar divide-y divide-slate-100 dark:divide-slate-700/50" (scroll)="onFileScroll($event)">
+              <div #fileScroller class="block sm:hidden max-h-[calc(100dvh-13rem)] md:max-h-none h-auto md:h-full overflow-y-auto custom-scrollbar divide-y divide-slate-100 dark:divide-slate-700/50" (scroll)="onFileScroll($event)">
                 @if (loading() && files().length === 0) {
                   @for (item of [1, 2, 3, 4, 5]; track item) {
                     <div class="p-4 flex items-center gap-3">
@@ -326,7 +326,7 @@ function readStoredOption<T extends string>(key: string, allowed: readonly T[], 
 
           <!-- Grid View -->
           @if ((!folderError() || files().length > 0) && (displayFiles().length > 0 || (loading() && files().length === 0)) && viewMode() === 'grid') {
-            <div #fileScroller class="overflow-y-auto flex-1 custom-scrollbar" (scroll)="onFileScroll($event)" [class.p-4]="density() === 'comfortable'" [class.p-2]="density() === 'compact'">
+            <div #fileScroller class="max-h-[calc(100dvh-13rem)] md:max-h-none overflow-y-auto flex-1 custom-scrollbar" (scroll)="onFileScroll($event)" [class.p-4]="density() === 'comfortable'" [class.p-2]="density() === 'compact'">
               @if (loading() && files().length === 0) {
                 <!-- Skeleton Grid -->
                 <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
@@ -363,14 +363,14 @@ function readStoredOption<T extends string>(key: string, allowed: readonly T[], 
                         
                         @if (!isFolder(item) && item.webContentLink) {
                           <button type="button" (click)="downloadItem(item, $event)" aria-label="Tải tài liệu xuống"
-                                  class="flex absolute top-0 right-0 w-9 h-9 rounded-full bg-white/90 dark:bg-slate-700/90 shadow-sm text-slate-500 hover:bg-fuchsia-500 hover:text-white transition-colors items-center justify-center opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 focus-visible:opacity-100"
+                                  class="flex absolute top-0 right-0 w-10 h-10 sm:w-9 sm:h-9 rounded-full bg-white/90 dark:bg-slate-700/90 shadow-sm text-slate-500 hover:bg-fuchsia-500 hover:text-white transition-colors items-center justify-center opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 focus-visible:opacity-100"
                                   title="Tải xuống">
                             <i class="fa-solid fa-download text-xs"></i>
                           </button>
                         }
                         @if (isFolder(item)) {
                           <button type="button" (click)="downloadFolder(item, $event)" [disabled]="isDownloadingFolder() || !isOnline()" [attr.aria-label]="'Tải thư mục ' + item.name + ' thành ZIP'"
-                                  class="flex absolute top-0 right-0 w-9 h-9 rounded-full bg-white/90 dark:bg-slate-700/90 shadow-sm text-slate-500 hover:bg-fuchsia-500 hover:text-white transition-colors items-center justify-center opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 focus-visible:opacity-100 disabled:opacity-40"
+                                  class="flex absolute top-0 right-0 w-10 h-10 sm:w-9 sm:h-9 rounded-full bg-white/90 dark:bg-slate-700/90 shadow-sm text-slate-500 hover:bg-fuchsia-500 hover:text-white transition-colors items-center justify-center opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 focus-visible:opacity-100 disabled:opacity-40"
                                   title="Tải thư mục thành ZIP"><i class="fa-solid fa-file-zipper text-xs" aria-hidden="true"></i></button>
                         }
                       </div>

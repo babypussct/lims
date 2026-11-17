@@ -51,15 +51,15 @@ export interface PdfPaneModalEvent {
     @let selectedCard = activeCard();
     <div class="flex flex-col h-full min-h-0 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
       <!-- Top Pane Header & Tabs -->
-      <div class="px-4 py-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/30 shrink-0 space-y-2.5">
-        <div class="flex items-center justify-between gap-2">
-          <div class="inline-flex items-center gap-1 rounded-xl bg-slate-100 dark:bg-slate-800 p-1">
+      <div class="px-3 sm:px-4 py-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/30 shrink-0 space-y-2.5">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="inline-flex max-w-full overflow-x-auto items-center gap-1 rounded-xl bg-slate-100 dark:bg-slate-800 p-1">
             <button type="button"
                     (click)="activeTab.set('preview')"
                     [class]="activeTab() === 'preview'
                       ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs font-bold'
                       : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 font-semibold'"
-                    class="px-3 py-1.5 rounded-lg text-xs transition inline-flex items-center gap-1.5">
+                    class="min-h-[38px] sm:min-h-0 px-3 py-1.5 rounded-lg text-xs whitespace-nowrap transition inline-flex items-center gap-1.5">
               <i class="fa-solid fa-file-pdf text-rose-500 text-[11px]" aria-hidden="true"></i>
               <span>Xem trước PDF</span>
             </button>
@@ -68,7 +68,7 @@ export interface PdfPaneModalEvent {
                     [class]="activeTab() === 'reports'
                       ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs font-bold'
                       : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 font-semibold'"
-                    class="px-3 py-1.5 rounded-lg text-xs transition inline-flex items-center gap-1.5">
+                    class="min-h-[38px] sm:min-h-0 px-3 py-1.5 rounded-lg text-xs whitespace-nowrap transition inline-flex items-center gap-1.5">
               <i class="fa-solid fa-layer-group text-indigo-500 text-[11px]" aria-hidden="true"></i>
               <span>Báo cáo &amp; Lịch sử ({{ proj.cards.length }})</span>
               @if (proj.hasStaleReport) {
@@ -82,7 +82,7 @@ export interface PdfPaneModalEvent {
               <a [href]="safeDocsUrl(overrideDocsUrl() || selectedCard?.docsUrl || '')"
                  target="_blank"
                  rel="noopener noreferrer"
-                 class="inline-flex h-8 items-center gap-1.5 px-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-[11px] font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition"
+                 class="inline-flex min-h-[38px] sm:min-h-0 sm:h-8 items-center gap-1.5 px-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-[11px] font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition"
                  title="Mở Google Docs gốc">
                 <i class="fa-solid fa-file-word text-blue-500" aria-hidden="true"></i>
                 <span class="hidden sm:inline">Docs</span>
@@ -93,7 +93,7 @@ export interface PdfPaneModalEvent {
                       (click)="triggerModalPreview()"
                       aria-label="Mở PDF toàn màn hình"
                       title="Mở PDF toàn màn hình (Modal hệ thống)"
-                      class="flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-indigo-600 transition">
+                      class="flex h-10 w-10 sm:h-8 sm:w-8 items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-indigo-600 transition">
                 <i class="fa-solid fa-expand text-xs" aria-hidden="true"></i>
               </button>
             }
@@ -102,7 +102,7 @@ export interface PdfPaneModalEvent {
                       (click)="closed.emit()"
                       aria-label="Đóng khung Báo cáo & PDF"
                       title="Đóng khung Báo cáo & PDF"
-                      class="flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-white transition">
+                      class="flex h-10 w-10 sm:h-8 sm:w-8 items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-white transition">
                 <i class="fa-solid fa-xmark text-xs" aria-hidden="true"></i>
               </button>
             }

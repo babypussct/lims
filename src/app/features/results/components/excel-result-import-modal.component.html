@@ -102,7 +102,7 @@
             </label>
 
             @if (candidates.length > 0) {
-              <label class="inline-flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer select-none px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+              <label class="inline-flex min-h-[44px] sm:min-h-0 items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer select-none px-3 py-2 sm:px-2.5 sm:py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
                 <input type="checkbox"
                        [ngModel]="allSelectableSelected"
                        (ngModelChange)="toggleAll($event)"
@@ -167,26 +167,26 @@
           <div class="inline-flex flex-wrap items-center gap-1.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 p-1">
             <button type="button" (click)="resultFilter = 'all'"
                     [class]="resultFilter === 'all'
-                      ? 'px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs font-bold text-xs transition'
-                      : 'px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:text-slate-900 text-xs font-semibold transition'">
+                      ? 'min-h-[40px] sm:min-h-0 px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs font-bold text-xs transition'
+                      : 'min-h-[40px] sm:min-h-0 px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:text-slate-900 text-xs font-semibold transition'">
               Tất cả ({{ resultCandidates.length }})
             </button>
             <button type="button" (click)="resultFilter = 'manual'"
                     [class]="resultFilter === 'manual'
-                      ? 'px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 text-amber-700 dark:text-amber-300 shadow-xs font-bold text-xs transition'
-                      : 'px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:text-slate-900 text-xs font-semibold transition'">
+                      ? 'min-h-[40px] sm:min-h-0 px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 text-amber-700 dark:text-amber-300 shadow-xs font-bold text-xs transition'
+                      : 'min-h-[40px] sm:min-h-0 px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:text-slate-900 text-xs font-semibold transition'">
               Cần gán mẫu thủ công ({{ manualFixCount }})
             </button>
             <button type="button" (click)="resultFilter = 'overwrite'"
                     [class]="resultFilter === 'overwrite'
-                      ? 'px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 text-amber-700 dark:text-amber-300 shadow-xs font-bold text-xs transition'
-                      : 'px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:text-slate-900 text-xs font-semibold transition'">
+                      ? 'min-h-[40px] sm:min-h-0 px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 text-amber-700 dark:text-amber-300 shadow-xs font-bold text-xs transition'
+                      : 'min-h-[40px] sm:min-h-0 px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:text-slate-900 text-xs font-semibold transition'">
               Ghi đè ({{ overwriteCount }})
             </button>
             <button type="button" (click)="resultFilter = 'new'"
                     [class]="resultFilter === 'new'
-                      ? 'px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-300 shadow-xs font-bold text-xs transition'
-                      : 'px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:text-slate-900 text-xs font-semibold transition'">
+                      ? 'min-h-[40px] sm:min-h-0 px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-300 shadow-xs font-bold text-xs transition'
+                      : 'min-h-[40px] sm:min-h-0 px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:text-slate-900 text-xs font-semibold transition'">
               Giá trị mới ({{ newValueCount }})
             </button>
           </div>
@@ -284,17 +284,17 @@
     }
   </div>
 
-  <div modalFooter class="flex items-center justify-between gap-3 w-full">
+  <div modalFooter class="flex flex-wrap items-center justify-between gap-3 w-full">
     <p class="text-[11px] text-slate-500 dark:text-slate-400 hidden sm:block">
       Các dòng bỏ chọn sẽ giữ nguyên giá trị đang có trên biểu mẫu.
     </p>
-    <div class="flex items-center gap-2 ml-auto">
+    <div class="flex flex-wrap items-center gap-2 ml-auto w-full sm:w-auto justify-end">
       <app-button variant="secondary" size="sm" [disabled]="isApplying" (click)="requestCancel()">
         Hủy
       </app-button>
       <button type="button" (click)="applySelected()"
               [disabled]="isLoading || isApplying || isReadOnly || selectedCount === 0 || !hasSelectableCandidates"
-              class="inline-flex h-9 items-center gap-2 rounded-xl px-4 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-45 disabled:cursor-not-allowed transition shadow-sm">
+              class="inline-flex min-h-[44px] sm:min-h-0 sm:h-9 items-center justify-center gap-2 rounded-xl px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-45 disabled:cursor-not-allowed transition shadow-sm">
         <i class="fa-solid" [class.fa-check]="!isApplying" [class.fa-spinner]="isApplying" [class.fa-spin]="isApplying" aria-hidden="true"></i>
         <span>Áp dụng {{ selectedCount }} thông tin{{ saveOriginalFile ? ' và lưu tệp' : '' }}</span>
       </button>

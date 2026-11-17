@@ -22,9 +22,9 @@ import { AppPageHeaderComponent } from '../../shared/components/ui/page-header/p
         </app-page-header>
 
         <!-- Terms Card -->
-        <div class="bg-white dark:bg-slate-800 shadow-soft-xl border border-slate-100 dark:border-slate-700/50 rounded-2xl p-6 sm:p-10 transition-all duration-300">
-          <div class="border-b border-slate-100 dark:border-slate-700/80 pb-6 mb-8">
-            <h2 class="text-3xl font-extrabold text-slate-900 dark:text-white mb-2">Điều khoản dịch vụ</h2>
+        <div class="bg-white dark:bg-slate-800 shadow-soft-xl border border-slate-100 dark:border-slate-700/50 rounded-2xl p-4 sm:p-8 lg:p-10 transition-all duration-300">
+          <div class="border-b border-slate-100 dark:border-slate-700/80 pb-5 sm:pb-6 mb-6 sm:mb-8">
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mb-2 leading-tight">Điều khoản dịch vụ</h2>
             <div class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 font-semibold">
               <i class="fa-regular fa-clock"></i>
               <span>Cập nhật lần cuối: 13/07/2026</span>

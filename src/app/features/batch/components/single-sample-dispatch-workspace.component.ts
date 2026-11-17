@@ -37,15 +37,15 @@ import { computeSingleSampleDraftFingerprint } from '../single-sample-dispatch.u
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="h-full min-h-0 flex flex-col overflow-hidden animate-fade-in relative text-slate-800 dark:text-slate-200">
+    <div class="min-h-full lg:h-full lg:min-h-0 flex flex-col lg:overflow-hidden animate-fade-in relative text-slate-800 dark:text-slate-200">
       <!-- 2-COLUMN SPLIT-VIEW WORKSPACE -->
-      <div class="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-3.5 p-3 overflow-hidden">
+      <div class="flex-1 lg:min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-3.5 p-2.5 sm:p-3 lg:overflow-hidden">
 
         <!-- LEFT COLUMN: SAMPLE INFO & TARGET SELECTION -->
-        <div class="lg:col-span-5 flex flex-col gap-3 min-h-0 overflow-y-auto custom-scrollbar pr-1">
+        <div class="lg:col-span-5 flex flex-col gap-3 lg:min-h-0 lg:overflow-y-auto custom-scrollbar lg:pr-1">
 
           <!-- CARD 1: SAMPLE INFO -->
-          <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-850 p-4 shadow-sm space-y-3">
+          <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-850 p-3.5 sm:p-4 shadow-sm space-y-3">
             <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-750 pb-2">
               <span class="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                 <i class="fa-solid fa-vial text-fuchsia-600 dark:text-fuchsia-400"></i>
@@ -67,7 +67,7 @@ import { computeSingleSampleDraftFingerprint } from '../single-sample-dispatch.u
                   [ngModel]="sampleCode()"
                   (ngModelChange)="updateSampleCode($event)"
                   placeholder="VD: M26-00389 hoặc nhập tự do"
-                  class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900 px-3 py-2 text-sm font-mono font-black text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-fuchsia-200 dark:focus:ring-fuchsia-900/50 focus:border-fuchsia-500 transition" />
+                  class="w-full min-h-[42px] lg:min-h-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900 px-3 py-2 text-base sm:text-sm font-mono font-black text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-fuchsia-200 dark:focus:ring-fuchsia-900/50 focus:border-fuchsia-500 transition" />
               </div>
             </div>
 
@@ -80,7 +80,7 @@ import { computeSingleSampleDraftFingerprint } from '../single-sample-dispatch.u
                 <select
                   [ngModel]="matrixType()"
                   (ngModelChange)="updateMatrixType($event)"
-                  class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900 px-2.5 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-fuchsia-200 focus:border-fuchsia-500 transition">
+                  class="w-full min-h-[42px] lg:min-h-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900 px-2.5 py-1.5 text-base sm:text-xs font-bold text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-fuchsia-200 focus:border-fuchsia-500 transition">
                   <option [ngValue]="undefined">Tất cả nền mẫu (không lọc)</option>
                   @for (m of availableMatrices; track m.id) {
                     <option [value]="m.id">{{m.name}}</option>
@@ -91,7 +91,7 @@ import { computeSingleSampleDraftFingerprint } from '../single-sample-dispatch.u
               <div>
                 <label class="block text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wide mb-1 flex items-center justify-between">
                   <span>Ngày kiểm nghiệm <span class="text-red-500">*</span></span>
-                  <button type="button" (click)="setTodayDate()" class="text-[9px] text-fuchsia-600 hover:underline">Hôm nay</button>
+                  <button type="button" (click)="setTodayDate()" class="text-[10px] text-fuchsia-600 hover:underline py-0.5 px-1">Hôm nay</button>
                 </label>
                 <app-date-picker
                   size="sm"
@@ -116,7 +116,7 @@ import { computeSingleSampleDraftFingerprint } from '../single-sample-dispatch.u
                 [ngModel]="sampleDescription()"
                 (ngModelChange)="updateSampleDescription($event)"
                 placeholder="VD: Tôm sú nguyên con đông lạnh"
-                class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900 px-3 py-1.5 text-xs font-medium text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-fuchsia-200 focus:border-fuchsia-500 transition" />
+                class="w-full min-h-[42px] lg:min-h-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900 px-3 py-1.5 text-base sm:text-xs font-medium text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-fuchsia-200 focus:border-fuchsia-500 transition" />
               <datalist id="single-sample-desc-master-list">
                 @for (d of availableSampleDescriptions; track d.id) {
                   <option [value]="d.name">{{d.description || d.aliases?.join(', ') || ''}}</option>
@@ -126,8 +126,8 @@ import { computeSingleSampleDraftFingerprint } from '../single-sample-dispatch.u
           </div>
 
           <!-- CARD 2: TARGET SELECTION -->
-          <div class="flex-1 min-h-[300px] rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-850 p-4 shadow-sm flex flex-col space-y-3">
-            <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-750 pb-2">
+          <div class="flex-1 min-h-[280px] rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-850 p-3.5 sm:p-4 shadow-sm flex flex-col space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-750 pb-2">
               <span class="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                 <i class="fa-solid fa-bullseye text-teal-600 dark:text-teal-400"></i>
                 Chỉ Tiêu Phân Tích
@@ -139,14 +139,14 @@ import { computeSingleSampleDraftFingerprint } from '../single-sample-dispatch.u
                 <button
                   type="button"
                   (click)="showGroupModal.set(true)"
-                  class="px-2 py-1 rounded-lg border border-fuchsia-200 dark:border-fuchsia-800 bg-fuchsia-50/50 dark:bg-fuchsia-950/30 text-fuchsia-700 dark:text-fuchsia-300 text-[10px] font-bold hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/40 transition">
+                  class="min-h-[36px] lg:min-h-0 px-2.5 py-1.5 rounded-lg border border-fuchsia-200 dark:border-fuchsia-800 bg-fuchsia-50/50 dark:bg-fuchsia-950/30 text-fuchsia-700 dark:text-fuchsia-300 text-[11px] font-bold hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/40 transition">
                   <i class="fa-solid fa-layer-group mr-1"></i>Theo bộ
                 </button>
                 @if (selectedTargets().size > 0) {
                   <button
                     type="button"
                     (click)="clearAllTargets()"
-                    class="px-2 py-1 rounded-lg text-slate-400 hover:text-red-500 text-[10px] font-bold transition">
+                    class="min-h-[36px] lg:min-h-0 px-2 py-1 rounded-lg text-slate-400 hover:text-red-500 text-[11px] font-bold transition">
                     Xóa hết
                   </button>
                 }
@@ -155,12 +155,12 @@ import { computeSingleSampleDraftFingerprint } from '../single-sample-dispatch.u
 
             <!-- CHIPS OF SELECTED TARGETS -->
             @if (selectedTargets().size > 0) {
-              <div class="max-h-[100px] overflow-y-auto custom-scrollbar flex flex-wrap gap-1.5 p-2 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-slate-800">
+              <div class="max-h-[110px] overflow-y-auto custom-scrollbar flex flex-wrap gap-1.5 p-2 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-slate-800">
                 @for (tid of selectedTargetArray(); track tid) {
-                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-[11px] font-bold shadow-xs">
+                  <span class="inline-flex items-center gap-1 pl-2 pr-1 py-0.5 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-[11px] font-bold shadow-xs">
                     {{targetDisplayName(tid)}}
-                    <button type="button" (click)="toggleTarget(tid)" class="text-slate-400 hover:text-red-500 ml-0.5">
-                      <i class="fa-solid fa-xmark text-[9px]"></i>
+                    <button type="button" (click)="toggleTarget(tid)" aria-label="Bỏ chỉ tiêu" class="inline-flex w-6 h-6 items-center justify-center rounded-full text-slate-400 hover:bg-red-50 hover:text-red-500">
+                      <i class="fa-solid fa-xmark text-[10px]"></i>
                     </button>
                   </span>
                 }
@@ -169,24 +169,24 @@ import { computeSingleSampleDraftFingerprint } from '../single-sample-dispatch.u
 
             <!-- SEARCH TARGETS -->
             <div class="relative">
-              <i class="fa-solid fa-search absolute left-3 top-2.5 text-xs text-slate-400"></i>
+              <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400"></i>
               <input
                 type="text"
                 [ngModel]="targetSearchTerm()"
                 (ngModelChange)="targetSearchTerm.set($event)"
                 placeholder="Tìm kiếm chỉ tiêu theo tên..."
-                class="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900 text-xs font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-teal-500 transition" />
+                class="w-full min-h-[42px] lg:min-h-0 pl-8 pr-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900 text-base sm:text-xs font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-teal-500 transition" />
             </div>
 
             <!-- TARGET PICKER LIST -->
-            <div class="flex-1 min-h-[160px] max-h-[260px] overflow-y-auto custom-scrollbar border border-slate-100 dark:border-slate-800 rounded-xl divide-y divide-slate-100 dark:divide-slate-800/60">
+            <div class="flex-1 min-h-[180px] max-h-[260px] overflow-y-auto custom-scrollbar border border-slate-100 dark:border-slate-800 rounded-xl divide-y divide-slate-100 dark:divide-slate-800/60">
               @for (t of filteredAvailableTargets(); track t.id) {
-                <label class="flex items-center gap-2.5 px-3 py-1.5 hover:bg-slate-50 dark:hover:bg-slate-800/40 cursor-pointer transition">
+                <label class="flex min-h-[42px] lg:min-h-0 items-center gap-2.5 px-3 py-2 lg:py-1.5 hover:bg-slate-50 dark:hover:bg-slate-800/40 cursor-pointer transition">
                   <input
                     type="checkbox"
                     [checked]="selectedTargets().has(canonicalId(t.name || t.id))"
                     (change)="toggleTarget(t.name || t.id)"
-                    class="rounded border-slate-300 text-teal-600 focus:ring-teal-500 w-3.5 h-3.5" />
+                    class="rounded border-slate-300 text-teal-600 focus:ring-teal-500 w-4 h-4 lg:w-3.5 lg:h-3.5" />
                   <span class="text-xs font-bold text-slate-700 dark:text-slate-200 flex-1">{{t.name}}</span>
                   @if (t.matrixTags && t.matrixTags.length > 0) {
                     <span class="text-[9px] text-slate-400 font-medium">{{t.matrixTags.join(', ')}}</span>
@@ -200,8 +200,8 @@ import { computeSingleSampleDraftFingerprint } from '../single-sample-dispatch.u
         </div>
 
         <!-- RIGHT COLUMN: LIVE BATCH BREAKDOWN -->
-        <div class="lg:col-span-7 flex flex-col gap-3 min-h-0 overflow-y-auto custom-scrollbar pl-1">
-          <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-850 p-4 shadow-sm flex flex-col h-full min-h-0">
+        <div class="lg:col-span-7 flex flex-col gap-3 lg:min-h-0 lg:overflow-y-auto custom-scrollbar lg:pl-1">
+          <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-850 p-3.5 sm:p-4 shadow-sm flex flex-col lg:h-full lg:min-h-0">
 
             <!-- HEADER -->
             <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-750 pb-2.5 shrink-0">
@@ -296,8 +296,8 @@ import { computeSingleSampleDraftFingerprint } from '../single-sample-dispatch.u
                             <span class="w-1.5 h-1.5 rounded-full bg-fuchsia-500"></span>
                             {{task.targetName}}
                             @if (forcedSopAssignments()[task.targetId]) {
-                              <button type="button" (click)="clearForcedSop(task.targetId)" class="text-slate-400 hover:text-red-500 ml-1" title="Bỏ chỉ định">
-                                <i class="fa-solid fa-xmark text-[8px]"></i>
+                              <button type="button" (click)="clearForcedSop(task.targetId)" class="inline-flex items-center justify-center w-6 h-6 -mr-1 rounded-full text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 ml-0.5 transition" title="Bỏ chỉ định" aria-label="Bỏ chỉ định">
+                                <i class="fa-solid fa-xmark text-[10px]"></i>
                               </button>
                             }
                           </span>
@@ -418,8 +418,8 @@ import { computeSingleSampleDraftFingerprint } from '../single-sample-dispatch.u
       </div>
 
       <!-- STICKY ACTION DOCK -->
-      <div class="shrink-0 border-t border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm p-3 shadow-lg z-20">
-        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div class="sticky bottom-0 shrink-0 border-t border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm px-3 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] shadow-lg z-20">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-3">
 
           <div class="flex items-center gap-2 text-xs">
             <span class="font-bold text-slate-500 dark:text-slate-400">Tiến độ:</span>
@@ -436,7 +436,7 @@ import { computeSingleSampleDraftFingerprint } from '../single-sample-dispatch.u
             }
           </div>
 
-          <div class="flex items-center gap-2.5 w-full sm:w-auto">
+          <div class="flex flex-wrap items-center justify-end gap-2 w-full sm:w-auto">
             <app-button
               variant="secondary"
               size="sm"

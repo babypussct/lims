@@ -14,18 +14,18 @@ import { QrScannerComponent } from '../qr-scanner/qr-scanner.component';
       <div class="fixed inset-0 z-layer-scanner-preview bg-black/90 backdrop-blur-sm fade-in flex flex-col h-full animate-fade-in">
           
           <!-- Header -->
-          <div class="absolute top-0 left-0 w-full p-4 z-20 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent">
-              <button (click)="close()" class="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white active:scale-95 transition hover:bg-white/30">
+          <div class="absolute top-0 left-0 w-full px-4 pb-4 pt-[max(1rem,env(safe-area-inset-top))] z-20 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent">
+              <button type="button" (click)="close()" aria-label="Đóng máy quét" class="w-11 h-11 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white active:scale-95 transition hover:bg-white/30">
                   <i class="fa-solid fa-arrow-left"></i>
               </button>
               <div class="text-white font-bold text-sm bg-black/40 px-3 py-1 rounded-full border border-white/10 backdrop-blur-md">
                   Máy quét Thông minh
               </div>
-              <div class="w-10"></div> <!-- Spacer -->
+              <div class="w-11"></div> <!-- Spacer -->
           </div>
 
           <!-- Scanner View -->
-          <div class="flex-1 relative">
+          <div class="flex-1 min-h-0 relative">
               <app-qr-scanner 
                   (scanSuccess)="onScanSuccess($event)" 
                   (scanError)="onScanError($event)">
@@ -33,17 +33,17 @@ import { QrScannerComponent } from '../qr-scanner/qr-scanner.component';
           </div>
 
           <!-- Manual Input Footer -->
-          <div class="bg-slate-900 border-t border-white/10 p-4 pb-8 md:pb-4 shrink-0">
+          <div class="bg-slate-900 border-t border-white/10 px-4 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] md:pb-4 shrink-0">
               <div class="max-w-md mx-auto">
                   <p class="text-xs text-slate-400 text-center mb-2 font-medium">Hoặc nhập mã thủ công</p>
                   <div class="flex gap-2">
                       <input #manualInput
                              [(ngModel)]="manualCode" 
                              (keyup.enter)="onSubmitManual()"
-                             class="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white font-mono font-bold outline-none focus:border-blue-500 transition placeholder-slate-600 uppercase"
+                             class="flex-1 min-w-0 min-h-[44px] bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-base sm:text-sm text-white font-mono font-bold outline-none focus:border-blue-500 transition placeholder-slate-600 uppercase"
                              placeholder="INV-001...">
-                      <button (click)="onSubmitManual()" 
-                              class="px-4 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition active:scale-95 shadow-lg shadow-blue-900/20">
+                      <button type="button" (click)="onSubmitManual()" aria-label="Tra cứu mã vừa nhập"
+                              class="min-w-[44px] min-h-[44px] px-4 py-2.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition active:scale-95 shadow-lg shadow-blue-900/20">
                           <i class="fa-solid fa-arrow-right"></i>
                       </button>
                   </div>

@@ -20,7 +20,7 @@ import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, App
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, FormsModule, FormLabelA11yDirective, AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, AppPageHeaderComponent, AppToolbarComponent],
   template: `
-    <div class="h-full flex flex-col fade-in relative p-4 md:p-6">
+    <div class="min-h-full md:h-full flex flex-col fade-in relative p-4 md:p-6">
         
         <!-- Header -->
         <app-page-header
@@ -50,20 +50,56 @@ import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, App
 
         <app-toolbar>
             <div toolbarSearch class="relative">
-                <i class="fa-solid fa-search absolute left-4 top-3.5 text-slate-400 text-sm"></i>
+                <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
                 <input [ngModel]="searchTerm()" (ngModelChange)="onSearchTermChange($event)"
-                       class="w-full pl-12 pr-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 outline-none focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-500/10 transition shadow-sm"
+                       class="w-full min-h-[44px] pl-12 pr-4 py-2.5 sm:py-3 border border-slate-200 dark:border-slate-600 rounded-xl text-base sm:text-sm font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 outline-none focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-500/10 transition shadow-sm"
                        placeholder="Tìm kiếm tên chất, CAS number, công thức hóa học...">
             </div>
         </app-toolbar>
 
-        <div class="flex-1 p-6 overflow-hidden flex flex-col">
+        <div class="flex-1 p-2 sm:p-4 md:p-6 md:overflow-hidden flex flex-col">
             <!-- List -->
             <div class="flex-1 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col">
-                <div class="overflow-y-auto custom-scrollbar flex-1 p-2">
+                <div class="md:overflow-y-auto custom-scrollbar flex-1 p-2 sm:p-3 md:p-2">
                     @if (isLoading()) {
                         <div class="p-10 text-center text-slate-400"><i class="fa-solid fa-spinner fa-spin text-2xl"></i></div>
                     } @else {
+                        <!-- Mobile Stacked Cards (< md) -->
+                        <div class="md:hidden divide-y divide-slate-100 dark:divide-slate-700">
+                            @for (item of filteredItems(); track item.id) {
+                                <article class="py-3.5 px-2 space-y-2">
+                                    <div class="flex items-start justify-between gap-2">
+                                        <div class="min-w-0 flex-1">
+                                            <div class="font-bold text-slate-800 dark:text-slate-100 text-sm break-words">{{item.name}}</div>
+                                            <div class="text-[10px] font-mono text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded w-fit mt-1 border border-slate-200 dark:border-slate-600 break-all">{{item.id}}</div>
+                                        </div>
+                                        <span class="shrink-0 inline-block px-2 py-1 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-200 rounded text-xs font-bold">{{item.default_unit || '-'}}</span>
+                                    </div>
+                                    @if (item.cas_number || item.chemical_formula) {
+                                        <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600 dark:text-slate-300">
+                                            @if (item.cas_number) { <span><b class="text-slate-400">CAS:</b> {{item.cas_number}}</span> }
+                                            @if (item.chemical_formula) { <span><b class="text-slate-400">CT:</b> <span class="font-serif">{{item.chemical_formula}}</span></span> }
+                                        </div>
+                                    }
+                                    @if (item.aliases?.length) {
+                                        <div class="text-[11px] text-fuchsia-600 dark:text-fuchsia-400 break-words">Alias: {{item.aliases!.join(', ')}}</div>
+                                    }
+                                    <div class="flex items-center justify-end gap-2 pt-1">
+                                        <button type="button" (click)="openModal(item)" aria-label="Sửa chỉ tiêu" class="min-h-[40px] px-3 rounded-lg bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-blue-600 dark:text-blue-400 text-xs font-bold inline-flex items-center gap-1.5">
+                                            <i class="fa-solid fa-pen"></i> Sửa
+                                        </button>
+                                        <button type="button" (click)="deleteItem(item)" aria-label="Xóa chỉ tiêu" class="min-h-[40px] px-3 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/40 text-red-500 dark:text-red-400 text-xs font-bold inline-flex items-center gap-1.5">
+                                            <i class="fa-solid fa-trash"></i> Xóa
+                                        </button>
+                                    </div>
+                                </article>
+                            } @empty {
+                                <app-empty-state icon="fa-magnifying-glass" title="Không tìm thấy dữ liệu" message="Thử thay đổi từ khóa tìm kiếm." />
+                            }
+                        </div>
+
+                        <!-- Desktop Table (>= md) -->
+                        <div class="hidden md:block overflow-x-auto">
                         <table class="w-full text-sm text-left border-collapse">
                             <thead class="text-xs text-slate-500 dark:text-slate-400 uppercase bg-slate-50 dark:bg-slate-900/70 sticky top-0 z-10 font-bold">
                                 <tr>
@@ -110,6 +146,7 @@ import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, App
                                 }
                             </tbody>
                         </table>
+                        </div>
                     }
                 </div>
                 <div class="p-3 bg-slate-50 dark:bg-slate-900/60 border-t border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-500 dark:text-slate-400 text-right">
@@ -128,40 +165,40 @@ import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, App
                     <form modalBody id="master-target-form" appFormLabelA11y [formGroup]="form" (ngSubmit)="save()" class="space-y-4">
                             <div>
                                 <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Tên chỉ tiêu <span class="text-red-500">*</span></label>
-                                <input formControlName="name" (input)="onNameChange($event)" class="w-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg p-2.5 text-sm font-bold outline-none focus:border-fuchsia-500 transition" placeholder="VD: Chloramphenicol">
+                                <input formControlName="name" (input)="onNameChange($event)" class="w-full min-h-[42px] border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg p-2.5 text-base sm:text-sm font-bold outline-none focus:border-fuchsia-500 transition" placeholder="VD: Chloramphenicol">
                             </div>
                             
                             <div>
                                 <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Mã chỉ tiêu</label>
-                                <input formControlName="id" class="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-xs font-mono outline-none focus:border-fuchsia-500 transition bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" placeholder="Tự tạo từ tên hoặc nhập mã chỉ tiêu...">
+                                <input formControlName="id" class="w-full min-h-[42px] border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-base sm:text-xs font-mono outline-none focus:border-fuchsia-500 transition bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" placeholder="Tự tạo từ tên hoặc nhập mã chỉ tiêu...">
                             </div>
 
-                            <div class="grid grid-cols-2 gap-4">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Số CAS</label>
-                                <input formControlName="cas_number" class="w-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg p-2.5 text-xs outline-none focus:border-fuchsia-500 transition" placeholder="56-75-7">
+                                <input formControlName="cas_number" class="w-full min-h-[42px] border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg p-2.5 text-base sm:text-xs outline-none focus:border-fuchsia-500 transition" placeholder="56-75-7">
                                 </div>
                                 <div>
                                     <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Đơn vị mặc định</label>
-                                <input formControlName="default_unit" class="w-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg p-2.5 text-xs outline-none focus:border-fuchsia-500 transition" placeholder="ppb, µg/kg">
+                                <input formControlName="default_unit" class="w-full min-h-[42px] border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg p-2.5 text-base sm:text-xs outline-none focus:border-fuchsia-500 transition" placeholder="ppb, µg/kg">
                                 </div>
                             </div>
 
                             <div>
                                 <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Công thức hóa học</label>
-                                <input formControlName="chemical_formula" class="w-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg p-2.5 text-xs font-serif outline-none focus:border-fuchsia-500 transition" placeholder="C11H12Cl2N2O5">
+                                <input formControlName="chemical_formula" class="w-full min-h-[42px] border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg p-2.5 text-base sm:text-xs font-serif outline-none focus:border-fuchsia-500 transition" placeholder="C11H12Cl2N2O5">
                             </div>
 
                             <div>
                                 <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Tên khác khi nhập dữ liệu</label>
                                 <textarea formControlName="aliasesText" rows="3"
-                                          class="w-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg p-2.5 text-xs outline-none focus:border-fuchsia-500 transition resize-none"
+                                          class="w-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg p-2.5 text-base sm:text-xs outline-none focus:border-fuchsia-500 transition resize-none"
                                           placeholder="Mỗi alias một dòng hoặc phân cách bằng dấu chấm phẩy"></textarea>
                             </div>
 
                             <div>
                                 <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Mô tả / Ghi chú</label>
-                                <textarea formControlName="description" rows="2" class="w-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg p-2.5 text-xs outline-none focus:border-fuchsia-500 transition resize-none"></textarea>
+                                <textarea formControlName="description" rows="2" class="w-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg p-2.5 text-base sm:text-xs outline-none focus:border-fuchsia-500 transition resize-none"></textarea>
                             </div>
                     </form>
 

@@ -23,7 +23,7 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
         (closed)="onCancel()"
       >
 
-          <div modalBody class="-mx-6 -my-5 flex-1 overflow-auto custom-scrollbar p-3 sm:p-6">
+          <div modalBody class="-mx-4 -my-3 sm:-mx-6 sm:-my-5 flex-1 overflow-auto custom-scrollbar p-3 sm:p-6">
             <section class="grid grid-cols-1 lg:grid-cols-[minmax(220px,320px)_1fr] gap-3 mb-4">
               <label class="text-xs font-bold text-slate-600 dark:text-slate-300">
                 Trang tính

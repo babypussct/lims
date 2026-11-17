@@ -49,7 +49,7 @@
   </app-result-entry-header>
 
   <!-- Main Split-Pane Workspace -->
-  <div #workspaceContainer class="flex-1 min-h-0 flex gap-4 p-4 sm:p-6 bg-slate-50/50 dark:bg-slate-950/20 overflow-hidden">
+  <div #workspaceContainer class="flex-1 min-h-0 flex gap-4 p-2.5 sm:p-4 lg:p-6 bg-slate-50/50 dark:bg-slate-950/20 overflow-hidden">
     <!-- Left Pane: SOP Form Workspace -->
     <div [class]="isPdfPaneOpen() && canSplitSideBySide() ? 'flex-[6] min-w-[420px] min-h-0 overflow-y-auto custom-scrollbar pb-24 md:pb-6 pr-1' : 'flex-1 min-w-0 min-h-0 overflow-y-auto custom-scrollbar pb-24 md:pb-6'"
          [class.hidden]="isPdfPaneOpen() && !canSplitSideBySide()">
@@ -181,11 +181,11 @@
 
   <!-- Mobile (< md) Sticky Bottom Action Bar -->
   @if (run() && draft() && config() && !isPdfPaneOpen()) {
-    <div class="sticky bottom-0 z-30 md:hidden shrink-0 border-t border-slate-200/80 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur px-3 py-2.5 flex items-center justify-between gap-2 shadow-soft-xl">
+    <div class="sticky bottom-0 z-30 md:hidden shrink-0 border-t border-slate-200/80 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur px-3 pt-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom,0px))] flex flex-wrap items-center justify-between gap-2 shadow-soft-xl">
       <button type="button"
               (click)="togglePdfPane()"
               aria-label="Mở Báo cáo và PDF"
-              class="inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 text-xs font-bold text-slate-700 dark:text-slate-200 transition active:scale-95">
+              class="inline-flex h-11 items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 text-xs font-bold text-slate-700 dark:text-slate-200 transition active:scale-95">
         <span class="h-2 w-2 rounded-full shrink-0"
               [class]="autoSaveStatus() === 'saving'
                 ? 'bg-amber-500 animate-pulse'
@@ -196,12 +196,12 @@
         <span>PDF ({{ reportsProjection().cards.length }})</span>
       </button>
 
-      <div class="flex items-center gap-2 shrink-0">
+      <div class="flex items-center gap-2 shrink-0 ml-auto">
         @if (!isReadOnly()) {
           <button type="button"
                   (click)="triggerSaveDraft()"
                   [disabled]="isProcessing()"
-                  class="inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 text-xs font-bold text-slate-700 dark:text-slate-200 transition active:scale-95 disabled:opacity-50">
+                  class="inline-flex h-11 items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 text-xs font-bold text-slate-700 dark:text-slate-200 transition active:scale-95 disabled:opacity-50">
             <i class="fa-solid fa-floppy-disk text-xs" aria-hidden="true"></i>
             <span>Lưu nháp</span>
           </button>
@@ -209,7 +209,7 @@
           <button type="button"
                   (click)="triggerPublishReport()"
                   [disabled]="isProcessing() || isReadOnly()"
-                  class="inline-flex h-10 items-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-3.5 text-xs font-bold text-white shadow-soft-sm transition active:scale-95 disabled:opacity-50">
+                  class="inline-flex h-11 items-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-3.5 text-xs font-bold text-white shadow-soft-sm transition active:scale-95 disabled:opacity-50">
             <i class="fa-solid" [class.fa-circle-check]="!isPublishing()" [class.fa-spinner]="isPublishing()" [class.fa-spin]="isPublishing()" aria-hidden="true"></i>
             <span>Xuất PDF</span>
           </button>
@@ -217,7 +217,7 @@
           <button type="button"
                   (click)="triggerUnlockToEdit()"
                   [disabled]="isProcessing()"
-                  class="inline-flex h-10 items-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-3.5 text-xs font-bold text-white shadow-soft-sm transition active:scale-95 disabled:opacity-50">
+                  class="inline-flex h-11 items-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-3.5 text-xs font-bold text-white shadow-soft-sm transition active:scale-95 disabled:opacity-50">
             <i class="fa-solid fa-unlock text-xs" aria-hidden="true"></i>
             <span>Mở khóa sửa</span>
           </button>

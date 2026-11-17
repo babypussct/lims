@@ -35,7 +35,7 @@ const ADMIN_PERMISSIONS = [
     <div class="mx-auto w-full max-w-[1500px] px-0 pb-24">
       <section class="fade-in">
         @if (!isAdminArea()) {
-          <div class="relative h-36 overflow-hidden rounded-2xl bg-gradient-soft sm:h-44">
+          <div class="relative h-28 sm:h-44 overflow-hidden rounded-2xl bg-gradient-soft">
             <div class="absolute inset-0 bg-[radial-gradient(circle_at_78%_18%,rgba(255,255,255,0.42),transparent_24%),radial-gradient(circle_at_12%_88%,rgba(255,255,255,0.2),transparent_31%)]"></div>
             <div class="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-black/10"></div>
           </div>
@@ -123,9 +123,9 @@ const ADMIN_PERMISSIONS = [
                   [value]="searchQuery()"
                   (input)="setSearch($event)"
                   placeholder="Tìm cài đặt..."
-                  class="h-10 w-full rounded-xl border-0 bg-gray-50 pl-9 pr-8 text-xs font-semibold text-slate-600 shadow-soft-sm outline-none transition focus:ring-2 focus:ring-fuchsia-500/15 dark:bg-slate-800 dark:text-slate-200">
+                  class="h-10 w-full rounded-xl border-0 bg-gray-50 pl-9 pr-9 text-base sm:text-xs font-semibold text-slate-600 shadow-soft-sm outline-none transition focus:ring-2 focus:ring-fuchsia-500/15 dark:bg-slate-800 dark:text-slate-200">
                 @if (searchQuery()) {
-                  <button type="button" (click)="clearSearch()" aria-label="Xóa tìm kiếm" class="absolute right-1 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-[11px] text-slate-400 transition hover:text-slate-600 dark:hover:text-slate-200 sm:right-2">
+                  <button type="button" (click)="clearSearch()" aria-label="Xóa tìm kiếm" class="absolute right-1 top-1/2 flex h-9 w-9 sm:h-8 sm:w-8 -translate-y-1/2 items-center justify-center rounded-md text-[11px] text-slate-400 transition hover:text-slate-600 dark:hover:text-slate-200 sm:right-2">
                     <i class="fa-solid fa-xmark" aria-hidden="true"></i>
                   </button>
                 }

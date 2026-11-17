@@ -192,21 +192,33 @@
     <!-- Mobile Cards View (< md screens) -->
     @if (mobileViewMode() === 'cards') {
       <div class="md:hidden space-y-3">
+        @if (getDisplayRows().length > 0) {
+          <label class="flex min-h-[44px] items-center justify-between gap-2 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/30 px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer select-none">
+            <span class="flex items-center gap-2.5">
+              <input type="checkbox"
+                     [checked]="isAllSelected()"
+                     (change)="toggleSelectAll($event)"
+                     [disabled]="isReadOnly"
+                     class="w-4 h-4 rounded text-indigo-600 border-slate-300 dark:border-slate-700 focus:ring-indigo-500" />
+              <span>Chọn tất cả mẫu để xuất PDF</span>
+            </span>
+          </label>
+        }
         @for (row of getDisplayRows(); track row.key) {
           @if (draft.resultData[row.key]) {
             <div class="rounded-2xl border p-3.5 space-y-3"
                  [class]="row.key.startsWith('QC_')
                    ? 'border-amber-200 dark:border-amber-900/60 bg-amber-50/40 dark:bg-amber-950/20'
-                   : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900'">
-              <div class="flex items-center justify-between gap-2">
-                <div class="flex items-center gap-2 font-mono text-xs font-bold text-slate-800 dark:text-slate-100">
+                   : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 ' + (draft.resultData[row.key]['selected'] === false ? 'opacity-65' : '')">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <label class="flex min-h-[36px] items-center gap-2.5 font-mono text-xs font-bold text-slate-800 dark:text-slate-100 cursor-pointer">
                   <input type="checkbox"
                          [(ngModel)]="draft.resultData[row.key]['selected']"
                          (ngModelChange)="onDataChanged()"
                          [disabled]="isReadOnly"
                          class="w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500" />
-                  <span>{{ row.label }}</span>
-                </div>
+                  <span class="break-all">{{ row.label }}</span>
+                </label>
                 <div class="flex items-center gap-1.5">
                   <span class="text-[10px] font-bold text-slate-400">Lọ:</span>
                   <input type="text"
@@ -214,11 +226,12 @@
                          [disabled]="row.key === 'QC_FINAL'"
                          [(ngModel)]="draft.resultData[row.key]['loSo']"
                          (ngModelChange)="pasteCtrl.bumpRevision(); onDataChanged()"
-                         class="w-16 h-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-center font-mono text-xs font-bold text-slate-800 dark:text-slate-200 disabled:opacity-70" />
+                         [attr.aria-label]="'Số lọ mẫu ' + row.label"
+                         class="w-16 h-10 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-center font-mono text-sm font-bold text-slate-800 dark:text-slate-200 disabled:opacity-70 outline-none focus:border-indigo-500" />
                 </div>
               </div>
 
-              <div class="grid grid-cols-2 gap-2.5 text-xs">
+              <div class="grid grid-cols-1 min-[360px]:grid-cols-2 gap-2.5 text-xs">
                 @for (col of activeColumns; track col) {
                   <label class="block">
                     <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400 block mb-1 truncate">{{ columnDisplayNames()[col] || getColumnLabel(col) }}</span>
@@ -228,7 +241,7 @@
                            [(ngModel)]="draft.resultData[row.key][col]"
                            (ngModelChange)="pasteCtrl.bumpRevision(); onCellChanged(row.key)"
                            placeholder="..."
-                           class="h-9 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-2.5 text-center font-bold outline-none focus:border-indigo-500 text-slate-800 dark:text-slate-200 disabled:opacity-60" />
+                           class="min-h-[44px] w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-2.5 text-center text-base font-bold outline-none focus:border-indigo-500 text-slate-800 dark:text-slate-200 disabled:opacity-60" />
                   </label>
                 }
               </div>
@@ -240,8 +253,19 @@
                        [(ngModel)]="draft.resultData[row.key]['ghiChu']"
                        (ngModelChange)="pasteCtrl.bumpRevision(); onDataChanged()"
                        placeholder="Ghi chú..."
-                       class="h-9 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-2.5 text-xs font-semibold outline-none focus:border-indigo-500 text-slate-700 dark:text-slate-300" />
+                       class="min-h-[42px] w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-2.5 text-sm font-semibold outline-none focus:border-indigo-500 text-slate-700 dark:text-slate-300" />
               </label>
+
+              @if (!row.key.startsWith('QC_') && !isReadOnly) {
+                <div class="flex items-center justify-end pt-1 border-t border-slate-100 dark:border-slate-800/80">
+                  <button type="button"
+                          (click)="pasteCtrl.bumpRevision(); copyRowToAll(row.key)"
+                          class="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 text-xs font-bold text-slate-600 dark:text-slate-200 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition active:scale-95">
+                    <i class="fa-solid fa-copy text-[11px]" aria-hidden="true"></i>
+                    <span>Sao chép cho tất cả mẫu</span>
+                  </button>
+                </div>
+              }
             </div>
           }
         }
@@ -249,11 +273,11 @@
     }
 
     <!-- Spreadsheet Table Grid -->
-    <div [class.hidden]="mobileViewMode() === 'cards'" class="md:!block overflow-x-auto custom-scrollbar border border-slate-200/80 dark:border-slate-800 rounded-2xl max-h-[550px] overflow-y-auto">
+    <div [class.hidden]="mobileViewMode() === 'cards'" class="md:!block overflow-x-auto custom-scrollbar border border-slate-200/80 dark:border-slate-800 rounded-2xl md:max-h-[550px] md:overflow-y-auto">
       <table class="w-full text-sm border-collapse">
         <thead>
           <tr class="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-20 shadow-xs">
-            <th class="py-3 px-2.5 text-center w-10 sticky left-0 z-30 bg-slate-50 dark:bg-slate-950">
+            <th class="py-3 px-2.5 text-center w-10 md:sticky md:left-0 md:z-30 bg-slate-50 dark:bg-slate-950">
               <input type="checkbox"
                      [checked]="isAllSelected()"
                      (change)="toggleSelectAll($event)"
@@ -261,8 +285,8 @@
                      title="Chọn/Bỏ chọn tất cả mẫu"
                      class="w-4 h-4 rounded text-indigo-600 border-slate-300 dark:border-slate-700 focus:ring-indigo-500 cursor-pointer" />
             </th>
-            <th class="py-3 px-3 text-left font-bold text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider w-24 min-w-[96px] sticky left-10 z-30 bg-slate-50 dark:bg-slate-950 border-r border-slate-200/70 dark:border-slate-800">Lọ số</th>
-            <th class="py-3 px-3 text-left font-bold text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider min-w-[140px] sticky left-[136px] z-30 bg-slate-50 dark:bg-slate-950 border-r border-slate-200/70 dark:border-slate-800">Mẫu thử</th>
+            <th class="py-3 px-2 sm:px-3 text-left font-bold text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider w-20 sm:w-24 md:min-w-[96px] md:sticky md:left-10 md:z-30 bg-slate-50 dark:bg-slate-950 border-r border-slate-200/70 dark:border-slate-800">Lọ số</th>
+            <th class="py-3 px-2.5 sm:px-3 text-left font-bold text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider min-w-[115px] md:min-w-[140px] sticky left-0 md:left-[136px] z-30 bg-slate-50 dark:bg-slate-950 border-r border-slate-200/70 dark:border-slate-800">Mẫu thử</th>
 
             @for (col of activeColumns; track col) {
               <th class="py-3 px-3 text-center font-bold text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider min-w-[130px]">
@@ -281,14 +305,14 @@
               <tr [class]="row.key.startsWith('QC_')
                     ? 'bg-amber-50 dark:bg-slate-900 border-l-4 border-l-amber-500 hover:bg-amber-100/70 dark:hover:bg-slate-800 transition-colors'
                     : 'bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/40 focus-within:bg-indigo-50/40 dark:focus-within:bg-indigo-950/30 border-l-4 border-l-transparent focus-within:border-l-indigo-500 transition-colors ' + (draft.resultData[row.key]['selected'] === false ? 'opacity-60' : '')">
-                <td class="py-2 px-2.5 text-center w-10 sticky left-0 z-10 bg-inherit">
+                <td class="py-2 px-2.5 text-center w-10 md:sticky md:left-0 md:z-10 bg-inherit">
                   <input type="checkbox"
                          [(ngModel)]="draft.resultData[row.key]['selected']"
                          (ngModelChange)="onDataChanged()"
                          [disabled]="isReadOnly"
                          class="w-4 h-4 rounded text-indigo-600 border-slate-300 dark:border-slate-700 focus:ring-indigo-500 cursor-pointer" />
                 </td>
-                <td class="py-1.5 px-2.5 w-24 min-w-[96px] sticky left-10 z-10 bg-inherit border-r border-slate-100 dark:border-slate-800">
+                <td class="py-1.5 px-2 sm:px-2.5 w-20 sm:w-24 md:min-w-[96px] md:sticky md:left-10 md:z-10 bg-inherit border-r border-slate-100 dark:border-slate-800">
                   <input type="text"
                          [(ngModel)]="draft.resultData[row.key]['loSo']"
                          (ngModelChange)="pasteCtrl.bumpRevision(); onDataChanged()"
@@ -299,9 +323,9 @@
                          (paste)="onCellPaste($event, rowIdx, 0)"
                          (focus)="$any($event.target).select()"
                          placeholder="Lọ..."
-                         class="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-2 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-center transition disabled:opacity-60 disabled:cursor-not-allowed" />
+                         class="w-full min-h-[38px] md:min-h-0 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-2 py-1.5 text-sm md:text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-center transition disabled:opacity-60 disabled:cursor-not-allowed" />
                 </td>
-                <td class="py-2 px-3 font-mono font-bold text-xs break-all sticky left-[136px] z-10 bg-inherit border-r border-slate-100 dark:border-slate-800">
+                <td class="py-2 px-2.5 sm:px-3 font-mono font-bold text-xs break-all sticky left-0 md:left-[136px] z-10 bg-inherit border-r border-slate-100 dark:border-slate-800">
                   @if (row.key.startsWith('QC_')) {
                     <span class="inline-flex items-center gap-1.5 text-amber-700 dark:text-amber-300 select-all">
                       <i class="fa-solid fa-flask text-[10px]" aria-hidden="true"></i>

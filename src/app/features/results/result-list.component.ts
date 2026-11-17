@@ -360,7 +360,7 @@ import { isRunCandidateCompatibleForMerge, MergeRunsValidation, validateMergeRun
                     <div class="flex items-start justify-between gap-2">
                       <div class="flex flex-wrap items-center gap-1.5 min-w-0">
                         @if (isMergeModeActive()) {
-                          <label class="inline-flex items-center cursor-pointer mr-0.5" (click)="$event.stopPropagation()">
+                          <label class="inline-flex min-h-[40px] min-w-[40px] sm:min-h-0 sm:min-w-0 items-center justify-center cursor-pointer mr-0.5" (click)="$event.stopPropagation()">
                             <input type="checkbox"
                                    [checked]="selectedRunsMap()[run.id]"
                                    [disabled]="!mergeCheck.compatible && !selectedRunsMap()[run.id]"
@@ -373,7 +373,7 @@ import { isRunCandidateCompatibleForMerge, MergeRunsValidation, validateMergeRun
                         <button type="button"
                                 (click)="copyBatchCode(run.inputs?.['batchCode'] || run.id, $event)"
                                 title="Sao chép mã mẻ"
-                                class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-indigo-50 dark:bg-slate-800 dark:hover:bg-indigo-950/40 text-slate-700 dark:text-slate-200 hover:text-indigo-700 dark:hover:text-indigo-300 font-mono text-[11px] font-bold transition cursor-pointer">
+                                class="inline-flex min-h-[36px] sm:min-h-0 items-center gap-1.5 px-2.5 sm:px-2 py-1 sm:py-0.5 rounded-lg bg-slate-100 hover:bg-indigo-50 dark:bg-slate-800 dark:hover:bg-indigo-950/40 text-slate-700 dark:text-slate-200 hover:text-indigo-700 dark:hover:text-indigo-300 font-mono text-[11px] font-bold transition cursor-pointer">
                           <span class="truncate max-w-[140px]">{{ run.inputs?.['batchCode'] || run.id }}</span>
                           <i class="fa-regular fa-copy text-[9px] opacity-60" aria-hidden="true"></i>
                         </button>
@@ -470,7 +470,7 @@ import { isRunCandidateCompatibleForMerge, MergeRunsValidation, validateMergeRun
                   </div>
 
                   <!-- Tier 3: Contextual Footer CTAs -->
-                  <div class="border-t border-slate-100 dark:border-slate-800/80 px-4 py-3 flex items-center gap-2 bg-slate-50/40 dark:bg-slate-950/20 shrink-0">
+                  <div class="border-t border-slate-100 dark:border-slate-800/80 px-4 py-3 flex flex-wrap items-center gap-2 bg-slate-50/40 dark:bg-slate-950/20 shrink-0">
                     @if (projection?.hasAnyReport) {
                       <app-button variant="secondary" size="sm" (click)="openReportHub(run); $event.stopPropagation()">
                         <i class="fa-solid fa-file-pdf text-rose-500 text-[11px]" aria-hidden="true"></i>
@@ -480,7 +480,7 @@ import { isRunCandidateCompatibleForMerge, MergeRunsValidation, validateMergeRun
                     @if (isEditableRun) {
                       <button type="button"
                               (click)="enterResults(run.id, undefined, true); $event.stopPropagation()"
-                              class="min-w-0 flex-1 inline-flex h-9 items-center justify-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-3 text-xs font-bold text-white shadow-sm transition active:scale-[0.98]">
+                              class="min-w-0 flex-1 inline-flex h-10 sm:h-9 items-center justify-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-3 text-xs font-bold text-white shadow-sm transition active:scale-[0.98]">
                         <i class="fa-solid fa-pen-to-square text-[11px]" aria-hidden="true"></i>
                         <span>Nhập kết quả</span>
                       </button>
@@ -488,7 +488,7 @@ import { isRunCandidateCompatibleForMerge, MergeRunsValidation, validateMergeRun
                               (click)="enterResults(run.id, undefined, false); $event.stopPropagation()"
                               title="Chi tiết mẻ chạy"
                               aria-label="Chi tiết mẻ chạy"
-                              class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition">
+                              class="inline-flex h-10 w-10 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition">
                         <i class="fa-solid fa-eye text-xs" aria-hidden="true"></i>
                       </button>
                     } @else {
@@ -545,8 +545,8 @@ import { isRunCandidateCompatibleForMerge, MergeRunsValidation, validateMergeRun
                           (click)="enterResults(run.id)">
 
                         @if (isMergeModeActive()) {
-                          <td class="p-3.5 text-center">
-                            <label class="inline-flex items-center cursor-pointer" (click)="$event.stopPropagation()">
+                          <td class="p-2 text-center">
+                            <label class="inline-flex min-h-[40px] min-w-[40px] sm:min-h-0 sm:min-w-0 items-center justify-center cursor-pointer" (click)="$event.stopPropagation()">
                               <input type="checkbox"
                                      [checked]="selectedRunsMap()[run.id]"
                                      [disabled]="!mergeCheck.compatible && !selectedRunsMap()[run.id]"
@@ -715,9 +715,9 @@ import { isRunCandidateCompatibleForMerge, MergeRunsValidation, validateMergeRun
             </span>
             <div class="flex flex-wrap items-center gap-1 mt-1 max-w-md">
               @for (sel of getSelectedRuns(); track sel.id) {
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-[10px] font-mono">
+                <span class="inline-flex items-center gap-1 pl-2 pr-1 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-[10px] font-mono">
                   {{ sel.inputs?.['batchCode'] || sel.id }}
-                  <button type="button" (click)="toggleRunSelection(sel)" aria-label="Bỏ chọn mẻ" class="text-slate-400 hover:text-white ml-0.5">
+                  <button type="button" (click)="toggleRunSelection(sel)" aria-label="Bỏ chọn mẻ" class="inline-flex h-6 w-6 items-center justify-center rounded-full text-slate-400 hover:bg-slate-700 hover:text-white transition">
                     <i class="fa-solid fa-xmark text-[9px]" aria-hidden="true"></i>
                   </button>
                 </span>

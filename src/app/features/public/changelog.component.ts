@@ -46,7 +46,7 @@ import { AppToolbarComponent } from '../../shared/components/ui/toolbar/toolbar.
                   <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400" aria-hidden="true"></i>
                   <input type="search" [(ngModel)]="searchQuery"
                          placeholder="Tìm phiên bản, tính năng..."
-                         class="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-xs font-semibold text-slate-700 transition focus:border-fuchsia-500 focus:ring-2 focus:ring-fuchsia-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                         class="h-11 sm:h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-base sm:text-xs font-semibold text-slate-700 transition focus:border-fuchsia-500 focus:ring-2 focus:ring-fuchsia-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
                 </label>
                 @if (searchQuery()) {
                   <div toolbarActions>

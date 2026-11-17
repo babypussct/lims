@@ -43,7 +43,7 @@ import { FormsModule } from '@angular/forms';
             </div>
 
             <!-- Fields: Tên điểm | Số lọ | Nồng độ -->
-            <div [class]="'grid gap-1.5 ' + ((pointLabels || []).length > 0 ? 'grid-cols-1' : 'grid-cols-3')">
+            <div [class]="'grid gap-2 ' + ((pointLabels || []).length > 0 ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-3')">
               @if ((pointLabels || []).length === 0) {
                 <div>
                   <label class="block text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">Điểm</label>
@@ -108,12 +108,12 @@ export class SopCalibrationPointsComponent {
     return 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-6';
   }
 
-  readonly inputClass = `w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/70
-            rounded-lg px-2 py-1 text-xs text-slate-800 dark:text-slate-100 font-semibold
+  readonly inputClass = `w-full min-h-[38px] sm:min-h-0 bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/70
+            rounded-lg px-2 py-1.5 sm:py-1 text-sm sm:text-xs text-slate-800 dark:text-slate-100 font-semibold
             focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-center transition disabled:opacity-60`;
 
-  readonly vialInputClass = `w-full bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800/70
-            rounded-lg px-2 py-1 text-xs text-indigo-700 dark:text-indigo-300 font-bold font-mono
+  readonly vialInputClass = `w-full min-h-[38px] sm:min-h-0 bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800/70
+            rounded-lg px-2 py-1.5 sm:py-1 text-sm sm:text-xs text-indigo-700 dark:text-indigo-300 font-bold font-mono
             focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-center transition disabled:opacity-60`;
 
   onPointsChanged() {

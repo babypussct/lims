@@ -228,18 +228,18 @@ interface PaletteItem {
 
     <!-- ═══════ COMMAND PALETTE OVERLAY ═══════ -->
     @if (paletteOpen()) {
-      <div class="fixed inset-0 z-[200] flex items-start justify-center pt-[15vh] px-4
+      <div class="fixed inset-0 z-[200] flex items-start justify-center pt-3 sm:pt-[15vh] px-2 sm:px-4
                   bg-slate-900/60 backdrop-blur-sm fade-in"
            role="dialog"
            aria-modal="true"
            aria-label="Tìm chức năng hoặc mã truy xuất"
            (click)="closePalette()">
 
-        <div class="w-full max-w-lg bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden fade-in"
+        <div class="w-full max-w-lg max-h-[calc(100dvh-1.5rem)] flex flex-col bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden fade-in"
              (click)="$event.stopPropagation()">
 
           <!-- Search Input -->
-          <div class="flex items-center gap-3 px-4 h-14 border-b border-slate-100 dark:border-slate-800">
+          <div class="flex shrink-0 items-center gap-3 px-4 h-14 border-b border-slate-100 dark:border-slate-800">
             <i class="fa-solid fa-magnifying-glass text-fuchsia-500 text-sm"></i>
             <input
               #paletteInput
@@ -249,16 +249,16 @@ interface PaletteItem {
               (ngModelChange)="onSearchInput($event)"
               (keydown)="onPaletteKeydown($event)"
               placeholder="Tìm chức năng hoặc nhập mã truy xuất..."
-              class="min-w-0 flex-1 bg-transparent text-sm font-medium text-slate-700 dark:text-slate-200 placeholder:text-slate-400 outline-none">
+              class="min-w-0 flex-1 bg-transparent text-base sm:text-sm font-medium text-slate-700 dark:text-slate-200 placeholder:text-slate-400 outline-none">
             <kbd class="text-[10px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">ESC</kbd>
           </div>
 
-          <p class="px-4 pt-3 text-xs text-slate-400 dark:text-slate-500">
+          <p class="shrink-0 px-4 pt-3 text-xs text-slate-400 dark:text-slate-500">
             Nhập mã hoặc dán liên kết truy xuất, nhấn Enter để mở hồ sơ.
           </p>
 
           <!-- Results -->
-          <div class="max-h-[50vh] overflow-y-auto custom-scrollbar py-2">
+          <div class="min-h-0 flex-1 max-h-[60dvh] sm:max-h-[50vh] overflow-y-auto overscroll-contain custom-scrollbar py-2">
             @if (filteredItems().length === 0) {
               <div class="px-4 py-8 text-center text-sm text-slate-400">
                 <i class="fa-solid fa-search text-2xl mb-2 block opacity-30"></i>

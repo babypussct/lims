@@ -51,7 +51,7 @@ export interface SampleProgressSummary {
                     [disabled]="activeSampleIndex() <= 0"
                     aria-label="Mẫu trước"
                     title="Mẫu trước"
-                    class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 disabled:opacity-40 transition active:scale-95">
+                    class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 disabled:opacity-40 transition active:scale-95">
               <i class="fa-solid fa-chevron-left text-xs" aria-hidden="true"></i>
             </button>
 
@@ -59,7 +59,7 @@ export interface SampleProgressSummary {
               <select [ngModel]="activeSampleCode"
                       (ngModelChange)="selectSample($event)"
                       aria-label="Chọn mẫu đang nhập"
-                      class="h-10 w-full rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50/50 dark:bg-indigo-950/40 px-3 text-xs font-mono font-bold text-indigo-800 dark:text-indigo-200 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+                      class="h-11 w-full rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50/50 dark:bg-indigo-950/40 px-3 text-base sm:text-xs font-mono font-bold text-indigo-800 dark:text-indigo-200 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
                 @for (s of sampleList(); track s) {
                   @let st = getSampleStats(s);
                   <option [value]="s">
@@ -74,12 +74,12 @@ export interface SampleProgressSummary {
                     [disabled]="activeSampleIndex() < 0 || activeSampleIndex() >= sampleList().length - 1"
                     aria-label="Mẫu sau"
                     title="Mẫu sau"
-                    class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 disabled:opacity-40 transition active:scale-95">
+                    class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 disabled:opacity-40 transition active:scale-95">
               <i class="fa-solid fa-chevron-right text-xs" aria-hidden="true"></i>
             </button>
 
             @if (showSelectionControls && activeSampleCode) {
-              <label class="flex h-10 shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-2.5 text-[11px] font-bold text-slate-600 dark:text-slate-300"
+              <label class="flex h-11 shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 text-xs font-bold text-slate-600 dark:text-slate-300 cursor-pointer"
                      title="Bao gồm mẫu này trong báo cáo PDF">
                 <input type="checkbox"
                        [disabled]="isReadOnly"
@@ -252,7 +252,7 @@ export interface SampleProgressSummary {
                           (click)="undoLastPaste()"
                           [attr.aria-label]="'Hoàn tác dán: ' + (undoStack.peek()?.summary || '')"
                           [title]="'Hoàn tác: ' + (undoStack.peek()?.summary || '')"
-                          class="inline-flex h-8 items-center gap-1.5 rounded-xl border border-amber-200 dark:border-amber-900/40 bg-amber-50 dark:bg-amber-950/30 px-2.5 text-xs font-bold text-amber-700 dark:text-amber-300 hover:bg-amber-100 transition active:scale-95">
+                          class="inline-flex min-h-[40px] lg:min-h-0 lg:h-8 items-center gap-1.5 rounded-xl border border-amber-200 dark:border-amber-900/40 bg-amber-50 dark:bg-amber-950/30 px-3 lg:px-2.5 text-xs font-bold text-amber-700 dark:text-amber-300 hover:bg-amber-100 transition active:scale-95">
                     <i class="fa-solid fa-rotate-left text-[11px]" aria-hidden="true"></i>
                     <span>Hoàn tác</span>
                   </button>
@@ -260,7 +260,7 @@ export interface SampleProgressSummary {
 
                 <button type="button"
                         (click)="bulkFillNd.emit()"
-                        class="inline-flex h-8 items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200 dark:hover:bg-amber-950/30 transition active:scale-95">
+                        class="inline-flex min-h-[40px] lg:min-h-0 lg:h-8 items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 lg:px-2.5 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200 dark:hover:bg-amber-950/30 transition active:scale-95">
                   <i class="fa-solid fa-pen-nib text-[11px] text-amber-500" aria-hidden="true"></i>
                   <span>Đặt Tất Cả ND</span>
                 </button>
@@ -268,7 +268,7 @@ export interface SampleProgressSummary {
                 @if (showQcColumns && showBulkQcButton) {
                   <button type="button"
                           (click)="bulkQcPass.emit()"
-                          class="inline-flex h-8 items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 dark:hover:bg-emerald-950/30 transition active:scale-95">
+                          class="inline-flex min-h-[40px] lg:min-h-0 lg:h-8 items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 lg:px-2.5 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 dark:hover:bg-emerald-950/30 transition active:scale-95">
                     <i class="fa-solid fa-circle-check text-[11px] text-emerald-500" aria-hidden="true"></i>
                     <span>Tất Cả QC Đạt</span>
                   </button>
@@ -278,7 +278,7 @@ export interface SampleProgressSummary {
                   <button type="button"
                           (click)="copySampleToAll.emit()"
                           title="Sao chép toàn bộ kết quả của mẫu đang hiển thị cho tất cả các mẫu khác trong mẻ chạy này"
-                          class="inline-flex h-8 items-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-3 text-xs font-bold text-white shadow-xs transition active:scale-95">
+                          class="inline-flex min-h-[40px] lg:min-h-0 lg:h-8 items-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-3 text-xs font-bold text-white shadow-xs transition active:scale-95">
                     <i class="fa-solid fa-copy text-[11px]" aria-hidden="true"></i>
                     <span>Sao Chép Cho Cả Mẻ</span>
                   </button>
@@ -296,10 +296,10 @@ export interface SampleProgressSummary {
                      (ngModelChange)="searchQuery.set($event)"
                      aria-label="Tìm hoạt chất trong bảng"
                      placeholder="Tìm hoạt chất..."
-                     class="h-9 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 pl-9 pr-3 text-xs font-semibold text-slate-700 dark:text-slate-200 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20" />
+                     class="h-11 md:h-9 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 pl-9 pr-3 text-base md:text-xs font-semibold text-slate-700 dark:text-slate-200 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20" />
             </div>
 
-            <div class="flex items-center justify-between sm:justify-end gap-2">
+            <div class="flex flex-wrap items-center justify-between sm:justify-end gap-2">
               @if (hasValidTargetMapping()) {
                 <div class="inline-flex items-center rounded-xl border border-slate-200/80 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 p-0.5 text-[11px]">
                   <button type="button"
@@ -307,7 +307,7 @@ export interface SampleProgressSummary {
                           [class]="targetScope() === 'assigned'
                             ? 'bg-white dark:bg-slate-900 text-indigo-700 dark:text-indigo-300 shadow-xs font-bold'
                             : 'text-slate-600 dark:text-slate-400 font-semibold'"
-                          class="rounded-lg px-2.5 py-1 transition">
+                          class="min-h-[36px] md:min-h-0 rounded-lg px-2.5 py-1 transition">
                     Chỉ chất chỉ định ({{ assignedCompoundsForActive().length }})
                   </button>
                   <button type="button"
@@ -315,7 +315,7 @@ export interface SampleProgressSummary {
                           [class]="targetScope() === 'all'
                             ? 'bg-white dark:bg-slate-900 text-indigo-700 dark:text-indigo-300 shadow-xs font-bold'
                             : 'text-slate-600 dark:text-slate-400 font-semibold'"
-                          class="rounded-lg px-2.5 py-1 transition">
+                          class="min-h-[36px] md:min-h-0 rounded-lg px-2.5 py-1 transition">
                     Tất cả ({{ (config?.compounds || []).length }})
                   </button>
                 </div>
@@ -338,13 +338,13 @@ export interface SampleProgressSummary {
                 <div class="flex items-center gap-2">
                   <button type="button"
                           (click)="cancelPendingPaste()"
-                          class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2.5 py-1 font-bold text-slate-600 dark:text-slate-300">
+                          class="min-h-[38px] md:min-h-0 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-1 font-bold text-slate-600 dark:text-slate-300">
                     Hủy
                   </button>
                   <button type="button"
                           [disabled]="plan.diffs.length === 0 || plan.invalidCells.length > 0"
                           (click)="confirmPendingPaste()"
-                          class="rounded-lg bg-indigo-600 hover:bg-indigo-700 px-3 py-1 font-bold text-white disabled:opacity-50">
+                          class="min-h-[38px] md:min-h-0 rounded-lg bg-indigo-600 hover:bg-indigo-700 px-3 py-1 font-bold text-white disabled:opacity-50">
                     Áp dụng ({{ plan.diffs.length }})
                   </button>
                 </div>
@@ -362,8 +362,130 @@ export interface SampleProgressSummary {
             </div>
           }
 
-          <!-- Compound Result Table -->
-          <div class="overflow-x-auto custom-scrollbar border border-slate-200/80 dark:border-slate-800 rounded-2xl max-h-[560px] overflow-y-auto">
+          <!-- Mobile Compound Cards (< md screens, shared draft model) -->
+          <div class="space-y-2.5 md:hidden">
+            @for (compound of visibleCompounds(); track compound; let idx = $index) {
+              @let assigned = isTargetAssigned(activeSampleCode, compound);
+              @let rowData = draft.resultData[activeSampleCode];
+              @let isNd = !!(rowData?.[compound + '_nd']);
+              @let rawVal = rowData?.[compound] ?? '';
+              @let trimmedVal = ('' + rawVal).trim();
+              @let isNumeric = assigned && !isNd && trimmedVal !== '' && isNumericLike(trimmedVal);
+              @let hasValidationError = assigned && !isNd && trimmedVal !== '' && !isValidResultText(trimmedVal);
+              <div class="rounded-2xl border p-3.5 space-y-3 transition-colors"
+                   [class]="assigned
+                     ? 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900'
+                     : 'border-slate-200/60 dark:border-slate-800/60 bg-slate-50/60 dark:bg-slate-950/30 opacity-65'">
+                <div class="flex items-start justify-between gap-2">
+                  <div class="min-w-0">
+                    <span class="font-mono text-[10px] font-bold text-slate-400 mr-1.5">#{{ idx + 1 }}</span>
+                    @if (!assigned) {
+                      <span class="inline-flex items-center gap-1.5 text-xs font-bold text-slate-400 dark:text-slate-500 line-through">
+                        <i class="fa-solid fa-lock text-[10px]" aria-hidden="true"></i>
+                        <span>{{ compoundDisplayNames[compound] || compound }}</span>
+                      </span>
+                    } @else {
+                      <span class="text-xs font-bold text-slate-800 dark:text-slate-100 break-words">{{ compoundDisplayNames[compound] || compound }}</span>
+                    }
+                  </div>
+                  <span class="shrink-0 text-[10px] font-semibold text-slate-400">{{ resultUnit }}</span>
+                </div>
+
+                @if (rowData) {
+                  <div class="flex items-center gap-2">
+                    <input type="text"
+                           [disabled]="!assigned"
+                           [readOnly]="isReadOnly"
+                           [(ngModel)]="rowData[compound]"
+                           (ngModelChange)="onCellResultInput(compound)"
+                           (keydown)="onResultInputKeyDown($event, idx)"
+                           (paste)="onResultCellPaste($event, idx)"
+                           [attr.aria-label]="'Kết quả ' + (compoundDisplayNames[compound] || compound) + ' cho mẫu ' + activeSampleCode + ' (' + resultUnit + ')'"
+                           [attr.aria-describedby]="hasValidationError ? 'md-mobile-err-' + idx : null"
+                           [attr.aria-invalid]="hasValidationError"
+                           [placeholder]="!assigned ? 'N/A' : (isNd ? 'ND (KPH)' : 'Số / <LOQ')"
+                           [class]="hasValidationError
+                             ? 'border-rose-400 bg-rose-50/40 text-rose-800 dark:border-rose-700 dark:bg-rose-950/30 dark:text-rose-200'
+                             : (isNumeric
+                               ? 'bg-indigo-50/40 dark:bg-indigo-950/30 border-indigo-400 dark:border-indigo-700 text-indigo-950 dark:text-indigo-200 font-bold'
+                               : (isNd
+                                 ? 'bg-slate-50 dark:bg-slate-900/60 text-slate-400 dark:text-slate-500 border-slate-200/80 dark:border-slate-800'
+                                 : 'bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200'))"
+                           class="flex-1 min-w-0 min-h-[44px] rounded-xl border px-3 text-base text-center outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 disabled:bg-slate-100/60 dark:disabled:bg-slate-900/40 disabled:text-slate-400 disabled:cursor-not-allowed" />
+
+                    <button type="button"
+                            [disabled]="!assigned || isReadOnly"
+                            (click)="toggleNdForCompound(compound)"
+                            [attr.aria-pressed]="isNd"
+                            [attr.aria-label]="'Đánh dấu Không phát hiện cho ' + (compoundDisplayNames[compound] || compound)"
+                            [class]="isNd
+                              ? 'border-indigo-500 bg-indigo-600 text-white'
+                              : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300'"
+                            class="min-h-[44px] min-w-[52px] px-3 rounded-xl border text-xs font-bold transition shrink-0 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed">
+                      ND
+                    </button>
+                  </div>
+                  @if (hasValidationError) {
+                    <p [id]="'md-mobile-err-' + idx" class="text-[11px] font-semibold text-rose-600 dark:text-rose-400">
+                      Nhập số hợp lệ, ND, KPH hoặc &lt;LOQ
+                    </p>
+                  }
+
+                  @if (showQcColumns) {
+                    <div class="grid grid-cols-1 gap-2 pt-1 border-t border-slate-100 dark:border-slate-800">
+                      @for (qcKey of qcKeys; track qcKey; let qcIdx = $index) {
+                        <div class="flex items-center justify-between gap-2">
+                          <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 truncate">
+                            {{ qcIdx === 0 ? qc1Header : (qcIdx === 1 ? qc2Header : qc3Header) }}
+                          </span>
+                          <div class="inline-flex items-center rounded-xl border border-slate-200/70 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 p-0.5 select-none shrink-0"
+                               [class.opacity-40]="!assigned || isReadOnly"
+                               [class.pointer-events-none]="!assigned || isReadOnly">
+                            <button type="button"
+                                    [disabled]="!assigned || isReadOnly"
+                                    (click)="setQc(compound, qcKey, 'Đạt')"
+                                    [class]="rowData[compound + '_' + qcKey] === 'Đạt'
+                                      ? 'bg-emerald-600 text-white shadow-xs font-bold'
+                                      : 'text-slate-500 dark:text-slate-400 font-semibold'"
+                                    class="min-h-[36px] min-w-[44px] rounded-lg px-2.5 text-[11px] transition active:scale-95">
+                              Đạt
+                            </button>
+                            <button type="button"
+                                    [disabled]="!assigned || isReadOnly"
+                                    (click)="setQc(compound, qcKey, 'Không đạt')"
+                                    [class]="rowData[compound + '_' + qcKey] === 'Không đạt'
+                                      ? 'bg-rose-600 text-white shadow-xs font-bold'
+                                      : 'text-slate-500 dark:text-slate-400 font-semibold'"
+                                    class="min-h-[36px] min-w-[40px] rounded-lg px-2.5 text-[11px] transition active:scale-95">
+                              KĐ
+                            </button>
+                            @if (allowQcNa) {
+                              <button type="button"
+                                      [disabled]="!assigned || isReadOnly"
+                                      (click)="setQc(compound, qcKey, 'N/A')"
+                                      [class]="!rowData[compound + '_' + qcKey] || rowData[compound + '_' + qcKey] === 'N/A'
+                                        ? 'bg-slate-300 dark:bg-slate-600 text-slate-800 dark:text-slate-100 shadow-xs font-bold'
+                                        : 'text-slate-400 dark:text-slate-500 font-semibold'"
+                                      class="min-h-[36px] min-w-[38px] rounded-lg px-2 text-[10px] transition active:scale-95">
+                                N/A
+                              </button>
+                            }
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  }
+                }
+              </div>
+            } @empty {
+              <div class="rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 py-8 text-center text-xs text-slate-400">
+                Không có hoạt chất nào khớp bộ lọc hiện tại.
+              </div>
+            }
+          </div>
+
+          <!-- Compound Result Table (Desktop / Tablet md+) -->
+          <div class="hidden md:block overflow-x-auto custom-scrollbar border border-slate-200/80 dark:border-slate-800 rounded-2xl max-h-[560px] overflow-y-auto">
             <table class="w-full text-sm border-collapse">
               <thead>
                 <tr class="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-10 shadow-xs">

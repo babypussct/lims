@@ -10,6 +10,7 @@ import {
   AppPageHeaderComponent,
   AppToolbarComponent,
 } from '../../shared/components/ui';
+import { ModalA11yDirective } from '../../shared/directives/modal-a11y.directive';
 import type {
   DutyPersonStat,
   DutyScheduleDraft,
@@ -74,6 +75,7 @@ interface DutyCalendarCell {
     AppModalShellComponent,
     AppPageHeaderComponent,
     AppToolbarComponent,
+    ModalA11yDirective,
     DutyAssignmentModalComponent,
     DutyScheduleImageExportComponent,
     DutyShiftSwapPanelComponent,

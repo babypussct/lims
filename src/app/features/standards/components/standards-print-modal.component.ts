@@ -23,9 +23,9 @@ import { StandardQrSrcDirective } from '../../../shared/directives/standard-qr-s
               [closeDisabled]="printBusy()"
               (closed)="onClose()"
           >
-             <div modalBody class="-mx-6 -my-5 flex min-h-[500px] flex-col lg:h-[calc(100vh-12rem)] lg:flex-row">
+             <div modalBody class="-mx-4 -my-3 sm:-mx-6 sm:-my-5 flex min-h-0 flex-col lg:h-[calc(100vh-12rem)] lg:flex-row">
                  <!-- Left: Settings -->
-                 <div class="custom-scrollbar flex w-full flex-col justify-between overflow-y-auto border-b border-slate-100 p-6 dark:border-slate-800 lg:w-1/2 lg:border-b-0 lg:border-r lg:p-8">
+                 <div class="custom-scrollbar flex w-full flex-col justify-between overflow-y-auto border-b border-slate-100 p-4 sm:p-6 dark:border-slate-800 lg:w-1/2 lg:border-b-0 lg:border-r lg:p-8">
                      <div>
                          <!-- Segmented Control for Layout Mode -->
                          <div class="flex p-1 bg-slate-100 dark:bg-slate-800/80 rounded-2xl mb-6 border border-slate-200/40 dark:border-slate-700/30">
@@ -53,16 +53,16 @@ import { StandardQrSrcDirective } from '../../../shared/directives/standard-qr-s
                              <!-- Template Selection -->
                              <div>
                                  <label class="block text-[11px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Mẫu hiển thị</label>
-                                 <div class="grid grid-cols-3 gap-2">
-                                     <button (click)="onTemplateChange('standard')" [ngClass]="{'ring-2 ring-fuchsia-500 bg-fuchsia-50 dark:bg-fuchsia-950/40 text-fuchsia-600 dark:text-fuchsia-400 border-transparent': printTemplate() === 'standard', 'border-slate-200 dark:border-slate-800': printTemplate() !== 'standard'}" class="p-3 border rounded-xl text-left hover:bg-slate-50 dark:hover:bg-slate-800/50 transition duration-200">
+                                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                     <button (click)="onTemplateChange('standard')" [ngClass]="{'ring-2 ring-fuchsia-500 bg-fuchsia-50 dark:bg-fuchsia-950/40 text-fuchsia-600 dark:text-fuchsia-400 border-transparent': printTemplate() === 'standard', 'border-slate-200 dark:border-slate-800': printTemplate() !== 'standard'}" class="min-h-[44px] p-3 border rounded-xl text-left hover:bg-slate-50 dark:hover:bg-slate-800/50 transition duration-200">
                                          <div class="font-extrabold text-xs text-slate-700 dark:text-slate-200 mb-0.5">Tiêu Chuẩn</div>
                                          <div class="text-[9px] text-slate-400 dark:text-slate-500 leading-tight">Thông Tin Cơ Bản</div>
                                      </button>
-                                     <button (click)="onTemplateChange('detailed')" [ngClass]="{'ring-2 ring-fuchsia-500 bg-fuchsia-50 dark:bg-fuchsia-950/40 text-fuchsia-600 dark:text-fuchsia-400 border-transparent': printTemplate() === 'detailed', 'border-slate-200 dark:border-slate-800': printTemplate() !== 'detailed'}" class="p-3 border rounded-xl text-left hover:bg-slate-50 dark:hover:bg-slate-800/50 transition duration-200">
+                                     <button (click)="onTemplateChange('detailed')" [ngClass]="{'ring-2 ring-fuchsia-500 bg-fuchsia-50 dark:bg-fuchsia-950/40 text-fuchsia-600 dark:text-fuchsia-400 border-transparent': printTemplate() === 'detailed', 'border-slate-200 dark:border-slate-800': printTemplate() !== 'detailed'}" class="min-h-[44px] p-3 border rounded-xl text-left hover:bg-slate-50 dark:hover:bg-slate-800/50 transition duration-200">
                                          <div class="font-extrabold text-xs text-slate-700 dark:text-slate-200 mb-0.5">Chi Tiết</div>
                                          <div class="text-[9px] text-slate-400 dark:text-slate-500 leading-tight">Đầy Đủ Thông Tin</div>
                                      </button>
-                                     <button (click)="onTemplateChange('qr')" [ngClass]="{'ring-2 ring-fuchsia-500 bg-fuchsia-50 dark:bg-fuchsia-950/40 text-fuchsia-600 dark:text-fuchsia-400 border-transparent': printTemplate() === 'qr', 'border-slate-200 dark:border-slate-800': printTemplate() !== 'qr'}" class="p-3 border rounded-xl text-left hover:bg-slate-50 dark:hover:bg-slate-800/50 transition duration-200">
+                                     <button (click)="onTemplateChange('qr')" [ngClass]="{'ring-2 ring-fuchsia-500 bg-fuchsia-50 dark:bg-fuchsia-950/40 text-fuchsia-600 dark:text-fuchsia-400 border-transparent': printTemplate() === 'qr', 'border-slate-200 dark:border-slate-800': printTemplate() !== 'qr'}" class="min-h-[44px] p-3 border rounded-xl text-left hover:bg-slate-50 dark:hover:bg-slate-800/50 transition duration-200">
                                          <div class="font-extrabold text-xs text-slate-700 dark:text-slate-200 mb-0.5">Kèm Mã QR</div>
                                          <div class="text-[9px] text-slate-400 dark:text-slate-500 leading-tight">Quét Truy Xuất Nhanh</div>
                                      </button>
@@ -250,7 +250,7 @@ import { StandardQrSrcDirective } from '../../../shared/directives/standard-qr-s
                  </div>
 
                  <!-- Right: Preview -->
-                 <div class="relative flex min-h-[500px] w-full flex-col items-center justify-center bg-slate-50 p-6 dark:bg-slate-900/50 lg:w-1/2 lg:p-8" id="print-preview-container">
+                 <div class="relative flex min-h-[280px] sm:min-h-[380px] lg:min-h-[500px] w-full flex-col items-center justify-center overflow-x-auto bg-slate-50 p-4 sm:p-6 dark:bg-slate-900/50 lg:w-1/2 lg:p-8" id="print-preview-container">
                      <div class="absolute top-4 left-4 text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-2">
                          <i class="fa-solid fa-eye animate-pulse text-fuchsia-500"></i> Bản Xem Trước Trực Quan
                      </div>

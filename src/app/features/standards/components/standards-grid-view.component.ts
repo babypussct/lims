@@ -77,7 +77,9 @@ import { formatNum, getStorageInfo, getExpiryClass, getExpiryTimeClass, getExpir
                                        }
                                        }
                                    </div>
-                                   <input type="checkbox" [checked]="selectedIds().has(std.id!)" (change)="toggleSelection.emit(std.id!)" class="w-5 h-5 accent-fuchsia-600 dark:accent-fuchsia-500 cursor-pointer shrink-0 mt-0.5" [class.hidden]="isAuditMode()">
+                                   <label class="inline-flex min-h-[40px] min-w-[40px] sm:min-h-0 sm:min-w-0 items-center justify-center cursor-pointer -m-1.5 sm:m-0 shrink-0" [class.hidden]="isAuditMode()">
+                                       <input type="checkbox" [checked]="selectedIds().has(std.id!)" (change)="toggleSelection.emit(std.id!)" class="w-5 h-5 accent-fuchsia-600 dark:accent-fuchsia-500 cursor-pointer">
+                                   </label>
                                </div>
 
                                <!-- Identity -->

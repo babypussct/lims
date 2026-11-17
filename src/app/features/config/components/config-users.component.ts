@@ -16,7 +16,7 @@ import { PERMISSION_EDITOR_GROUPS } from '../../../core/auth/permission-catalog'
   standalone: true,
   imports: [CommonModule, FormsModule, AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent],
   template: `
-    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm dark:shadow-none border border-slate-200 dark:border-slate-700 p-6 flex flex-col gap-6 fade-in">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm dark:shadow-none border border-slate-200 dark:border-slate-700 p-4 sm:p-6 flex flex-col gap-5 sm:gap-6 fade-in">
         
         <!-- TOP HEADER & QUICK STATS -->
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-700/60 pb-5">
@@ -99,9 +99,9 @@ import { PERMISSION_EDITOR_GROUPS } from '../../../core/auth/permission-catalog'
                            [ngModel]="searchQuery()" 
                            (ngModelChange)="searchQuery.set($event)"
                            placeholder="Tìm tên, email hoặc mã tài khoản..."
-                           class="w-full pl-9 pr-9 py-2.5 text-xs md:text-sm font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 transition shadow-xs">
+                           class="w-full min-h-[44px] sm:min-h-0 pl-9 pr-10 py-2.5 text-base sm:text-xs md:text-sm font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/20 focus:border-fuchsia-500 transition shadow-xs">
                     @if (searchQuery()) {
-                        <button (click)="searchQuery.set('')" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs">
+                        <button type="button" (click)="searchQuery.set('')" aria-label="Xóa tìm kiếm" class="absolute right-1.5 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs">
                             <i class="fa-solid fa-xmark"></i>
                         </button>
                     }
@@ -110,13 +110,13 @@ import { PERMISSION_EDITOR_GROUPS } from '../../../core/auth/permission-catalog'
                 <!-- Role Filter Tabs / Chips -->
                 <div class="flex items-center gap-1 overflow-x-auto custom-scrollbar pb-1 lg:pb-0 shrink-0">
                     <button (click)="roleFilter.set('all')" 
-                            class="px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0"
+                            class="min-h-[40px] sm:min-h-0 px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0"
                             [class]="roleFilter() === 'all' ? 'bg-fuchsia-600 text-white shadow-sm' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'">
                         Tất cả ({{totalCount()}})
                     </button>
 
                     <button (click)="roleFilter.set('pending')" 
-                            class="px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 relative"
+                            class="min-h-[40px] sm:min-h-0 px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 relative"
                             [class]="roleFilter() === 'pending' ? 'bg-orange-500 text-white shadow-sm' : 'bg-white dark:bg-slate-800 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-900/40 hover:bg-orange-50 dark:hover:bg-orange-950/20'">
                         <i class="fa-solid fa-hourglass-half text-[10px]"></i> Chờ Duyệt
                         <span class="px-1.5 py-0.2 rounded-full text-[10px]" [class]="roleFilter() === 'pending' ? 'bg-white/30 text-white' : 'bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300'">
@@ -125,19 +125,19 @@ import { PERMISSION_EDITOR_GROUPS } from '../../../core/auth/permission-catalog'
                     </button>
 
                     <button (click)="roleFilter.set('staff')" 
-                            class="px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0"
+                            class="min-h-[40px] sm:min-h-0 px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0"
                             [class]="roleFilter() === 'staff' ? 'bg-blue-600 text-white shadow-sm' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'">
                         <i class="fa-solid fa-user-gear text-[10px]"></i> Nhân viên ({{staffCount()}})
                     </button>
 
                     <button (click)="roleFilter.set('manager')" 
-                            class="px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0"
+                            class="min-h-[40px] sm:min-h-0 px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0"
                             [class]="roleFilter() === 'manager' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'">
                         <i class="fa-solid fa-user-shield text-[10px]"></i> Quản trị ({{managerCount()}})
                     </button>
 
                     <button (click)="roleFilter.set('viewer')" 
-                            class="px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0"
+                            class="min-h-[40px] sm:min-h-0 px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0"
                             [class]="roleFilter() === 'viewer' ? 'bg-slate-700 text-white shadow-sm' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'">
                         <i class="fa-solid fa-eye text-[10px]"></i> Chỉ xem ({{viewerCount()}})
                     </button>
@@ -147,10 +147,10 @@ import { PERMISSION_EDITOR_GROUPS } from '../../../core/auth/permission-catalog'
             <!-- Row 2: Advanced Dropdown Filters (Role Group & Custom Perm Status) -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-2 border-t border-slate-200/60 dark:border-slate-700/40">
                 <!-- Specific Role Group Dropdown -->
-                <div class="flex items-center gap-2">
+                <div class="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2">
                     <label class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shrink-0">Nhóm vai trò:</label>
                     <select [ngModel]="roleIdFilter()" (ngModelChange)="roleIdFilter.set($event)"
-                            class="w-full text-xs font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-700 dark:text-slate-200 focus:outline-none focus:border-fuchsia-500 cursor-pointer">
+                            class="w-full min-h-[42px] sm:min-h-0 text-base sm:text-xs font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-700 dark:text-slate-200 focus:outline-none focus:border-fuchsia-500 cursor-pointer">
                         <option value="all">⚡ Tất cả nhóm vai trò</option>
                         @for (r of rolesList(); track r.id) {
                             <option [value]="r.id">{{r.name}}</option>
@@ -159,10 +159,10 @@ import { PERMISSION_EDITOR_GROUPS } from '../../../core/auth/permission-catalog'
                 </div>
 
                 <!-- Permission Status Dropdown -->
-                <div class="flex items-center gap-2">
+                <div class="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2">
                     <label class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider shrink-0">Quyền hạn:</label>
                     <select [ngModel]="permStatusFilter()" (ngModelChange)="permStatusFilter.set($event)"
-                            class="w-full text-xs font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-700 dark:text-slate-200 focus:outline-none focus:border-fuchsia-500 cursor-pointer">
+                            class="w-full min-h-[42px] sm:min-h-0 text-base sm:text-xs font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-700 dark:text-slate-200 focus:outline-none focus:border-fuchsia-500 cursor-pointer">
                         <option value="all">🌐 Tất cả trạng thái quyền</option>
                         <option value="has_custom">⚡ Có quyền riêng / tùy chỉnh (Custom)</option>
                         <option value="inherited_only">📋 Chỉ quyền theo Nhóm vai trò</option>
@@ -306,11 +306,11 @@ import { PERMISSION_EDITOR_GROUPS } from '../../../core/auth/permission-catalog'
                         <div class="col-span-1 md:col-span-3 flex flex-col gap-2">
                             <label class="md:hidden text-[10px] uppercase font-bold text-slate-400 mb-1 block">Vai trò tài khoản</label>
                             
-                            <div class="flex items-center gap-2">
+                            <div class="flex flex-wrap sm:flex-nowrap items-center gap-2">
                                 <select [ngModel]="u.role" (ngModelChange)="updateRole(u, $event)" 
                                         [disabled]="isProtectedAdmin(u)"
                                         [title]="isProtectedAdmin(u) ? 'Vai trò của tài khoản quản trị gốc chỉ có thể thay đổi qua trusted admin path.' : 'Vai trò tài khoản'"
-                                        class="w-full text-xs md:text-sm border border-slate-300 dark:border-slate-600 rounded-xl p-2 md:p-2 font-bold outline-none focus:border-fuchsia-500 bg-slate-50 md:bg-white dark:bg-slate-800 dark:text-slate-200 transition"
+                                        class="w-full min-h-[42px] sm:min-h-0 text-base md:text-sm border border-slate-300 dark:border-slate-600 rounded-xl p-2 md:p-2 font-bold outline-none focus:border-fuchsia-500 bg-slate-50 md:bg-white dark:bg-slate-800 dark:text-slate-200 transition"
                                         [class.text-orange-600]="u.role === 'pending'"
                                         [class.dark:text-orange-400]="u.role === 'pending'">
                                     <option value="manager" [disabled]="!auth.isManager()">Quản lý (toàn quyền)</option>
@@ -322,7 +322,7 @@ import { PERMISSION_EDITOR_GROUPS } from '../../../core/auth/permission-catalog'
                                 <!-- 1-Click Quick Approve for Pending Rows -->
                                 @if (u.role === 'pending') {
                                     <button (click)="quickApprovePending(u)" 
-                                            class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition shrink-0 flex items-center gap-1.5 active:scale-95"
+                                            class="w-full sm:w-auto min-h-[42px] sm:min-h-0 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition shrink-0 flex items-center justify-center gap-1.5 active:scale-95"
                                             title="Duyệt nhanh tài khoản này thành Staff">
                                         <i class="fa-solid fa-user-check"></i> Duyệt Nhanh
                                     </button>
@@ -333,7 +333,7 @@ import { PERMISSION_EDITOR_GROUPS } from '../../../core/auth/permission-catalog'
                                 <div class="flex flex-col gap-1">
                                     <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Nhóm vai trò nghiệp vụ:</label>
                                     <select [ngModel]="u.roleId || 'role_staff_default'" (ngModelChange)="updateUserRoleId(u, $event)"
-                                            class="w-full text-xs md:text-sm border border-orange-300 dark:border-orange-800/80 rounded-xl p-2 font-bold outline-none focus:border-orange-500 bg-orange-50/50 dark:bg-orange-950/20 text-orange-800 dark:text-orange-300 transition cursor-pointer">
+                                            class="w-full min-h-[42px] sm:min-h-0 text-base md:text-sm border border-orange-300 dark:border-orange-800/80 rounded-xl p-2 font-bold outline-none focus:border-orange-500 bg-orange-50/50 dark:bg-orange-950/20 text-orange-800 dark:text-orange-300 transition cursor-pointer">
                                         @for (r of rolesList(); track r.id) {
                                             <option [value]="r.id">{{r.name}}</option>
                                         }
@@ -358,7 +358,7 @@ import { PERMISSION_EDITOR_GROUPS } from '../../../core/auth/permission-catalog'
                                     <i class="fa-solid fa-hourglass-half shrink-0 text-orange-500"></i> <span>Đang chờ Quản trị viên duyệt & cấp quyền.</span>
                                 </div>
                             } @else {
-                                <button (click)="selectedUserForPerms.set(u)" class="w-full text-left p-2.5 min-w-0 md:min-w-[200px] bg-slate-50 md:bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-fuchsia-400 dark:hover:border-fuchsia-500 hover:shadow-xs transition rounded-xl flex items-center justify-between group">
+                                <button (click)="selectedUserForPerms.set(u)" class="w-full min-h-[42px] sm:min-h-0 text-left p-2.5 min-w-0 md:min-w-[200px] bg-slate-50 md:bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-fuchsia-400 dark:hover:border-fuchsia-500 hover:shadow-xs transition rounded-xl flex items-center justify-between group">
                                     <div class="flex items-center gap-2 text-xs md:text-sm font-bold text-slate-700 dark:text-slate-200 truncate">
                                         <i class="fa-solid fa-sliders text-fuchsia-500 shrink-0"></i>
                                         <span class="truncate">Cấu hình quyền ({{getUserPermissionsCount(u)}})</span>
@@ -372,7 +372,7 @@ import { PERMISSION_EDITOR_GROUPS } from '../../../core/auth/permission-catalog'
                         <div class="col-span-1 md:col-span-1 flex md:justify-center mt-2 md:mt-0">
                             <button (click)="saveUser(u)"
                                     [disabled]="isProtectedAdmin(u)"
-                                    class="w-full md:w-10 h-10 md:h-10 rounded-xl bg-fuchsia-50 md:bg-fuchsia-50/60 dark:bg-fuchsia-900/30 text-fuchsia-700 dark:text-fuchsia-400 hover:bg-fuchsia-600 dark:hover:bg-fuchsia-500 hover:text-white dark:hover:text-white transition flex items-center justify-center border border-fuchsia-200 md:border-transparent dark:border-fuchsia-800/40 font-bold gap-2 text-sm shadow-xs disabled:cursor-not-allowed disabled:opacity-40"
+                                    class="w-full md:w-10 h-11 md:h-10 rounded-xl bg-fuchsia-50 md:bg-fuchsia-50/60 dark:bg-fuchsia-900/30 text-fuchsia-700 dark:text-fuchsia-400 hover:bg-fuchsia-600 dark:hover:bg-fuchsia-500 hover:text-white dark:hover:text-white transition flex items-center justify-center border border-fuchsia-200 md:border-transparent dark:border-fuchsia-800/40 font-bold gap-2 text-sm shadow-xs disabled:cursor-not-allowed disabled:opacity-40"
                                     [title]="isProtectedAdmin(u) ? 'Tài khoản quản trị gốc được bảo vệ ở trusted layer.' : 'Lưu thay đổi cho người dùng này'">
                                 <i class="fa-solid fa-floppy-disk text-base md:text-sm"></i> <span class="md:hidden">Lưu Thay Đổi</span>
                             </button>
@@ -414,7 +414,7 @@ import { PERMISSION_EDITOR_GROUPS } from '../../../core/auth/permission-catalog'
                     <label class="relative block">
                         <span class="sr-only">Tìm quyền</span>
                         <i class="fa-solid fa-magnifying-glass pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400"></i>
-                        <input type="search" [ngModel]="permissionQuery()" (ngModelChange)="permissionQuery.set($event)" placeholder="Tìm quyền theo tên hoặc mô tả..." class="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-xs font-bold text-slate-700 outline-none focus:border-fuchsia-500 focus:bg-white dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200 dark:focus:bg-slate-900">
+                        <input type="search" [ngModel]="permissionQuery()" (ngModelChange)="permissionQuery.set($event)" placeholder="Tìm quyền theo tên hoặc mô tả..." class="w-full min-h-[42px] sm:min-h-0 rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-base sm:text-xs font-bold text-slate-700 outline-none focus:border-fuchsia-500 focus:bg-white dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200 dark:focus:bg-slate-900">
                     </label>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         @for (group of filteredPermissionGroups(); track group.name) {
@@ -424,7 +424,7 @@ import { PERMISSION_EDITOR_GROUPS } from '../../../core/auth/permission-catalog'
                                 </span>
                                 <div class="flex flex-col gap-2 mt-1">
                                     @for (perm of group.perms; track perm.val) {
-                                        <label class="flex items-center justify-between p-2 rounded-xl hover:bg-white dark:hover:bg-slate-800/80 transition"
+                                        <label class="flex items-center justify-between min-h-[40px] sm:min-h-0 p-2 rounded-xl hover:bg-white dark:hover:bg-slate-800/80 transition"
                                                [class.cursor-not-allowed]="isPermInherited(user, perm.val)"
                                                [class.cursor-pointer]="!isPermInherited(user, perm.val)">
                                             <div class="flex items-center gap-3">

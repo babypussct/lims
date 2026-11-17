@@ -2,28 +2,33 @@ import { CommonModule } from '@angular/common';
 import { Component, inject, signal, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
+import { ModalA11yDirective } from '../../shared/directives/modal-a11y.directive';
 
 @Component({
   selector: 'app-password-setup',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ModalA11yDirective],
   template: `
     @if (auth.isPasswordSetupOpen()) {
-      <div class="fixed inset-0 z-[10000] flex items-center justify-center bg-slate-950/75 backdrop-blur-md p-4 animate-fade-in-up" role="dialog" aria-modal="true" aria-labelledby="password-setup-title">
-        <div class="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl p-6 md:p-8 relative overflow-hidden">
+      <div class="fixed inset-0 z-[10000] flex justify-center overflow-y-auto overscroll-contain bg-slate-950/75 backdrop-blur-md p-2 sm:p-4 animate-fade-in-up">
+        <div
+          appModalA11y
+          modalLabelledBy="password-setup-title"
+          (modalEscape)="!auth.needsPasswordSetup() && close()"
+          class="my-auto w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl flex flex-col max-h-[calc(100dvh-1rem)] sm:max-h-[calc(100dvh-2rem)] relative overflow-hidden">
 
           <!-- Decorative Top Glow -->
           <div class="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-fuchsia-500/10 to-transparent pointer-events-none"></div>
 
-          <div class="flex items-start gap-4 mb-6 relative z-10">
-            <div class="w-12 h-12 rounded-2xl bg-fuchsia-100 dark:bg-fuchsia-950/50 text-fuchsia-600 dark:text-fuchsia-400 flex items-center justify-center shrink-0 shadow-inner">
-              <i class="fa-solid fa-shield-halved text-xl"></i>
+          <div class="flex items-start gap-3 sm:gap-4 px-5 pt-5 pb-3 sm:px-8 sm:pt-7 sm:pb-4 border-b border-slate-100 dark:border-slate-800 shrink-0 relative z-10">
+            <div class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-fuchsia-100 dark:bg-fuchsia-950/50 text-fuchsia-600 dark:text-fuchsia-400 flex items-center justify-center shrink-0 shadow-inner">
+              <i class="fa-solid fa-shield-halved text-lg sm:text-xl"></i>
             </div>
-            <div>
-              <h2 id="password-setup-title" class="text-xl font-black text-slate-800 dark:text-white tracking-tight">
+            <div class="min-w-0 flex-1">
+              <h2 id="password-setup-title" class="text-lg sm:text-xl font-black text-slate-800 dark:text-white tracking-tight">
                 @if (!auth.hasPasswordProvider()) { Cài đặt mật khẩu LIMS } @else { Đổi mật khẩu LIMS }
               </h2>
-              <p class="text-sm text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed font-medium">
+              <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 leading-relaxed font-medium break-words">
                 @if (!auth.hasPasswordProvider()) {
                   Tài khoản <strong>{{auth.currentUser()?.email}}</strong> đã sẵn sàng. Hãy tạo mật khẩu dự phòng.
                 } @else {
@@ -33,130 +38,133 @@ import { AuthService } from '../../core/services/auth.service';
             </div>
           </div>
 
-          <!-- Password Purpose -->
-          <div class="mb-5 rounded-2xl border border-fuchsia-200 dark:border-fuchsia-900/60 bg-fuchsia-50/80 dark:bg-fuchsia-950/25 p-4 relative z-10">
-            <div class="flex items-start gap-3">
-              <i class="fa-solid fa-key text-fuchsia-600 dark:text-fuchsia-400 mt-0.5 shrink-0"></i>
-              <div class="space-y-1.5">
-                <p class="text-sm font-black text-fuchsia-900 dark:text-fuchsia-200">Mật khẩu này dùng để làm gì?</p>
-                <p class="text-xs font-medium leading-relaxed text-fuchsia-800/90 dark:text-fuchsia-200/85">
-                  Đây là mật khẩu đăng nhập riêng của LIMS. Bạn có thể dùng <strong>Gmail + mật khẩu LIMS</strong> để đăng nhập thay cho nút Google.
-                  Mật khẩu này <strong>không phải mật khẩu Gmail</strong> và không làm thay đổi tài khoản Google của bạn.
-                </p>
-                <p class="text-[11px] font-bold leading-relaxed text-fuchsia-700 dark:text-fuchsia-300">
-                  Bắt buộc: ít nhất 8 ký tự và hai ô mật khẩu phải trùng nhau. Độ mạnh chỉ là gợi ý.
-                </p>
+          <form (ngSubmit)="save()" class="flex min-h-0 flex-1 flex-col relative z-10">
+            <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain custom-scrollbar px-5 py-4 sm:px-8 sm:py-5 space-y-4">
+              <!-- Password Purpose -->
+              <div class="rounded-2xl border border-fuchsia-200 dark:border-fuchsia-900/60 bg-fuchsia-50/80 dark:bg-fuchsia-950/25 p-3.5 sm:p-4">
+                <div class="flex items-start gap-3">
+                  <i class="fa-solid fa-key text-fuchsia-600 dark:text-fuchsia-400 mt-0.5 shrink-0"></i>
+                  <div class="space-y-1.5 min-w-0">
+                    <p class="text-xs sm:text-sm font-black text-fuchsia-900 dark:text-fuchsia-200">Mật khẩu này dùng để làm gì?</p>
+                    <p class="text-xs font-medium leading-relaxed text-fuchsia-800/90 dark:text-fuchsia-200/85">
+                      Đây là mật khẩu đăng nhập riêng của LIMS. Bạn có thể dùng <strong>Gmail + mật khẩu LIMS</strong> để đăng nhập thay cho nút Google.
+                      Mật khẩu này <strong>không phải mật khẩu Gmail</strong> và không làm thay đổi tài khoản Google của bạn.
+                    </p>
+                    <p class="text-[11px] font-bold leading-relaxed text-fuchsia-700 dark:text-fuchsia-300">
+                      Bắt buộc: ít nhất 8 ký tự và hai ô mật khẩu phải trùng nhau. Độ mạnh chỉ là gợi ý.
+                    </p>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
 
-          <form (ngSubmit)="save()" class="space-y-4 relative z-10">
+              <!-- Current Password (Only when changing password) -->
+              @if (auth.requiresCurrentPassword()) {
+                <div class="group">
+                  <label for="current-password" class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Mật khẩu hiện tại</label>
+                  <div class="relative">
+                    <input id="current-password" name="currentPassword" [type]="showCurrentPassword() ? 'text' : 'password'" [(ngModel)]="currentPassword" autocomplete="current-password"
+                           class="w-full pl-4 pr-12 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 rounded-2xl text-base sm:text-sm font-semibold text-slate-700 dark:text-slate-200 outline-none focus:bg-white dark:focus:bg-slate-800 focus:border-fuchsia-400 dark:focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-400/10 transition-all shadow-sm"
+                           placeholder="Nhập mật khẩu cũ để xác thực" [disabled]="isSaving()" />
+                    <button type="button" (click)="toggleCurrentPassword()" [attr.aria-label]="showCurrentPassword() ? 'Ẩn mật khẩu hiện tại' : 'Hiện mật khẩu hiện tại'" class="absolute inset-y-0 right-0 w-11 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+                      <i class="fa-solid" [class.fa-eye]="!showCurrentPassword()" [class.fa-eye-slash]="showCurrentPassword()" aria-hidden="true"></i>
+                    </button>
+                  </div>
+                </div>
+              }
 
-            <!-- Current Password (Only when changing password) -->
-            @if (auth.requiresCurrentPassword()) {
               <div class="group">
-                <label for="current-password" class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Mật khẩu hiện tại</label>
+                <label for="new-login-password" class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Mật khẩu mới</label>
                 <div class="relative">
-                  <input id="current-password" name="currentPassword" [type]="showCurrentPassword() ? 'text' : 'password'" [(ngModel)]="currentPassword" autocomplete="current-password"
-                         class="w-full pl-4 pr-11 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 rounded-2xl text-sm font-semibold text-slate-700 dark:text-slate-200 outline-none focus:bg-white dark:focus:bg-slate-800 focus:border-fuchsia-400 dark:focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-400/10 transition-all shadow-sm"
-                         placeholder="Nhập mật khẩu cũ để xác thực" [disabled]="isSaving()" />
-                  <button type="button" (click)="toggleCurrentPassword()" [attr.aria-label]="showCurrentPassword() ? 'Ẩn mật khẩu hiện tại' : 'Hiện mật khẩu hiện tại'" class="absolute inset-y-0 right-0 px-4 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
-                    <i class="fa-solid" [class.fa-eye]="!showCurrentPassword()" [class.fa-eye-slash]="showCurrentPassword()" aria-hidden="true"></i>
+                  <input id="new-login-password" name="newLoginPassword" [type]="showNewPassword() ? 'text' : 'password'" [(ngModel)]="password" (ngModelChange)="onPasswordInput()" autocomplete="new-password"
+                         class="w-full pl-4 pr-12 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 rounded-2xl text-base sm:text-sm font-semibold text-slate-700 dark:text-slate-200 outline-none focus:bg-white dark:focus:bg-slate-800 focus:border-fuchsia-400 dark:focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-400/10 transition-all shadow-sm"
+                         placeholder="Ít nhất 8 ký tự" [disabled]="isSaving()" />
+                  <button type="button" (click)="toggleNewPassword()" [attr.aria-label]="showNewPassword() ? 'Ẩn mật khẩu mới' : 'Hiện mật khẩu mới'" class="absolute inset-y-0 right-0 w-11 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+                    <i class="fa-solid" [class.fa-eye]="!showNewPassword()" [class.fa-eye-slash]="showNewPassword()" aria-hidden="true"></i>
+                  </button>
+                </div>
+
+                <!-- Optional Strength Meter -->
+                <div class="mt-3" aria-live="polite">
+                  <div class="flex items-center justify-between mb-1.5 px-1">
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Gợi ý độ mạnh <span class="normal-case tracking-normal font-semibold">(không bắt buộc)</span></span>
+                    <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400">{{strengthLabel()}}</span>
+                  </div>
+                  <div class="flex gap-1 h-1.5 w-full rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800" aria-hidden="true">
+                    <div class="h-full transition-all duration-300" [ngClass]="strengthColors()[0]"></div>
+                    <div class="h-full transition-all duration-300" [ngClass]="strengthColors()[1]"></div>
+                    <div class="h-full transition-all duration-300" [ngClass]="strengthColors()[2]"></div>
+                    <div class="h-full transition-all duration-300" [ngClass]="strengthColors()[3]"></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="group">
+                <label for="confirm-login-password" class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Nhập lại mật khẩu mới</label>
+                <div class="relative">
+                  <input id="confirm-login-password" name="confirmLoginPassword" [type]="showConfirmPassword() ? 'text' : 'password'" [(ngModel)]="confirmation" autocomplete="new-password"
+                         class="w-full pl-4 pr-12 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 rounded-2xl text-base sm:text-sm font-semibold text-slate-700 dark:text-slate-200 outline-none focus:bg-white dark:focus:bg-slate-800 focus:border-fuchsia-400 dark:focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-400/10 transition-all shadow-sm"
+                         placeholder="Nhập lại chính xác" [disabled]="isSaving()" />
+                  <button type="button" (click)="toggleConfirmPassword()" [attr.aria-label]="showConfirmPassword() ? 'Ẩn mật khẩu xác nhận' : 'Hiện mật khẩu xác nhận'" class="absolute inset-y-0 right-0 w-11 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+                    <i class="fa-solid" [class.fa-eye]="!showConfirmPassword()" [class.fa-eye-slash]="showConfirmPassword()" aria-hidden="true"></i>
                   </button>
                 </div>
               </div>
-            }
 
-            <div class="group">
-              <label for="new-login-password" class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Mật khẩu mới</label>
-              <div class="relative">
-                <input id="new-login-password" name="newLoginPassword" [type]="showNewPassword() ? 'text' : 'password'" [(ngModel)]="password" (ngModelChange)="onPasswordInput()" autocomplete="new-password"
-                       class="w-full pl-4 pr-11 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 rounded-2xl text-sm font-semibold text-slate-700 dark:text-slate-200 outline-none focus:bg-white dark:focus:bg-slate-800 focus:border-fuchsia-400 dark:focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-400/10 transition-all shadow-sm"
-                       placeholder="Ít nhất 8 ký tự" [disabled]="isSaving()" />
-                <button type="button" (click)="toggleNewPassword()" [attr.aria-label]="showNewPassword() ? 'Ẩn mật khẩu mới' : 'Hiện mật khẩu mới'" class="absolute inset-y-0 right-0 px-4 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
-                  <i class="fa-solid" [class.fa-eye]="!showNewPassword()" [class.fa-eye-slash]="showNewPassword()" aria-hidden="true"></i>
-                </button>
+              <!-- Real-time Checklist -->
+              <div class="bg-slate-50/50 dark:bg-slate-800/30 rounded-xl p-3 border border-slate-100 dark:border-slate-800/50">
+                <ul class="text-[12px] space-y-2 font-medium">
+                  <li class="flex items-center gap-2 transition-colors" [ngClass]="checkLength() ? 'text-emerald-500' : 'text-slate-400'">
+                    <i class="fa-solid" [class.fa-circle-check]="checkLength()" [class.fa-circle]="!checkLength()"></i>
+                    <span><strong>Bắt buộc:</strong> ít nhất 8 ký tự</span>
+                  </li>
+                  <li class="flex items-center gap-2 transition-colors" [ngClass]="checkNoSpaces() ? 'text-blue-500' : 'text-slate-400'">
+                    <i class="fa-solid" [class.fa-lightbulb]="checkNoSpaces()" [class.fa-circle]="!checkNoSpaces()"></i>
+                    <span><strong>Gợi ý:</strong> không chứa khoảng trắng</span>
+                  </li>
+                  <li class="flex items-center gap-2 transition-colors" [ngClass]="checkMatch() ? 'text-emerald-500' : 'text-slate-400'">
+                    <i class="fa-solid" [class.fa-circle-check]="checkMatch()" [class.fa-circle]="!checkMatch()"></i>
+                    <span><strong>Bắt buộc:</strong> xác nhận trùng khớp</span>
+                  </li>
+                </ul>
               </div>
 
-              <!-- Optional Strength Meter -->
-              <div class="mt-3" aria-live="polite">
-                <div class="flex items-center justify-between mb-1.5 px-1">
-                  <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Gợi ý độ mạnh <span class="normal-case tracking-normal font-semibold">(không bắt buộc)</span></span>
-                  <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400">{{strengthLabel()}}</span>
+              @if (errorMsg()) {
+                <div role="alert" class="px-4 py-3 rounded-2xl bg-red-50/80 dark:bg-red-950/30 border border-red-100 dark:border-red-900/50 text-red-600 dark:text-red-400 text-[13px] font-medium flex items-start gap-2 animate-shake">
+                  <i class="fa-solid fa-circle-exclamation mt-0.5"></i>
+                  <span>{{errorMsg()}}</span>
                 </div>
-                <div class="flex gap-1 h-1.5 w-full rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800" aria-hidden="true">
-                  <div class="h-full transition-all duration-300" [ngClass]="strengthColors()[0]"></div>
-                  <div class="h-full transition-all duration-300" [ngClass]="strengthColors()[1]"></div>
-                  <div class="h-full transition-all duration-300" [ngClass]="strengthColors()[2]"></div>
-                  <div class="h-full transition-all duration-300" [ngClass]="strengthColors()[3]"></div>
-                </div>
-              </div>
-            </div>
-
-            <div class="group">
-              <label for="confirm-login-password" class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Nhập lại mật khẩu mới</label>
-              <div class="relative">
-                <input id="confirm-login-password" name="confirmLoginPassword" [type]="showConfirmPassword() ? 'text' : 'password'" [(ngModel)]="confirmation" autocomplete="new-password"
-                       class="w-full pl-4 pr-11 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 rounded-2xl text-sm font-semibold text-slate-700 dark:text-slate-200 outline-none focus:bg-white dark:focus:bg-slate-800 focus:border-fuchsia-400 dark:focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-400/10 transition-all shadow-sm"
-                       placeholder="Nhập lại chính xác" [disabled]="isSaving()" />
-                <button type="button" (click)="toggleConfirmPassword()" [attr.aria-label]="showConfirmPassword() ? 'Ẩn mật khẩu xác nhận' : 'Hiện mật khẩu xác nhận'" class="absolute inset-y-0 right-0 px-4 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
-                  <i class="fa-solid" [class.fa-eye]="!showConfirmPassword()" [class.fa-eye-slash]="showConfirmPassword()" aria-hidden="true"></i>
-                </button>
-              </div>
-            </div>
-
-            <!-- Real-time Checklist -->
-            <div class="bg-slate-50/50 dark:bg-slate-800/30 rounded-xl p-3 border border-slate-100 dark:border-slate-800/50">
-              <ul class="text-[12px] space-y-2 font-medium">
-                <li class="flex items-center gap-2 transition-colors" [ngClass]="checkLength() ? 'text-emerald-500' : 'text-slate-400'">
-                  <i class="fa-solid" [class.fa-circle-check]="checkLength()" [class.fa-circle]="!checkLength()"></i>
-                  <span><strong>Bắt buộc:</strong> ít nhất 8 ký tự</span>
-                </li>
-                <li class="flex items-center gap-2 transition-colors" [ngClass]="checkNoSpaces() ? 'text-blue-500' : 'text-slate-400'">
-                  <i class="fa-solid" [class.fa-lightbulb]="checkNoSpaces()" [class.fa-circle]="!checkNoSpaces()"></i>
-                  <span><strong>Gợi ý:</strong> không chứa khoảng trắng</span>
-                </li>
-                <li class="flex items-center gap-2 transition-colors" [ngClass]="checkMatch() ? 'text-emerald-500' : 'text-slate-400'">
-                  <i class="fa-solid" [class.fa-circle-check]="checkMatch()" [class.fa-circle]="!checkMatch()"></i>
-                  <span><strong>Bắt buộc:</strong> xác nhận trùng khớp</span>
-                </li>
-              </ul>
-            </div>
-
-            @if (errorMsg()) {
-              <div class="px-4 py-3 rounded-2xl bg-red-50/80 dark:bg-red-950/30 border border-red-100 dark:border-red-900/50 text-red-600 dark:text-red-400 text-[13px] font-medium flex items-start gap-2 animate-shake">
-                <i class="fa-solid fa-circle-exclamation mt-0.5"></i>
-                <span>{{errorMsg()}}</span>
-              </div>
-            }
-
-            <!-- Reassurance Banner -->
-            <div class="flex items-start gap-3 px-4 py-3 rounded-2xl bg-blue-50/80 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/50 text-blue-700 dark:text-blue-300">
-              <i class="fa-solid fa-circle-info mt-0.5 shrink-0"></i>
-              <span class="text-xs font-medium leading-relaxed">Mật khẩu này được tạo riêng để dự phòng cho hệ thống LIMS và hoàn toàn <strong>không ảnh hưởng</strong> đến mật khẩu Google hiện tại của bạn.</span>
-            </div>
-
-            <button type="submit" [disabled]="isSaving() || !isFormValid()"
-                    class="w-full py-3.5 rounded-2xl bg-fuchsia-600 hover:bg-fuchsia-700 disabled:opacity-50 disabled:hover:bg-fuchsia-600 text-white font-bold text-sm shadow-soft-md hover:shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2">
-              @if (isSaving()) {
-                <i class="fa-solid fa-circle-notch fa-spin"></i> Đang lưu...
-              } @else {
-                <i class="fa-solid fa-check"></i> Lưu mật khẩu và tiếp tục
               }
-            </button>
-          </form>
 
-          @if (auth.needsPasswordSetup()) {
-            <button type="button" (click)="logout()" [disabled]="isSaving()"
-                    class="w-full mt-4 py-2.5 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold transition-colors">
-              Đăng xuất và thực hiện sau
-            </button>
-          } @else {
-            <button type="button" (click)="close()" [disabled]="isSaving()"
-                    class="w-full mt-4 py-2.5 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold transition-colors">
-              Hủy thao tác
-            </button>
-          }
+              <!-- Reassurance Banner -->
+              <div class="flex items-start gap-3 px-4 py-3 rounded-2xl bg-blue-50/80 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/50 text-blue-700 dark:text-blue-300">
+                <i class="fa-solid fa-circle-info mt-0.5 shrink-0"></i>
+                <span class="text-xs font-medium leading-relaxed">Mật khẩu này được tạo riêng để dự phòng cho hệ thống LIMS và hoàn toàn <strong>không ảnh hưởng</strong> đến mật khẩu Google hiện tại của bạn.</span>
+              </div>
+            </div>
+
+            <div class="shrink-0 px-5 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] sm:px-8 sm:py-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/50 space-y-2">
+              <button type="submit" [disabled]="isSaving() || !isFormValid()"
+                      class="w-full min-h-[44px] py-3 rounded-2xl bg-fuchsia-600 hover:bg-fuchsia-700 disabled:opacity-50 disabled:hover:bg-fuchsia-600 text-white font-bold text-sm shadow-soft-md hover:shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+                @if (isSaving()) {
+                  <i class="fa-solid fa-circle-notch fa-spin"></i> Đang lưu...
+                } @else {
+                  <i class="fa-solid fa-check"></i> Lưu mật khẩu và tiếp tục
+                }
+              </button>
+
+              @if (auth.needsPasswordSetup()) {
+                <button type="button" (click)="logout()" [disabled]="isSaving()"
+                        class="w-full min-h-[44px] py-2.5 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold transition-colors">
+                  Đăng xuất và thực hiện sau
+                </button>
+              } @else {
+                <button type="button" (click)="close()" [disabled]="isSaving()"
+                        class="w-full min-h-[44px] py-2.5 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold transition-colors">
+                  Hủy thao tác
+                </button>
+              }
+            </div>
+          </form>
         </div>
       </div>
     }

@@ -301,12 +301,12 @@
                      [class]="row.isQC
                        ? 'border-amber-200 dark:border-amber-900/50 bg-amber-50/40 dark:bg-amber-950/20'
                        : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900'">
-                  <div class="flex items-center justify-between gap-2">
+                  <div class="flex flex-wrap items-center justify-between gap-2">
                     <div class="font-mono text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
                       @if (row.isQC) {
                         <i class="fa-solid fa-flask text-amber-500 text-[11px]" aria-hidden="true"></i>
                       }
-                      <span>{{ row.label }}</span>
+                      <span class="break-all">{{ row.label }}</span>
                     </div>
                     <div class="flex items-center gap-1.5">
                       <span class="text-[10px] font-bold text-slate-400">Lọ:</span>
@@ -314,24 +314,35 @@
                              [readOnly]="isReadOnly"
                              [(ngModel)]="draft.resultData[row.key]['loSo']"
                              (ngModelChange)="onDataChanged()"
-                             class="w-16 h-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-center font-mono text-xs font-bold" />
+                             [attr.aria-label]="'Số lọ mẫu ' + row.label"
+                             class="w-16 h-10 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-center font-mono text-sm font-bold outline-none focus:border-indigo-500" />
                     </div>
                   </div>
-                  <div class="grid grid-cols-2 gap-2.5 text-xs">
+                  <div class="grid grid-cols-1 min-[360px]:grid-cols-2 gap-2.5 text-xs">
                     @for (col of activeColumns; track col) {
                       @if (isTargetAssigned(row.key, col)) {
                         <label class="block">
-                          <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400 block mb-1 truncate">{{ columnDisplayNames()[col] || col }}</span>
+                          <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400 block mb-1 truncate">{{ columnDisplayNames()[col] || col }} (µg/kg)</span>
                           <input type="text"
                                  [readOnly]="isReadOnly"
                                  [(ngModel)]="draft.resultData[row.key][col]"
                                  (ngModelChange)="onCellChanged(row.key)"
                                  placeholder="..."
-                                 class="h-9 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-2.5 text-center font-bold outline-none focus:border-indigo-500" />
+                                 class="min-h-[44px] w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-2.5 text-center text-base font-bold outline-none focus:border-indigo-500" />
                         </label>
                       }
                     }
                   </div>
+                  @if (!row.isQC && !isReadOnly) {
+                    <div class="flex items-center justify-end pt-1 border-t border-slate-100 dark:border-slate-800/80">
+                      <button type="button"
+                              (click)="copyRowToAll(row.key)"
+                              class="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 text-xs font-bold text-slate-600 dark:text-slate-200 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition active:scale-95">
+                        <i class="fa-solid fa-copy text-[11px]" aria-hidden="true"></i>
+                        <span>Sao chép cho tất cả mẫu</span>
+                      </button>
+                    </div>
+                  }
                 </div>
               }
             }
@@ -339,12 +350,12 @@
         }
 
         <!-- Spreadsheet Table Grid (Sticky Left Sample & Vial columns) -->
-        <div [class.hidden]="shortFormMobileViewMode() === 'cards'" class="md:!block overflow-x-auto custom-scrollbar border border-slate-200/80 dark:border-slate-800 rounded-2xl max-h-[550px] overflow-y-auto">
+        <div [class.hidden]="shortFormMobileViewMode() === 'cards'" class="md:!block overflow-x-auto custom-scrollbar border border-slate-200/80 dark:border-slate-800 rounded-2xl md:max-h-[550px] md:overflow-y-auto">
           <table class="w-full text-sm border-collapse">
             <thead>
               <tr class="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-20 shadow-xs">
-                <th class="py-3 px-3 text-left font-bold text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider w-24 min-w-[96px] sticky left-0 z-30 bg-slate-50 dark:bg-slate-950 border-r border-slate-200/70 dark:border-slate-800">Số lọ</th>
-                <th class="py-3 px-3 text-left font-bold text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider min-w-[140px] sticky left-24 z-30 bg-slate-50 dark:bg-slate-950 border-r border-slate-200/70 dark:border-slate-800">Mẫu thử</th>
+                <th class="py-3 px-2.5 sm:px-3 text-left font-bold text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider w-20 sm:w-24 md:min-w-[96px] md:sticky md:left-0 md:z-30 bg-slate-50 dark:bg-slate-950 border-r border-slate-200/70 dark:border-slate-800">Số lọ</th>
+                <th class="py-3 px-2.5 sm:px-3 text-left font-bold text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider min-w-[115px] md:min-w-[140px] sticky left-0 md:left-24 z-30 bg-slate-50 dark:bg-slate-950 border-r border-slate-200/70 dark:border-slate-800">Mẫu thử</th>
                 @for (col of activeColumns; track col) {
                   <th class="py-3 px-3 text-left font-bold text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider min-w-[130px]">
                     {{ columnDisplayNames()[col] || col }} (µg/kg)
@@ -359,7 +370,7 @@
                   <tr [class]="row.isQC
                         ? 'bg-amber-50/50 dark:bg-amber-950/20 border-l-4 border-l-amber-500 hover:bg-amber-50/80 transition-colors'
                         : 'bg-white dark:bg-slate-900 hover:bg-slate-50/70 dark:hover:bg-slate-800/30 focus-within:bg-indigo-50/20 dark:focus-within:bg-indigo-950/20 border-l-4 border-l-transparent focus-within:border-l-indigo-500 transition-colors'">
-                    <td class="py-1.5 px-2.5 w-24 min-w-[96px] sticky left-0 z-10 bg-inherit border-r border-slate-100 dark:border-slate-800">
+                    <td class="py-1.5 px-2 sm:px-2.5 w-20 sm:w-24 md:min-w-[96px] md:sticky md:left-0 md:z-10 bg-inherit border-r border-slate-100 dark:border-slate-800">
                       <input type="text"
                              [readOnly]="isReadOnly"
                              [(ngModel)]="draft.resultData[row.key]['loSo']"
@@ -369,9 +380,9 @@
                              (paste)="onShortFormCellPaste($event, rowIdx, 0)"
                              (focus)="$any($event.target).select()"
                              placeholder="..."
-                             class="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-2 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition outline-none text-center" />
+                             class="w-full min-h-[38px] md:min-h-0 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-2 py-1.5 text-sm md:text-xs text-slate-800 dark:text-slate-200 font-bold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition outline-none text-center" />
                     </td>
-                    <td class="py-2 px-3 font-mono font-bold text-xs text-slate-700 dark:text-slate-200 break-all sticky left-24 z-10 bg-inherit border-r border-slate-100 dark:border-slate-800">
+                    <td class="py-2 px-2.5 sm:px-3 font-mono font-bold text-xs text-slate-700 dark:text-slate-200 break-all sticky left-0 md:left-24 z-10 bg-inherit border-r border-slate-100 dark:border-slate-800">
                       @if (row.isQC) {
                         <span class="inline-flex items-center gap-1.5 text-amber-700 dark:text-amber-300">
                           <i class="fa-solid fa-flask text-[10px]" aria-hidden="true"></i> {{ row.label }}

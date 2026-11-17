@@ -19,6 +19,40 @@ import { formatNum } from '../../../shared/utils/utils';
            (closed)="onClose()"
          >
             <div modalBody class="custom-scrollbar">
+                  <!-- Mobile Cards View (< md) -->
+                  <div class="md:hidden space-y-2.5">
+                    @if (loadingHistory()) {
+                      <div class="p-8 text-center text-slate-400 dark:text-slate-500"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải...</div>
+                    } @else {
+                      @for (log of historyLogs(); track log.id) {
+                        <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 p-3.5 space-y-2">
+                          <div class="flex items-start justify-between gap-2">
+                            <div class="min-w-0">
+                              <div class="flex flex-wrap items-center gap-1.5">
+                                <span class="font-bold text-slate-800 dark:text-slate-100 text-xs">{{ log.user }}</span>
+                                @if(log.isBackfill) {
+                                  <span class="px-1.5 py-0.5 rounded bg-fuchsia-100 dark:bg-fuchsia-900/30 text-[9px] font-black uppercase tracking-wider text-fuchsia-600 dark:text-fuchsia-400">Nhập bù</span>
+                                }
+                              </div>
+                              <div class="text-[11px] font-mono text-slate-500 dark:text-slate-400 mt-0.5">{{ log.date | date:'dd/MM/yyyy' }}</div>
+                            </div>
+                            <span class="shrink-0 font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2.5 py-1 rounded-lg text-xs">-{{ formatNum(log.amount_used) }} <span class="text-[10px] text-slate-500 dark:text-slate-400">{{log.unit || historyStd()?.unit}}</span></span>
+                          </div>
+                          <div class="flex items-end justify-between gap-2 pt-1.5 border-t border-slate-100 dark:border-slate-700/60">
+                            <p class="text-xs italic text-slate-600 dark:text-slate-400 line-clamp-2 flex-1">{{ log.purpose || 'N/A' }}</p>
+                            @if(state.isAdmin()){
+                              <button type="button" (click)="onDeleteLog(log)" [disabled]="isProcessing()" aria-label="Xóa nhật ký" class="w-10 h-10 shrink-0 rounded-xl bg-red-50 dark:bg-red-950/30 text-red-500 dark:text-red-400 hover:bg-red-100 transition flex items-center justify-center disabled:opacity-50"><i class="fa-solid fa-trash text-xs"></i></button>
+                            }
+                          </div>
+                        </div>
+                      } @empty {
+                        <div class="p-8 text-center text-slate-400 dark:text-slate-500 italic text-xs">Chưa có dữ liệu.</div>
+                      }
+                    }
+                  </div>
+
+                  <!-- Desktop Table View (md+) -->
+                  <div class="hidden md:block overflow-x-auto">
                   <table class="w-full text-sm text-left">
                     <thead class="bg-slate-50 dark:bg-slate-800/50 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase sticky top-0 border-b border-slate-100 dark:border-slate-800 shadow-sm">
                         <tr>
@@ -55,9 +89,10 @@ import { formatNum } from '../../../shared/utils/utils';
                             }
                         }
                   </tbody></table>
+                  </div>
                   @if(hasMoreHistory()) {
                     <div class="p-4 text-center border-t border-slate-100 dark:border-slate-800">
-                      <button (click)="loadMoreHistoryEvent.emit()" [disabled]="loadingMoreHistory()" class="px-4 py-2 rounded-full border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-fuchsia-600 hover:border-fuchsia-300 disabled:opacity-50 transition">
+                      <button (click)="loadMoreHistoryEvent.emit()" [disabled]="loadingMoreHistory()" class="min-h-[44px] sm:min-h-0 px-4 py-2 rounded-full border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-fuchsia-600 hover:border-fuchsia-300 disabled:opacity-50 transition">
                         @if(loadingMoreHistory()) { <i class="fa-solid fa-spinner fa-spin mr-1"></i> Đang tải... } @else { Tải thêm lịch sử }
                       </button>
                     </div>

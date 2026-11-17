@@ -13,6 +13,7 @@ import { SopCalibrationPointsComponent } from '../shared/sop-calibration-points.
 import { SopSpreadsheetToolbarComponent } from '../shared/sop-spreadsheet-toolbar.component';
 import { SopRecoverySectionComponent, RecoveryCheckEntry } from '../shared/sop-recovery-section.component';
 import { bulkFillND, bulkClearAll, copyRowToAll, navigateGrid } from '../shared/sop-grid-helper';
+import { isMobileViewport } from '../../../../core/utils/viewport.utils';
 import {
   GridPasteController,
   GridPasteGridSpec,
@@ -49,7 +50,7 @@ export class Sop03EntryComponent implements OnInit {
   columnDisplayNames = signal<Record<string, string>>({});
   activeColumns: string[] = [];
   checkboxList: { key: string; label: string }[] = [];
-  mobileViewMode = signal<'table' | 'cards'>('table');
+  mobileViewMode = signal<'table' | 'cards'>(isMobileViewport() ? 'cards' : 'table');
   pasteCtrl = new GridPasteController();
 
   // Bulk vial properties

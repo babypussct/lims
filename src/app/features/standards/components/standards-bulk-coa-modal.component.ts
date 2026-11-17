@@ -18,24 +18,24 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
         [closeDisabled]="isUploading"
         (closed)="cancel.emit()"
       >
-        <div modalBody class="-mx-6 -my-5 flex h-full min-h-0 flex-col bg-slate-50/30 dark:bg-slate-900/50">
+        <div modalBody class="-mx-4 -my-3 sm:-mx-6 sm:-my-5 flex h-full min-h-0 flex-col bg-slate-50/30 dark:bg-slate-900/50">
 
             <!-- Body -->
-            <div class="flex-1 overflow-hidden flex flex-col p-6 relative">
+            <div class="flex-1 overflow-hidden flex flex-col p-4 sm:p-6 relative">
                
                <!-- Summary Stats -->
-               <div class="flex gap-4 mb-4">
-                  <div class="bg-white dark:bg-slate-800 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 flex-1 shadow-sm flex items-center justify-between">
-                     <span class="text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-wider">Tổng số tệp</span>
-                     <span class="text-xl font-black text-slate-800 dark:text-slate-100">{{items.length}}</span>
+               <div class="grid grid-cols-3 gap-2 sm:gap-4 mb-4">
+                  <div class="bg-white dark:bg-slate-800 px-3 py-2.5 sm:px-4 sm:py-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                     <span class="text-slate-500 dark:text-slate-400 font-bold text-[10px] sm:text-xs uppercase tracking-wider">Tổng số tệp</span>
+                     <span class="text-lg sm:text-xl font-black text-slate-800 dark:text-slate-100">{{items.length}}</span>
                   </div>
-                  <div class="bg-emerald-50 dark:bg-emerald-900/10 px-4 py-3 rounded-xl border border-emerald-200 dark:border-emerald-800/30 flex-1 shadow-sm flex items-center justify-between">
-                     <span class="text-emerald-600 dark:text-emerald-500 font-bold text-xs uppercase tracking-wider">Ghép thành công</span>
-                     <span class="text-xl font-black text-emerald-600 dark:text-emerald-400">{{matchedCount()}}</span>
+                  <div class="bg-emerald-50 dark:bg-emerald-900/10 px-3 py-2.5 sm:px-4 sm:py-3 rounded-xl border border-emerald-200 dark:border-emerald-800/30 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                     <span class="text-emerald-600 dark:text-emerald-500 font-bold text-[10px] sm:text-xs uppercase tracking-wider">Ghép thành công</span>
+                     <span class="text-lg sm:text-xl font-black text-emerald-600 dark:text-emerald-400">{{matchedCount()}}</span>
                   </div>
-                  <div class="bg-amber-50 dark:bg-amber-900/10 px-4 py-3 rounded-xl border border-amber-200 dark:border-amber-800/30 flex-1 shadow-sm flex items-center justify-between">
-                     <span class="text-amber-600 dark:text-amber-500 font-bold text-xs uppercase tracking-wider">Chưa xác định</span>
-                     <span class="text-xl font-black text-amber-600 dark:text-amber-400">{{unmatchedCount()}}</span>
+                  <div class="bg-amber-50 dark:bg-amber-900/10 px-3 py-2.5 sm:px-4 sm:py-3 rounded-xl border border-amber-200 dark:border-amber-800/30 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                     <span class="text-amber-600 dark:text-amber-500 font-bold text-[10px] sm:text-xs uppercase tracking-wider">Chưa xác định</span>
+                     <span class="text-lg sm:text-xl font-black text-amber-600 dark:text-amber-400">{{unmatchedCount()}}</span>
                   </div>
                </div>
 

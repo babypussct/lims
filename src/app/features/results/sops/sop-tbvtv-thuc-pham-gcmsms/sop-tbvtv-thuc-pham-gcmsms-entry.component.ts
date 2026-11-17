@@ -20,6 +20,7 @@ import {
 } from '../shared/sop-paste-undo';
 import { calculateSop01Recovery } from '../sop-01/sop-01-engine';
 import { navigateGrid } from '../shared/sop-grid-helper';
+import { isMobileViewport } from '../../../../core/utils/viewport.utils';
 import { getAssignedTargetsForSample, SOP01_COLUMN_TO_CANONICAL, getSop01DisplayName } from '../../shared/compound-id-resolver';
 import {
   deriveSop914DetectionFlags,
@@ -50,7 +51,7 @@ export class SopTbvtvThucPhamGcmsmsEntryComponent extends AbstractSopEntry imple
   // ── UI State đặc thù của SOP TBVTV Thực Phẩm ────────────────────────────
   activeTab = signal<'compounds' | 'chromatography'>('compounds');
   searchQuery = signal<string>('');
-  shortFormMobileViewMode = signal<'table' | 'cards'>('table');
+  shortFormMobileViewMode = signal<'table' | 'cards'>(isMobileViewport() ? 'cards' : 'table');
   pendingShortFormPastePlan = signal<PasteTransactionPlan | null>(null);
   shortFormUndoStack = new PasteUndoStack();
   private shortFormRevision = 0;

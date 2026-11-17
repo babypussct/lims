@@ -1,4 +1,4 @@
-<div class="requests-page flex flex-col space-y-4 h-full relative p-4 md:p-6 overflow-visible">
+<div class="requests-page flex flex-col space-y-4 min-h-full md:h-full relative p-4 md:p-6 overflow-visible">
       <!-- Header Area -->
       <app-page-header
         title="Quản lý yêu cầu chất chuẩn"
@@ -9,7 +9,7 @@
                 <i class="fa-solid fa-file-excel text-emerald-500"></i> Xuất Excel
              </app-button>
              @if(canOperateStandards()) {
-                  <button (click)="openAdminPurchaseRequests()" class="group relative px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl shadow-sm transition-all font-black text-sm flex items-center gap-2 active:scale-95">
+                  <button (click)="openAdminPurchaseRequests()" class="group relative min-h-[40px] sm:min-h-0 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl shadow-sm transition-all font-black text-sm flex items-center gap-2 active:scale-95">
                       <i class="fa-solid fa-cart-shopping" [class.animate-bounce]="pendingPurchaseRequestsCount() > 0"></i> Yêu cầu mua sắm
                       @if (pendingPurchaseRequestsCount() > 0) {
                          <div class="absolute -top-2 -right-2 px-2 py-0.5 min-w-[24px] h-6 flex items-center justify-center bg-red-600 text-white rounded-full text-xs font-black border-2 border-white dark:border-slate-900 shadow-md">{{pendingPurchaseRequestsCount()}}</div>
@@ -22,7 +22,7 @@
          </div>
       </app-page-header>
 
-      <div class="flex flex-col flex-1 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden min-h-0">
+      <div class="flex flex-col flex-1 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 md:overflow-hidden min-h-0">
           
           <!-- Modern Tab Filters & Search -->
           <app-toolbar [sticky]="true">
@@ -30,27 +30,27 @@
                   <div toolbarSearch class="flex items-center gap-1 p-1 bg-slate-100/50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800 overflow-x-auto no-scrollbar max-w-full">
                       <button (click)="statusFilter.set('ALL')" 
                               [class]="statusFilter() === 'ALL' ? 'bg-white dark:bg-slate-800 shadow-sm text-fuchsia-600 dark:text-fuchsia-400' : 'text-slate-500 hover:bg-white/50 dark:hover:bg-slate-800/50'"
-                              class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-black transition-all whitespace-nowrap">
+                              class="min-h-[44px] md:min-h-0 flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-black transition-all whitespace-nowrap">
                           Tất cả <span class="px-1.5 py-0.5 bg-slate-200 dark:bg-slate-700 rounded-md text-xs opacity-70">{{statusCounts().ALL}}</span>
                       </button>
                       <button (click)="statusFilter.set('PENDING_APPROVAL')" 
                               [class]="statusFilter() === 'PENDING_APPROVAL' ? 'bg-white dark:bg-slate-800 shadow-sm text-amber-600 dark:text-amber-400' : 'text-slate-500 hover:bg-white/50 dark:hover:bg-slate-800/50'"
-                              class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-black transition-all whitespace-nowrap">
+                              class="min-h-[44px] md:min-h-0 flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-black transition-all whitespace-nowrap">
                           Chờ duyệt <span class="px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 rounded-md text-xs opacity-70 text-amber-600">{{statusCounts().PENDING_APPROVAL}}</span>
                       </button>
                       <button (click)="statusFilter.set('IN_PROGRESS')" 
                               [class]="statusFilter() === 'IN_PROGRESS' ? 'bg-white dark:bg-slate-800 shadow-sm text-emerald-600 dark:text-emerald-400' : 'text-slate-500 hover:bg-white/50 dark:hover:bg-slate-800/50'"
-                              class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-black transition-all whitespace-nowrap">
+                              class="min-h-[44px] md:min-h-0 flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-black transition-all whitespace-nowrap">
                           Đang dùng <span class="px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 rounded-md text-xs opacity-70 text-emerald-600">{{statusCounts().IN_PROGRESS}}</span>
                       </button>
                       <button (click)="statusFilter.set('PENDING_RETURN')" 
                               [class]="statusFilter() === 'PENDING_RETURN' ? 'bg-white dark:bg-slate-800 shadow-sm text-fuchsia-600 dark:text-fuchsia-400' : 'text-slate-500 hover:bg-white/50 dark:hover:bg-slate-800/50'"
-                              class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-black transition-all whitespace-nowrap">
+                              class="min-h-[44px] md:min-h-0 flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-black transition-all whitespace-nowrap">
                           Chờ trả <span class="px-1.5 py-0.5 bg-fuchsia-100 dark:bg-fuchsia-900/30 rounded-md text-xs opacity-70 text-fuchsia-600">{{statusCounts().PENDING_RETURN}}</span>
                       </button>
                       <button (click)="statusFilter.set('COMPLETED')" 
                               [class]="statusFilter() === 'COMPLETED' ? 'bg-white dark:bg-slate-800 shadow-sm text-slate-600 dark:text-slate-300' : 'text-slate-500 hover:bg-white/50 dark:hover:bg-slate-800/50'"
-                              class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-black transition-all whitespace-nowrap">
+                              class="min-h-[44px] md:min-h-0 flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-black transition-all whitespace-nowrap">
                           Hoàn thành <span class="px-1.5 py-0.5 bg-slate-200 dark:bg-slate-700 rounded-md text-xs opacity-70">{{statusCounts().COMPLETED}}</span>
                       </button>
                   </div>

@@ -30,25 +30,25 @@ type SeedPreview = Awaited<ReturnType<StandardTagCatalogService['previewAccredit
                   <h4 class="text-sm font-black text-slate-700 dark:text-slate-200">{{ editingId() ? 'Sửa nhãn thủ công' : 'Tạo nhãn thủ công' }}</h4>
                   @if (editingId()) { <button type="button" (click)="resetForm()" class="text-xs font-bold text-slate-400 hover:text-fuchsia-600">Tạo mới</button> }
                 </div>
-                <input [ngModel]="name()" (ngModelChange)="name.set($event)" maxlength="100" placeholder="Tên nhãn" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-sm font-bold">
-                <textarea [ngModel]="description()" (ngModelChange)="description.set($event)" rows="3" placeholder="Mô tả (không bắt buộc)" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-sm"></textarea>
+                <input [ngModel]="name()" (ngModelChange)="name.set($event)" maxlength="100" placeholder="Tên nhãn" class="w-full min-h-[44px] sm:min-h-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-base sm:text-sm font-bold">
+                <textarea [ngModel]="description()" (ngModelChange)="description.set($event)" rows="3" placeholder="Mô tả (không bắt buộc)" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-base sm:text-sm"></textarea>
                 <div class="flex items-center gap-2">
                   <label class="text-xs font-bold text-slate-500">Màu</label>
-                  <input [ngModel]="color()" (ngModelChange)="color.set($event)" type="text" maxlength="7" placeholder="#4F46E5" class="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-sm font-mono">
+                  <input [ngModel]="color()" (ngModelChange)="color.set($event)" type="text" maxlength="7" placeholder="#4F46E5" class="flex-1 min-h-[44px] sm:min-h-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-base sm:text-sm font-mono">
                 </div>
-                <button type="button" (click)="saveManualTag()" [disabled]="isBusy() || !name().trim()" class="w-full rounded-xl bg-fuchsia-600 hover:bg-fuchsia-700 text-white px-4 py-2.5 text-sm font-black disabled:opacity-50">
+                <button type="button" (click)="saveManualTag()" [disabled]="isBusy() || !name().trim()" class="w-full min-h-[44px] sm:min-h-0 rounded-xl bg-fuchsia-600 hover:bg-fuchsia-700 text-white px-4 py-2.5 text-sm font-black disabled:opacity-50">
                   @if (isBusy()) { <i class="fa-solid fa-spinner fa-spin"></i> } @else { {{ editingId() ? 'Lưu thay đổi' : 'Tạo nhãn' }} }
                 </button>
                 @if (message()) { <p class="text-xs font-bold" [class.text-red-500]="messageType() === 'error'" [class.text-emerald-600]="messageType() === 'success'">{{message()}}</p> }
               </section>
 
               <section class="rounded-2xl border border-fuchsia-200 dark:border-fuchsia-900/40 bg-fuchsia-50/50 dark:bg-fuchsia-900/10 p-4 space-y-3">
-                <div class="flex items-start justify-between gap-4">
+                <div class="flex flex-wrap items-start justify-between gap-3 sm:gap-4">
                   <div>
                     <h4 class="text-sm font-black text-fuchsia-800 dark:text-fuchsia-200">VLAT-1.1669 · 487/QĐ-AOSC</h4>
                     <p class="text-xs text-fuchsia-700/80 dark:text-fuchsia-300/80 mt-1">119 mã NAFI6/H-* hóa học, không bao gồm phần sinh học. Thông tin thiết bị được suy ra tự động từ dữ liệu nguồn.</p>
                   </div>
-                  <button type="button" (click)="loadPreview()" [disabled]="isBusy()" class="shrink-0 rounded-xl border border-fuchsia-300 dark:border-fuchsia-700 px-3 py-2 text-xs font-black text-fuchsia-700 dark:text-fuchsia-200 hover:bg-white/70 disabled:opacity-50">Xem trước</button>
+                  <button type="button" (click)="loadPreview()" [disabled]="isBusy()" class="shrink-0 min-h-[40px] sm:min-h-0 rounded-xl border border-fuchsia-300 dark:border-fuchsia-700 px-3 py-2 text-xs font-black text-fuchsia-700 dark:text-fuchsia-200 hover:bg-white/70 disabled:opacity-50">Xem trước</button>
                 </div>
                 @if (preview()) {
                     <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center">
@@ -62,7 +62,7 @@ type SeedPreview = Awaited<ReturnType<StandardTagCatalogService['previewAccredit
                     <input type="checkbox" [ngModel]="restoreArchivedFromSameSeed()" (ngModelChange)="restoreArchivedFromSameSeed.set($event); loadPreview()" [disabled]="isBusy()">
                     Khôi phục nhãn đã ẩn từ cùng nguồn dữ liệu nếu còn hiệu lực
                   </label>
-                  <button type="button" (click)="importSeed()" [disabled]="isBusy() || preview()!.conflictIds.length > 0" class="w-full rounded-xl bg-fuchsia-600 hover:bg-fuchsia-700 text-white px-4 py-2.5 text-sm font-black disabled:opacity-50">Nạp/đồng bộ dữ liệu phương pháp</button>
+                  <button type="button" (click)="importSeed()" [disabled]="isBusy() || preview()!.conflictIds.length > 0" class="w-full min-h-[44px] sm:min-h-0 rounded-xl bg-fuchsia-600 hover:bg-fuchsia-700 text-white px-4 py-2.5 text-sm font-black disabled:opacity-50">Nạp/đồng bộ dữ liệu phương pháp</button>
                 }
               </section>
             </div>
@@ -70,7 +70,7 @@ type SeedPreview = Awaited<ReturnType<StandardTagCatalogService['previewAccredit
             <section>
               <div class="flex items-center justify-between mb-3">
                 <h4 class="text-sm font-black text-slate-700 dark:text-slate-200">Các nhãn trong danh mục ({{customOptions().length}})</h4>
-                <button type="button" (click)="refreshCatalog()" [disabled]="isBusy()" class="text-xs font-bold text-fuchsia-600 hover:text-fuchsia-700">Làm mới</button>
+                <button type="button" (click)="refreshCatalog()" [disabled]="isBusy()" class="min-h-[36px] sm:min-h-0 px-2 text-xs font-bold text-fuchsia-600 hover:text-fuchsia-700">Làm mới</button>
               </div>
               <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
                 @for (option of customOptions(); track option.key) {
@@ -88,10 +88,10 @@ type SeedPreview = Awaited<ReturnType<StandardTagCatalogService['previewAccredit
                       @if (option.origin !== 'ACCREDITATION_SCOPE') {
                         <div class="flex gap-1 shrink-0">
                           @if (option.archived) {
-                            <button type="button" (click)="restore(option.key)" [disabled]="isBusy()" class="text-xs text-emerald-600 hover:text-emerald-700" title="Khôi phục"><i class="fa-solid fa-rotate-left"></i></button>
+                            <button type="button" (click)="restore(option.key)" [disabled]="isBusy()" aria-label="Khôi phục nhãn" class="w-9 h-9 sm:w-7 sm:h-7 flex items-center justify-center rounded-lg text-xs text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 transition" title="Khôi phục"><i class="fa-solid fa-rotate-left"></i></button>
                           } @else {
-                            <button type="button" (click)="edit(option)" [disabled]="isBusy()" class="text-xs text-fuchsia-600 hover:text-fuchsia-700" title="Sửa"><i class="fa-solid fa-pen"></i></button>
-                            <button type="button" (click)="softDelete(option.key)" [disabled]="isBusy()" class="text-xs text-red-500 hover:text-red-600" title="Ẩn"><i class="fa-solid fa-eye-slash"></i></button>
+                            <button type="button" (click)="edit(option)" [disabled]="isBusy()" aria-label="Sửa nhãn" class="w-9 h-9 sm:w-7 sm:h-7 flex items-center justify-center rounded-lg text-xs text-fuchsia-600 hover:bg-fuchsia-50 hover:text-fuchsia-700 transition" title="Sửa"><i class="fa-solid fa-pen"></i></button>
+                            <button type="button" (click)="softDelete(option.key)" [disabled]="isBusy()" aria-label="Ẩn nhãn" class="w-9 h-9 sm:w-7 sm:h-7 flex items-center justify-center rounded-lg text-xs text-red-500 hover:bg-red-50 hover:text-red-600 transition" title="Ẩn"><i class="fa-solid fa-eye-slash"></i></button>
                           }
                         </div>
                       }

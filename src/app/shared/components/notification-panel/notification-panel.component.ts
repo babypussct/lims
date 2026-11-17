@@ -69,7 +69,7 @@ interface DateGroup {
                 type="button"
                 (click)="markAllAsRead()"
                 aria-label="Đánh dấu tất cả đã đọc"
-                class="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300
+                class="w-11 h-11 sm:w-9 sm:h-9 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300
                        hover:bg-blue-100 dark:hover:bg-blue-950/50 hover:text-blue-600 dark:hover:text-blue-400
                        transition-all active:scale-95 flex items-center justify-center"
                 title="Đánh dấu tất cả đã đọc">
@@ -85,7 +85,7 @@ interface DateGroup {
                   aria-label="Tùy chọn thông báo"
                   [attr.aria-expanded]="showActionsMenu()"
                   aria-haspopup="menu"
-                  class="w-9 h-9 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400
+                  class="w-11 h-11 sm:w-9 sm:h-9 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400
                          hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-800 dark:hover:text-slate-100
                          transition-all active:scale-90"
                   title="Tùy chọn">
@@ -95,12 +95,12 @@ interface DateGroup {
                 @if (showActionsMenu()) {
                   <div class="notif-actions-dropdown" role="menu" aria-label="Tùy chọn thông báo">
                     @if (readCount() > 0) {
-                      <button type="button" (click)="onDeleteRead()" class="notif-action-item" role="menuitem">
+                      <button type="button" (click)="onDeleteRead()" class="notif-action-item min-h-[44px] sm:min-h-0" role="menuitem">
                         <i class="fa-solid fa-check-double text-emerald-500"></i>
                         <span>Xóa đã đọc ({{ readCount() }})</span>
                       </button>
                     }
-                    <button type="button" (click)="onDeleteAll()" class="notif-action-item notif-action-item--danger" role="menuitem">
+                    <button type="button" (click)="onDeleteAll()" class="notif-action-item notif-action-item--danger min-h-[44px] sm:min-h-0" role="menuitem">
                       <i class="fa-solid fa-trash-can text-red-500"></i>
                       <span>Xóa tất cả ({{ totalCount() }})</span>
                     </button>
@@ -113,7 +113,7 @@ interface DateGroup {
               type="button"
               (click)="panel.close()"
               aria-label="Đóng trung tâm thông báo"
-              class="w-9 h-9 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400
+              class="w-11 h-11 sm:w-9 sm:h-9 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400
                      hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-800 dark:hover:text-slate-100
                      transition-all active:scale-90">
               <i class="fa-solid fa-xmark text-sm"></i>
@@ -208,7 +208,7 @@ interface DateGroup {
                       @if (n.message && n.message.length > 90) {
                         <button type="button" (click)="toggleExpand(n, $event)"
                                 [attr.aria-label]="isExpanded(n) ? 'Ẩn bớt nội dung thông báo' : 'Xem thêm nội dung thông báo'"
-                                class="text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:underline mt-1 inline-block">
+                                class="text-[11px] sm:text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:underline mt-1 min-h-[32px] sm:min-h-0 inline-flex items-center">
                           {{ isExpanded(n) ? 'Ẩn bớt ↑' : 'Xem thêm ↓' }}
                         </button>
                       }
@@ -235,18 +235,18 @@ interface DateGroup {
                           type="button"
                           (click)="markAsRead(n.id!, $event)"
                           aria-label="Đánh dấu thông báo đã đọc"
-                          class="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-blue-100 dark:hover:bg-blue-950/60 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-300 flex items-center justify-center transition-all"
+                          class="w-10 h-10 sm:w-7 sm:h-7 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-blue-100 dark:hover:bg-blue-950/60 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-300 flex items-center justify-center transition-all"
                           title="Đánh dấu đã đọc">
-                          <i class="fa-solid fa-check text-[10px]"></i>
+                          <i class="fa-solid fa-check text-xs sm:text-[10px]"></i>
                         </button>
                       }
                       <button
                         type="button"
                         (click)="deleteNotification(n, $event)"
                         aria-label="Xóa thông báo"
-                        class="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-rose-100 dark:hover:bg-rose-950/60 text-slate-500 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-300 flex items-center justify-center transition-all"
+                        class="w-10 h-10 sm:w-7 sm:h-7 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-rose-100 dark:hover:bg-rose-950/60 text-slate-500 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-300 flex items-center justify-center transition-all"
                         title="Xoá thông báo">
-                        <i class="fa-solid fa-trash-can text-[10px]"></i>
+                        <i class="fa-solid fa-trash-can text-xs sm:text-[10px]"></i>
                       </button>
                     </div>
                   </div>
@@ -256,7 +256,7 @@ interface DateGroup {
 
             @if (hasMore()) {
               <div class="p-3">
-                <button type="button" (click)="loadMore()" class="notif-load-more-btn">
+                <button type="button" (click)="loadMore()" class="notif-load-more-btn min-h-[44px] sm:min-h-0">
                   <i class="fa-solid fa-chevron-down text-[10px]"></i>
                   <span>Xem thêm {{ totalCount() - displayLimit() }} thông báo</span>
                 </button>
@@ -277,7 +277,7 @@ interface DateGroup {
           <button
             type="button"
             (click)="goToSettings()"
-            class="text-[11px] font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors flex items-center gap-1.5">
+            class="text-xs sm:text-[11px] font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors flex items-center gap-1.5 min-h-[40px] sm:min-h-0 px-2 -mr-2 rounded-lg">
             <i class="fa-solid fa-gear text-[10px]"></i>
             Cài Đặt Thông Báo
           </button>
@@ -393,20 +393,29 @@ interface DateGroup {
     }
 
     .notif-tab-container {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 2px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
       background: transparent;
       width: 100%;
+    }
+
+    .notif-tab-container::-webkit-scrollbar {
+      display: none;
     }
 
     .notif-tab {
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 2px;
+      gap: 4px;
+      flex: 1 0 auto;
       min-width: 0;
-      padding: 7px 3px;
+      min-height: 36px;
+      padding: 6px 10px;
       border-radius: 999px;
       font-size: 11px;
       font-weight: 700;
@@ -593,6 +602,25 @@ interface DateGroup {
       transform: translateX(0);
     }
 
+    @media (hover: none), (pointer: coarse), (max-width: 767px) {
+      .notif-item-actions {
+        position: static;
+        opacity: 1;
+        pointer-events: auto;
+        transform: none;
+        background: transparent !important;
+        box-shadow: none !important;
+        padding: 0;
+        align-self: center;
+        gap: 6px;
+      }
+
+      .notif-tab {
+        min-height: 40px;
+        padding: 8px 12px;
+      }
+    }
+
     :host-context(.dark) .notif-item-actions {
       background: rgba(36, 37, 38, 0.96);
       box-shadow: 0 1px 5px rgba(0, 0, 0, 0.4);
@@ -658,11 +686,12 @@ interface DateGroup {
 
     /* === Footer === */
     .notif-footer {
-      padding: 11px 16px;
+      padding: 10px 16px;
       border-top: 1px solid #e4e6eb;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 8px;
     }
 
     :host-context(.dark) .notif-footer {
@@ -709,10 +738,14 @@ interface DateGroup {
         left: 0 !important;
         right: 0 !important;
         width: 100% !important;
-        max-height: 85vh !important;
+        max-height: 85dvh !important;
         border-radius: 18px 18px 0 0 !important;
         animation: notifSheetSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         overscroll-behavior: contain;
+      }
+
+      .notif-footer {
+        padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
       }
 
       @keyframes notifSheetSlideUp {
@@ -723,8 +756,9 @@ interface DateGroup {
 
     @media (max-width: 360px) {
       .notif-tab {
-        font-size: 10px;
-        padding-inline: 2px;
+        font-size: 11px;
+        min-height: 40px;
+        padding: 8px 10px;
       }
 
       .notif-tab-count {

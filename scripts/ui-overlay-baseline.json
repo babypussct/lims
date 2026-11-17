@@ -15,6 +15,5 @@
   "src/app/shared/components/gs1-info-modal/gs1-info-modal.component.ts": 1,
   "src/app/shared/components/notification-panel/notification-panel.component.ts": 1,
   "src/app/shared/components/progress-overlay/progress-overlay.component.ts": 1,
-  "src/app/shared/components/pwa-install-prompt.component.ts": 2,
-  "src/app/shared/components/quick-generate-sample-modal/quick-generate-sample-modal.component.ts": 1
+  "src/app/shared/components/pwa-install-prompt.component.ts": 2
 }

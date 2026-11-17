@@ -21,7 +21,7 @@ import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, App
   standalone: true,
   imports: [CommonModule, FormsModule, ReactiveFormsModule, LockPermissionDirective, AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, AppPageHeaderComponent, AppToolbarComponent],
   template: `
-    <div class="flex flex-col flex-1 min-h-0 fade-in relative p-4 md:p-6 bg-transparent dark:text-slate-100">
+    <div class="flex flex-col flex-1 min-h-full md:min-h-0 fade-in relative p-4 md:p-6 bg-transparent dark:text-slate-100">
 
         <app-page-header
             title="Thư viện công thức"
@@ -51,7 +51,7 @@ import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, App
                     <input
                         [ngModel]="recipeSearchTerm()"
                         (ngModelChange)="recipeSearchTerm.set($event)"
-                        class="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm font-medium text-slate-700 shadow-sm transition focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                        class="w-full min-h-[44px] rounded-xl border border-slate-200 bg-white py-2.5 sm:py-3 pl-11 pr-4 text-base sm:text-sm font-medium text-slate-700 shadow-sm transition focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                         placeholder="Tìm công thức theo tên, mã hoặc thành phần..."
                         aria-label="Tìm công thức">
                 </div>
@@ -65,17 +65,17 @@ import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, App
             <!-- List -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 overflow-y-auto custom-scrollbar p-1">
                 @for (recipe of filteredRecipes(); track recipe.id) {
-                    <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 hover:shadow-lg transition-all duration-300 group relative hover:border-fuchsia-300 dark:hover:border-fuchsia-700 flex flex-col">
-                        <div class="flex justify-between items-start mb-3">
+                    <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 sm:p-5 hover:shadow-lg transition-all duration-300 group relative hover:border-fuchsia-300 dark:hover:border-fuchsia-700 flex flex-col">
+                        <div class="flex justify-between items-start mb-3 gap-2">
                             <span class="bg-fuchsia-50 dark:bg-fuchsia-950/40 text-fuchsia-700 dark:text-fuchsia-300 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider border border-fuchsia-100 dark:border-fuchsia-900/50">
                                 {{recipe.baseUnit}}
                             </span>
                             @if(auth.canEditRecipes() || state.showLockedFeatures()) {
                                 <div class="flex gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 transition duration-200">
-                                    <button [appLockPermission]="'recipe_edit'" (click)="openModal(recipe)" aria-label="Sửa công thức" class="w-9 h-9 flex items-center justify-center rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:border-blue-300 dark:hover:border-blue-700 transition shadow-sm">
+                                    <button [appLockPermission]="'recipe_edit'" (click)="openModal(recipe)" aria-label="Sửa công thức" class="w-10 h-10 sm:w-9 sm:h-9 flex items-center justify-center rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:border-blue-300 dark:hover:border-blue-700 transition shadow-sm">
                                         <i class="fa-solid fa-pen text-[10px]" aria-hidden="true"></i>
                                     </button>
-                                    <button [appLockPermission]="'recipe_edit'" (click)="deleteRecipe(recipe)" aria-label="Xóa công thức" class="w-9 h-9 flex items-center justify-center rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 hover:border-red-300 dark:hover:border-red-700 transition shadow-sm">
+                                    <button [appLockPermission]="'recipe_edit'" (click)="deleteRecipe(recipe)" aria-label="Xóa công thức" class="w-10 h-10 sm:w-9 sm:h-9 flex items-center justify-center rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 hover:border-red-300 dark:hover:border-red-700 transition shadow-sm">
                                         <i class="fa-solid fa-trash text-[10px]" aria-hidden="true"></i>
                                     </button>
                                 </div>
@@ -131,11 +131,11 @@ import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, App
                             <div class="p-4 bg-fuchsia-50 dark:bg-fuchsia-950/30 rounded-xl border border-fuchsia-100 dark:border-fuchsia-900/50 space-y-4">
                                 <div>
                                     <label class="text-xs font-bold text-fuchsia-800 dark:text-fuchsia-200 uppercase block mb-1.5">Tên hiển thị <span class="text-red-500">*</span></label>
-                                    <input formControlName="name" (input)="onNameChange($event)" class="w-full border border-fuchsia-200 dark:border-fuchsia-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg p-3 text-sm font-bold outline-none focus:ring-2 focus:ring-fuchsia-500 placeholder-fuchsia-300" placeholder="VD: Hỗn hợp Muối A">
+                                    <input formControlName="name" (input)="onNameChange($event)" class="w-full min-h-[44px] border border-fuchsia-200 dark:border-fuchsia-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg p-3 text-base sm:text-sm font-bold outline-none focus:ring-2 focus:ring-fuchsia-500 placeholder-fuchsia-300" placeholder="VD: Hỗn hợp Muối A">
                                 </div>
                                 <div>
                                     <label class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase block mb-1">Đơn vị thành phẩm</label>
-                                    <select formControlName="baseUnit" class="w-full border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-sm outline-none bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">
+                                    <select formControlName="baseUnit" class="w-full min-h-[44px] border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-base sm:text-sm outline-none bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">
                                         @for (opt of unitOptions; track opt.value) { <option [value]="opt.value">{{opt.value}}</option> }
                                     </select>
                                 </div>
@@ -143,7 +143,7 @@ import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, App
 
                             <!-- Ingredients -->
                             <div>
-                                <div class="flex justify-between items-center mb-3">
+                                <div class="flex flex-wrap justify-between items-center gap-2 mb-3">
                                     <label class="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase flex items-center gap-2">
                                         <i class="fa-solid fa-layer-group text-slate-400"></i> Thành phần (từ kho)
                                     </label>
@@ -154,22 +154,22 @@ import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, App
                                 
                                 <div formArrayName="ingredients" class="space-y-3">
                                     @for (ing of ingredients.controls; track ing; let i = $index) {
-                                        <div [formGroupName]="i" class="flex gap-2 items-center relative z-0 p-2 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-100 dark:border-slate-700 group transition hover:border-fuchsia-200 dark:hover:border-fuchsia-800 hover:bg-fuchsia-50/50 dark:hover:bg-fuchsia-950/20" [style.zIndex]="100-i">
-                                            <div class="w-6 h-6 rounded bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300 flex items-center justify-center text-xs font-bold shrink-0">{{i+1}}</div>
+                                        <div [formGroupName]="i" class="flex flex-wrap sm:flex-nowrap gap-2 items-center relative z-0 p-2.5 sm:p-2 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-100 dark:border-slate-700 group transition hover:border-fuchsia-200 dark:hover:border-fuchsia-800 hover:bg-fuchsia-50/50 dark:hover:bg-fuchsia-950/20" [style.zIndex]="100-i">
+                                            <div class="w-6 h-6 rounded bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300 flex items-center justify-center text-xs font-bold shrink-0 order-1">{{i+1}}</div>
                                             
                                             <!-- Search Component -->
-                                            <div class="flex-1 relative">
+                                            <div class="flex-1 min-w-[180px] relative order-2">
                                                 <input formControlName="_displayName" 
                                                        (input)="onSearchInput($event, i)"
                                                        (focus)="onSearchFocus(i)"
-                                                       class="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none focus:border-fuchsia-500 bg-white dark:bg-slate-800 shadow-sm"
+                                                       class="w-full min-h-[42px] sm:min-h-0 border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-base sm:text-xs font-bold text-slate-700 dark:text-slate-200 outline-none focus:border-fuchsia-500 bg-white dark:bg-slate-800 shadow-sm"
                                                        placeholder="Nhập tên hóa chất...">
                                                 <input formControlName="name" type="hidden">
                                                 
                                                 @if(activeSearchIndex === i && searchResults().length > 0) {
                                                     <div class="absolute top-full left-0 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg shadow-xl mt-1 max-h-48 overflow-y-auto z-50 custom-scrollbar">
                                                         @for (item of searchResults(); track item.id) {
-                                                            <button type="button" (click)="selectItem(item, i)" class="w-full px-3 py-2 text-left hover:bg-fuchsia-50 dark:hover:bg-fuchsia-950/30 cursor-pointer border-b border-slate-50 dark:border-slate-700 last:border-0 flex justify-between items-center group/item">
+                                                            <button type="button" (click)="selectItem(item, i)" class="w-full min-h-[42px] px-3 py-2 text-left hover:bg-fuchsia-50 dark:hover:bg-fuchsia-950/30 cursor-pointer border-b border-slate-50 dark:border-slate-700 last:border-0 flex justify-between items-center group/item">
                                                                 <div class="truncate pr-2">
                                                                     <div class="text-xs font-bold text-slate-700 dark:text-slate-200 group-hover/item:text-fuchsia-700 dark:group-hover/item:text-fuchsia-300 truncate">{{item.name}}</div>
                                                                     <div class="text-[10px] text-slate-400 font-mono">{{item.id}}</div>
@@ -181,11 +181,11 @@ import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, App
                                                 }
                                             </div>
 
-                                            <input formControlName="amount" type="number" class="w-20 border border-slate-300 dark:border-slate-600 rounded-lg px-2 py-2 text-xs text-center font-bold outline-none focus:border-fuchsia-500 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100" placeholder="Lượng">
-                                            <select formControlName="unit" class="w-20 border border-slate-300 dark:border-slate-600 rounded-lg px-2 py-2 text-xs outline-none bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100">
+                                            <input formControlName="amount" type="number" class="flex-1 sm:flex-none sm:w-20 min-h-[42px] sm:min-h-0 border border-slate-300 dark:border-slate-600 rounded-lg px-2 py-2 text-base sm:text-xs text-center font-bold outline-none focus:border-fuchsia-500 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 order-4 sm:order-3" placeholder="Lượng">
+                                            <select formControlName="unit" class="flex-1 sm:flex-none sm:w-20 min-h-[42px] sm:min-h-0 border border-slate-300 dark:border-slate-600 rounded-lg px-2 py-2 text-base sm:text-xs outline-none bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 order-5 sm:order-4">
                                                 @for (opt of unitOptions; track opt.value) { <option [value]="opt.value">{{opt.value}}</option> }
                                             </select>
-                                            <button type="button" (click)="ingredients.removeAt(i)" aria-label="Xóa dòng thành phần" class="w-8 h-8 flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-full transition"><i class="fa-solid fa-xmark"></i></button>
+                                            <button type="button" (click)="ingredients.removeAt(i)" aria-label="Xóa dòng thành phần" class="w-10 h-10 sm:w-8 sm:h-8 shrink-0 flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-full transition order-3 sm:order-5"><i class="fa-solid fa-xmark"></i></button>
                                         </div>
                                     }
                                 </div>

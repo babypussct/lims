@@ -29,7 +29,7 @@ import { ActivatedRoute, Router } from '@angular/router';
   imports: [CommonModule, FormsModule, SkeletonComponent, BatchWorksheetPickerComponent, RequestHistoryLoaderComponent, DateRangeFilterComponent, AppPageHeaderComponent, AppDatePickerComponent, AppButtonComponent, A4DocumentPreviewComponent],
   template: `
     @if (handoverDocument(); as document) { <app-a4-document-preview [document]="document" (closed)="handoverDocument.set(null)" /> }
-    <div class="h-full flex flex-col fade-in relative p-4 md:p-6">
+    <div class="min-h-full md:h-full flex flex-col fade-in relative p-4 md:p-6">
         <app-page-header
             class="mb-4 shrink-0"
             title="Quản lý yêu cầu"
@@ -41,10 +41,10 @@ import { ActivatedRoute, Router } from '@angular/router';
                        class="soft-ui-segmented__item flex items-center gap-2"
                        [class.soft-ui-segmented__item--active]="currentTab() === 'pending'"
                        [attr.aria-pressed]="currentTab() === 'pending'">
-                   <i class="fa-solid fa-clock"></i> Chờ duyệt 
+                   <i class="fa-solid fa-clock"></i> Chờ duyệt
                    @if(state.requests().length > 0) { <span class="bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 px-1.5 rounded-md text-[10px]">{{state.requests().length}}</span> }
                </button>
-               
+
                <button type="button"
                        (click)="setCurrentTab('approved')"
                        class="soft-ui-segmented__item flex items-center gap-2"
@@ -60,9 +60,9 @@ import { ActivatedRoute, Router } from '@angular/router';
         @if (currentTab() === 'approved') {
             <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <app-batch-worksheet-picker [requests]="displayRequests()" />
-                <app-date-range-filter 
-                    [initStart]="startDate()" 
-                    [initEnd]="endDate()" 
+                <app-date-range-filter
+                    [initStart]="startDate()"
+                    [initEnd]="endDate()"
                     (dateChange)="onDateRangeChange($event)">
                 </app-date-range-filter>
             </div>
@@ -70,10 +70,10 @@ import { ActivatedRoute, Router } from '@angular/router';
 
         <!-- CONTENT AREA -->
         <app-request-history-loader [startDate]="startDate()" [endDate]="endDate()" [enabled]="currentTab() === 'approved'" />
-        <div class="flex-1 min-h-0 relative">
-            
+        <div class="flex-1 md:min-h-0 relative">
+
             <!-- TAB: LISTS (Pending / Approved) -->
-                <div class="h-full overflow-y-auto custom-scrollbar pb-20 pr-2">
+                <div class="md:h-full md:overflow-y-auto custom-scrollbar pb-20 pr-0 md:pr-2">
                     <div class="grid gap-4 w-full">
                         @if(isLoading()) {
                             @for(i of [1,2,3]; track i) {
@@ -88,11 +88,11 @@ import { ActivatedRoute, Router } from '@angular/router';
                         } @else {
                             @for (req of displayRequests(); track req.id) {
                                 <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5 flex flex-col md:flex-row md:items-start justify-between gap-4 transition hover:shadow-md dark:hover:shadow-none relative overflow-hidden group">
-                                    
+
                                     @if(processingId() === req.id) {
                                         <div class="absolute inset-0 bg-white/80 dark:bg-slate-900/80 z-20 flex items-center justify-center backdrop-blur-sm">
                                             <div class="bg-white dark:bg-slate-800 px-5 py-3 rounded-xl shadow-lg flex items-center gap-3 border border-slate-100 dark:border-slate-700">
-                                                <i class="fa-solid fa-circle-notch fa-spin text-blue-600 dark:text-blue-500"></i> 
+                                                <i class="fa-solid fa-circle-notch fa-spin text-blue-600 dark:text-blue-500"></i>
                                                 <span class="text-sm font-bold text-slate-600 dark:text-slate-300">Đang xử lý...</span>
                                             </div>
                                         </div>
@@ -105,7 +105,7 @@ import { ActivatedRoute, Router } from '@angular/router';
                                              } @else {
                                                 <span class="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-wider border border-emerald-100 dark:border-emerald-800/50">Đã duyệt</span>
                                              }
-                                             
+
                                              @if (req.isVirtualMaster) {
                                                 <span class="px-2.5 py-1 rounded-lg bg-fuchsia-50 dark:bg-fuchsia-900/20 text-fuchsia-600 dark:text-fuchsia-400 text-[10px] font-black uppercase tracking-wider border border-fuchsia-100 dark:border-fuchsia-800/50 flex items-center gap-1.5 shadow-sm">
                                                     <i class="fa-solid fa-crown text-[10px]"></i> MẺ MASTER ẢO
@@ -133,7 +133,7 @@ import { ActivatedRoute, Router } from '@angular/router';
                                                 </span>
                                              }
                                         </div>
-                                        
+
                                         <h3 class="font-bold text-slate-800 dark:text-slate-200 text-lg mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{{req.sopName}}</h3>
                                         <div class="text-xs text-slate-500 dark:text-slate-400 mb-4 flex items-center gap-2">
                                             <div class="w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-500"><i class="fa-solid fa-user text-[10px]"></i></div>
@@ -148,7 +148,7 @@ import { ActivatedRoute, Router } from '@angular/router';
                                             </div>
                                         }
 
-                                        <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-100 dark:border-slate-700">
+                                        <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3.5 sm:p-4 border border-slate-100 dark:border-slate-700">
                                              <table class="w-full text-sm">
                                                 <thead>
                                                     <tr class="text-[10px] text-slate-400 dark:text-slate-500 uppercase text-left font-bold tracking-wider">
@@ -157,74 +157,83 @@ import { ActivatedRoute, Router } from '@angular/router';
                                                     </tr>
                                                 </thead>
                                                 <tbody class="divide-y divide-slate-100 dark:divide-slate-700/50">
-                                                    @for (item of req.items; track item.name) {
+                                                    @for (item of (isItemsExpanded(req.id) ? req.items : req.items.slice(0, 4)); track item.name) {
                                                         <tr>
-                                                            <td class="py-2 font-medium text-slate-600 dark:text-slate-300 text-xs">{{getItemName(item)}}</td>
-                                                            <td class="py-2 text-right font-bold text-slate-700 dark:text-slate-200 font-mono text-xs">
+                                                            <td class="py-2 pr-2 font-medium text-slate-600 dark:text-slate-300 text-xs">{{getItemName(item)}}</td>
+                                                            <td class="py-2 text-right font-bold text-slate-700 dark:text-slate-200 font-mono text-xs whitespace-nowrap">
                                                                 {{formatNum(item.displayAmount)}} <span class="text-[10px] text-slate-400 dark:text-slate-500 font-normal">{{item.unit}}</span>
                                                             </td>
                                                         </tr>
                                                     }
                                                 </tbody>
                                              </table>
+                                             @if (req.items.length > 4) {
+                                               <button type="button" (click)="toggleItemsExpanded(req.id)" class="mt-2 min-h-[36px] w-full rounded-lg border border-slate-200/70 dark:border-slate-700 bg-white dark:bg-slate-800/80 px-3 py-1 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-blue-600 transition">
+                                                 {{ isItemsExpanded(req.id) ? 'Thu gọn danh sách hóa chất' : 'Xem thêm ' + (req.items.length - 4) + ' hóa chất' }}
+                                               </button>
+                                             }
                                         </div>
                                     </div>
 
-                                    <app-button variant="secondary" size="sm" [disabled]="!req.sampleList?.length" (click)="printHandover(req)"><i class="fa-solid fa-print" aria-hidden="true"></i> Phiếu bàn giao mẫu</app-button>
-                                    @if (currentTab() === 'approved' && !req.isVirtualMaster && worksheets.canRead()) {
-                                      <app-button variant="secondary" size="sm" [loading]="worksheets.loading()" (click)="printWorksheet(req)"><i class="fa-solid fa-print" aria-hidden="true"></i> Phiếu phân tích</app-button>
-                                      <app-button variant="ghost" size="sm" (click)="viewTrace(req)">Truy xuất</app-button>
-                                    }
-                                    @if(auth.canApprove()) {
-                                        <div class="flex flex-row md:flex-col gap-2 shrink-0 md:w-36 mt-2 md:mt-0">
-                                            @if (currentTab() === 'pending') {
-                                                <button (click)="approve(req)" [disabled]="!!processingId() || !getPendingAnalysisDate(req)"
-                                                        class="flex-1 px-4 py-2.5 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-xl font-bold shadow-sm hover:shadow-md dark:shadow-none transition text-xs uppercase tracking-wide flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                                                    <i class="fa-solid fa-check"></i> Duyệt
-                                                </button>
-                                                <app-button variant="secondary" size="sm" [disabled]="!!processingId() || !getPendingAnalysisDate(req) || worksheets.loading()" (click)="approve(req, true)">Duyệt & xem phiếu</app-button>
-                                                <button (click)="reject(req)" [disabled]="!!processingId()" 
-                                                        class="flex-1 px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-200 dark:hover:border-red-800/50 hover:text-red-600 dark:hover:text-red-400 text-slate-600 dark:text-slate-400 rounded-xl font-bold transition text-xs uppercase tracking-wide flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                                                    <i class="fa-solid fa-xmark"></i> Từ Chối
-                                                </button>
-                                            } @else {
-                                                @if (state.isAdmin()) {
-                                                    <button (click)="goToResults(req)" [disabled]="!!processingId()"
-                                                             class="flex-1 px-4 py-2.5 bg-fuchsia-600 hover:bg-fuchsia-700 text-white rounded-xl font-bold shadow-sm hover:shadow-md transition text-xs uppercase tracking-wide flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                                                        <i class="fa-solid fa-square-poll-vertical"></i> Nhập Kết Quả
-                                                    </button>
-                                                }
-                                                    <button (click)="editApproved(req)" [disabled]="!!processingId() || !canEdit(req)"
-                                                             class="flex-1 px-4 py-2.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 text-blue-600 dark:text-blue-400 hover:bg-blue-600 dark:hover:bg-blue-500 hover:text-white rounded-xl font-bold shadow-sm dark:shadow-none transition text-xs uppercase tracking-wide flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                                                        <i class="fa-solid fa-pen"></i> Chỉnh Sửa
-                                                    </button>
-                                                @if (auth.canApprove()) {
-                                                  <button (click)="reassignSop(req)" [disabled]="!!processingId()"
-                                                          class="flex-1 px-4 py-2.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 text-blue-600 dark:text-blue-400 hover:bg-blue-600 dark:hover:bg-blue-500 hover:text-white rounded-xl font-bold shadow-sm dark:shadow-none transition text-xs uppercase tracking-wide flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                                                      <i class="fa-solid fa-code-compare"></i> Chuyển SOP
+                                    <div class="flex flex-col gap-2 shrink-0 md:w-44 mt-1 md:mt-0">
+                                      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-1 gap-2">
+                                        <app-button variant="secondary" size="sm" [fullWidth]="true" [disabled]="!req.sampleList?.length" (click)="printHandover(req)"><i class="fa-solid fa-print" aria-hidden="true"></i> Phiếu bàn giao mẫu</app-button>
+                                        @if (currentTab() === 'approved' && !req.isVirtualMaster && worksheets.canRead()) {
+                                          <app-button variant="secondary" size="sm" [fullWidth]="true" [loading]="worksheets.loading()" (click)="printWorksheet(req)"><i class="fa-solid fa-print" aria-hidden="true"></i> Phiếu phân tích</app-button>
+                                          <app-button variant="ghost" size="sm" [fullWidth]="true" (click)="viewTrace(req)">Truy xuất</app-button>
+                                        }
+                                      </div>
+                                      @if(auth.canApprove()) {
+                                          <div class="grid grid-cols-2 md:grid-cols-1 gap-2">
+                                              @if (currentTab() === 'pending') {
+                                                  <button (click)="approve(req)" [disabled]="!!processingId() || !getPendingAnalysisDate(req)"
+                                                          class="min-h-[44px] md:min-h-0 px-4 py-2.5 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-xl font-bold shadow-sm hover:shadow-md dark:shadow-none transition text-xs uppercase tracking-wide flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                                                      <i class="fa-solid fa-check"></i> Duyệt
                                                   </button>
-                                                }
-                                                @if (state.isAdmin()) {
-                                                    <button (click)="revoke(req)" [disabled]="!!processingId()"
-                                                             class="flex-1 px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-orange-600 dark:hover:text-orange-400 hover:border-orange-200 dark:hover:border-orange-800/50 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-xl font-bold shadow-sm dark:shadow-none transition text-xs uppercase tracking-wide flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed">
-                                                        <i class="fa-solid fa-rotate-left group-hover:-rotate-90 transition-transform duration-300"></i> Hoàn Tác
+                                                  <app-button variant="secondary" size="sm" [fullWidth]="true" [disabled]="!!processingId() || !getPendingAnalysisDate(req) || worksheets.loading()" (click)="approve(req, true)">Duyệt &amp; xem phiếu</app-button>
+                                                  <button (click)="reject(req)" [disabled]="!!processingId()"
+                                                          class="col-span-2 md:col-span-1 min-h-[44px] md:min-h-0 px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-200 dark:hover:border-red-800/50 hover:text-red-600 dark:hover:text-red-400 text-slate-600 dark:text-slate-400 rounded-xl font-bold transition text-xs uppercase tracking-wide flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                                                      <i class="fa-solid fa-xmark"></i> Từ Chối
+                                                  </button>
+                                              } @else {
+                                                  @if (state.isAdmin()) {
+                                                      <button (click)="goToResults(req)" [disabled]="!!processingId()"
+                                                              class="col-span-2 md:col-span-1 min-h-[44px] md:min-h-0 px-4 py-2.5 bg-fuchsia-600 hover:bg-fuchsia-700 text-white rounded-xl font-bold shadow-sm hover:shadow-md transition text-xs uppercase tracking-wide flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                                                          <i class="fa-solid fa-square-poll-vertical"></i> Nhập Kết Quả
+                                                      </button>
+                                                  }
+                                                      <button (click)="editApproved(req)" [disabled]="!!processingId() || !canEdit(req)"
+                                                               class="min-h-[44px] md:min-h-0 px-4 py-2.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 text-blue-600 dark:text-blue-400 hover:bg-blue-600 dark:hover:bg-blue-500 hover:text-white rounded-xl font-bold shadow-sm dark:shadow-none transition text-xs uppercase tracking-wide flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                                                          <i class="fa-solid fa-pen"></i> Chỉnh Sửa
+                                                      </button>
+                                                  @if (auth.canApprove()) {
+                                                    <button (click)="reassignSop(req)" [disabled]="!!processingId()"
+                                                            class="min-h-[44px] md:min-h-0 px-4 py-2.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 text-blue-600 dark:text-blue-400 hover:bg-blue-600 dark:hover:bg-blue-500 hover:text-white rounded-xl font-bold shadow-sm dark:shadow-none transition text-xs uppercase tracking-wide flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                                                        <i class="fa-solid fa-code-compare"></i> Chuyển SOP
                                                     </button>
-                                                }
-                                            }
-                                        </div>
-                                    } @else {
+                                                  }
+                                                  @if (state.isAdmin()) {
+                                                      <button (click)="revoke(req)" [disabled]="!!processingId()"
+                                                               class="col-span-2 md:col-span-1 min-h-[44px] md:min-h-0 px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-orange-600 dark:hover:text-orange-400 hover:border-orange-200 dark:hover:border-orange-800/50 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-xl font-bold shadow-sm dark:shadow-none transition text-xs uppercase tracking-wide flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed">
+                                                          <i class="fa-solid fa-rotate-left group-hover:-rotate-90 transition-transform duration-300"></i> Hoàn Tác
+                                                      </button>
+                                                  }
+                                              }
+                                          </div>
+                                      } @else {
                                         @if(currentTab() === 'pending') {
-                                            <div class="flex flex-col items-center justify-center md:w-32 shrink-0 text-slate-300 dark:text-slate-600 gap-2 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
+                                            <div class="flex flex-col items-center justify-center shrink-0 text-slate-300 dark:text-slate-600 gap-2 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
                                                 <i class="fa-solid fa-hourglass-half text-2xl animate-pulse"></i>
                                                 <span class="text-[10px] uppercase font-bold text-center">Đang chờ<br>quản lý duyệt</span>
                                             </div>
                                         } @else {
-                                            <div class="flex flex-col items-center justify-center md:w-32 shrink-0 text-emerald-500 dark:text-emerald-400 gap-2 p-4 bg-emerald-50/50 dark:bg-emerald-900/20 rounded-xl border border-emerald-100 dark:border-emerald-800/50">
+                                            <div class="flex flex-col items-center justify-center shrink-0 text-emerald-500 dark:text-emerald-400 gap-2 p-4 bg-emerald-50/50 dark:bg-emerald-900/20 rounded-xl border border-emerald-100 dark:border-emerald-800/50">
                                                 <i class="fa-solid fa-circle-check text-2xl"></i>
                                                 <span class="text-[10px] uppercase font-bold text-center">Hoàn thành</span>
                                             </div>
                                         }
-                                    }
+                                      }
+                                    </div>
                                 </div>
                             } @empty {
                                 <div class="text-center py-20 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 border-dashed">
@@ -243,12 +252,12 @@ import { ActivatedRoute, Router } from '@angular/router';
 
         <!-- PREMIUM GLASSMORPHIC SMART CONFIRMATION MODAL -->
         @if (showRevokeModal() && selectedRevokeRequest(); as req) {
-            <div class="fixed inset-0 z-[1000] flex items-center justify-center p-4">
+            <div class="fixed inset-0 z-[1000] flex items-end sm:items-center justify-center p-0 sm:p-4">
                 <!-- Backdrop blur -->
                 <div class="absolute inset-0 bg-slate-900/60 dark:bg-black/70 backdrop-blur-md transition-opacity duration-300" (click)="closeRevokeModal()"></div>
-                
+
                 <!-- Modal Content -->
-                <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-lg border border-slate-100 dark:border-slate-700/80 shadow-2xl relative z-10 overflow-hidden flex flex-col scale-in transform transition-all duration-300 max-h-[90vh]">
+                <div class="bg-white dark:bg-slate-800 rounded-t-2xl sm:rounded-2xl w-full max-w-lg border border-slate-100 dark:border-slate-700/80 shadow-2xl relative z-10 overflow-hidden flex flex-col scale-in transform transition-all duration-300 max-h-[90dvh]">
                     <!-- Top subtle accent bar -->
                     <div class="h-1.5 w-full bg-gradient-to-r from-orange-500 via-amber-500 to-red-500"></div>
 
@@ -272,7 +281,7 @@ import { ActivatedRoute, Router } from '@angular/router';
                         <!-- Choice Cards -->
                         <div class="space-y-4">
                             <!-- Option A: Đưa về chờ duyệt -->
-                            <button (click)="confirmRevoke('pending')" 
+                            <button (click)="confirmRevoke('pending')"
                                     class="w-full text-left p-4 rounded-2xl bg-gradient-to-r hover:from-blue-50/50 hover:to-fuchsia-50/50 dark:hover:from-blue-950/20 dark:hover:to-fuchsia-950/20 border border-slate-100 dark:border-slate-700 hover:border-blue-200 dark:hover:border-blue-800/50 transition group flex gap-4">
                                 <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/50 flex items-center justify-center text-blue-500 dark:text-blue-400 shrink-0 group-hover:scale-110 transition-transform">
                                     <i class="fa-solid fa-clock-rotate-left"></i>
@@ -284,7 +293,7 @@ import { ActivatedRoute, Router } from '@angular/router';
                             </button>
 
                             <!-- Option B: Từ chối hoàn toàn -->
-                            <button (click)="confirmRevoke('rejected')" 
+                            <button (click)="confirmRevoke('rejected')"
                                     class="w-full text-left p-4 rounded-2xl bg-gradient-to-r hover:from-red-50/50 hover:to-rose-50/50 dark:hover:from-red-950/20 dark:hover:to-rose-950/20 border border-slate-100 dark:border-slate-700 hover:border-red-200 dark:hover:border-red-800/50 transition group flex gap-4">
                                 <div class="w-10 h-10 rounded-xl bg-red-50 dark:bg-red-950/50 flex items-center justify-center text-red-500 dark:text-red-400 shrink-0 group-hover:scale-110 transition-transform">
                                     <i class="fa-solid fa-ban"></i>
@@ -298,9 +307,9 @@ import { ActivatedRoute, Router } from '@angular/router';
                     </div>
 
                     <!-- Footer actions -->
-                    <div class="px-6 py-4 bg-slate-50 dark:bg-slate-900/40 border-t border-slate-100 dark:border-slate-750/80 flex justify-end">
-                        <button (click)="closeRevokeModal()" 
-                                class="px-5 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-black uppercase tracking-wider transition">
+                    <div class="px-5 sm:px-6 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] sm:py-4 bg-slate-50 dark:bg-slate-900/40 border-t border-slate-100 dark:border-slate-750/80 flex justify-end shrink-0">
+                        <button type="button" (click)="closeRevokeModal()"
+                                class="w-full sm:w-auto min-h-[44px] sm:min-h-0 px-5 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-black uppercase tracking-wider transition">
                             Hủy Thao Tác
                         </button>
                     </div>
@@ -335,13 +344,27 @@ export class RequestListComponent implements OnInit {
   worksheets = inject(BatchWorksheetService);
   private route = inject(ActivatedRoute);
   cleanName = cleanName; formatNum = formatNum; formatDate = formatDate; formatSampleList = formatSampleList;
-  
+
   currentTab = signal<'pending' | 'approved'>('pending');
   processingId = signal<string | null>(null);
   pendingAnalysisDates = signal<Record<string, string>>({});
   isLoading = signal(true);
   showRevokeModal = signal<boolean>(false);
   selectedRevokeRequest = signal<Request | null>(null);
+  expandedItemsIds = signal<Set<string>>(new Set());
+
+  isItemsExpanded(id: string): boolean {
+      return this.expandedItemsIds().has(id);
+  }
+
+  toggleItemsExpanded(id: string): void {
+      this.expandedItemsIds.update(curr => {
+          const next = new Set(curr);
+          if (next.has(id)) next.delete(id);
+          else next.add(id);
+          return next;
+      });
+  }
 
   // Date Filters for History
   startDate = signal<string>(this.getToday());
@@ -372,7 +395,7 @@ export class RequestListComponent implements OnInit {
   filteredHistory = computed(() => {
       const all = this.state.approvedRequests();
       const user = this.auth.currentUser();
-      
+
       const start = parseLocalDateKey(this.startDate());
       if (start) start.setHours(0, 0, 0, 0);
       const end = parseLocalDateKey(this.endDate());
@@ -398,8 +421,8 @@ export class RequestListComponent implements OnInit {
   });
 
   displayRequests = computed(() => this.currentTab() === 'pending' ? this.state.requests() : this.filteredHistory());
-  
-  getItemName(item: RequestItem): string { 
+
+  getItemName(item: RequestItem): string {
       if (item.displayName) return item.displayName;
       return item.name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   }

@@ -57,19 +57,19 @@
                       <!-- TAB 1: GENERAL INFO -->
                       @if (currentTab() === 'general') {
                           <div class="space-y-6 fade-in">
-                              <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 space-y-4">
+                              <div class="bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 space-y-4">
                                   <div>
                                       <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Tên quy trình <span class="text-red-500">*</span></label>
-                                      <input formControlName="name" class="w-full border border-slate-300 dark:border-slate-600 bg-transparent rounded-lg p-3 text-sm font-bold outline-none focus:border-blue-500 dark:focus:border-blue-400 transition">
+                                      <input formControlName="name" class="w-full border border-slate-300 dark:border-slate-600 bg-transparent rounded-lg p-3 text-base sm:text-sm font-bold outline-none focus:border-blue-500 dark:focus:border-blue-400 transition">
                                   </div>
-                                  <div class="grid grid-cols-2 gap-4">
+                                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                       <div>
                                           <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Danh mục (Category) <span class="text-red-500">*</span></label>
-                                          <input formControlName="category" class="w-full border border-slate-300 dark:border-slate-600 bg-transparent rounded-lg p-3 text-sm outline-none focus:border-blue-500 dark:focus:border-blue-400 transition" placeholder="VD: NAFI6 H-9.21">
+                                          <input formControlName="category" class="w-full border border-slate-300 dark:border-slate-600 bg-transparent rounded-lg p-3 text-base sm:text-sm outline-none focus:border-blue-500 dark:focus:border-blue-400 transition" placeholder="VD: NAFI6 H-9.21">
                                       </div>
                                       <div>
                                           <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Tài liệu tham chiếu (Ref)</label>
-                                          <input formControlName="ref" class="w-full border border-slate-300 dark:border-slate-600 bg-transparent rounded-lg p-3 text-sm outline-none focus:border-blue-500 dark:focus:border-blue-400 transition" placeholder="VD: AOAC 2007.01">
+                                          <input formControlName="ref" class="w-full border border-slate-300 dark:border-slate-600 bg-transparent rounded-lg p-3 text-base sm:text-sm outline-none focus:border-blue-500 dark:focus:border-blue-400 transition" placeholder="VD: AOAC 2007.01">
                                       </div>
                                   </div>
                                   
@@ -204,12 +204,12 @@
 
                       <!-- TAB 2: LOGIC -->
                       @if (currentTab() === 'logic') {
-                          <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 fade-in">
-                              <div class="flex justify-between items-center mb-4">
+                          <div class="bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 fade-in">
+                              <div class="flex flex-wrap justify-between items-center gap-2 mb-4">
                                   <h3 class="font-bold text-slate-800 dark:text-slate-200 text-sm uppercase flex items-center gap-2">
                                       <i class="fa-solid fa-calculator text-fuchsia-500 dark:text-fuchsia-400"></i> Biến Trung Gian (Variables)
                                   </h3>
-                                  <button type="button" (click)="addVariable()" class="text-xs bg-fuchsia-50 dark:bg-fuchsia-900/20 text-fuchsia-700 dark:text-fuchsia-400 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/40 px-3 py-1.5 rounded-lg font-bold transition">+ Thêm Biến</button>
+                                  <button type="button" (click)="addVariable()" class="min-h-10 sm:min-h-0 text-xs bg-fuchsia-50 dark:bg-fuchsia-900/20 text-fuchsia-700 dark:text-fuchsia-400 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/40 px-3 py-1.5 rounded-lg font-bold transition">+ Thêm Biến</button>
                               </div>
                               <p class="text-xs text-slate-500 dark:text-slate-400 mb-4 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg border border-slate-100 dark:border-slate-700">
                                   <i class="fa-solid fa-circle-info mr-1"></i> Định nghĩa các công thức toán học dùng chung. 
@@ -218,20 +218,20 @@
 
                               <div formArrayName="variablesList" class="space-y-3">
                                   @for (v of variablesList.controls; track v; let i = $index) {
-                                      <div [formGroupName]="i" class="flex gap-2 items-center p-3 border border-fuchsia-100 dark:border-fuchsia-900/30 bg-fuchsia-50/30 dark:bg-fuchsia-900/10 rounded-xl relative group">
-                                          <div class="w-1/3">
+                                      <div [formGroupName]="i" class="flex flex-col sm:flex-row gap-2 sm:items-center p-3 border border-fuchsia-100 dark:border-fuchsia-900/30 bg-fuchsia-50/30 dark:bg-fuchsia-900/10 rounded-xl relative group">
+                                          <div class="w-full sm:w-1/3">
                                               <label class="text-[9px] font-bold text-fuchsia-400 dark:text-fuchsia-500 uppercase mb-1 block">Tên biến</label>
-                                              <input formControlName="key" list="std_vars" placeholder="VD: total_vol" class="w-full border border-fuchsia-200 dark:border-fuchsia-800/50 bg-transparent rounded-lg px-3 py-2 text-xs font-mono font-bold text-fuchsia-700 dark:text-fuchsia-400 outline-none focus:bg-white dark:focus:bg-slate-800 transition">
+                                              <input formControlName="key" list="std_vars" placeholder="VD: total_vol" class="min-h-10 sm:min-h-0 w-full border border-fuchsia-200 dark:border-fuchsia-800/50 bg-transparent rounded-lg px-3 py-2 text-base sm:text-xs font-mono font-bold text-fuchsia-700 dark:text-fuchsia-400 outline-none focus:bg-white dark:focus:bg-slate-800 transition">
                                               <datalist id="std_vars">
                                                   @for(std of standardVars; track std.value) { <option [value]="std.value">{{std.label}}</option> }
                                               </datalist>
                                           </div>
-                                          <div class="flex items-center justify-center pt-4 text-fuchsia-300 dark:text-fuchsia-600"><i class="fa-solid fa-equals"></i></div>
-                                          <div class="flex-1">
+                                          <div class="hidden sm:flex items-center justify-center pt-4 text-fuchsia-300 dark:text-fuchsia-600"><i class="fa-solid fa-equals"></i></div>
+                                          <div class="flex-1 min-w-0">
                                               <label class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1 block">Biểu thức tính toán (JavaScript)</label>
-                                              <input formControlName="formula" placeholder="VD: n_sample * 10" class="w-full border border-slate-300 dark:border-slate-600 bg-transparent rounded-lg px-3 py-2 text-xs font-mono text-slate-700 dark:text-slate-300 outline-none focus:border-fuchsia-500 dark:focus:border-fuchsia-400 focus:bg-white dark:focus:bg-slate-800 transition">
+                                              <input formControlName="formula" placeholder="VD: n_sample * 10" class="min-h-10 sm:min-h-0 w-full border border-slate-300 dark:border-slate-600 bg-transparent rounded-lg px-3 py-2 text-base sm:text-xs font-mono text-slate-700 dark:text-slate-300 outline-none focus:border-fuchsia-500 dark:focus:border-fuchsia-400 focus:bg-white dark:focus:bg-slate-800 transition">
                                           </div>
-                                          <button type="button" (click)="variablesList.removeAt(i)" aria-label="Xóa biến" class="mt-4 w-9 h-9 flex items-center justify-center text-slate-300 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition rounded-full hover:bg-white dark:hover:bg-slate-800"><i class="fa-solid fa-trash"></i></button>
+                                          <button type="button" (click)="variablesList.removeAt(i)" aria-label="Xóa biến" class="self-end sm:self-auto sm:mt-4 w-10 h-10 flex items-center justify-center text-slate-300 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition rounded-full hover:bg-white dark:hover:bg-slate-800"><i class="fa-solid fa-trash"></i></button>
                                       </div>
                                   }
                               </div>
@@ -241,32 +241,32 @@
                       <!-- TAB 3: CONSUMABLES -->
                       @if (currentTab() === 'consumables') {
                           <div class="fade-in pb-32">
-                             <div class="flex items-center justify-between mb-4">
+                             <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
                                  <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
                                      Danh Sách Vật Tư <span class="bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 text-[10px] px-2 py-0.5 rounded-full">{{consumables.length}}</span>
                                  </h3>
-                                 <button type="button" (click)="addConsumable()" class="text-xs bg-slate-800 dark:bg-slate-700 text-white hover:bg-slate-700 dark:hover:bg-slate-600 px-4 py-2 rounded-lg font-bold transition">+ Thêm Dòng</button>
+                                 <button type="button" (click)="addConsumable()" class="min-h-10 sm:min-h-0 text-xs bg-slate-800 dark:bg-slate-700 text-white hover:bg-slate-700 dark:hover:bg-slate-600 px-4 py-2 rounded-lg font-bold transition">+ Thêm Dòng</button>
                              </div>
                              
                              <div formArrayName="consumables" class="space-y-4">
                                 @for (con of consumables.controls; track con; let i = $index) {
                                    @let conType = con.get('type')?.value;
                                    <div [formGroupName]="i" class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm overflow-visible group transition hover:shadow-md dark:hover:shadow-none hover:border-blue-300 dark:hover:border-blue-500 relative z-0" [style.zIndex]="200-i">
-                                      <div class="bg-slate-50 dark:bg-slate-800/50 p-3 flex items-center gap-3 border-b border-slate-100 dark:border-slate-700">
-                                         <div class="w-6 h-6 rounded bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 flex items-center justify-center text-xs font-bold">{{i+1}}</div>
-                                         <select formControlName="type" (change)="onTypeChange(i)" class="text-[10px] font-bold uppercase bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 outline-none focus:border-blue-500 dark:focus:border-blue-400 cursor-pointer w-32">
+                                      <div class="bg-slate-50 dark:bg-slate-800/50 p-3 flex flex-wrap items-center gap-2 sm:gap-3 border-b border-slate-100 dark:border-slate-700">
+                                         <div class="w-6 h-6 rounded bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 flex items-center justify-center text-xs font-bold shrink-0">{{i+1}}</div>
+                                         <select formControlName="type" (change)="onTypeChange(i)" class="min-h-10 sm:min-h-0 text-xs sm:text-[10px] font-bold uppercase bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 outline-none focus:border-blue-500 dark:focus:border-blue-400 cursor-pointer flex-1 sm:flex-none sm:w-36">
                                              <option value="simple">Hóa chất đơn</option>
                                              <option value="shared_recipe">Công thức (Thư viện)</option>
                                              <option value="composite">Hỗn hợp (Nhập tay)</option>
                                          </select>
                                          
-                                         <div class="flex-1 relative group/input">
+                                         <div class="w-full sm:w-auto sm:flex-1 relative group/input">
                                              @if(conType === 'simple' || conType === 'shared_recipe') {
                                                  @let validItem = conType === 'simple' ? validInventoryMap().get(con.get('name')?.value || '') : validRecipeMap().get(con.get('name')?.value || '');
-                                                 <div class="flex items-center justify-between px-3 py-1.5 w-full">
-                                                     <div class="flex flex-col flex-1">
-                                                         <div class="flex items-center gap-2">
-                                                             <span class="text-sm font-bold text-slate-700 dark:text-slate-300">
+                                                 <div class="flex flex-wrap items-center justify-between gap-2 px-1 sm:px-3 py-1.5 w-full">
+                                                     <div class="flex flex-col flex-1 min-w-[140px]">
+                                                         <div class="flex flex-wrap items-center gap-2">
+                                                             <span class="text-sm font-bold text-slate-700 dark:text-slate-300 break-words">
                                                                  {{ con.get('_displayName')?.value || '(Chưa chọn)' }}
                                                              </span>
                                                              @if(con.get('name')?.value) {
@@ -278,10 +278,10 @@
                                                              }
                                                          </div>
                                                          @if(con.get('name')?.value) {
-                                                             <span class="text-[10px] text-slate-400 dark:text-slate-500 font-mono">Mã: {{con.get('name')?.value}}</span>
+                                                             <span class="text-[10px] text-slate-400 dark:text-slate-500 font-mono break-all">Mã: {{con.get('name')?.value}}</span>
                                                          }
                                                      </div>
-                                                     <button type="button" (click)="openConsumableModal(i, false)" class="text-[10px] font-bold bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 px-2 py-1 rounded transition whitespace-nowrap">
+                                                     <button type="button" (click)="openConsumableModal(i, false)" class="min-h-10 sm:min-h-0 text-xs sm:text-[10px] font-bold bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 px-3 py-1.5 sm:px-2 sm:py-1 rounded-lg sm:rounded transition whitespace-nowrap">
                                                          @if(con.get('name')?.value && !validItem) {
                                                              Chọn lại
                                                          } @else {
@@ -352,7 +352,7 @@
                                                </div>
                                                <div formArrayName="ingredients" class="space-y-2">
                                                   @for (ing of getIngredients(i).controls; track ing; let j = $index) {
-                                                     <div [formGroupName]="j" class="flex gap-2 items-center relative" [style.zIndex]="100-j">
+                                                     <div [formGroupName]="j" class="flex flex-wrap sm:flex-nowrap gap-2 items-center relative" [style.zIndex]="100-j">
                                                         <div class="flex-1 relative">
                                                             @let validSubItem = validInventoryMap().get(ing.get('name')?.value || '');
                                                             <div class="flex items-center justify-between w-full border border-slate-300 dark:border-slate-600 rounded px-2 py-1.5 text-xs bg-white dark:bg-slate-800 shadow-sm">
@@ -384,9 +384,9 @@
                                                             <input formControlName="_displayName" type="hidden">
                                                             <input formControlName="name" type="hidden">
                                                         </div>
-                                                        <input formControlName="amount" type="number" placeholder="Lượng" class="w-16 border border-slate-300 dark:border-slate-600 bg-transparent rounded px-1 py-1.5 text-xs text-center outline-none font-bold">
-                                                        <select formControlName="unit" class="w-16 border border-slate-300 dark:border-slate-600 rounded px-1 py-1.5 text-xs text-center outline-none bg-white dark:bg-slate-800">@for (opt of unitOptions; track opt.value) { <option [value]="opt.value">{{opt.value}}</option> }</select>
-                                                        <button type="button" (click)="getIngredients(i).removeAt(j)" aria-label="Xóa thành phần" class="w-9 h-9 flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition rounded-full hover:bg-white dark:hover:bg-slate-700"><i class="fa-solid fa-xmark"></i></button>
+                                                        <input formControlName="amount" type="number" placeholder="Lượng" class="w-20 sm:w-16 min-h-[40px] sm:min-h-0 border border-slate-300 dark:border-slate-600 bg-transparent rounded px-2 sm:px-1 py-1.5 text-base sm:text-xs text-center outline-none font-bold">
+                                                        <select formControlName="unit" class="w-20 sm:w-16 min-h-[40px] sm:min-h-0 border border-slate-300 dark:border-slate-600 rounded px-1 py-1.5 text-base sm:text-xs text-center outline-none bg-white dark:bg-slate-800">@for (opt of unitOptions; track opt.value) { <option [value]="opt.value">{{opt.value}}</option> }</select>
+                                                        <button type="button" (click)="getIngredients(i).removeAt(j)" aria-label="Xóa thành phần" class="w-10 h-10 sm:w-9 sm:h-9 flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition rounded-full hover:bg-white dark:hover:bg-slate-700"><i class="fa-solid fa-xmark"></i></button>
                                                      </div>
                                                   }
                                                </div>
@@ -402,16 +402,16 @@
                       <!-- TAB 4: TARGETS (ANALYTES) -->
                       @if (currentTab() === 'targets') {
                           <div class="fade-in pb-32">
-                              <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
-                                  <div class="flex justify-between items-center mb-4">
+                              <div class="bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+                                  <div class="flex flex-wrap justify-between items-center gap-2 mb-4">
                                       <h3 class="font-bold text-slate-800 dark:text-slate-200 text-sm uppercase flex items-center gap-2">
                                           <i class="fa-solid fa-bullseye text-emerald-500 dark:text-emerald-400"></i> Danh Sách Chỉ Tiêu (Targets)
                                       </h3>
-                                      <div class="flex gap-2">
-                                          <button type="button" (click)="openGroupImport()" class="text-xs bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600 px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1">
+                                      <div class="flex flex-wrap gap-2">
+                                          <button type="button" (click)="openGroupImport()" class="min-h-[40px] sm:min-h-0 text-xs bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600 px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1">
                                               <i class="fa-solid fa-layer-group"></i> Nhập từ Bộ
                                           </button>
-                                          <button type="button" (click)="openTargetModal()" class="text-xs bg-emerald-500 text-white hover:bg-emerald-600 px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1 shadow-sm shadow-emerald-500/20">
+                                          <button type="button" (click)="openTargetModal()" class="min-h-[40px] sm:min-h-0 text-xs bg-emerald-500 text-white hover:bg-emerald-600 px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1 shadow-sm shadow-emerald-500/20">
                                               <i class="fa-solid fa-magnifying-glass-plus"></i> Chọn từ Danh Mục Gốc
                                           </button>
                                       </div>
@@ -423,13 +423,13 @@
                                   <div formArrayName="targets" class="space-y-3">
                                       @for (t of targets.controls; track t; let i = $index) {
                                           @let masterItem = validTargetMap().get(t.get('id')?.value || '');
-                                          <div [formGroupName]="i" class="flex gap-2 items-start p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border group transition-colors" [class.border-red-200]="!masterItem" [class.dark:border-red-900]="!masterItem" [class.border-slate-100]="masterItem" [class.dark:border-slate-700]="masterItem">
-                                              <div class="w-8 h-8 rounded text-xs font-bold mt-1 flex items-center justify-center transition-colors" [class.bg-red-100]="!masterItem" [class.text-red-600]="!masterItem" [class.bg-slate-200]="masterItem" [class.text-slate-500]="masterItem" [class.dark:bg-slate-700]="masterItem" [class.dark:text-slate-400]="masterItem">{{i+1}}</div>
+                                          <div [formGroupName]="i" class="flex flex-wrap sm:flex-nowrap gap-2 items-start p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border group transition-colors" [class.border-red-200]="!masterItem" [class.dark:border-red-900]="!masterItem" [class.border-slate-100]="masterItem" [class.dark:border-slate-700]="masterItem">
+                                              <div class="w-8 h-8 rounded text-xs font-bold mt-1 flex items-center justify-center shrink-0 transition-colors" [class.bg-red-100]="!masterItem" [class.text-red-600]="!masterItem" [class.bg-slate-200]="masterItem" [class.text-slate-500]="masterItem" [class.dark:bg-slate-700]="masterItem" [class.dark:text-slate-400]="masterItem">{{i+1}}</div>
                                               
-                                              <div class="flex-1 grid grid-cols-1 md:grid-cols-12 gap-2">
+                                              <div class="flex-1 min-w-[200px] grid grid-cols-1 md:grid-cols-12 gap-2">
                                                   <!-- Name & ID -->
                                                   <div class="md:col-span-4">
-                                                      <label class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1 flex justify-between items-center">
+                                                      <label class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1 flex flex-wrap justify-between items-center gap-1">
                                                           <span>Tên chỉ tiêu</span>
                                                           @if (masterItem) {
                                                               <div class="flex items-center gap-1">
@@ -455,21 +455,21 @@
                                                   <!-- Unit, LOD, LOQ -->
                                                   <div class="md:col-span-2">
                                                       <label class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1 block">Đơn vị</label>
-                                                      <input formControlName="unit" placeholder="ppb" class="w-full border border-slate-300 dark:border-slate-600 bg-transparent rounded px-2 py-1.5 text-xs outline-none focus:border-emerald-500 dark:focus:border-emerald-400">
+                                                      <input formControlName="unit" placeholder="ppb" class="w-full min-h-[38px] sm:min-h-0 border border-slate-300 dark:border-slate-600 bg-transparent rounded px-2 py-1.5 text-base sm:text-xs outline-none focus:border-emerald-500 dark:focus:border-emerald-400">
                                                   </div>
                                                   <div class="md:col-span-3 grid grid-cols-2 gap-2">
                                                       <div>
                                                           <label class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1 block">LOD</label>
-                                                          <input formControlName="lod" placeholder="0.1" class="w-full border border-slate-300 dark:border-slate-600 bg-transparent rounded px-2 py-1.5 text-xs outline-none focus:border-emerald-500 dark:focus:border-emerald-400">
+                                                          <input formControlName="lod" placeholder="0.1" class="w-full min-h-[38px] sm:min-h-0 border border-slate-300 dark:border-slate-600 bg-transparent rounded px-2 py-1.5 text-base sm:text-xs outline-none focus:border-emerald-500 dark:focus:border-emerald-400">
                                                       </div>
                                                       <div>
                                                           <label class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1 block">LOQ</label>
-                                                          <input formControlName="loq" placeholder="0.3" class="w-full border border-slate-300 dark:border-slate-600 bg-transparent rounded px-2 py-1.5 text-xs outline-none focus:border-emerald-500 dark:focus:border-emerald-400">
+                                                          <input formControlName="loq" placeholder="0.3" class="w-full min-h-[38px] sm:min-h-0 border border-slate-300 dark:border-slate-600 bg-transparent rounded px-2 py-1.5 text-base sm:text-xs outline-none focus:border-emerald-500 dark:focus:border-emerald-400">
                                                       </div>
                                                   </div>
                                               </div>
                                               
-                                              <button type="button" (click)="targets.removeAt(i)" aria-label="Xóa chỉ tiêu" class="mt-6 w-9 h-9 flex items-center justify-center text-slate-300 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition rounded-full hover:bg-white dark:hover:bg-slate-700"><i class="fa-solid fa-trash"></i></button>
+                                              <button type="button" (click)="targets.removeAt(i)" aria-label="Xóa chỉ tiêu" class="self-end sm:self-start sm:mt-6 w-10 h-10 sm:w-9 sm:h-9 shrink-0 flex items-center justify-center text-slate-300 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition rounded-full hover:bg-white dark:hover:bg-slate-700"><i class="fa-solid fa-trash"></i></button>
                                           </div>
                                       }
                                       @if(targets.length === 0) {
@@ -548,7 +548,7 @@
                 size="lg"
                 [closeOnBackdrop]="false"
                 (closed)="showTargetModal.set(false)">
-                <div modalBody class="-mx-6 -my-5 flex min-h-0 flex-col">
+                <div modalBody class="-mx-4 -my-3 sm:-mx-6 sm:-my-5 flex min-h-0 flex-col">
                     <div class="p-3 border-b border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-900 shrink-0">
                         <div class="relative">
                             <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"></i>
@@ -618,12 +618,12 @@
                 size="lg"
                 [showFooter]="false"
                 (closed)="showConsumableModal.set(false)">
-                <div modalBody class="-mx-6 -my-5 flex min-h-0 max-h-[calc(100vh-10rem)] flex-col">
+                <div modalBody class="-mx-4 -my-3 sm:-mx-6 sm:-my-5 flex min-h-0 max-h-[calc(100dvh-10rem)] flex-col">
                     <div class="p-4 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shrink-0">
                         <div class="relative">
                             <i class="fa-solid fa-magnifying-glass absolute left-4 top-3.5 text-slate-400"></i>
                             <input type="text" [value]="consumableSearchTerm()" (input)="consumableSearchTerm.set($any($event.target).value)" placeholder="Tìm kiếm theo tên, mã, danh mục..."
-                                   class="w-full pl-11 pr-4 py-3 bg-slate-100 dark:bg-slate-800 border-none rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-blue-500/50 outline-none transition-all">
+                                   class="w-full min-h-[44px] pl-11 pr-4 py-2.5 sm:py-3 bg-slate-100 dark:bg-slate-800 border-none rounded-xl text-base sm:text-sm font-bold text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-blue-500/50 outline-none transition-all">
                         </div>
                     </div>
                     

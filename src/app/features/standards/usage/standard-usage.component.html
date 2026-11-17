@@ -1,4 +1,4 @@
-<div class="flex flex-col space-y-4 fade-in h-full relative p-4 md:p-6 custom-scrollbar overflow-y-auto overflow-x-hidden">
+<div class="flex flex-col space-y-4 fade-in min-h-full md:h-full relative p-4 md:p-6 custom-scrollbar md:overflow-y-auto overflow-x-hidden">
   <!-- Header -->
   <app-page-header
     title="Nhật ký dùng chuẩn"
@@ -14,21 +14,21 @@
   <!-- Filters Row -->
   <div class="overflow-hidden rounded-2xl border border-slate-100 shadow-sm dark:border-slate-700">
     <app-toolbar>
-      <div toolbarSearch class="min-w-[200px]">
+      <div toolbarSearch class="w-full sm:w-auto sm:min-w-[200px]">
         <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Tìm kiếm</label>
         <div class="relative">
           <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
           <!-- Sử dụng (input) thay vì ngModelChange để debounce -->
           <input type="text" [ngModel]="searchTerm()" (input)="onSearchInput($event)"
-            class="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-fuchsia-500 outline-none"
+            class="w-full min-h-[44px] sm:min-h-0 pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-base sm:text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-fuchsia-500 outline-none"
             placeholder="Tên, lô, người dùng, mã...">
         </div>
       </div>
 
-      <div toolbarFilters class="w-40 min-w-[150px]">
+      <div toolbarFilters class="w-full sm:w-40 sm:min-w-[150px]">
         <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Nhân viên</label>
         <select [ngModel]="userFilter()" (ngModelChange)="userFilter.set($event)"
-          class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-fuchsia-500 outline-none">
+          class="w-full min-h-[44px] sm:min-h-0 px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-base sm:text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-fuchsia-500 outline-none">
           <option value="">Tất cả</option>
           @for (u of uniqueUsers(); track u) {
             <option [value]="u">{{u}}</option>
@@ -36,10 +36,10 @@
         </select>
       </div>
 
-      <div toolbarFilters class="w-40 min-w-[150px]">
+      <div toolbarFilters class="w-full sm:w-40 sm:min-w-[150px]">
         <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Hành động</label>
         <select [ngModel]="actionFilter()" (ngModelChange)="actionFilter.set($event)"
-          class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-fuchsia-500 outline-none">
+          class="w-full min-h-[44px] sm:min-h-0 px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-base sm:text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-fuchsia-500 outline-none">
           <option value="">Tất cả</option>
           <option value="usage">Sử dụng</option>
           <option value="return">Hoàn trả / Trừ kho</option>
@@ -68,70 +68,70 @@
 
         <!-- Filter Chips -->
         @if (searchTerm() || fromDate() || toDate() || userFilter() || actionFilter()) {
-          <div class="flex flex-wrap gap-2 mx-2 -mt-1">
+          <div class="flex flex-wrap gap-2 mx-1 sm:mx-2 -mt-1">
             @if (searchTerm()) {
               <div class="px-3 py-1 bg-fuchsia-50 dark:bg-fuchsia-900/30 text-fuchsia-600 dark:text-fuchsia-400 text-xs font-bold rounded-lg flex items-center gap-2 border border-fuchsia-100 dark:border-fuchsia-800/50">
                 <i class="fa-solid fa-search text-[10px]"></i> "{{searchTerm()}}"
-                <button (click)="searchTerm.set('')" class="hover:text-fuchsia-800 dark:hover:text-fuchsia-200 ml-1"><i class="fa-solid fa-xmark"></i></button>
+                <button type="button" aria-label="Xóa từ khóa" (click)="searchTerm.set('')" class="min-w-[28px] min-h-[28px] inline-flex items-center justify-center rounded-full hover:text-fuchsia-800 dark:hover:text-fuchsia-200"><i class="fa-solid fa-xmark"></i></button>
               </div>
             }
             @if (userFilter()) {
               <div class="px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs font-bold rounded-lg flex items-center gap-2 border border-blue-100 dark:border-blue-800/50">
                 <i class="fa-solid fa-user text-[10px]"></i> {{userFilter()}}
-                <button (click)="userFilter.set('')" class="hover:text-blue-800 dark:hover:text-blue-200 ml-1"><i class="fa-solid fa-xmark"></i></button>
+                <button type="button" aria-label="Xóa lọc nhân viên" (click)="userFilter.set('')" class="min-w-[28px] min-h-[28px] inline-flex items-center justify-center rounded-full hover:text-blue-800 dark:hover:text-blue-200"><i class="fa-solid fa-xmark"></i></button>
               </div>
             }
             @if (actionFilter()) {
               <div class="px-3 py-1 bg-fuchsia-50 dark:bg-fuchsia-900/30 text-fuchsia-600 dark:text-fuchsia-400 text-xs font-bold rounded-lg flex items-center gap-2 border border-fuchsia-100 dark:border-fuchsia-800/50">
                 <i class="fa-solid fa-tag text-[10px]"></i> {{actionFilter() === 'usage' ? 'Sử dụng' : actionFilter() === 'return' ? 'Hoàn trả / Trừ kho' : 'Import'}}
-                <button (click)="actionFilter.set('')" class="hover:text-fuchsia-800 dark:hover:text-fuchsia-200 ml-1"><i class="fa-solid fa-xmark"></i></button>
+                <button type="button" aria-label="Xóa lọc hành động" (click)="actionFilter.set('')" class="min-w-[28px] min-h-[28px] inline-flex items-center justify-center rounded-full hover:text-fuchsia-800 dark:hover:text-fuchsia-200"><i class="fa-solid fa-xmark"></i></button>
               </div>
             }
             @if (fromDate() || toDate()) {
               <div class="px-3 py-1 bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 text-xs font-bold rounded-lg flex items-center gap-2 border border-amber-100 dark:border-amber-800/50">
                 <i class="fa-regular fa-calendar text-[10px]"></i>
                 {{fromDate() ? (fromDate() | date:'dd/MM/yyyy') : '...'}} <i class="fa-solid fa-arrow-right text-[10px] mx-1"></i> {{toDate() ? (toDate() | date:'dd/MM/yyyy') : '...'}}
-                <button (click)="fromDate.set(''); toDate.set('')" class="hover:text-amber-800 dark:hover:text-amber-200 ml-1"><i class="fa-solid fa-xmark"></i></button>
+                <button type="button" aria-label="Xóa lọc ngày" (click)="fromDate.set(''); toDate.set('')" class="min-w-[28px] min-h-[28px] inline-flex items-center justify-center rounded-full hover:text-amber-800 dark:hover:text-amber-200"><i class="fa-solid fa-xmark"></i></button>
               </div>
             }
           </div>
         }
 
         <!-- Summary Stats Bar -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mx-2">
-          <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm flex items-center gap-4">
-            <div class="w-12 h-12 rounded-xl bg-fuchsia-50 dark:bg-fuchsia-900/20 text-fuchsia-500 flex items-center justify-center text-xl">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3 mx-0 sm:mx-2">
+          <div class="bg-white dark:bg-slate-800 p-3 sm:p-4 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm flex items-center gap-3 sm:gap-4 min-w-0">
+            <div class="w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-xl bg-fuchsia-50 dark:bg-fuchsia-900/20 text-fuchsia-500 flex items-center justify-center text-lg sm:text-xl">
               <i class="fa-solid fa-list"></i>
             </div>
-            <div>
-              <div class="text-2xl font-black text-slate-800 dark:text-slate-100">{{summaryStats().totalLogs}}</div>
+            <div class="min-w-0">
+              <div class="text-xl sm:text-2xl font-black text-slate-800 dark:text-slate-100">{{summaryStats().totalLogs}}</div>
               <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Lượt sử dụng</div>
             </div>
           </div>
-          <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm flex items-center gap-4">
-            <div class="w-12 h-12 rounded-xl bg-fuchsia-50 dark:bg-fuchsia-900/20 text-fuchsia-500 flex items-center justify-center text-xl">
+          <div class="bg-white dark:bg-slate-800 p-3 sm:p-4 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm flex items-center gap-3 sm:gap-4 min-w-0">
+            <div class="w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-xl bg-fuchsia-50 dark:bg-fuchsia-900/20 text-fuchsia-500 flex items-center justify-center text-lg sm:text-xl">
               <i class="fa-solid fa-droplet"></i>
             </div>
-            <div>
-              <div class="text-lg font-black text-slate-800 dark:text-slate-100 break-words">{{summaryStats().totalAmountDisplay}}</div>
-              <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tổng tiêu hao</div>
+            <div class="min-w-0">
+              <div class="text-sm sm:text-lg font-black text-slate-800 dark:text-slate-100 break-words leading-tight">{{summaryStats().totalAmountDisplay}}</div>
+              <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Tổng tiêu hao</div>
             </div>
           </div>
-          <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm flex items-center gap-4">
-            <div class="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-500 flex items-center justify-center text-xl">
+          <div class="bg-white dark:bg-slate-800 p-3 sm:p-4 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm flex items-center gap-3 sm:gap-4 min-w-0">
+            <div class="w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-500 flex items-center justify-center text-lg sm:text-xl">
               <i class="fa-solid fa-users"></i>
             </div>
-            <div>
-              <div class="text-2xl font-black text-slate-800 dark:text-slate-100">{{summaryStats().uniqueUsers}}</div>
+            <div class="min-w-0">
+              <div class="text-xl sm:text-2xl font-black text-slate-800 dark:text-slate-100">{{summaryStats().uniqueUsers}}</div>
               <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nhân viên</div>
             </div>
           </div>
-          <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm flex items-center gap-4">
-            <div class="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 flex items-center justify-center text-xl">
+          <div class="bg-white dark:bg-slate-800 p-3 sm:p-4 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm flex items-center gap-3 sm:gap-4 min-w-0">
+            <div class="w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 flex items-center justify-center text-lg sm:text-xl">
               <i class="fa-solid fa-vial"></i>
             </div>
-            <div>
-              <div class="text-2xl font-black text-slate-800 dark:text-slate-100">{{summaryStats().uniqueStandards}}</div>
+            <div class="min-w-0">
+              <div class="text-xl sm:text-2xl font-black text-slate-800 dark:text-slate-100">{{summaryStats().uniqueStandards}}</div>
               <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Chất chuẩn</div>
             </div>
           </div>
@@ -236,7 +236,7 @@
                       </td>
                       <td class="px-6 py-4 text-center">
                         @if (auth.canDeleteStandardLogs()) {
-                          <button (click)="deleteUsage(log)" class="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 hover:text-rose-500 dark:hover:text-rose-400 transition" title="Xóa và hoàn trả thể tích">
+                          <button type="button" aria-label="Xóa nhật ký sử dụng" (click)="deleteUsage(log)" class="w-10 h-10 sm:w-8 sm:h-8 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 hover:text-rose-500 dark:hover:text-rose-400 transition" title="Xóa và hoàn trả thể tích">
                             <i class="fa-solid fa-trash text-[10px]"></i>
                           </button>
                         }

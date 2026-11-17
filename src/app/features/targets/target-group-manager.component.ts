@@ -89,8 +89,8 @@ import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, App
                             </div>
 
                             <!-- Targets List -->
-                            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
-                                <div class="flex justify-between items-center mb-4">
+                            <div class="bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+                                <div class="flex flex-wrap justify-between items-center gap-2 mb-4">
                                     <h3 class="font-bold text-slate-700 dark:text-slate-200 text-sm uppercase flex items-center gap-2">
                                         <i class="fa-solid fa-list-ul text-teal-500"></i> Danh Sách Chỉ Tiêu
                                     </h3>
@@ -109,56 +109,56 @@ import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, App
                                 <div formArrayName="targets" class="space-y-2">
                                     @for (t of targets.controls; track t; let i = $index) {
                                         @let masterItem = validTargetMap().get(t.get('id')?.value || '');
-                                        <div [formGroupName]="i" class="flex gap-2 items-start p-3 bg-slate-50 dark:bg-slate-900/60 rounded-xl border group transition-colors"
+                                        <div [formGroupName]="i" class="flex flex-wrap sm:flex-nowrap gap-2 items-start p-3 bg-slate-50 dark:bg-slate-900/60 rounded-xl border group transition-colors"
                                              [class.border-red-200]="!masterItem"
                                              [class.border-slate-100]="masterItem">
-                                            <div class="w-8 h-8 rounded text-xs font-bold mt-1 flex items-center justify-center transition-colors dark:bg-slate-700 dark:text-slate-300"
+                                            <div class="w-8 h-8 rounded text-xs font-bold mt-1 flex items-center justify-center shrink-0 transition-colors dark:bg-slate-700 dark:text-slate-300"
                                                  [class.bg-red-100]="!masterItem"
                                                  [class.text-red-600]="!masterItem"
                                                  [class.bg-slate-200]="masterItem"
                                                  [class.text-slate-500]="masterItem">{{i+1}}</div>
 
-                                            <div class="flex-1 grid grid-cols-1 md:grid-cols-12 gap-2">
+                                            <div class="flex-1 min-w-[200px] grid grid-cols-1 md:grid-cols-12 gap-2">
                                                 <div class="md:col-span-4">
-                                                    <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 flex justify-between items-center gap-2">
+                                                    <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 flex flex-wrap justify-between items-center gap-1.5">
                                                         <span>Tên chỉ tiêu</span>
                                                         @if (masterItem) {
                                                             <div class="flex items-center gap-1">
                                                                 <span class="text-[9px] bg-emerald-100 text-emerald-600 px-1 rounded flex items-center gap-1 whitespace-nowrap"><i class="fa-solid fa-check-circle"></i> Khớp Thư viện</span>
-                                                                <button type="button" (click)="openLibraryModal(i)" class="text-[9px] bg-blue-100 text-blue-600 hover:bg-blue-200 px-1.5 py-0.5 rounded transition flex items-center gap-1 whitespace-nowrap">
+                                                                <button type="button" (click)="openLibraryModal(i)" class="min-h-[28px] text-[9px] bg-blue-100 text-blue-600 hover:bg-blue-200 px-2 py-0.5 rounded transition flex items-center gap-1 whitespace-nowrap">
                                                                     <i class="fa-solid fa-rotate"></i> Thay Thế
                                                                 </button>
                                                             </div>
                                                         } @else {
                                                             <div class="flex items-center gap-1">
                                                                 <span class="text-[9px] bg-red-100 text-red-600 px-1 rounded flex items-center gap-1 whitespace-nowrap"><i class="fa-solid fa-triangle-exclamation"></i> Không tồn tại</span>
-                                                                <button type="button" (click)="openLibraryModal(i)" class="text-[9px] bg-blue-100 text-blue-600 hover:bg-blue-200 px-1.5 py-0.5 rounded transition whitespace-nowrap">Chọn Lại</button>
+                                                                <button type="button" (click)="openLibraryModal(i)" class="min-h-[28px] text-[9px] bg-blue-100 text-blue-600 hover:bg-blue-200 px-2 py-0.5 rounded transition whitespace-nowrap">Chọn Lại</button>
                                                             </div>
                                                         }
                                                     </label>
-                                                    <input formControlName="name" readonly class="w-full border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-700 rounded px-2 py-1.5 text-xs font-bold text-slate-500 dark:text-slate-300 outline-none cursor-not-allowed">
+                                                    <input formControlName="name" readonly class="w-full min-h-[38px] sm:min-h-0 border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-700 rounded px-2 py-1.5 text-base sm:text-xs font-bold text-slate-500 dark:text-slate-300 outline-none cursor-not-allowed">
                                                 </div>
                                                 <div class="md:col-span-3">
                                                     <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 block">Mã chỉ tiêu</label>
-                                                    <input formControlName="id" readonly class="w-full border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-700 rounded px-2 py-1.5 text-xs font-mono text-slate-400 dark:text-slate-400 outline-none cursor-not-allowed">
+                                                    <input formControlName="id" readonly class="w-full min-h-[38px] sm:min-h-0 border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-700 rounded px-2 py-1.5 text-base sm:text-xs font-mono text-slate-400 dark:text-slate-400 outline-none cursor-not-allowed">
                                                 </div>
                                                 <div class="md:col-span-2">
                                                     <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 block">Đơn vị theo danh mục gốc</label>
-                                                    <input formControlName="unit" readonly class="w-full border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-700 rounded px-2 py-1.5 text-xs text-slate-500 dark:text-slate-300 outline-none cursor-not-allowed text-center">
+                                                    <input formControlName="unit" readonly class="w-full min-h-[38px] sm:min-h-0 border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-700 rounded px-2 py-1.5 text-base sm:text-xs text-slate-500 dark:text-slate-300 outline-none cursor-not-allowed text-center">
                                                 </div>
-                                                <div class="md:col-span-3 grid grid-cols-2 gap-1">
+                                                <div class="md:col-span-3 grid grid-cols-2 gap-1.5">
                                                     <div>
                                                         <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 block">LOD</label>
-                                                        <input formControlName="lod" placeholder="LOD" class="w-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded px-2 py-1.5 text-xs outline-none focus:border-teal-500 text-center">
+                                                        <input formControlName="lod" placeholder="LOD" class="w-full min-h-[38px] sm:min-h-0 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded px-2 py-1.5 text-base sm:text-xs outline-none focus:border-teal-500 text-center">
                                                     </div>
                                                     <div>
                                                         <label class="text-[9px] font-bold text-slate-400 uppercase mb-1 block">LOQ</label>
-                                                        <input formControlName="loq" placeholder="LOQ" class="w-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded px-2 py-1.5 text-xs outline-none focus:border-teal-500 text-center">
+                                                        <input formControlName="loq" placeholder="LOQ" class="w-full min-h-[38px] sm:min-h-0 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded px-2 py-1.5 text-base sm:text-xs outline-none focus:border-teal-500 text-center">
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            <button type="button" (click)="targets.removeAt(i)" class="mt-6 w-8 h-8 flex items-center justify-center text-slate-300 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition rounded-full hover:bg-white dark:hover:bg-slate-700"><i class="fa-solid fa-trash"></i></button>
+                                            <button type="button" (click)="targets.removeAt(i)" aria-label="Xóa chỉ tiêu" class="self-end sm:self-start sm:mt-6 w-10 h-10 sm:w-8 sm:h-8 shrink-0 flex items-center justify-center text-slate-300 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition rounded-full hover:bg-white dark:hover:bg-slate-700"><i class="fa-solid fa-trash"></i></button>
                                         </div>
                                     } @empty {
                                         <div class="bg-white dark:bg-slate-800 border border-dashed border-slate-200 dark:border-slate-700 rounded-xl">
@@ -187,11 +187,11 @@ import { AppButtonComponent, AppEmptyStateComponent, AppModalShellComponent, App
                 (closed)="showLibraryModal.set(false)"
             >
                 <div modalBody class="space-y-4">
-                    <div class="flex gap-2">
-                        <div class="relative flex-1">
-                            <i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                    <div class="flex flex-wrap sm:flex-nowrap gap-2">
+                        <div class="relative flex-1 min-w-[180px]">
+                            <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
                             <input [ngModel]="librarySearchTerm()" (ngModelChange)="librarySearchTerm.set($event)" 
-                                   class="w-full pl-8 pr-4 py-2 border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-xl text-xs font-bold outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-200 transition"
+                                   class="w-full min-h-[42px] sm:min-h-0 pl-8 pr-4 py-2 border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-xl text-base sm:text-xs font-bold outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-200 transition"
                                    placeholder="Tìm kiếm...">
                         </div>
                         @if(replacingTargetIndex() === null) {

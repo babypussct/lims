@@ -17,7 +17,7 @@ import { AppModalShellComponent } from '../../../shared/components/ui/modal-shel
             (closed)="onCancel()"
          >
 
-                <div modalBody class="-mx-6 -my-5 flex-1 overflow-auto custom-scrollbar p-6">
+                <div modalBody class="-mx-4 -my-3 sm:-mx-6 sm:-my-5 flex-1 overflow-auto custom-scrollbar p-4 sm:p-6">
                     <div class="mb-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-100 dark:border-yellow-800/50 rounded-lg p-3 flex gap-3 text-sm text-yellow-800 dark:text-yellow-500">
                         <i class="fa-solid fa-triangle-exclamation mt-0.5"></i>
                         <div>
@@ -119,7 +119,7 @@ export class StandardsImportDataModalComponent {
             (closed)="onCancel()"
          >
 
-                <div modalBody class="-mx-6 -my-5 flex-1 overflow-auto p-6 bg-white dark:bg-slate-900">
+                <div modalBody class="-mx-4 -my-3 sm:-mx-6 sm:-my-5 flex-1 overflow-auto p-4 sm:p-6 bg-white dark:bg-slate-900">
                     <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 text-amber-800 dark:text-amber-500 p-4 rounded-xl text-sm flex items-start gap-3">
                         <i class="fa-solid fa-triangle-exclamation mt-0.5 text-amber-500 dark:text-amber-400"></i>
                         <div>

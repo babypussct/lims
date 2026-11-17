@@ -10,6 +10,7 @@ import { resolveCompoundDisplayName } from '../../shared/compound-id-resolver';
 import { SopHeaderMetadataComponent } from '../shared/sop-header-metadata.component';
 import { SopSpreadsheetToolbarComponent } from '../shared/sop-spreadsheet-toolbar.component';
 import { bulkFillND, bulkClearAll, copyRowToAll, navigateGrid } from '../shared/sop-grid-helper';
+import { isMobileViewport } from '../../../../core/utils/viewport.utils';
 import {
   GridPasteController,
   GridPasteGridSpec,
@@ -38,7 +39,7 @@ export class SopDefaultType2EntryComponent implements OnInit {
   columnDisplayNames = signal<Record<string, string>>({});
   activeColumns: string[] = [];
   checkboxList: { key: string; label: string }[] = [];
-  mobileViewMode = signal<'table' | 'cards'>('table');
+  mobileViewMode = signal<'table' | 'cards'>(isMobileViewport() ? 'cards' : 'table');
   pasteCtrl = new GridPasteController();
 
   async ngOnInit() {

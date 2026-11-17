@@ -30,7 +30,42 @@ export interface BackfillData {
         [closeOnBackdrop]="false"
         (closed)="closeModal.emit()"
       >
-        <div modalBody class="-mx-6 -my-5 grid min-h-0 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+        <div modalBody class="-mx-4 -my-3 sm:-mx-6 sm:-my-5 grid min-h-0 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+
+          <!-- Mobile Standard Summary & Status Banner (shown on < md) -->
+          <div class="md:hidden bg-slate-50 dark:bg-slate-800/60 p-4 border-b border-slate-200/80 dark:border-slate-700/80 space-y-3">
+            <div class="grid grid-cols-2 gap-2.5 text-xs">
+              <div class="rounded-xl bg-white dark:bg-slate-900/70 px-3 py-2 border border-slate-200/70 dark:border-slate-700/70">
+                <span class="block text-[10px] font-bold text-slate-400 uppercase">Số lô</span>
+                <span class="font-bold text-slate-700 dark:text-slate-200 break-words">{{std()?.lot_number || 'N/A'}}</span>
+              </div>
+              <div class="rounded-xl bg-white dark:bg-slate-900/70 px-3 py-2 border border-slate-200/70 dark:border-slate-700/70">
+                <span class="block text-[10px] font-bold text-slate-400 uppercase">Hạn dùng</span>
+                <span class="font-bold" [class]="getExpiryClass(std()?.expiry_date)">{{std()?.expiry_date || 'N/A'}}</span>
+              </div>
+              <div class="rounded-xl bg-white dark:bg-slate-900/70 px-3 py-2 border border-slate-200/70 dark:border-slate-700/70">
+                <span class="block text-[10px] font-bold text-slate-400 uppercase">Tồn kho hiện tại</span>
+                <span class="font-black text-emerald-600 dark:text-emerald-400">{{formatNum(std()?.current_amount ?? 0)}} {{std()?.unit}}</span>
+              </div>
+              @if(std()?.internal_id) {
+                <div class="rounded-xl bg-white dark:bg-slate-900/70 px-3 py-2 border border-slate-200/70 dark:border-slate-700/70">
+                  <span class="block text-[10px] font-bold text-slate-400 uppercase">Mã quản lý</span>
+                  <span class="font-bold text-slate-600 dark:text-slate-300 break-words">{{std()?.internal_id}}</span>
+                </div>
+              }
+            </div>
+            @if(std()?.status === 'IN_USE') {
+              <div role="status" class="p-3 bg-amber-50 dark:bg-amber-900/25 rounded-xl border border-amber-200 dark:border-amber-700/60">
+                <div class="flex items-center gap-1.5 mb-1">
+                  <i class="fa-solid fa-triangle-exclamation text-amber-500 text-xs" aria-hidden="true"></i>
+                  <span class="text-[11px] font-black text-amber-800 dark:text-amber-300 uppercase tracking-wide">Đang được mượn</span>
+                </div>
+                <p class="text-xs text-amber-800 dark:text-amber-200 leading-relaxed">
+                  Chuẩn đang được <strong>{{std()?.current_holder}}</strong> sử dụng. Nhập bù vẫn được cho phép vì đây là hồi ký lịch sử.
+                </p>
+              </div>
+            }
+          </div>
 
           <!-- Left: Standard Info Summary -->
           <div class="hidden md:flex bg-slate-50 dark:bg-slate-800/50 p-8 flex-col border-r border-slate-100 dark:border-slate-800">
@@ -84,14 +119,14 @@ export interface BackfillData {
           </div>
 
           <!-- Right: Backfill Form -->
-          <div class="min-w-0 p-8 bg-white dark:bg-slate-900">
-            <div class="space-y-5">
+          <div class="min-w-0 p-4 sm:p-6 md:p-8 bg-white dark:bg-slate-900">
+            <div class="space-y-4 sm:space-y-5">
 
               <!-- Người sử dụng -->
               <div>
                 <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Người sử dụng <span class="text-red-500">*</span></label>
                 <select [ngModel]="userId()" (ngModelChange)="onUserChange($event)"
-                  class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-500/10 transition-all outline-none appearance-none">
+                  class="w-full min-h-[44px] px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-base sm:text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-500/10 transition-all outline-none appearance-none">
                   <option value="">-- Chọn người sử dụng --</option>
                   @for (user of userList(); track user.uid) {
                     <option [value]="user.uid">{{user.displayName}} ({{user.email}})</option>
@@ -118,32 +153,33 @@ export interface BackfillData {
 
               <!-- Số lượng -->
               <div>
-                <div class="flex items-center justify-between mb-2">
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
                   <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                     Lượng sử dụng ({{std()?.unit}}) <span class="text-red-500">*</span>
                   </label>
                   @if ((std()?.current_amount ?? 0) > 0) {
                     <button type="button" (click)="fillMaxAmount()"
-                      class="px-2.5 py-1 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-700/50 hover:bg-amber-100 dark:hover:bg-amber-900/50 rounded-lg text-xs font-bold transition flex items-center gap-1 shadow-sm active:scale-95">
+                      class="min-h-[36px] sm:min-h-0 px-2.5 py-1.5 sm:py-1 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-700/50 hover:bg-amber-100 dark:hover:bg-amber-900/50 rounded-lg text-xs font-bold transition flex items-center gap-1 shadow-sm active:scale-95">
                       <i class="fa-solid fa-angles-up text-[10px]"></i> Tối đa ({{formatNum(std()?.current_amount ?? 0)}} {{std()?.unit}})
                     </button>
                   }
                 </div>
                 <div class="relative">
                   <input type="number"
+                    inputmode="decimal"
                     [ngModel]="amountUsed()"
                     (ngModelChange)="onAmountChange($event)"
                     min="0.001"
                     [max]="std()?.current_amount ?? null"
                     step="any"
-                    class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-500/10 transition-all outline-none pr-16"
+                    class="w-full min-h-[44px] px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-base sm:text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-500/10 transition-all outline-none pr-16"
                     placeholder="VD: 5">
                   <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">{{std()?.unit}}</span>
                 </div>
                 
                 <!-- Checkbox đánh dấu hết chuẩn -->
-                <div class="mt-2 flex items-center gap-2 bg-amber-50/50 dark:bg-amber-900/10 p-2.5 rounded-xl border border-amber-200/60 dark:border-amber-800/40">
-                  <input type="checkbox" id="backfillIsDepleted" [ngModel]="isDepleted()" (ngModelChange)="onDepletedChange($event)" class="w-4 h-4 accent-amber-600 rounded cursor-pointer">
+                <div class="mt-2 flex items-center gap-2 bg-amber-50/50 dark:bg-amber-900/10 p-3 rounded-xl border border-amber-200/60 dark:border-amber-800/40">
+                  <input type="checkbox" id="backfillIsDepleted" [ngModel]="isDepleted()" (ngModelChange)="onDepletedChange($event)" class="w-5 h-5 sm:w-4 sm:h-4 accent-amber-600 rounded cursor-pointer shrink-0">
                   <label for="backfillIsDepleted" class="text-xs font-bold text-amber-900 dark:text-amber-300 cursor-pointer flex items-center gap-1.5 select-none">
                     <i class="fa-solid fa-box-archive text-amber-500 text-[11px]"></i> Đánh dấu chuẩn đã sử dụng hết (Hết hàng)
                   </label>
@@ -161,15 +197,15 @@ export interface BackfillData {
               <div>
                 <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Mục đích sử dụng <span class="text-red-500">*</span></label>
                 <textarea [ngModel]="purpose()" (ngModelChange)="purpose.set($event)" rows="3"
-                  class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-500/10 transition-all outline-none resize-none placeholder-slate-300"
+                  class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-base sm:text-sm font-bold text-slate-700 dark:text-slate-200 focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-500/10 transition-all outline-none resize-none placeholder-slate-300"
                   placeholder="Nhập mục đích sử dụng..."></textarea>
                 <!-- Quick select chips giống modal gán/mượn chuẩn -->
                 <div class="flex flex-wrap gap-2 mt-2">
-                  <button type="button" (click)="purpose.set('Pha chuẩn mới')" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/40 text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-fuchsia-600 rounded-lg transition border border-transparent hover:border-fuchsia-200"># Pha Chuẩn Mới</button>
-                  <button type="button" (click)="purpose.set('Kiểm tra định kỳ')" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/40 text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-fuchsia-600 rounded-lg transition border border-transparent hover:border-fuchsia-200"># Kiểm Tra Định Kỳ</button>
-                  <button type="button" (click)="purpose.set('Ngoại kiểm')" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/40 text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-fuchsia-600 rounded-lg transition border border-transparent hover:border-fuchsia-200"># Ngoại Kiểm</button>
-                  <button type="button" (click)="purpose.set('Nghiên cứu phát triển')" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/40 text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-fuchsia-600 rounded-lg transition border border-transparent hover:border-fuchsia-200"># Nghiên Cứu Phát Triển</button>
-                  <button type="button" (click)="purpose.set('Kiểm nghiệm mẫu')" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/40 text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-fuchsia-600 rounded-lg transition border border-transparent hover:border-fuchsia-200"># Kiểm Nghiệm Mẫu</button>
+                  <button type="button" (click)="purpose.set('Pha chuẩn mới')" class="min-h-[40px] sm:min-h-0 px-3 py-2 sm:py-1 bg-slate-100 dark:bg-slate-800 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/40 text-xs sm:text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:text-fuchsia-600 rounded-lg transition border border-transparent hover:border-fuchsia-200"># Pha Chuẩn Mới</button>
+                  <button type="button" (click)="purpose.set('Kiểm tra định kỳ')" class="min-h-[40px] sm:min-h-0 px-3 py-2 sm:py-1 bg-slate-100 dark:bg-slate-800 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/40 text-xs sm:text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:text-fuchsia-600 rounded-lg transition border border-transparent hover:border-fuchsia-200"># Kiểm Tra Định Kỳ</button>
+                  <button type="button" (click)="purpose.set('Ngoại kiểm')" class="min-h-[40px] sm:min-h-0 px-3 py-2 sm:py-1 bg-slate-100 dark:bg-slate-800 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/40 text-xs sm:text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:text-fuchsia-600 rounded-lg transition border border-transparent hover:border-fuchsia-200"># Ngoại Kiểm</button>
+                  <button type="button" (click)="purpose.set('Nghiên cứu phát triển')" class="min-h-[40px] sm:min-h-0 px-3 py-2 sm:py-1 bg-slate-100 dark:bg-slate-800 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/40 text-xs sm:text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:text-fuchsia-600 rounded-lg transition border border-transparent hover:border-fuchsia-200"># Nghiên Cứu Phát Triển</button>
+                  <button type="button" (click)="purpose.set('Kiểm nghiệm mẫu')" class="min-h-[40px] sm:min-h-0 px-3 py-2 sm:py-1 bg-slate-100 dark:bg-slate-800 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/40 text-xs sm:text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:text-fuchsia-600 rounded-lg transition border border-transparent hover:border-fuchsia-200"># Kiểm Nghiệm Mẫu</button>
                 </div>
               </div>
 
@@ -177,11 +213,11 @@ export interface BackfillData {
           </div>
         </div>
 
-        <div modalFooter class="flex flex-wrap justify-end gap-3">
-          <button (click)="closeModal.emit()" class="px-6 py-3 text-slate-500 dark:text-slate-400 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition">Hủy bỏ</button>
-          <button (click)="onConfirm()"
+        <div modalFooter class="flex w-full sm:w-auto flex-wrap justify-end gap-2 sm:gap-3">
+          <button type="button" (click)="closeModal.emit()" class="flex-1 sm:flex-none min-h-[44px] px-5 py-2.5 text-slate-500 dark:text-slate-400 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition">Hủy bỏ</button>
+          <button type="button" (click)="onConfirm()"
             [disabled]="!canConfirm() || isProcessing()"
-            class="px-8 py-3 bg-fuchsia-600 dark:bg-fuchsia-500 text-white font-bold text-sm rounded-xl hover:bg-fuchsia-700 dark:hover:bg-fuchsia-600 shadow-sm transition disabled:opacity-50 flex items-center gap-2">
+            class="flex-1 sm:flex-none min-h-[44px] px-6 sm:px-8 py-2.5 bg-fuchsia-600 dark:bg-fuchsia-500 text-white font-bold text-sm rounded-xl hover:bg-fuchsia-700 dark:hover:bg-fuchsia-600 shadow-sm transition disabled:opacity-50 flex items-center justify-center gap-2">
             @if(isProcessing()) {
               <i class="fa-solid fa-spinner fa-spin"></i> Đang lưu...
             } @else {

@@ -1,10 +1,10 @@
 <div class="flex flex-wrap items-center gap-2">
-  <span class="text-xs font-bold text-slate-500 dark:text-slate-400 mr-1 flex items-center gap-1.5">
+  <span class="text-xs font-bold text-slate-500 dark:text-slate-400 mr-1 flex items-center gap-1.5 shrink-0">
     <i class="fa-solid fa-filter text-indigo-500 opacity-80" aria-hidden="true"></i> Tiền tố:
   </span>
-  <div class="inline-flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1 border border-slate-200/70 dark:border-slate-700/60">
+  <div class="inline-flex max-w-full overflow-x-auto custom-scrollbar bg-slate-100 dark:bg-slate-800 rounded-xl p-1 border border-slate-200/70 dark:border-slate-700/60">
     <button type="button" (click)="filterChange.emit('ALL')"
-            class="relative px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all duration-150 cursor-pointer border-0"
+            class="relative min-h-[38px] sm:min-h-0 whitespace-nowrap shrink-0 px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all duration-150 cursor-pointer border-0"
             [class]="activeFilter === 'ALL'
               ? 'bg-white dark:bg-slate-900 text-indigo-700 dark:text-indigo-300 shadow-xs'
               : 'bg-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'">
@@ -12,7 +12,7 @@
     </button>
     @for (prefix of prefixes; track prefix) {
       <button type="button" (click)="filterChange.emit(prefix)"
-              class="relative px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all duration-150 cursor-pointer border-0"
+              class="relative min-h-[38px] sm:min-h-0 whitespace-nowrap shrink-0 px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all duration-150 cursor-pointer border-0"
               [class]="activeFilter === prefix
                 ? 'bg-white dark:bg-slate-900 text-indigo-700 dark:text-indigo-300 shadow-xs'
                 : 'bg-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'">

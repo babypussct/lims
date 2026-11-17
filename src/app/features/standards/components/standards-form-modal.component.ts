@@ -90,9 +90,9 @@ import { parseStandardAmount, standardDateState } from '../standard-detail.utils
                                 }
                             </div>
                             
-                            <div class="bg-fuchsia-50 dark:bg-fuchsia-900/20 p-4 rounded-xl border border-fuchsia-100 dark:border-fuchsia-800/50 grid grid-cols-3 gap-4">
-                                <div><label class="text-[10px] font-bold text-fuchsia-800 dark:text-fuchsia-400 uppercase block mb-1">Tồn đầu</label><input type="number" formControlName="initial_amount" class="w-full bg-white dark:bg-slate-800 border border-white dark:border-slate-700 rounded-lg p-2 text-center font-bold text-slate-800 dark:text-slate-200 outline-none"></div>
-                                <div><label class="text-[10px] font-bold text-fuchsia-800 dark:text-fuchsia-400 uppercase block mb-1">Hiện tại</label><input type="number" formControlName="current_amount" class="w-full bg-white dark:bg-slate-800 border border-white dark:border-slate-700 rounded-lg p-2 text-center font-bold text-fuchsia-600 dark:text-fuchsia-400 outline-none text-lg"></div>
+                            <div class="bg-fuchsia-50 dark:bg-fuchsia-900/20 p-4 rounded-xl border border-fuchsia-100 dark:border-fuchsia-800/50 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                                <div><label class="text-[10px] font-bold text-fuchsia-800 dark:text-fuchsia-400 uppercase block mb-1">Tồn đầu</label><input type="number" formControlName="initial_amount" class="w-full min-h-[44px] sm:min-h-0 bg-white dark:bg-slate-800 border border-white dark:border-slate-700 rounded-lg p-2 text-center font-bold text-slate-800 dark:text-slate-200 outline-none"></div>
+                                <div><label class="text-[10px] font-bold text-fuchsia-800 dark:text-fuchsia-400 uppercase block mb-1">Hiện tại</label><input type="number" formControlName="current_amount" class="w-full min-h-[44px] sm:min-h-0 bg-white dark:bg-slate-800 border border-white dark:border-slate-700 rounded-lg p-2 text-center font-bold text-fuchsia-600 dark:text-fuchsia-400 outline-none text-lg"></div>
                                 <div>
                                     <label class="text-[10px] font-bold text-fuchsia-800 dark:text-fuchsia-400 uppercase block mb-1">Đơn vị</label>
                                     <select formControlName="unit" class="w-full bg-white dark:bg-slate-800 border border-white dark:border-slate-700 rounded-lg p-2.5 text-center font-bold text-slate-800 dark:text-slate-200 outline-none h-[44px]">
@@ -101,7 +101,7 @@ import { parseStandardAmount, standardDateState } from '../standard-detail.utils
                                     </select>
                                 </div>
                                 @if (form.get('initial_amount')?.invalid || form.get('current_amount')?.invalid || form.get('unit')?.invalid) {
-                                    <p class="col-span-3 text-xs text-fuchsia-700 dark:text-fuchsia-300">Cần nhập lượng ban đầu, lượng hiện tại và chọn đơn vị. Với lượng hiện tại, chỉ nhập 0 khi đã xác nhận hết chất chuẩn.</p>
+                                    <p class="sm:col-span-3 text-xs text-fuchsia-700 dark:text-fuchsia-300">Cần nhập lượng ban đầu, lượng hiện tại và chọn đơn vị. Với lượng hiện tại, chỉ nhập 0 khi đã xác nhận hết chất chuẩn.</p>
                                 }
                             </div>
                         </div>
@@ -148,15 +148,15 @@ import { parseStandardAmount, standardDateState } from '../standard-detail.utils
                     </form>
 
                 <!-- Footer Actions -->
-                <div modalFooter class="flex flex-wrap justify-end gap-3">
-                    <button (click)="onClose()" class="px-5 py-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl font-bold text-sm transition">Hủy Bỏ</button>
+                <div modalFooter class="flex flex-wrap justify-end gap-2 sm:gap-3">
+                    <button (click)="onClose()" class="min-h-[44px] sm:min-h-0 px-5 py-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl font-bold text-sm transition">Hủy Bỏ</button>
                     @if(!std()) {
-                        <button (click)="saveStandard(true)" [disabled]="form.invalid || isProcessing()" class="px-5 py-2.5 bg-emerald-600 dark:bg-emerald-500 hover:bg-emerald-700 dark:hover:bg-emerald-600 text-white rounded-xl font-bold text-sm shadow-md dark:shadow-none transition disabled:opacity-50">
+                        <button (click)="saveStandard(true)" [disabled]="form.invalid || isProcessing()" class="min-h-[44px] sm:min-h-0 px-5 py-2.5 bg-emerald-600 dark:bg-emerald-500 hover:bg-emerald-700 dark:hover:bg-emerald-600 text-white rounded-xl font-bold text-sm shadow-md dark:shadow-none transition disabled:opacity-50">
                             @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> } 
                             @else { <i class="fa-solid fa-plus"></i> Lưu & Thêm tiếp }
                         </button>
                     }
-                    <button (click)="saveStandard(false)" [disabled]="form.invalid || isProcessing()" class="px-6 py-2.5 bg-fuchsia-600 dark:bg-fuchsia-500 hover:bg-fuchsia-700 dark:hover:bg-fuchsia-600 text-white rounded-xl font-bold text-sm shadow-md dark:shadow-none transition disabled:opacity-50">
+                    <button (click)="saveStandard(false)" [disabled]="form.invalid || isProcessing()" class="min-h-[44px] sm:min-h-0 px-6 py-2.5 bg-fuchsia-600 dark:bg-fuchsia-500 hover:bg-fuchsia-700 dark:hover:bg-fuchsia-600 text-white rounded-xl font-bold text-sm shadow-md dark:shadow-none transition disabled:opacity-50">
                         @if(isProcessing()) { <i class="fa-solid fa-spinner fa-spin"></i> Đang lưu... } 
                         @else { {{ std() ? 'Lưu thay đổi' : 'Tạo mới' }} }
                     </button>

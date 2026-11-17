@@ -29,7 +29,7 @@ import { canUserEditResults, isRunActivelyLockedByOthers } from '../results/serv
   standalone: true,
   imports: [CommonModule, FormsModule, RouterModule, AppPageHeaderComponent, AppButtonComponent, AppModalShellComponent, ResultPdfReportPaneComponent],
   template: `
-    <div class="h-full flex flex-col animate-fade-in p-4 lg:p-6 space-y-4 lg:space-y-5">
+    <div class="min-h-full lg:h-full flex flex-col animate-fade-in p-3 sm:p-4 lg:p-6 space-y-3 sm:space-y-4 lg:space-y-5">
       
       <!-- ENTITY DETAIL HEADER -->
       <app-page-header
@@ -43,7 +43,7 @@ import { canUserEditResults, isRunActivelyLockedByOthers } from '../results/serv
           (click)="goBack()"
           aria-label="Quay lại danh sách kết quả"
           title="Quay lại danh sách kết quả"
-          class="group flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200/80 bg-white text-slate-600 shadow-soft-sm transition hover:bg-slate-50 hover:text-indigo-600 active:scale-95 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-indigo-400">
+          class="group flex h-10 w-10 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200/80 bg-white text-slate-600 shadow-soft-sm transition hover:bg-slate-50 hover:text-indigo-600 active:scale-95 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-indigo-400">
           <i class="fa-solid fa-arrow-left text-xs transition-transform group-hover:-translate-x-0.5" aria-hidden="true"></i>
         </button>
 
@@ -51,7 +51,7 @@ import { canUserEditResults, isRunActivelyLockedByOthers } from '../results/serv
           <app-button pageHeaderActions variant="secondary" size="sm" [loading]="worksheets.loading()" (click)="printWorksheet()"><i class="fa-solid fa-print" aria-hidden="true"></i> Phiếu phân tích</app-button>
         }
         @if (run() && draft() && config()) {
-          <div pageHeaderActions class="flex items-center gap-2">
+          <div pageHeaderActions class="flex flex-wrap items-center gap-2">
             <button
               type="button"
               (click)="toggleFocusMode()"
@@ -167,50 +167,50 @@ import { canUserEditResults, isRunActivelyLockedByOthers } from '../results/serv
         <div class="lg:hidden flex bg-slate-100 dark:bg-slate-950 p-1 rounded-2xl border border-slate-200/60 dark:border-slate-800/80 shrink-0 mb-1">
           <button (click)="mobileActiveTab.set('grid')"
                   [class]="mobileActiveTab() === 'grid'
-                    ? 'flex-1 py-2.5 text-xs font-black bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 rounded-xl shadow-xs border border-slate-200/40 dark:border-slate-700/40'
-                    : 'flex-1 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'"
+                    ? 'flex-1 min-h-[44px] py-2.5 text-xs font-black bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 rounded-xl shadow-xs border border-slate-200/40 dark:border-slate-700/40'
+                    : 'flex-1 min-h-[44px] py-2.5 text-xs font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'"
                   class="transition-all duration-200 flex items-center justify-center gap-2">
             <i class="fa-solid fa-table-cells text-sm"></i>
             <span>Bảng Kết Quả</span>
           </button>
           <button (click)="mobileActiveTab.set('pdf')"
                   [class]="mobileActiveTab() === 'pdf'
-                    ? 'flex-1 py-2.5 text-xs font-black bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 rounded-xl shadow-xs border border-slate-200/40 dark:border-slate-700/40'
-                    : 'flex-1 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'"
+                    ? 'flex-1 min-h-[44px] py-2.5 text-xs font-black bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 rounded-xl shadow-xs border border-slate-200/40 dark:border-slate-700/40'
+                    : 'flex-1 min-h-[44px] py-2.5 text-xs font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'"
                   class="transition-all duration-200 flex items-center justify-center gap-2">
             <i class="fa-solid fa-file-pdf text-sm text-rose-500"></i>
             <span>Báo Cáo &amp; PDF</span>
           </button>
         </div>
 
-        <div class="flex-1 min-h-0 flex flex-col lg:flex-row gap-5 overflow-hidden lg:h-[calc(100vh-220px)] lg:min-h-[580px]">
+        <div class="flex-1 min-h-0 flex flex-col lg:flex-row gap-5 lg:overflow-hidden lg:h-[calc(100vh-220px)] lg:min-h-[580px]">
           
           <!-- LEFT PANE: CHROMATOGRAPHY GRID (58%) -->
           <div [class.hidden]="mobileActiveTab() !== 'grid'" class="lg:!flex lg:flex-[58] flex flex-col min-h-0 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
             
             <!-- Header of Grid -->
-            <div class="px-5 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 shrink-0">
-              <div class="flex items-center gap-3 min-w-0">
+            <div class="px-3.5 sm:px-5 py-3 sm:py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 shrink-0">
+              <div class="flex flex-wrap items-center gap-2 sm:gap-3 min-w-0">
                 <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center m-0 shrink-0">
                   <i class="fa-solid fa-table-cells mr-2.5 text-indigo-500"></i> Bảng Kết Quả Chạy
                 </h4>
                 
                 <!-- Prefix filter tabs -->
                 @if (detectedPrefixes().length > 1) {
-                  <div class="flex items-center bg-slate-100 dark:bg-slate-950 p-0.5 rounded-lg border border-slate-200/60 dark:border-slate-800/80 ml-2 overflow-x-auto max-w-[200px] sm:max-w-none custom-scrollbar shrink-0">
+                  <div class="flex items-center bg-slate-100 dark:bg-slate-950 p-0.5 rounded-lg border border-slate-200/60 dark:border-slate-800/80 sm:ml-2 overflow-x-auto max-w-full sm:max-w-none custom-scrollbar shrink-0">
                     <button (click)="changeActiveFilter('ALL')"
                             [class]="activeFilter() === 'ALL'
-                              ? 'px-2 py-1 text-[9px] font-black bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 rounded shadow-xs'
-                              : 'px-2 py-1 text-[9px] font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'"
-                            class="transition duration-150 shrink-0">
+                              ? 'px-2.5 sm:px-2 py-1.5 sm:py-1 text-[10px] sm:text-[9px] font-black bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 rounded shadow-xs'
+                              : 'px-2.5 sm:px-2 py-1.5 sm:py-1 text-[10px] sm:text-[9px] font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'"
+                            class="min-h-[36px] sm:min-h-0 transition duration-150 shrink-0">
                       Tất Cả
                     </button>
                     @for (prefix of detectedPrefixes(); track prefix) {
                       <button (click)="changeActiveFilter(prefix)"
                               [class]="activeFilter() === prefix
-                                ? 'px-2 py-1 text-[9px] font-black bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 rounded shadow-xs'
-                                : 'px-2 py-1 text-[9px] font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'"
-                              class="transition duration-150 shrink-0">
+                                ? 'px-2.5 sm:px-2 py-1.5 sm:py-1 text-[10px] sm:text-[9px] font-black bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 rounded shadow-xs'
+                                : 'px-2.5 sm:px-2 py-1.5 sm:py-1 text-[10px] sm:text-[9px] font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'"
+                              class="min-h-[36px] sm:min-h-0 transition duration-150 shrink-0">
                         {{ prefix === '' ? 'Không' : prefix }}
                       </button>
                     }
@@ -226,7 +226,7 @@ import { canUserEditResults, isRunActivelyLockedByOthers } from '../results/serv
                             [class]="activeSampleCode() === sample
                               ? 'bg-indigo-600 text-white font-bold shadow-md shadow-indigo-500/20 border-transparent'
                               : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'"
-                            class="px-2.5 py-1.5 rounded-lg text-[11px] flex items-center gap-1.5 shrink-0 transition-all duration-200">
+                            class="min-h-[40px] sm:min-h-0 px-3 sm:px-2.5 py-2 sm:py-1.5 rounded-lg text-xs sm:text-[11px] flex items-center gap-1.5 shrink-0 transition-all duration-200">
                       <span class="font-mono">{{ sample }}</span>
                     </button>
                   }
@@ -328,8 +328,8 @@ import { canUserEditResults, isRunActivelyLockedByOthers } from '../results/serv
                   <table class="w-full text-sm border-collapse text-left whitespace-nowrap min-w-[850px]">
                   <thead>
                     <tr class="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700/60 sticky top-0 z-10 shadow-sm">
-                      <th class="py-3.5 px-5 font-semibold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider w-24 min-w-[96px] max-w-[96px] sticky left-0 bg-slate-50 dark:bg-slate-800 z-30 border-r border-slate-200/60 dark:border-slate-700">Số lọ</th>
-                      <th class="py-3.5 px-5 font-semibold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider min-w-[160px] sticky left-24 bg-slate-50 dark:bg-slate-800 z-30 border-r border-slate-200/60 dark:border-slate-700 shadow-[4px_0_8px_-3px_rgba(0,0,0,0.08)] dark:shadow-[4px_0_8px_-3px_rgba(0,0,0,0.3)]">Mẫu thử</th>
+                      <th class="py-3.5 px-3 sm:px-5 font-semibold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider w-20 md:w-24 md:min-w-[96px] md:max-w-[96px] md:sticky md:left-0 bg-slate-50 dark:bg-slate-800 md:z-30 border-r border-slate-200/60 dark:border-slate-700">Số lọ</th>
+                      <th class="py-3.5 px-3 sm:px-5 font-semibold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider min-w-[115px] md:min-w-[160px] sticky left-0 md:left-24 bg-slate-50 dark:bg-slate-800 z-30 border-r border-slate-200/60 dark:border-slate-700 shadow-[4px_0_8px_-3px_rgba(0,0,0,0.08)] dark:shadow-[4px_0_8px_-3px_rgba(0,0,0,0.3)]">Mẫu thử</th>
                       
                       @if (hasColumn('khoiLuong')) {
                         <th class="py-3.5 px-5 text-center font-semibold text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider w-28">Khối lượng</th>
@@ -365,11 +365,11 @@ import { canUserEditResults, isRunActivelyLockedByOthers } from '../results/serv
                         'bg-white dark:bg-slate-900': !row.isQC
                       }" class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors bg-white dark:bg-slate-900">
                         
-                        <td class="py-3 px-5 font-mono text-sm text-slate-500 dark:text-slate-400 w-24 min-w-[96px] max-w-[96px] sticky left-0 bg-inherit z-10 border-r border-slate-100 dark:border-slate-800/80">
+                        <td class="py-3 px-3 sm:px-5 font-mono text-sm text-slate-500 dark:text-slate-400 w-20 md:w-24 md:min-w-[96px] md:max-w-[96px] md:sticky md:left-0 bg-inherit md:z-10 border-r border-slate-100 dark:border-slate-800/80">
                           {{ getRowDataValue(row.key, 'loSo') || '—' }}
                         </td>
                         
-                        <td class="py-3 px-5 sticky left-24 bg-inherit z-10 border-r border-slate-100 dark:border-slate-800/80 shadow-[4px_0_8px_-3px_rgba(0,0,0,0.08)] dark:shadow-[4px_0_8px_-3px_rgba(0,0,0,0.3)]">
+                        <td class="py-3 px-3 sm:px-5 min-w-[115px] md:min-w-[160px] sticky left-0 md:left-24 bg-inherit z-10 border-r border-slate-100 dark:border-slate-800/80 shadow-[4px_0_8px_-3px_rgba(0,0,0,0.08)] dark:shadow-[4px_0_8px_-3px_rgba(0,0,0,0.3)]">
                           @if (row.isQC) {
                             <span class="inline-flex items-center gap-2 text-sm text-indigo-600 dark:text-indigo-400 font-bold uppercase tracking-wide">
                               <i class="fa-solid fa-flask text-xs"></i> {{ row.label }}
@@ -488,7 +488,7 @@ import { canUserEditResults, isRunActivelyLockedByOthers } from '../results/serv
 
             <div class="flex flex-wrap items-center gap-2.5 w-full justify-center">
               <button type="button" (click)="viewTraceability()"
-                      class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm active:scale-95 transition flex items-center gap-2">
+                      class="min-h-[44px] sm:min-h-0 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm active:scale-95 transition flex items-center gap-2">
                 <i class="fa-solid fa-arrow-up-right-from-square"></i>
                 <span>Mở trang</span>
               </button>

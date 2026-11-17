@@ -243,6 +243,12 @@ import { PdfDocumentViewerComponent } from './pdf-document-viewer.component';
       justify-content: center;
       transition: color .15s, background-color .15s;
     }
+    @media (max-width: 639px) {
+      .preview-icon-button {
+        width: 2.75rem;
+        height: 2.75rem;
+      }
+    }
     .preview-icon-button:hover { color: #c026d3; background: #fdf4ff; }
     .preview-menu-item {
       width: 100%;

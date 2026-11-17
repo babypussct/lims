@@ -185,6 +185,12 @@ interface KeyedCollectionPrototype {
       flex: 0 0 auto;
       transition: color .15s, background-color .15s;
     }
+    @media (max-width: 639px) {
+      .viewer-tool-button {
+        width: 2.5rem;
+        height: 2.5rem;
+      }
+    }
     .viewer-tool-button:hover:not(:disabled) {
       color: #c026d3;
       background: #f8fafc;

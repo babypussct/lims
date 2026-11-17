@@ -34,10 +34,10 @@ function removeAccents(str: string): string {
           [closeOnBackdrop]="true"
           (closed)="onClose()"
         >
-        <div modalBody class="-mx-6 -my-5 flex min-h-[70vh] flex-col overflow-y-auto md:h-[calc(85vh-4rem)] md:min-h-0 md:flex-row md:overflow-hidden">
+        <div modalBody class="-mx-4 -my-3 sm:-mx-6 sm:-my-5 flex min-h-0 flex-col overflow-y-auto md:h-[calc(85dvh-4rem)] md:min-h-0 md:flex-row md:overflow-hidden">
             
             <!-- Left Column: Standards Selection -->
-            <div class="w-full md:w-1/2 h-[55vh] md:h-auto md:flex-1 flex flex-col bg-slate-50 dark:bg-slate-800/30 border-b md:border-b-0 md:border-r border-slate-100 dark:border-slate-800 shrink-0 md:min-h-0">
+            <div class="w-full md:w-1/2 max-h-[46dvh] md:max-h-none md:h-auto md:flex-1 flex flex-col bg-slate-50 dark:bg-slate-800/30 border-b md:border-b-0 md:border-r border-slate-100 dark:border-slate-800 shrink-0 md:min-h-0">
                 <div class="p-6 border-b border-slate-100 dark:border-slate-800">
                         <h3 class="font-black text-slate-800 dark:text-slate-100 text-lg flex items-center gap-2 mb-4">
                         <i class="fa-solid fa-flask-vial text-fuchsia-600"></i>

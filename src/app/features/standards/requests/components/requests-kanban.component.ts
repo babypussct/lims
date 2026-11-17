@@ -28,21 +28,22 @@ import { formatNum } from '../../../../shared/utils/utils';
       flex-direction: column;
       overflow: hidden;
     }
-    /* Mobile: scroll-snap với mỗi cột chiếm 90vw */
+    /* Mobile: xếp dọc cột theo filter hiện tại để cuộn tự nhiên, không cắt chiều cao */
     @media (max-width: 767px) {
       .kanban-board {
-        scroll-snap-type: x mandatory;
-        padding: 0.5rem 1rem;
-        gap: 0.75rem;
-        align-items: stretch;
+        flex-direction: column;
+        height: auto;
+        min-height: 0;
+        overflow-x: visible;
+        padding: 0.75rem;
+        gap: 0.875rem;
       }
       .kanban-col {
-        scroll-snap-align: start;
-        flex: 0 0 calc(100vw - 3rem);
+        flex: none;
+        width: 100%;
         min-width: unset;
         max-width: unset;
         height: auto;
-        max-height: calc(100vh - 220px);
       }
     }
     /* Tablet: 2 cột nhìn thấy */
@@ -61,8 +62,8 @@ import { formatNum } from '../../../../shared/utils/utils';
     }
   `],
   template: `
-    <!-- Mobile swipe hint -->
-    <div class="md:hidden flex items-center justify-center gap-1.5 py-1.5 text-slate-400">
+    <!-- Tablet swipe hint -->
+    <div class="hidden md:flex lg:hidden items-center justify-center gap-1.5 py-1.5 text-slate-400">
       <i class="fa-solid fa-left-right text-xs"></i>
       <span class="text-xs font-bold uppercase tracking-widest">Vuốt ngang để xem tất cả cột</span>
     </div>

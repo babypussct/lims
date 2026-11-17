@@ -48,6 +48,8 @@ temp_inspect_filebieumau3_docx/
 template_extracted/
 scratch/
 artifacts/
+/output/
+/tmp/
 
 # Large documents & log files
 Report_ISTD_PARAMETER_NEW.pdf

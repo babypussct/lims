@@ -26,7 +26,7 @@ import { PERMISSION_CATALOG, PERMISSION_EDITOR_GROUPS } from '../../../core/auth
     AppModalShellComponent,
   ],
   template: `
-    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm dark:shadow-none border border-slate-200 dark:border-slate-700 p-6 flex flex-col gap-6 fade-in">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm dark:shadow-none border border-slate-200 dark:border-slate-700 p-4 sm:p-6 flex flex-col gap-5 sm:gap-6 fade-in">
         <!-- Header -->
         <div class="flex justify-between items-center flex-wrap gap-4">
             <div>
@@ -67,7 +67,7 @@ import { PERMISSION_CATALOG, PERMISSION_EDITOR_GROUPS } from '../../../core/auth
                     }
 
                     <div>
-                        <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-3" [class.pr-20]="role.isSystemRole">
                             <div class="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 flex items-center justify-center text-sm font-bold shrink-0">
                                 <i class="fa-solid fa-shield-halved"></i>
                             </div>
@@ -131,7 +131,7 @@ import { PERMISSION_CATALOG, PERMISSION_EDITOR_GROUPS } from '../../../core/auth
                             <div>
                                 <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5 ml-1">Tên vai trò</label>
                                 <input type="text" formControlName="name" (input)="onNameInput()"
-                                       class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:bg-white dark:focus:bg-slate-800 focus:border-blue-500 dark:focus:border-blue-400 outline-none transition shadow-sm">
+                                       class="w-full min-h-[42px] sm:min-h-0 px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-base sm:text-sm font-bold text-slate-700 dark:text-slate-200 focus:bg-white dark:focus:bg-slate-800 focus:border-blue-500 dark:focus:border-blue-400 outline-none transition shadow-sm">
                                 @if (roleForm.get('name')?.touched && roleForm.get('name')?.errors?.['required']) {
                                     <span class="text-[10px] text-red-500 font-bold ml-1">Vui lòng nhập tên vai trò.</span>
                                 }
@@ -143,7 +143,7 @@ import { PERMISSION_CATALOG, PERMISSION_EDITOR_GROUPS } from '../../../core/auth
                         <div>
                             <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5 ml-1">Mô tả nhiệm vụ</label>
                             <textarea formControlName="description" rows="2"
-                                      class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:bg-white dark:focus:bg-slate-800 focus:border-blue-500 dark:focus:border-blue-400 outline-none transition shadow-sm resize-none"></textarea>
+                                      class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-base sm:text-sm font-bold text-slate-700 dark:text-slate-200 focus:bg-white dark:focus:bg-slate-800 focus:border-blue-500 dark:focus:border-blue-400 outline-none transition shadow-sm resize-none"></textarea>
                         </div>
                     </form>
 
@@ -153,7 +153,7 @@ import { PERMISSION_CATALOG, PERMISSION_EDITOR_GROUPS } from '../../../core/auth
                         <label class="relative mb-4 block">
                             <span class="sr-only">Tìm quyền</span>
                             <i class="fa-solid fa-magnifying-glass pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400"></i>
-                            <input type="search" [ngModel]="permissionQuery()" (ngModelChange)="permissionQuery.set($event)" placeholder="Tìm quyền theo tên hoặc mô tả..." class="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-xs font-bold text-slate-700 outline-none focus:border-blue-500 focus:bg-white dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200 dark:focus:bg-slate-900">
+                            <input type="search" [ngModel]="permissionQuery()" (ngModelChange)="permissionQuery.set($event)" placeholder="Tìm quyền theo tên hoặc mô tả..." class="w-full min-h-[42px] sm:min-h-0 rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-base sm:text-xs font-bold text-slate-700 outline-none focus:border-blue-500 focus:bg-white dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200 dark:focus:bg-slate-900">
                         </label>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             @for (group of filteredPermissionGroups(); track group.name) {
@@ -163,7 +163,7 @@ import { PERMISSION_CATALOG, PERMISSION_EDITOR_GROUPS } from '../../../core/auth
                                     </span>
                                     <div class="flex flex-col gap-2 mt-1">
                                         @for (perm of group.perms; track perm.val) {
-                                            <label class="flex items-center gap-3 p-2 rounded-xl hover:bg-white dark:hover:bg-slate-800/80 cursor-pointer transition">
+                                            <label class="flex items-center gap-3 min-h-[40px] sm:min-h-0 p-2 rounded-xl hover:bg-white dark:hover:bg-slate-800/80 cursor-pointer transition">
                                                 <div class="relative w-8 h-4 shrink-0 mt-0.5">
                                                     <input type="checkbox" [checked]="hasPermSelected(perm.val)" (change)="togglePermSelected(perm.val)" class="peer sr-only">
                                                     <div class="w-full h-full bg-slate-300 dark:bg-slate-600 rounded-full peer peer-checked:bg-[var(--tw-ring-color)] transition-colors" [ngStyle]="{'--tw-ring-color': group.ring}"></div>

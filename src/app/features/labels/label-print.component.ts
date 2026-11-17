@@ -51,9 +51,21 @@ interface LabelPage {
     .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
     :host-context(.dark) .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; }
+    @media (max-width: 767px) {
+      .input-std { font-size: 16px; min-height: 44px; padding: 10px 12px; }
+      .input-mini { font-size: 16px; min-height: 40px; padding: 6px; }
+    }
   `]
 })
 export class LabelPrintComponent implements AfterViewInit, OnDestroy {
+  mobileTab = signal<'config' | 'preview'>('config');
+
+  setMobileTab(tab: 'config' | 'preview') {
+    this.mobileTab.set(tab);
+    if (tab === 'preview') {
+      setTimeout(() => this.fitToScreen(), 50);
+    }
+  }
   private destroyed = false;
   private controller?: AbortController;
   ngOnDestroy(): void { this.destroyed = true; this.controller?.abort(); this.inputSubject.complete(); }

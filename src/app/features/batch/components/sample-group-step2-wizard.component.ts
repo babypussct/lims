@@ -54,7 +54,7 @@ interface WizardSopSuggestion {
   standalone: true,
   imports: [CommonModule, FormsModule, AppButtonComponent, AppEmptyStateComponent, QuickGenerateSampleModalComponent],
   template: `
-    <section class="smartbatch-group-wizard w-full h-full min-h-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/30 shadow-sm overflow-hidden flex flex-col">
+    <section class="smartbatch-group-wizard w-full min-h-full lg:h-full lg:min-h-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/30 shadow-sm lg:overflow-hidden flex flex-col">
       <header class="shrink-0 px-3 sm:px-4 py-1 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center gap-2 min-h-[30px]">
         <span class="text-[9px] uppercase tracking-[0.12em] font-black text-fuchsia-600 dark:text-fuchsia-400 whitespace-nowrap">
           <i class="fa-solid fa-list-check mr-1"></i>Nhóm mẻ
@@ -64,8 +64,8 @@ interface WizardSopSuggestion {
         </span>
       </header>
 
-      <div class="flex-1 min-h-0 p-2 sm:p-2.5 grid grid-cols-1 grid-rows-[minmax(135px,0.24fr)_minmax(0,1fr)] lg:grid-cols-[minmax(220px,0.27fr)_minmax(0,1fr)] lg:grid-rows-1 gap-2.5 overflow-hidden">
-        <aside class="min-h-0 overflow-y-auto custom-scrollbar pr-1 space-y-2">
+      <div class="flex-1 lg:min-h-0 p-2 sm:p-2.5 grid grid-cols-1 lg:grid-cols-[minmax(220px,0.27fr)_minmax(0,1fr)] lg:grid-rows-1 gap-2.5 lg:overflow-hidden">
+        <aside class="max-h-56 lg:max-h-none lg:min-h-0 overflow-y-auto custom-scrollbar pr-1 space-y-2">
           <div class="sticky top-0 z-10 bg-slate-50 dark:bg-slate-950 pb-1 flex items-center justify-between gap-2">
             <h3 class="text-xs font-black text-slate-700 dark:text-slate-100">Danh sách nhóm</h3>
           </div>
@@ -103,7 +103,7 @@ interface WizardSopSuggestion {
               </button>
               @if (drafts().length > 1) {
                 <div class="px-2.5 pb-2 flex justify-end">
-                  <button type="button" (click)="removeGroup(group.id); $event.stopPropagation()" class="text-[10px] font-black text-slate-400 hover:text-red-600 transition"><i class="fa-solid fa-trash mr-1"></i>Xóa</button>
+                  <button type="button" (click)="removeGroup(group.id); $event.stopPropagation()" class="min-h-[36px] sm:min-h-0 px-2 py-1 rounded text-[11px] sm:text-[10px] font-black text-slate-400 hover:text-red-600 transition inline-flex items-center"><i class="fa-solid fa-trash mr-1"></i>Xóa</button>
                 </div>
               }
             </article>
@@ -115,17 +115,17 @@ interface WizardSopSuggestion {
           </app-button>
         </aside>
 
-        <main class="min-w-0 min-h-0">
+        <main class="min-w-0 lg:min-h-0">
           @if (activeGroup(); as group) {
-            <div class="h-full min-h-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden shadow-sm flex flex-col">
+            <div class="lg:h-full lg:min-h-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden shadow-sm flex flex-col">
               <div class="shrink-0 px-3 sm:px-4 py-1.5 border-b border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2">
                 <h3 class="text-xs font-black text-slate-900 dark:text-slate-100 truncate">{{group.name}}</h3>
-                <div class="grid grid-cols-2 gap-1 min-w-[250px] max-w-[420px] flex-1 sm:flex-none">
+                <div class="grid grid-cols-2 gap-1 min-w-[230px] sm:min-w-[250px] max-w-[420px] flex-1 sm:flex-none">
                   @for (label of stepLabels; track label; let i = $index) {
                     <button type="button"
                             (click)="goToStep((i + 1) === 1 ? 1 : 2)"
                             [disabled]="i === 1 && !canEnterStep2(group)"
-                            class="flex items-center gap-1.5 px-2 py-1 rounded-md text-[9px] font-black transition text-left disabled:cursor-not-allowed"
+                            class="flex items-center gap-1.5 min-h-[36px] sm:min-h-0 px-2 py-1 rounded-md text-[10px] sm:text-[9px] font-black transition text-left disabled:cursor-not-allowed"
                             [class.bg-fuchsia-50]="activeStep() === i + 1"
                             [class.dark:bg-fuchsia-950]="activeStep() === i + 1"
                             [class.text-fuchsia-700]="activeStep() === i + 1 || (i === 1 && canEnterStep2(group))"
@@ -142,7 +142,7 @@ interface WizardSopSuggestion {
                 </div>
               </div>
 
-              <div class="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-2.5 sm:p-3 bg-slate-50 dark:bg-slate-950/20">
+              <div class="flex-1 lg:min-h-0 lg:overflow-y-auto custom-scrollbar p-2.5 sm:p-3 bg-slate-50 dark:bg-slate-950/20">
                 @if (activeStep() === 1) {
                   <section class="max-w-5xl mx-auto space-y-2.5 animate-fade-in">
                     <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1.35fr)_minmax(220px,0.65fr)] gap-2.5 items-start">
@@ -180,22 +180,22 @@ interface WizardSopSuggestion {
                         </button>
                       </div>
                       @if (showSampleDescriptions()) {
-                        <div class="grid grid-cols-[minmax(82px,0.45fr)_minmax(150px,1.35fr)_auto] gap-2 px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 text-[8px] uppercase tracking-wide font-black text-slate-500 dark:text-slate-400">
+                        <div class="hidden sm:grid grid-cols-[minmax(82px,0.45fr)_minmax(150px,1.35fr)_auto] gap-2 px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 text-[8px] uppercase tracking-wide font-black text-slate-500 dark:text-slate-400">
                           <span>Mã số mẫu</span><span>Mô tả mẫu <span class="text-red-500">*</span></span><span>Thao tác</span>
                         </div>
-                        <div class="max-h-[220px] overflow-y-auto custom-scrollbar divide-y divide-slate-100 dark:divide-slate-800">
+                        <div class="max-h-[260px] overflow-y-auto custom-scrollbar divide-y divide-slate-100 dark:divide-slate-800">
                           @for (sample of sampleCodes(group); track sample) {
-                            <div class="grid grid-cols-[minmax(82px,0.45fr)_minmax(150px,1.35fr)_auto] gap-2 items-center px-3 py-1.5">
+                            <div class="grid grid-cols-[minmax(76px,0.45fr)_minmax(0,1fr)_auto] sm:grid-cols-[minmax(82px,0.45fr)_minmax(150px,1.35fr)_auto] gap-2 items-center px-2.5 sm:px-3 py-2 sm:py-1.5">
                               <span class="font-mono text-xs font-black text-slate-800 dark:text-slate-100 break-all">{{sample}}</span>
-                              <div class="flex items-center gap-2 min-w-0">
+                              <div class="flex items-center gap-1.5 min-w-0">
                                 <input [attr.list]="descriptionListId" [ngModel]="descriptionFor(group, sample)" (ngModelChange)="updateDescription(sample, $event)"
-                                       class="flex-1 min-w-0 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-2.5 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-fuchsia-500 focus:ring-2 focus:ring-fuchsia-100"
+                                       class="flex-1 min-w-0 min-h-[38px] sm:min-h-0 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-2.5 py-1.5 text-base sm:text-xs font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-fuchsia-500 focus:ring-2 focus:ring-fuchsia-100"
                                        placeholder="VD: Cá tra nguyên con" [attr.aria-label]="'Mô tả mẫu ' + sample">
                                 @if (descriptionFor(group, sample)) {
                                   <span class="shrink-0 text-[9px] font-black text-emerald-600" title="Đã có mô tả"><i class="fa-solid fa-circle-check"></i></span>
                                 }
                               </div>
-                              <button type="button" (click)="copyDescriptionToAll(sample)" [disabled]="!descriptionFor(group, sample)" class="shrink-0 px-2 py-1 rounded-md border border-fuchsia-200 dark:border-fuchsia-900 text-[9px] font-black text-fuchsia-700 dark:text-fuchsia-300 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-950/40 disabled:opacity-35 disabled:cursor-not-allowed" [attr.aria-label]="'Sao chép mô tả của ' + sample + ' cho tất cả'" title="Sao chép mô tả này cho tất cả mẫu">
+                              <button type="button" (click)="copyDescriptionToAll(sample)" [disabled]="!descriptionFor(group, sample)" class="shrink-0 w-9 h-9 sm:w-auto sm:h-auto flex items-center justify-center sm:px-2 sm:py-1 rounded-md border border-fuchsia-200 dark:border-fuchsia-900 text-xs sm:text-[9px] font-black text-fuchsia-700 dark:text-fuchsia-300 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-950/40 disabled:opacity-35 disabled:cursor-not-allowed" [attr.aria-label]="'Sao chép mô tả của ' + sample + ' cho tất cả'" title="Sao chép mô tả này cho tất cả mẫu">
                                 <i class="fa-regular fa-copy"></i><span class="sr-only">Sao chép tất cả</span>
                               </button>
                             </div>
@@ -216,24 +216,24 @@ interface WizardSopSuggestion {
                     <div class="grid grid-cols-1 2xl:grid-cols-[minmax(360px,0.9fr)_minmax(420px,1.1fr)] gap-3 items-start">
                       <div class="space-y-3">
                         <div class="flex flex-wrap items-center gap-2">
-                          <div class="relative flex-1 min-w-[180px]">
-                            <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-xs"></i>
-                            <input [ngModel]="targetSearch()" (ngModelChange)="targetSearch.set($event)" class="w-full pl-8 pr-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold outline-none focus:border-emerald-500" placeholder="Tìm chỉ tiêu...">
+                          <div class="relative flex-1 min-w-[160px]">
+                            <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                            <input [ngModel]="targetSearch()" (ngModelChange)="targetSearch.set($event)" class="w-full min-h-[40px] sm:min-h-0 pl-8 pr-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-base sm:text-xs font-bold outline-none focus:border-emerald-500" placeholder="Tìm chỉ tiêu...">
                           </div>
-                          <button type="button" (click)="toggleTargetGroupPicker()" class="px-3 py-2.5 rounded-xl bg-fuchsia-50 dark:bg-fuchsia-950/30 text-fuchsia-700 dark:text-fuchsia-300 border border-fuchsia-100 dark:border-fuchsia-900 text-[10px] font-black">
+                          <button type="button" (click)="toggleTargetGroupPicker()" class="min-h-[40px] sm:min-h-0 px-3 py-2 rounded-xl bg-fuchsia-50 dark:bg-fuchsia-950/30 text-fuchsia-700 dark:text-fuchsia-300 border border-fuchsia-100 dark:border-fuchsia-900 text-[11px] sm:text-[10px] font-black">
                             <i class="fa-solid fa-layer-group mr-1"></i> Chọn Nhóm Chỉ Tiêu
                           </button>
-                          <button type="button" (click)="selectAllTargets()" class="px-3 py-2.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-100 text-[10px] font-black">Chọn hết</button>
-                          <button type="button" (click)="clearTargets()" class="px-3 py-2.5 rounded-xl bg-white dark:bg-slate-900 text-slate-500 border border-slate-200 dark:border-slate-700 text-[10px] font-black">Bỏ chọn</button>
+                          <button type="button" (click)="selectAllTargets()" class="min-h-[40px] sm:min-h-0 px-3 py-2 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-100 text-[11px] sm:text-[10px] font-black">Chọn hết</button>
+                          <button type="button" (click)="clearTargets()" class="min-h-[40px] sm:min-h-0 px-3 py-2 rounded-xl bg-white dark:bg-slate-900 text-slate-500 border border-slate-200 dark:border-slate-700 text-[11px] sm:text-[10px] font-black">Bỏ chọn</button>
                         </div>
 
                         @if (showTargetGroupPicker()) {
                           <div class="rounded-2xl border border-fuchsia-200 dark:border-fuchsia-900 bg-fuchsia-50/60 dark:bg-fuchsia-950/20 p-3 space-y-2">
                             <div class="flex items-center justify-between gap-2">
                               <div class="text-xs font-black text-fuchsia-800 dark:text-fuchsia-300">Chọn Nhóm Chỉ Tiêu</div>
-                              <button type="button" (click)="showTargetGroupPicker.set(false)" class="text-slate-400 hover:text-red-500"><i class="fa-solid fa-xmark"></i></button>
+                              <button type="button" (click)="showTargetGroupPicker.set(false)" aria-label="Đóng chọn nhóm" class="w-10 h-10 sm:w-8 sm:h-8 flex items-center justify-center rounded-full text-slate-400 hover:text-red-500"><i class="fa-solid fa-xmark"></i></button>
                             </div>
-                            <input [ngModel]="targetGroupSearch()" (ngModelChange)="targetGroupSearch.set($event)" class="w-full px-3 py-2 rounded-xl border border-fuchsia-100 dark:border-fuchsia-900 bg-white dark:bg-slate-900 text-xs font-bold outline-none" placeholder="Tìm nhóm chỉ tiêu...">
+                            <input [ngModel]="targetGroupSearch()" (ngModelChange)="targetGroupSearch.set($event)" class="w-full min-h-[42px] sm:min-h-0 px-3 py-2 rounded-xl border border-fuchsia-100 dark:border-fuchsia-900 bg-white dark:bg-slate-900 text-base sm:text-xs font-bold outline-none" placeholder="Tìm nhóm chỉ tiêu...">
                             <div class="max-h-[210px] overflow-y-auto custom-scrollbar space-y-1">
                               @for (targetGroup of filteredTargetGroups(); track targetGroup.id) {
                                 <button type="button" (click)="importTargetGroup(targetGroup)" class="w-full text-left rounded-xl border border-fuchsia-100 dark:border-fuchsia-900 bg-white dark:bg-slate-900 px-3 py-2 hover:border-fuchsia-400 transition">
@@ -363,7 +363,7 @@ interface WizardSopSuggestion {
                 }
               </div>
 
-              <footer class="sticky bottom-0 z-20 shrink-0 px-3 sm:px-4 py-1.5 border-t border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-800/95 backdrop-blur flex items-center justify-between gap-2 shadow-[0_-3px_12px_rgba(15,23,42,0.06)]">
+              <footer class="sticky bottom-0 z-20 shrink-0 px-3 sm:px-4 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))] border-t border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-800/95 backdrop-blur flex flex-wrap items-center justify-between gap-2 shadow-[0_-3px_12px_rgba(15,23,42,0.06)]">
                 <app-button variant="secondary" size="sm" (click)="previousStep()" [disabled]="activeStep() === 1">
                   <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
                   Quay lại

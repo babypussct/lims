@@ -10,6 +10,7 @@ import { SopCalibrationPointsComponent } from '../shared/sop-calibration-points.
 import { SopSpreadsheetToolbarComponent } from '../shared/sop-spreadsheet-toolbar.component';
 import { SopRecoverySectionComponent, RecoveryCheckEntry } from '../shared/sop-recovery-section.component';
 import { copyRowToAll, navigateGrid } from '../shared/sop-grid-helper';
+import { isMobileViewport } from '../../../../core/utils/viewport.utils';
 import {
   GridPasteController,
   GridPasteGridSpec,
@@ -37,7 +38,7 @@ export class Sop1767857760184EntryComponent extends AbstractSopEntry implements 
   private toastSvc = inject(ToastService);
   columnDisplayNames = signal<Record<string, string>>({});
   activeColumns: string[] = [];
-  mobileViewMode = signal<'table' | 'cards'>('table');
+  mobileViewMode = signal<'table' | 'cards'>(isMobileViewport() ? 'cards' : 'table');
   pasteCtrl = new GridPasteController();
 
   getStats() {

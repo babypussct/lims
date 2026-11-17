@@ -6,20 +6,20 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in" (click)="onBackdropClick($event)">
-        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-scale-in border border-slate-200 dark:border-slate-700 max-h-[90vh] flex flex-col">
-            
+    <div class="fixed inset-0 z-[60] flex justify-center overflow-y-auto overscroll-contain p-2 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in" (click)="onBackdropClick($event)">
+        <div class="my-auto bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-scale-in border border-slate-200 dark:border-slate-700 max-h-[calc(100dvh-1rem)] sm:max-h-[90vh] flex flex-col">
+
             <!-- Header -->
-            <div class="p-5 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-fuchsia-50/60 dark:bg-fuchsia-950/20 shrink-0">
-                <div>
-                    <h3 class="font-black text-slate-800 dark:text-slate-100 flex items-center gap-2.5 text-lg">
-                        <div class="w-9 h-9 rounded-xl bg-fuchsia-600 dark:bg-fuchsia-500 flex items-center justify-center text-white shadow-sm">
+            <div class="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-700 flex justify-between items-start sm:items-center gap-3 bg-fuchsia-50/60 dark:bg-fuchsia-950/20 shrink-0">
+                <div class="min-w-0 flex-1">
+                    <h3 class="font-black text-slate-800 dark:text-slate-100 flex items-center gap-2.5 text-base sm:text-lg">
+                        <div class="w-9 h-9 shrink-0 rounded-xl bg-fuchsia-600 dark:bg-fuchsia-500 flex items-center justify-center text-white shadow-sm">
                             <i [class]="iconClass + ' text-sm'"></i>
                         </div>
-                        {{ title }}
+                        <span class="truncate">{{ title }}</span>
                     </h3>
                     @if (subtitle || dateRangeText) {
-                        <div class="flex items-center gap-2 mt-1 ml-[46px]">
+                        <div class="flex flex-wrap items-center gap-2 mt-1.5 sm:mt-1 sm:ml-[46px]">
                             @if (dateRangeText) {
                                 <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">{{ dateRangeText }}</span>
                             }
@@ -29,19 +29,19 @@ import { CommonModule } from '@angular/common';
                         </div>
                     }
                 </div>
-                <button (click)="onClose()" [disabled]="isExporting" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition disabled:opacity-50">
+                <button type="button" (click)="onClose()" [disabled]="isExporting" aria-label="Đóng" class="w-11 h-11 sm:w-10 sm:h-10 shrink-0 flex items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition disabled:opacity-50">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
-            
+
             <!-- Scrollable Content -->
-            <div class="flex-1 overflow-y-auto custom-scrollbar">
+            <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain custom-scrollbar">
                 <ng-content></ng-content>
-                
+
                 <!-- Progress complete -->
                 @if (isCompleted) {
-                    <div class="m-5 p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-2xl flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center text-lg shadow-lg shadow-emerald-200">
+                    <div class="m-4 sm:m-5 p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-2xl flex items-center gap-3">
+                        <div class="w-10 h-10 shrink-0 rounded-xl bg-emerald-500 text-white flex items-center justify-center text-lg shadow-lg shadow-emerald-200">
                             <i class="fa-solid fa-check-double"></i>
                         </div>
                         <div>
@@ -53,24 +53,24 @@ import { CommonModule } from '@angular/common';
             </div>
 
             <!-- Footer -->
-            <div class="p-5 border-t border-slate-100 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-900/50 flex gap-3 justify-between items-center shrink-0">
-                <div class="text-[10px] text-slate-400 font-medium">
+            <div class="p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] sm:p-5 border-t border-slate-100 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-900/50 flex flex-wrap gap-2.5 sm:gap-3 justify-between items-center shrink-0">
+                <div class="text-[11px] sm:text-[10px] text-slate-400 font-medium w-full sm:w-auto">
                     @if (footerText && !isExporting) {
                         {{ footerText }}
                     }
                 </div>
-                <div class="flex gap-3">
-                    <button (click)="onClose()" [disabled]="isExporting" class="px-5 py-2.5 rounded-xl font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition disabled:opacity-50">Đóng</button>
+                <div class="flex w-full sm:w-auto gap-2 sm:gap-3">
+                    <button type="button" (click)="onClose()" [disabled]="isExporting" class="flex-1 sm:flex-none min-h-[44px] px-4 sm:px-5 py-2.5 rounded-xl font-bold text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition disabled:opacity-50">Đóng</button>
                     @if (!isExporting || isCompleted) {
-                        <button (click)="onExecute()" 
+                        <button type="button" (click)="onExecute()"
                                 [disabled]="isExporting || isSubmitDisabled"
-                                class="px-8 py-2.5 rounded-xl font-black text-white bg-fuchsia-600 hover:bg-fuchsia-700 dark:bg-fuchsia-500 dark:hover:bg-fuchsia-600 shadow-sm transition flex items-center gap-2 disabled:opacity-50 active:scale-95">
+                                class="flex-1 sm:flex-none min-h-[44px] px-5 sm:px-8 py-2.5 rounded-xl font-black text-sm text-white bg-fuchsia-600 hover:bg-fuchsia-700 dark:bg-fuchsia-500 dark:hover:bg-fuchsia-600 shadow-sm transition flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95">
                             <i class="fa-solid fa-cloud-arrow-down"></i>
                             {{ isCompleted ? 'Xuất lại' : submitButtonText }}
                         </button>
                     } @else {
-                        <button disabled
-                                class="px-8 py-2.5 rounded-xl font-black text-white bg-slate-400 dark:bg-slate-600 transition flex items-center gap-2 opacity-70 cursor-not-allowed">
+                        <button type="button" disabled
+                                class="flex-1 sm:flex-none min-h-[44px] px-5 sm:px-8 py-2.5 rounded-xl font-black text-sm text-white bg-slate-400 dark:bg-slate-600 transition flex items-center justify-center gap-2 opacity-70 cursor-not-allowed">
                             <span class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
                             Đang Xử Lý...
                         </button>

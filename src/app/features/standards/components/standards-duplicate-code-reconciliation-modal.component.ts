@@ -29,7 +29,7 @@ interface ReconciliationExecutionResult {
         [closeOnBackdrop]="false"
         [closeDisabled]="isBusy()"
         (closed)="close.emit()">
-        <div modalBody class="-mx-6 -my-5 flex flex-col min-h-0 h-full">
+        <div modalBody class="-mx-4 -my-3 sm:-mx-6 sm:-my-5 flex flex-col min-h-0 h-full">
           <section class="p-4 sm:p-5 shrink-0 space-y-3 border-b border-slate-200 dark:border-slate-700 bg-amber-50/40 dark:bg-amber-950/20">
             <div class="flex flex-wrap gap-3 justify-between items-start">
               <p class="text-xs leading-5 text-slate-700 dark:text-slate-200 max-w-3xl">

@@ -14,7 +14,7 @@ import { AnalysisResultDraft } from '../../../../core/models/analysis-result.mod
       <button type="button"
               (click)="toggleExpanded()"
               [attr.aria-expanded]="expanded()"
-              class="w-full px-5 py-3.5 bg-slate-50/70 dark:bg-slate-950/30 hover:bg-slate-100/60 dark:hover:bg-slate-800/40 flex flex-wrap items-center justify-between gap-3 text-left transition-colors border-b"
+              class="w-full min-h-[48px] px-4 sm:px-5 py-3 sm:py-3.5 bg-slate-50/70 dark:bg-slate-950/30 hover:bg-slate-100/60 dark:hover:bg-slate-800/40 flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 text-left transition-colors border-b"
               [class.border-slate-100]="expanded()"
               [class.dark:border-slate-800]="expanded()"
               [class.border-transparent]="!expanded()">
@@ -48,7 +48,7 @@ import { AnalysisResultDraft } from '../../../../core/models/analysis-result.mod
       </button>
 
       @if (expanded()) {
-        <fieldset [disabled]="isReadOnly" class="p-5 space-y-4">
+        <fieldset [disabled]="isReadOnly" class="p-3.5 sm:p-5 space-y-4">
           <!-- Signature Dates -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div data-preflight-target="date_analyst">
@@ -100,13 +100,13 @@ import { AnalysisResultDraft } from '../../../../core/models/analysis-result.mod
                         {{ checkbox.label }}
                       </span>
                     </div>
-                    <div class="flex items-center bg-slate-100 dark:bg-slate-900 p-0.5 rounded-lg border border-slate-200/70 dark:border-slate-800 shrink-0 select-none">
+                    <div class="flex items-center bg-slate-100 dark:bg-slate-900 p-0.5 rounded-xl border border-slate-200/70 dark:border-slate-800 shrink-0 select-none">
                       <button type="button"
                         (click)="setQcStatus(checkbox.key, true)"
                         [disabled]="isReadOnly"
                         [class]="draft.page1Data[checkbox.key] === true
-                          ? 'px-2.5 py-1 text-[10px] font-bold rounded bg-emerald-600 text-white shadow-xs transition duration-150 disabled:opacity-75 disabled:cursor-not-allowed'
-                          : 'px-2.5 py-1 text-[10px] font-semibold rounded text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition duration-150 disabled:opacity-50 disabled:cursor-not-allowed'"
+                          ? 'min-h-[36px] sm:min-h-0 px-3 sm:px-2.5 py-1.5 sm:py-1 text-[11px] sm:text-[10px] font-bold rounded-lg bg-emerald-600 text-white shadow-xs transition duration-150 disabled:opacity-75 disabled:cursor-not-allowed'
+                          : 'min-h-[36px] sm:min-h-0 px-3 sm:px-2.5 py-1.5 sm:py-1 text-[11px] sm:text-[10px] font-semibold rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition duration-150 disabled:opacity-50 disabled:cursor-not-allowed'"
                         title="Đạt tiêu chí">
                         Đạt
                       </button>
@@ -114,8 +114,8 @@ import { AnalysisResultDraft } from '../../../../core/models/analysis-result.mod
                         (click)="setQcStatus(checkbox.key, false)"
                         [disabled]="isReadOnly"
                         [class]="draft.page1Data[checkbox.key] === false
-                          ? 'px-2.5 py-1 text-[10px] font-bold rounded bg-rose-600 text-white shadow-xs transition duration-150 disabled:opacity-75 disabled:cursor-not-allowed'
-                          : 'px-2.5 py-1 text-[10px] font-semibold rounded text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition duration-150 disabled:opacity-50 disabled:cursor-not-allowed'"
+                          ? 'min-h-[36px] sm:min-h-0 px-3 sm:px-2.5 py-1.5 sm:py-1 text-[11px] sm:text-[10px] font-bold rounded-lg bg-rose-600 text-white shadow-xs transition duration-150 disabled:opacity-75 disabled:cursor-not-allowed'
+                          : 'min-h-[36px] sm:min-h-0 px-3 sm:px-2.5 py-1.5 sm:py-1 text-[11px] sm:text-[10px] font-semibold rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition duration-150 disabled:opacity-50 disabled:cursor-not-allowed'"
                         title="Không đạt tiêu chí">
                         K.Đạt
                       </button>
@@ -123,8 +123,8 @@ import { AnalysisResultDraft } from '../../../../core/models/analysis-result.mod
                         (click)="setQcStatus(checkbox.key, null)"
                         [disabled]="isReadOnly"
                         [class]="draft.page1Data[checkbox.key] === undefined || draft.page1Data[checkbox.key] === null
-                          ? 'px-2 py-1 text-[9px] font-bold rounded bg-slate-300 dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-xs transition duration-150 disabled:opacity-75 disabled:cursor-not-allowed'
-                          : 'px-2 py-1 text-[9px] font-semibold rounded text-slate-400 dark:text-slate-500 hover:text-slate-600 transition duration-150 disabled:opacity-50 disabled:cursor-not-allowed'"
+                          ? 'min-h-[36px] sm:min-h-0 px-2.5 sm:px-2 py-1.5 sm:py-1 text-[10px] sm:text-[9px] font-bold rounded-lg bg-slate-300 dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-xs transition duration-150 disabled:opacity-75 disabled:cursor-not-allowed'
+                          : 'min-h-[36px] sm:min-h-0 px-2.5 sm:px-2 py-1.5 sm:py-1 text-[10px] sm:text-[9px] font-semibold rounded-lg text-slate-400 dark:text-slate-500 hover:text-slate-600 transition duration-150 disabled:opacity-50 disabled:cursor-not-allowed'"
                         title="Chưa đánh giá">
                         N/A
                       </button>
