@@ -1,3 +1,4 @@
+import { ReportBulkPrintComponent } from './report-bulk-print.component';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -39,7 +40,7 @@ export interface PdfPaneModalEvent {
 @Component({
   selector: 'app-result-pdf-report-pane',
   standalone: true,
-  imports: [
+  imports: [ReportBulkPrintComponent,
     CommonModule,
     FormsModule,
     AppUiProgressComponent,
@@ -50,6 +51,7 @@ export interface PdfPaneModalEvent {
     @let proj = projection();
     @let selectedCard = activeCard();
     <div class="flex flex-col h-full min-h-0 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
+      <div class="p-2"><app-report-bulk-print [cards]="proj.cards" [samples]="run?.sampleList || []" /></div>
       <!-- Top Pane Header & Tabs -->
       <div class="px-3 sm:px-4 py-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/30 shrink-0 space-y-2.5">
         <div class="flex flex-wrap items-center justify-between gap-2">

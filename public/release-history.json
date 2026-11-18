@@ -1,5 +1,23 @@
 [
   {
+    "version": "v26.11.18-b02",
+    "date": "18/11/2026",
+    "title": "In nhanh nhiều phiếu báo cáo trong một lần",
+    "highlights": [
+      "In toàn bộ các phiếu PDF của mẻ qua một bản xem trước chung, không cần mở từng phiếu."
+    ],
+    "features": [
+      "Trung tâm báo cáo PDF và khung Báo cáo & PDF có nút In nhanh tất cả phiếu, Chọn phiếu và Tải PDF gộp.",
+      "Sau khi xuất báo cáo, xem và in đúng các phiếu vừa xuất; hiển thị rõ khi lượt xuất chưa đầy đủ."
+    ],
+    "improvements": [
+      "Tự chọn phiếu hiện hành, cảnh báo bộ phiếu thiếu và chặn các lựa chọn trùng mẫu trước khi in.",
+      "Theo dõi tiến trình chuẩn bị PDF, hủy khi cần và thử lại khi một phiếu tải lỗi."
+    ],
+    "fixes": [],
+    "releaseOrder": 26111800002
+  },
+  {
     "version": "v26.11.18-b01",
     "date": "18/11/2026",
     "title": "Sửa lỗi ghi nhận và in kết quả SOP 9.14",

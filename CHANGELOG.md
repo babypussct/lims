@@ -2,7 +2,27 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.11.18-b01
+## Phiên bản hiện tại: v26.11.18-b02
+
+### v26.11.18-b02
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- In toàn bộ các phiếu PDF của mẻ qua một bản xem trước chung, không cần mở từng phiếu.
+
+#### ✨ Tính Năng Mới
+
+- Trung tâm báo cáo PDF và khung Báo cáo & PDF có nút In nhanh tất cả phiếu, Chọn phiếu và Tải PDF gộp.
+- Sau khi xuất báo cáo, xem và in đúng các phiếu vừa xuất; hiển thị rõ khi lượt xuất chưa đầy đủ.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Tự chọn phiếu hiện hành, cảnh báo bộ phiếu thiếu và chặn các lựa chọn trùng mẫu trước khi in.
+- Theo dõi tiến trình chuẩn bị PDF, hủy khi cần và thử lại khi một phiếu tải lỗi.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Không có thay đổi trong nhóm này.
 
 ### v26.11.18-b01
 

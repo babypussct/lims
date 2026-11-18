@@ -1,3 +1,5 @@
+import { ReportBulkPrintComponent } from './components/report-bulk-print.component';
+import { ReportCardProjection } from './services/result-reports-projection';
 import { Component, inject, signal, OnInit, OnDestroy, computed, effect, HostListener, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -79,7 +81,7 @@ interface AutoSaveEnvelope {
 @Component({
   selector: 'app-result-entry',
   standalone: true,
-  imports: [
+  imports: [ReportBulkPrintComponent,
     CommonModule, 
     RouterModule,
     SkeletonComponent,
@@ -196,6 +198,9 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
   isLoading = signal(true);
   isSavingDraft = signal(false);
   isPublishing = signal(false);
+  recentPublishedReports = signal<ReportCardProjection[]>([]);
+  recentPublishSamples = signal<string[]>([]);
+  recentPublishExpected = signal(0);
   publishProgressOpen = signal(false);
   publishProgressState = signal<ReportPublishState>('working');
   publishStepIndex = signal(0);
@@ -1274,6 +1279,9 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
         chunks.push(allIncludedSamples.slice(i, i + chunkSize));
       }
       this.publishChunkCount.set(chunks.length);
+      if (retryFromChunkIndex === 0) this.recentPublishedReports.set([]);
+      this.recentPublishSamples.set([...allIncludedSamples]);
+      this.recentPublishExpected.set(chunks.length);
 
       let lastResult = null;
 
@@ -1361,6 +1369,12 @@ export class ResultEntryComponent implements OnInit, OnDestroy {
           const chunkLabel = chunks.length > 1 ? ` (phần ${chunkIndex + 1}/${chunks.length})` : '';
           throw new Error(`Xuất báo cáo${chunkLabel} thất bại: ${result.error || 'Không xác định được nguyên nhân lỗi.'}`);
         }
+        this.recentPublishedReports.update(cards => [...cards.filter(c => c.id !== 'recent_' + chunkIndex), {
+          id: 'recent_' + chunkIndex, kind: 'group', prefix: prefixForReport,
+          title: chunk.join(', '), subtitle: 'Phiếu vừa xuất ' + (chunkIndex + 1), samples: [...chunk],
+          version: result.version || 1, pdfUrl: result.pdfUrl, pdfViewUrl: result.pdfViewUrl,
+          publishedAt: result.publishedAt, publishedBy: result.publishedBy, status: 'completed', isStale: false,
+        }]);
       }
 
       if (lastResult && lastResult.success) {

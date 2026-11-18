@@ -1,3 +1,13 @@
+@if (recentPublishedReports().length > 0) {
+  <div class="p-2">
+    <app-report-bulk-print [cards]="recentPublishedReports()" [samples]="recentPublishSamples()"
+      label="Xem / In các phiếu vừa xuất"
+      [incomplete]="isPublishing() || recentPublishedReports().length < recentPublishExpected()" />
+    @if (recentPublishedReports().length < recentPublishExpected()) {
+      <p class="text-xs text-amber-700">Lượt xuất chưa đầy đủ: {{ recentPublishedReports().length }}/{{ recentPublishExpected() }} phiếu.</p>
+    }
+  </div>
+}
 <div class="h-full flex flex-col fade-in" [class.p-3]="isFocusMode()" [class.sm:p-4]="isFocusMode()">
   <!-- Sticky Header -->
   <app-result-entry-header

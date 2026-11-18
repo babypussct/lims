@@ -1,3 +1,4 @@
+import { ReportBulkPrintComponent } from './report-bulk-print.component';
 import { Component, Input, Output, EventEmitter, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { formatSampleList, getSafeGoogleUrl as sanitizeGoogleUrl } from '../../../shared/utils/utils';
@@ -13,7 +14,7 @@ import { timestampToDate } from '../../../shared/utils/timestamp';
 @Component({
   selector: 'app-report-hub-modal',
   standalone: true,
-  imports: [CommonModule, AppModalShellComponent, AppButtonComponent],
+  imports: [ReportBulkPrintComponent, CommonModule, AppModalShellComponent, AppButtonComponent],
   template: `
     @if (isOpen && run) {
       @let projection = reportsProjection();
@@ -43,6 +44,7 @@ import { timestampToDate } from '../../../shared/utils/timestamp';
         </div>
 
         <div modalBody class="space-y-4">
+          <app-report-bulk-print [cards]="projection.cards" [samples]="run.sampleList || []" />
           @if (projection.hasStaleReport) {
             <div class="rounded-2xl border border-amber-200 dark:border-amber-900/40 bg-amber-50/70 dark:bg-amber-950/20 px-4 py-3 text-xs text-amber-800 dark:text-amber-300 flex items-center gap-2.5">
               <i class="fa-solid fa-circle-info shrink-0" aria-hidden="true"></i>
