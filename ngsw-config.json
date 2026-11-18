@@ -2,14 +2,13 @@
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
   "index": "/index.html",
   "appData": {
-    "version": "v26.11.17-b01",
-    "title": "Tối ưu giao diện LIMS trên thiết bị di động",
+    "version": "v26.11.18-b01",
+    "title": "Sửa lỗi ghi nhận và in kết quả SOP 9.14",
     "features": [
-      "Nâng cấp giao diện responsive trên điện thoại và máy tính bảng cho các phân hệ LIMS.",
-      "Chuẩn hóa modal, drawer và giao diện dùng chung để hỗ trợ vùng an toàn, bàn phím ảo và cuộn trên màn hình nhỏ.",
-      "Tối ưu nhập kết quả SOP, quản lý kho, chất chuẩn, yêu cầu và truy xuất với bố cục thẻ trên mobile.",
-      "Cải thiện Dashboard, lịch trực, thống kê, máy tính, tài liệu, cấu hình và in nhãn trên nhiều kích thước màn hình.",
-      "Tăng vùng chạm, tối ưu biểu mẫu và thanh công cụ ở các màn hình đăng nhập, công thức, checklist và kế hoạch mẻ."
+      "Giữ nguyên giá trị kết quả đã nhập khi cờ ND cũ vẫn còn bật trong SOP 9.14.",
+      "Đồng bộ cách nhận diện mẫu phát hiện và mẫu không phát hiện giữa phiếu đầy đủ, phiếu gộp và PDF.",
+      "Khắc phục trường hợp PDF bỏ trống kết quả đã báo cáo do cờ ND chưa được cập nhật.",
+      "Khắc phục trạng thái phát hiện bị xác định sai khi giá trị kết quả và cờ ND không nhất quán."
     ]
   },
   "assetGroups": [

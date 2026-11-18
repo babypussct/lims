@@ -55,6 +55,33 @@ test('SOP 9.14 detection flags follow edited compact-form results', () => {
   assert.equal(cleared.checkCoMauPhatHien, false);
 });
 
+test('SOP 9.14 full-form detection favors reported values over stale ND flags', () => {
+  const isAssigned = () => true;
+  const detected = deriveSop914DetectionFlags(
+    ['A001', 'A002'],
+    {
+      A001: { selected: true, etofenprox: '4.2', etofenprox_nd: true },
+      A002: { selected: true, etofenprox: '', etofenprox_nd: true }
+    },
+    ['etofenprox'],
+    false,
+    isAssigned
+  );
+  assert.equal(detected.hasPositive, true);
+  assert.equal(detected.checkCoMauPhatHien, true);
+  assert.equal(detected.checkTatCaND, false);
+
+  const allNd = deriveSop914DetectionFlags(
+    ['A002'],
+    { A002: { etofenprox: '', etofenprox_nd: true } },
+    ['etofenprox'],
+    false,
+    isAssigned
+  );
+  assert.equal(allNd.checkTatCaND, true);
+  assert.equal(allNd.checkCoMauPhatHien, false);
+});
+
 test('SOP 9.14 default sample vials start at 1.10 and roll racks correctly', () => {
   assert.equal(getSop914DefaultVial(0), '1.10');
   assert.equal(getSop914DefaultVial(1), '1.11');

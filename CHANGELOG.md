@@ -2,7 +2,26 @@
 
 Lịch sử phiên bản đầy đủ được hiển thị tại mục [/changelog trên ứng dụng](/changelog), với nội dung tập trung vào những thay đổi hữu ích cho công việc kiểm nghiệm.
 
-## Phiên bản hiện tại: v26.11.17-b01
+## Phiên bản hiện tại: v26.11.18-b01
+
+### v26.11.18-b01
+
+#### 🚀 Điểm Nổi Bật Bản Này
+
+- Giữ nguyên giá trị kết quả đã nhập khi cờ ND cũ vẫn còn bật trong SOP 9.14.
+
+#### ✨ Tính Năng Mới
+
+- Không có thay đổi trong nhóm này.
+
+#### ⚡ Cải Tiến & Tối Ưu
+
+- Đồng bộ cách nhận diện mẫu phát hiện và mẫu không phát hiện giữa phiếu đầy đủ, phiếu gộp và PDF.
+
+#### 🐛 Sửa Lỗi Hệ Thống
+
+- Khắc phục trường hợp PDF bỏ trống kết quả đã báo cáo do cờ ND chưa được cập nhật.
+- Khắc phục trạng thái phát hiện bị xác định sai khi giá trị kết quả và cờ ND không nhất quán.
 
 ### v26.11.17-b01
 

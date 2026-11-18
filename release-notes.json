@@ -1,17 +1,14 @@
 {
-  "title": "Tối ưu giao diện LIMS trên thiết bị di động",
+  "title": "Sửa lỗi ghi nhận và in kết quả SOP 9.14",
   "highlights": [
-    "Nâng cấp giao diện responsive trên điện thoại và máy tính bảng cho các phân hệ LIMS."
+    "Giữ nguyên giá trị kết quả đã nhập khi cờ ND cũ vẫn còn bật trong SOP 9.14."
   ],
   "features": [],
   "improvements": [
-    "Chuẩn hóa modal, drawer và giao diện dùng chung để hỗ trợ vùng an toàn, bàn phím ảo và cuộn trên màn hình nhỏ.",
-    "Tối ưu nhập kết quả SOP, quản lý kho, chất chuẩn, yêu cầu và truy xuất với bố cục thẻ trên mobile.",
-    "Cải thiện Dashboard, lịch trực, thống kê, máy tính, tài liệu, cấu hình và in nhãn trên nhiều kích thước màn hình.",
-    "Tăng vùng chạm, tối ưu biểu mẫu và thanh công cụ ở các màn hình đăng nhập, công thức, checklist và kế hoạch mẻ."
+    "Đồng bộ cách nhận diện mẫu phát hiện và mẫu không phát hiện giữa phiếu đầy đủ, phiếu gộp và PDF."
   ],
   "fixes": [
-    "Khắc phục tràn ngang và tình trạng modal bị che khuất khi thu nhỏ viewport, zoom hoặc mở bàn phím ảo.",
-    "Khắc phục khóa cuộn, nút thao tác khó chạm và hiện tượng chồng lấn nội dung trên thiết bị di động."
+    "Khắc phục trường hợp PDF bỏ trống kết quả đã báo cáo do cờ ND chưa được cập nhật.",
+    "Khắc phục trạng thái phát hiện bị xác định sai khi giá trị kết quả và cờ ND không nhất quán."
   ]
 }

@@ -56,20 +56,14 @@ export function deriveSop914DetectionFlags(
 
     for (const key of resultKeys) {
       if (!isAssigned(sample, key)) continue;
-      if (!isShortForm && row[`${key}_nd`] === true) {
-        hasAnyResultState = true;
-        continue;
-      }
-
       const val = row[key];
-      if (val === undefined || val === null) continue;
-      const normalized = String(val).trim().toUpperCase();
-      if (normalized === '') continue;
-      if (normalized !== 'N/A') hasAnyResultState = true;
-      if (normalized !== 'ND' && normalized !== 'N/A' && normalized !== 'KPH') {
+      const normalized = val === undefined || val === null ? '' : String(val).trim().toUpperCase();
+      if (normalized !== '' && normalized !== 'N/A') hasAnyResultState = true;
+      if (normalized !== '' && !['ND', 'N/A', 'KPH', '—', '-'].includes(normalized)) {
         hasPositive = true;
         break;
       }
+      if (!isShortForm && row[`${key}_nd`] === true) hasAnyResultState = true;
     }
 
     if (hasPositive) break;

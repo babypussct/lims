@@ -135,7 +135,12 @@ test('Unified Type3B preserves blank, ND, N/A, and numeric zero for single sampl
   const cases = [
     { code: 'BLANK01', input: { etofenprox: '' }, sampleValue: '', nd: false, runValue: '', summary: 'N/A' },
     { code: 'ND01', input: { etofenprox: 'ND' }, sampleValue: 'ND', nd: false, runValue: 'ND', summary: 'N/A' },
-    { code: 'NDFLAG01', input: { etofenprox: '4.2', etofenprox_nd: true }, sampleValue: '', nd: true, runValue: 'ND', summary: 'N/A' },
+    { code: 'NDFLAG01', input: { etofenprox: '4.2', etofenprox_nd: true }, sampleValue: '4.2', nd: false, runValue: '4.2', summary: 'etofenprox: 4.2' },
+    { code: 'ND_EMPTY', input: { etofenprox: '', etofenprox_nd: true }, sampleValue: '', nd: true, runValue: 'ND', summary: 'N/A' },
+    { code: 'ND_TEXT', input: { etofenprox: 'ND', etofenprox_nd: true }, sampleValue: '', nd: true, runValue: 'ND', summary: 'N/A' },
+    { code: 'ND_KPH', input: { etofenprox: 'KPH', etofenprox_nd: true }, sampleValue: '', nd: true, runValue: 'ND', summary: 'N/A' },
+    { code: 'NDFLAG_ZERO', input: { etofenprox: 0, etofenprox_nd: true }, sampleValue: '0', nd: false, runValue: '0', summary: 'etofenprox: 0' },
+    { code: 'NDFLAG_LOQ', input: { etofenprox: '<LOQ', etofenprox_nd: true }, sampleValue: '<LOQ', nd: false, runValue: '<LOQ', summary: 'etofenprox: <LOQ' },
     { code: 'NA01', input: { etofenprox: 'N/A' }, sampleValue: 'N/A', nd: false, runValue: 'N/A', summary: 'N/A' },
     { code: 'ZERO_NUM', input: { etofenprox: 0 }, sampleValue: '0', nd: false, runValue: '0', summary: 'etofenprox: 0' },
     { code: 'ZERO_STR', input: { etofenprox: '0' }, sampleValue: '0', nd: false, runValue: '0', summary: 'etofenprox: 0' },
@@ -175,6 +180,33 @@ test('Unified Type3B grouped results keep blank, ND, N/A, and zero distinct', ()
     'BLANK01: ; ND01: ND; NA01: N/A; ZERO01: 0'
   );
   assert.equal(groupedRun.summaryResult, 'etofenprox: ; ND; N/A; 0');
+});
+
+test('SOP 9.14 grouped PDF preserves a reported value despite a stale ND checkbox', () => {
+  const payload = buildUnifiedType3bPdfPayload(
+    {
+      page1Data: { printFormType: 'formDayDu', checkGopInChung: true },
+      resultData: {
+        A001: { selected: true, etofenprox: '4.2', etofenprox_nd: true },
+        A002: { selected: true, etofenprox: '', etofenprox_nd: true }
+      }
+    },
+    {
+      sampleList: ['A001', 'A002'],
+      sampleTargetMap: { A001: ['etofenprox'], A002: ['etofenprox'] }
+    },
+    'ALL',
+    { id: 'tbvtv-thuc-pham-gcmsms', formType: 'type3b', compounds: ['etofenprox'] },
+    formatDate,
+    getRunDate
+  );
+
+  assert.equal(payload.samples.length, 1);
+  assert.equal(payload.samples[0].etofenprox_nd, false);
+  assert.equal(payload.samples[0].etofenprox, 'A001: 4.2; A002: ND');
+  const groupedRun = payload.metadata.runSamplesList.find((row: any) => row.key === 'GROUPED');
+  assert.equal(groupedRun.compoundResults.etofenprox, 'A001: 4.2; A002: ND');
+  assert.equal(groupedRun.summaryResult, 'etofenprox: 4.2; ND');
 });
 
 test('numeric zero survives result, calibration, R2, LOD, and LOQ payload fallbacks', () => {
@@ -298,9 +330,9 @@ test('SOP 9.14 compact PDF excludes unselected samples from the current chunk', 
         ngayNguoiThamTra: '2026-08-08'
       },
       resultData: {
-        A001: { selected: true, kqFip: 'ND' },
+        A001: { selected: true, kqFip: '2.3' },
         A002: { selected: false, kqFip: '1.2' },
-        B001: { selected: true, kqFip: '2.3' }
+        B001: { selected: true, kqFip: '3.7' }
       }
     },
     { sampleList: ['A001', 'A002', 'B001'] },
@@ -321,4 +353,5 @@ test('SOP 9.14 compact PDF excludes unselected samples from the current chunk', 
     .filter((code: string) => ['A001', 'A002', 'B001'].includes(code));
 
   assert.deepEqual(regularSamples, ['A001']);
+  assert.equal(payload.samples.find((row: any) => row.maSoMau === 'A001').kqFip, '2.3');
 });

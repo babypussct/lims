@@ -1823,8 +1823,18 @@ export function buildUnifiedType3bPdfPayload(
   const rawResultText = (value: unknown): string =>
     value === undefined || value === null ? '' : String(value);
 
+  // Legacy/persisted rows can contain both a reported result and a stale ND flag.
+  // A reported value takes precedence; an ND checkbox only applies without one.
+  const hasReportedResult = (value: unknown): boolean => {
+    const normalized = rawResultText(value).trim().toUpperCase();
+    return normalized !== '' && !['ND', 'N/A', 'KPH', '—', '-'].includes(normalized);
+  };
+
+  const hasEffectiveNdFlag = (resObj: any, compound: string): boolean =>
+    resObj?.[`${compound}_nd`] === true && !hasReportedResult(resObj?.[compound]);
+
   const isExplicitNd = (resObj: any, compound: string): boolean =>
-    resObj?.[`${compound}_nd`] === true || rawResultText(resObj?.[compound]).trim().toUpperCase() === 'ND';
+    hasEffectiveNdFlag(resObj, compound) || rawResultText(resObj?.[compound]).trim().toUpperCase() === 'ND';
 
   const isDon = (currentDraft.page1Data['printFormType'] || 'formCheck') === 'formDon';
   // Chỉ ghép mã mẫu vào kết quả khi một phiếu thực sự có nhiều mẫu.
@@ -1870,7 +1880,7 @@ export function buildUnifiedType3bPdfPayload(
         [`${compound}_qc3`]: 'N/A'
       };
     }
-    const isNd = resObj[`${compound}_nd`] === true;
+    const isNd = hasEffectiveNdFlag(resObj, compound);
     const rawVal = rawResultText(resObj[compound]);
     return {
       [compound]: isNd ? '' : rawVal,
@@ -2032,7 +2042,7 @@ export function buildUnifiedType3bPdfPayload(
     (currentConf.compounds as string[]).forEach(c => {
       const isDet = filteredSamples.some((sCode: string) => {
         const sRes = currentDraft.resultData[sCode] || {};
-        return isAssigned(sCode, c) && sRes[`${c}_nd`] !== true && isDetectedValue(sRes[c]);
+        return isAssigned(sCode, c) && hasReportedResult(sRes[c]);
       });
       if (isDet) {
         const vals = filteredSamples.map((sCode: string) => {
@@ -2089,7 +2099,7 @@ export function buildUnifiedType3bPdfPayload(
       const resObj = currentDraft.resultData[s] || {};
       const detected: string[] = [];
       (currentConf.compounds as string[]).forEach(c => {
-        if (isAssigned(s, c) && resObj[`${c}_nd`] !== true && isDetectedValue(resObj[c])) {
+        if (isAssigned(s, c) && hasReportedResult(resObj[c])) {
           detected.push(`${c}: ${resObj[c]}`);
         }
       });

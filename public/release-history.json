@@ -1,5 +1,22 @@
 [
   {
+    "version": "v26.11.18-b01",
+    "date": "18/11/2026",
+    "title": "Sửa lỗi ghi nhận và in kết quả SOP 9.14",
+    "highlights": [
+      "Giữ nguyên giá trị kết quả đã nhập khi cờ ND cũ vẫn còn bật trong SOP 9.14."
+    ],
+    "features": [],
+    "improvements": [
+      "Đồng bộ cách nhận diện mẫu phát hiện và mẫu không phát hiện giữa phiếu đầy đủ, phiếu gộp và PDF."
+    ],
+    "fixes": [
+      "Khắc phục trường hợp PDF bỏ trống kết quả đã báo cáo do cờ ND chưa được cập nhật.",
+      "Khắc phục trạng thái phát hiện bị xác định sai khi giá trị kết quả và cờ ND không nhất quán."
+    ],
+    "releaseOrder": 26111800001
+  },
+  {
     "version": "v26.11.17-b01",
     "date": "17/11/2026",
     "title": "Tối ưu giao diện LIMS trên thiết bị di động",
